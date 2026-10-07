@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — ordinary compiler/private-fixture lease active; repairing direct strict compiler failures then running exact action and consumer gates
+- Status: working — qualified ordinary source handed to independent old/current review; maintaining exact evidence and supplying compatible owning-boundary help with compiler/native resources released
 - Branch: worker/everyday-media-delivery-20261007
 - Worktree: everyday-media-delivery-20261007
 - Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
 - Ownership: removable_media_client; owning removable_media adapter; File Manager/chooser media presenters; focused tests and primary docs
-- Next gate: exact action/client/File Manager/chooser compile, focused failures, installed SDK and actual native chooser regression; await manager lease after Astra
+- Next gate: Astra exact old/current consumer regression replay and source acceptance; manager integrated/Portage session/physical gates remain distinct
 
 ## Updates
 
@@ -33,3 +33,5 @@
 - 2026-10-07T22:30:47+00:00: Repaired strict full build passed on bce1324; first private-bus/offscreen registry27/28 passed, exit8. Only new compact/desktop media UI fixture failed delegated-button QObject lookup; replaced with visual childItems traversal before real geometry/keyboard assertions. Both presenters, overwrite-modal owner/RO/navigation negatives, nested-root rows and never-active-pane loss passed. Native/SDK gates remain pending.
 
 - 2026-10-07T22:40:56+00:00: Native original gate1/1 failed before helper spawn, seven behavior failures including unchanged AppChooser; direct private diagnostic proved native lock interface and nonce receipt available, then three real OpenFile helper mappings passed. Root approved fixture-only readiness fence; Platform confirmed startup error classification remains separately owned. Added exact attachment owner/PID plus published interface and normal nonce-receipt wait before portal composition. SDK1/1+poison+restore1/1 passed; full final29 rows/SDK rerun next. No physical claim.
+
+- 2026-10-07T22:47:52+00:00: Exact64dcfa1 strict final build exit0; complete focused CTest29/29 and339 Qt checks, zero failures/skips/blacklisted, including actual native frontend/private-KWin9Qt. Core/DBus installed-only stage1/1, withheld-header negative compile, restoration build+1/1 exit0 repeated on final source. All compiler/private-bus/offscreen/private-KWin resources explicitly released to Astra before this documentation/evidence-only snapshot. Source accepted status and installed/physical completion not presumed.
