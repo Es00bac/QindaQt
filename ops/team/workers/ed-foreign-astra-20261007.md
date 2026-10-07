@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — independent hidden Wi-Fi exact source review; copier sentinel native gate remains queued
+- Status: working — source-only copier preservation repair after four actual old-source deletion reproductions
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
@@ -34,3 +34,4 @@
 - 2026-10-07T22:56:36+00:00: Fresh authorized copy-safety worktree at1a205 after hub fetch. Added only real helper/backend regression tests and minimal private boundary registry. Cases cover preexisting file/tree sentinel, progress-time replacement/cancellation and source-vanished post-copy replacement. No tests executed or copier changed; Platform owns compiler lease. ED05 full contract021140 awaits independent recheck.
 - 2026-10-07T23:05:20+00:00: Root accepted ED05 bounded design021140 after independent33/33; cross-device production remains staged after copier safety. Claimed exact hidden Wi-Fi14b83f50 critical review in detached review worktree. Source authority/compatibility trace has no blocker; independent static boundary/all poisons0 and docs5240, strict build pending. Root owns native lease; no tests/compiler/buses executed by this worker.
 - 2026-10-07T23:07:35+00:00: Exact hidden Wi-Fi14b83 static ACCEPT: traced metadata-only optional RPC, exact selected device/security and secret authority; boundary/all poison controls0, docs524/strict/diff0. Inspected actual author39/39 JUnit and32-target command, distinct from own execution. Own selected seven hidden native rows and actual old copier sentinel build wait for root lease.
+- 2026-10-07T23:11:20+00:00: Granted short sublease completed and released: hidden14b83 independent7/7 CTest40Qt0fail0skip; actual old copier1a205 strict build0, f5 sentinel fixture2pass4fail exit4 proving all four foreign-data deletions. Frozen commands/raw logs/hashes. Hidden source fully ACCEPT within tested scope. Now source-only conservative copy-output repair with typed visible observations and required decomposition; root owns compiler/fixtures.
