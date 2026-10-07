@@ -44,7 +44,7 @@ public Q_SLOTS:
         ++reads;
         if (delay) {
             setDelayedReply(true);
-            const auto reply = message().createReply({wire});
+            const auto reply = message().createReply(QVariantList{wire});
             const auto bus = connection();
             QTimer::singleShot(100, this, [bus, reply] { bus.send(reply); });
         }
