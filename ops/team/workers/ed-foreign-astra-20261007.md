@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — ED17 and ED20 exact candidates await critical review; production routing prepared
+- Status: working — repairing exact ED20 retired-launch and ED17 forged-proposal review findings
 - Outcome: proposed ADR-0353 scoped desktop context and negative design proof; ED20 c5cdccf31 remains immutable under manager review
 - Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
 - Branch: worker/everyday-foreign-architecture-20261007
@@ -14,3 +14,5 @@
 - 2026-10-07T21:22:29+00:00: Claimed ED17 ADR0353/architecture/desktop-agent-context.md/tests/design/desktop_agent_context_contract.py with minimal navigation; no compiler or runtime lease. QindaTK hub/checkout 393c1ce5 match; unrelated .obsidian directory preserved.
 - 2026-10-07T21:28:11+00:00: ED17 actual-source audit confirms QindaTK v1 cooperative same-UID grants, not per-task isolation. Proposed scoped extension preserves provider semantics/receipts; 17 negative design cases, docs523, strict MkDocs and diff check pass. Exact first production slice routing prepared.
 - 2026-10-07T21:28:57+00:00: ED17 candidate b394effff64d007d2a022ddaa7ca3a88424467ed handed off for exact critical review. Read Platform queue and offered ED17a toolkit scoped policy/host seam or ED05 hard contract next. No compiler/runtime lease or unattended working claim.
+- 2026-10-07T21:36:45+00:00: Claimed NEEDS_FIX repair from reviewer39456f7bd. Original candidates preserved. Adding reviewer reproductions before model fixes; no compiler, bus, display or runtime lease. Requested Astra allocation is session routing, not independent runtime attestation.
+- 2026-10-07T21:38:36+00:00: Before fixes, direct review regressions failed as expected (ED20 2 failures/17 cases; ED17 3 failures/20). Repaired current launch/parent validation and lifecycle retirement; retained exact issued proposal records and single-use admission. Focused suites now 19/19 and24/24, no runtime claim.

@@ -167,7 +167,12 @@ qualified per-chunk gating.
 2. Ask the owner to validate a typed proposal against an advertised action
    schema, target selector and current revision; no provider execute yet.
    The provider canonicalizes arguments and binds the proposal digest to every
-   identity/revision field. Store at most 64 pending proposals per task.
+   identity/revision field. It retains the exact immutable issued record keyed
+   by a fresh proposal ID, including original deadline and grant/privacy epochs.
+   A client-recomputed public digest is not issuance or validation authority.
+   Commit resolves this owner record and compares all supplied facts; unknown
+   IDs or changed arguments, expiry, target or binding are rejected even when
+   the client recomputes the digest. Store at most 64 pending proposals per task.
 3. Commit only inside a currently granted edit allowlist or a provider-created
    single-operation human approval bound to that digest. A changed proposal
    requires a new validation/approval; standing edit grants avoid redundant
@@ -184,8 +189,10 @@ qualified per-chunk gating.
 Deduplication key is provider incarnation + task principal + request ID, not
 grant epoch or socket pathname. The ledger binds original resource, action,
 canonical arguments, revision and proposal digest; grant renewal cannot erase
-an execution tombstone. Reserve the request ID before invoking provider code
-to prevent reentrant duplicate execution. Conflicting reuse is rejected.
+an execution tombstone. Reserve the request ID and consume the issued proposal before invoking
+provider code, so reentrant retries see Pending and another request ID cannot
+execute that proposal again. Revoke/lock clears unexecuted proposal records,
+while the separate execution ledger retains its historical digest/result. Conflicting reuse is rejected.
 An unexecuted proposal from a replaced grant/privacy epoch is stale even after
 regrant. Only an already-recorded request can return its authorized historical
 receipt across grant changes. An identical pending retry says Pending; identical completed replay requires

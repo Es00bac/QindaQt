@@ -137,13 +137,23 @@ OutcomeUnknown. Timeout after dispatch or lost authority yields OutcomeUnknown
 unless the owner proves a terminal state. Do not automatically replay a
 mutation. Repeated operation UUID returns its retained result for the same
 binding, never repeats work; different arguments under that UUID are rejected.
-Keep at most 256 terminal receipts per adapter incarnation, then return
-UnknownOperation for evicted requests rather than replay.
+Retain at most 256 operation IDs/results per adapter incarnation and refuse
+new mutations at that limit. Never evict a remembered operation ID and later
+interpret it as new. A fresh incarnation rejects all old bindings; starting a
+new explicit operation is not an automatic replay. The design model does not
+implement this operation ledger; its production gate must verify this cap.
 
 On producer loss/restart, remove live associations, cancel local waits and
 invalidate all old operation/launch tokens before admitting a fresh snapshot.
 Runtime restart does the same even if the adapter process remains. An old
 compositor window ID reused in a new incarnation cannot inherit a badge.
+Each origin observation rechecks the current admitted launch-to-app/binding
+relationship as well as the live window/process and registration revision.
+Launch retirement atomically withdraws its associations and dependent child
+relationships, preserving peer apps. Even before a queued retirement event is
+processed, missing or changed launch evidence returns unknown. Fresh relaunch
+uses a fresh launch identity and newly admitted window evidence; it never
+reactivates a retired association. A child also requires its live parent chain.
 Newly observed legitimate surfaces require fresh association evidence.
 Disconnect/reconnect cannot reanimate an old parent relationship.
 

@@ -94,15 +94,45 @@ class Policy:
         self.snapshot_revision = revision
         return True
 
+    def retire_launch(self, launch):
+        # Lifecycle retirement invalidates the launch and all dependent
+        # associations in one owner-thread operation; peer apps stay live.
+        self.live_launches.pop(launch, None)
+        retired = {key for key, e in self.associations.items() if e.launch == launch}
+        while True:
+            descendants = {key for key, e in self.associations.items()
+                           if e.parent in retired}
+            expanded = retired | descendants
+            if expanded == retired:
+                break
+            retired = expanded
+        self.associations = {key: e for key, e in self.associations.items()
+                             if key not in retired}
+
     def origin(self, window, incarnation, untrusted_hint=""):
-        # Display hints never enter the association admission algorithm.
+        # Revalidate current evidence even before a queued retirement signal
+        # updates the published association snapshot.
         e = self.associations.get((window, incarnation))
-        if e is None or self.live_windows.get((window, incarnation)) != e.process:
-            return None
-        r = self.registrations.get(e.app)
-        if r is None or e.revision != r.revision or e.binding != self.binding:
-            return None
-        return r.origin
+        result = None
+        seen = set()
+        while e is not None:
+            key = (e.window, e.window_incarnation)
+            r = self.registrations.get(e.app)
+            if (key in seen or r is None or e.revision != r.revision
+                    or e.binding != self.binding
+                    or self.live_windows.get(key) != e.process
+                    or self.live_launches.get(e.launch) != (e.app, self.binding)):
+                return None
+            seen.add(key)
+            if result is None:
+                result = r.origin
+            if e.parent is None:
+                return result
+            parent = self.associations.get(e.parent)
+            if parent is None or parent.app != e.app:
+                return None
+            e = parent
+        return None
 
     def may_force_stop(self, app, expected_revision, binding, scope_owned,
                        independently_stoppable):
@@ -129,7 +159,7 @@ class ContractTests(unittest.TestCase):
         self.p.live_launches = {"launch-a": ("app-a", self.b), "launch-b": ("app-b", self.b)}
 
     def publish(self, records=None, revision=1, producer="inherited-peer-channel"):
-        return self.p.publish(producer, self.b, revision, records or [self.e, self.f])
+        return self.p.publish(producer, self.b, revision, [self.e, self.f] if records is None else records)
 
     def test_two_independent_apps_and_independent_stop(self):
         self.assertTrue(self.publish())
@@ -138,6 +168,46 @@ class ContractTests(unittest.TestCase):
         del self.p.live_windows[(10, "window-1")]
         self.assertIsNone(self.p.origin(10, "window-1"))
         self.assertEqual(self.p.origin(11, "window-2"), Origin.WINDOWS)
+
+    def test_review_direct_removed_launch_invalidates_origin(self):
+        self.assertTrue(self.publish())
+        del self.p.live_launches["launch-a"]
+        self.assertIsNone(self.p.origin(10, "window-1"))
+        self.assertEqual(self.p.origin(11, "window-2"), Origin.WINDOWS)
+
+    def test_review_changed_launch_owner_invalidates_origin(self):
+        self.assertTrue(self.publish())
+        self.p.live_launches["launch-a"] = ("app-b", self.b)
+        self.assertIsNone(self.p.origin(10, "window-1"))
+
+    def test_explicit_retirement_preserves_peer_and_allows_fresh_relaunch(self):
+        self.assertTrue(self.publish())
+        self.p.retire_launch("launch-a")
+        self.assertNotIn((10, "window-1"), self.p.associations)
+        self.assertIsNone(self.p.origin(10, "window-1"))
+        self.assertEqual(self.p.origin(11, "window-2"), Origin.WINDOWS)
+        fresh = replace(self.e, launch="launch-a-fresh", window_incarnation="window-3",
+                        process=(25, 35))
+        self.p.live_launches[fresh.launch] = ("app-a", self.b)
+        self.p.live_windows[(10, "window-3")] = fresh.process
+        self.assertTrue(self.publish([fresh, self.f], revision=2))
+        self.assertIsNone(self.p.origin(10, "window-1"))
+        self.assertEqual(self.p.origin(10, "window-3"), Origin.WINDOWS)
+
+    def test_retiring_parent_launch_removes_dependent_child(self):
+        child = replace(self.f, app="app-a", launch="child-launch",
+                        parent=(10, "window-1"))
+        self.p.live_launches["child-launch"] = ("app-a", self.b)
+        self.assertTrue(self.publish([self.e, child]))
+        del self.p.live_launches["launch-a"]
+        self.assertIsNone(self.p.origin(11, "window-2"))
+        self.p.retire_launch("launch-a")
+        self.assertEqual(self.p.associations, {})
+
+    def test_empty_snapshot_clears_all_associations(self):
+        self.assertTrue(self.publish())
+        self.assertTrue(self.publish([], revision=2))
+        self.assertIsNone(self.p.origin(10, "window-1"))
 
     def test_spoofed_hint_never_admits_origin(self):
         self.assertIsNone(self.p.origin(10, "window-1", "app-a.desktop"))
