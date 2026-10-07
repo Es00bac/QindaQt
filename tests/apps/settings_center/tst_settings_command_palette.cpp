@@ -331,9 +331,9 @@ void SettingsCommandPaletteTest::filteredRowsKeepCrossSectionRelevanceOrder() {
            QStringList({QStringLiteral("route:screensaver"),
                         QStringLiteral("route:display"),
                         QStringLiteral("route:login-screen"),
+                        QStringLiteral("route:portal-permissions"),
                         QStringLiteral("route:power"),
                         QStringLiteral("route:streaming"),
-                        QStringLiteral("route:portal-permissions"),
                         QStringLiteral("destination:input/touch")}));
 }
 
