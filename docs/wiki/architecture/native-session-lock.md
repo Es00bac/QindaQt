@@ -210,8 +210,12 @@ Only an admitted `Locked=false, Protected=false` receipt permits ordinary
 content. `Locked=true, Protected=false` means Locking; both true means physically
 protected Locked. An inconsistent combination, malformed receipt, denied owner,
 owner replacement, bus loss or failed receipt yields Unknown and suppresses
-content/protection. Startup object absence receives a bounded retry only while
-the exact attachment remains admitted. Legacy properties remain compatible but
+content/protection. The transport preserves only the exact D-Bus
+`UnknownObject` and `UnknownInterface` startup errors for the monitor's existing
+five-retry budget (50, 100, 250, 500 and 1000 milliseconds). Each retry rechecks
+the exact admitted attachment; state stays Unknown until a genuine receipt and
+void completion both arrive. Other errors, malformed replies and receipt
+timeouts do not enter this startup retry path. Legacy properties remain compatible but
 do not update this monitor. There is no legacy fallback, RequestLock, unlock,
 authentication result or locker launch on this readonly port.
 
