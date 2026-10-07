@@ -28,8 +28,8 @@ Public::VolumeRow publicVolume(const Volume &v, const QString &epoch, bool busy)
     row.driveDisplayId = id(epoch, QStringLiteral("drive"), v.driveIdentity.isEmpty() ? v.drive : v.driveIdentity);
     row.volumeDisplayId = id(epoch, QStringLiteral("volume"), v.identity.isEmpty() ? v.token : v.identity);
     row.attachment = {id(epoch, QStringLiteral("attachment"), v.token), 1};
-    row.displayName = displayText(v.label);
-    row.kind = displayText(v.kind);
+    row.displayName = displayText(v.label.isEmpty() ? QStringLiteral("Removable media") : v.label);
+    row.kind = displayText(v.kind.isEmpty() ? QStringLiteral("Unknown filesystem") : v.kind);
     row.partitionNumber = v.partitionNumber;
     row.sizeBytes = v.size;
     row.mountRoots = v.mountRoots;
