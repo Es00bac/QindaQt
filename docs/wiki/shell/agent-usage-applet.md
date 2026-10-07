@@ -5,8 +5,9 @@ status controls. Its popup shows Claude, Codex, Kimi, GLM, DeepSeek and Mistral,
 plus providers supplied by valid custom reports. Existing profile geometry and
 hardware controls stay as configured; top-bar profiles put usage in their top bar.
 
-Current maturity: implementation candidate; verification evidence is recorded
-below when the compiled and policy gates pass. The durable boundary is
+Current maturity: built-in production composition with deterministic source,
+policy, compiled keyboard/pointer, stock-profile resolution and logical screen/DPI
+evidence. Installed-session and live account qualification remain separate gates. The durable boundary is
 [ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
 
 ## Facts shown
@@ -41,7 +42,8 @@ the shell has no account credential entry or account authorization surface.
 
 Codex collection uses the configured local Codex program's documented stdio
 app-server account metadata methods. The backend's primary documentation
-specifies which counters are available and their scope. Unsupported subscription limits stay unknown.
+specifies which counters are available and their scope in
+[Agent usage reports](../reference/agent-usage-reports.md). Unsupported subscription limits stay unknown.
 
 ## Ownership and lifecycle
 
@@ -70,10 +72,19 @@ for provider state, remaining limits, resets and cost.
 
 ## Verification
 
-The focused applet suite covers unknown versus zero, quota projection, reported
-cost and scope, controller publication, source lifetime, and no reads under
-policy denial. Compiled QML checks cover keyboard and click opening, Escape,
-Refresh, accessibility and compact horizontal/vertical panel geometry.
-Runtime catalog/resolution checks verify registration and installed profile
-placements. Actual provider account limits require provider-supplied reports;
-the fixture tests do not claim physical desktop or live account qualification.
+| Gate | Evidence |
+| --- | --- |
+| `qindaqt.agent-usage-applet` | Unknown versus zero, overage clamp, independent scopes, owning source lifetime, pure freshness without refresh, audited constructor denial and shipped third-party denial |
+| `qindaqt.agent-usage-applet-offscreen` | Compiled QML PlainText hostile metadata, denied popup, Space/Refresh/Escape/focus target, mouse reopen, horizontal and compact vertical panels |
+| `qindaqt.agent-usage-applet-boundary` | Presentation contains no collection, file/process/network or private collector access |
+| Manifest/catalog/runtime resolution | 35 manifests, audited capability/registry and one usage placement in each of all 11 stock profiles; all four panel edges |
+| Icon coverage and panel access threading | Packaged QindaQt/Breeze glyph and full runtime host-to-dispatcher property path |
+| Native shell | Strict Debug `qindaqt-shell` and focused targets link using `-j24 -l24`, native `/usr` KDE layout and `libexec` |
+| Screen/DPI | Normal focused CTest **8/8 pass**; repeated offscreen test at 2x DPI **1/1 pass**; actual six-provider popup captures in ignored evidence directories |
+| Documentation | Strict MkDocs and repository link/nav checker pass on the combined 519-document UI/backend topology |
+
+The source/controller row has eight QtTest passes including fixture lifecycle;
+the QML row has six passes including both panel orientations, at each DPI.
+Actual provider account limits require provider-supplied metadata or reports;
+the fixture tests do not claim an installed session, physical desktop or live
+account qualification.
