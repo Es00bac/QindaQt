@@ -167,6 +167,11 @@ private:
             {QStringLiteral("DeviceType"), quint32(NM_DEVICE_TYPE_WIFI)},
             {QStringLiteral("State"), quint32(m_security == QLatin1String("hidden-unmanaged")
                  ? NM_DEVICE_STATE_UNMANAGED : NM_DEVICE_STATE_DISCONNECTED)},
+            // libnm derives its public state from the real (uu) StateReason.
+            {QStringLiteral("StateReason"), QVariant::fromValue(QindaQt::Network::NetworkManager::TestSupport::DeviceStateReason{
+                 quint32(m_security == QLatin1String("hidden-unmanaged")
+                     ? NM_DEVICE_STATE_UNMANAGED : NM_DEVICE_STATE_DISCONNECTED),
+                 quint32(NM_DEVICE_STATE_REASON_NONE)})},
             {QStringLiteral("Managed"), m_security != QLatin1String("hidden-unmanaged")},
             {QStringLiteral("Autoconnect"), true},
             {QStringLiteral("FirmwareMissing"), false},

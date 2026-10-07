@@ -13,8 +13,9 @@ class HiddenTransport final : public NetworkTransport {
 public:
   bool start(QString *) override { return true; }
   void stop() override {}
-  void requestSnapshot(quint64 token, const QString &owner) override {
-    Q_EMIT snapshotReceived(token, owner,
+  void requestSnapshot(quint64 requestToken,
+                       const QString &requestOwner) override {
+    Q_EMIT snapshotReceived(requestToken, requestOwner,
                             encodeSnapshot(validSnapshot()).payload);
   }
   void requestOperation(quint64 t, const QString &o, quint64 e, quint64 r,

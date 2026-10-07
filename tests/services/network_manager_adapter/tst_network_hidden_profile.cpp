@@ -179,7 +179,25 @@ void HiddenProfileTests::actualSelectedDeviceAndRefusal() {
   QSignalSpy facts(&port, &NetworkManagerPort::factsReady);
   QSignalSpy outcomes(&port, &NetworkManagerPort::operationFinished);
   QVERIFY(port.start());
-  QTRY_VERIFY(!facts.isEmpty());
+  // Initial facts may precede libnm device hydration; admission must use the
+  // same current observed device/radio state that production requires.
+  QTRY_VERIFY(!facts.isEmpty() &&
+              !facts.last().first().value<Facts>().devices.isEmpty());
+  const auto observed = facts.last().first().value<Facts>();
+  QCOMPARE(observed.devices.first().state,
+           scenario == QStringLiteral("hidden-unmanaged") ? DeviceState::Unavailable
+                                                         : DeviceState::Disconnected);
+  // Check the real libnm interpretation, not just the fake D-Bus property.
+  std::unique_ptr<NMClient, decltype(&g_object_unref)> modeledClient(
+      nm_client_new(nullptr, nullptr), &g_object_unref);
+  QVERIFY(modeledClient);
+  const GPtrArray *modeledDevices = nm_client_get_devices(modeledClient.get());
+  QVERIFY(modeledDevices != nullptr && modeledDevices->len == 1);
+  auto *modeledDevice = NM_DEVICE(g_ptr_array_index(modeledDevices, 0));
+  QCOMPARE(nm_device_get_state(modeledDevice),
+           scenario == QStringLiteral("hidden-unmanaged") ? NM_DEVICE_STATE_UNMANAGED
+                                                         : NM_DEVICE_STATE_DISCONNECTED);
+  QCOMPARE(nm_device_get_state_reason(modeledDevice), NM_DEVICE_STATE_REASON_NONE);
   Service::BackendOperationRequest request;
   request.kind = OperationKind::ConnectKnownNetwork;
   request.hiddenJoin = ConnectHiddenIntent{
