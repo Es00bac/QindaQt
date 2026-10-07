@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — independent ordinary review repairs authored with direct old-source negative fixtures; awaiting next exact compiler/consumer lease after root readonly recheck
+- Status: working — ordinary compiler/private-fixture lease active; repairing direct strict compiler failures then running exact action and consumer gates
 - Branch: worker/everyday-media-delivery-20261007
 - Worktree: everyday-media-delivery-20261007
 - Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
@@ -27,3 +27,5 @@
 - 2026-10-07T22:07:31+00:00: Post-freeze audit found final removal also needs immediate selected/sibling Block replacement revocation before debounce, beyond Drive identity changes. Added owning fence and drive/block data rows; success with no final removal mode is normalized to Uncertain. No compiler or action qualification. Read ADR0064 and current cross-device/Trash/link restrictions for next reviewed storage contract.
 
 - 2026-10-07T22:16:46+00:00: Astra exactce338 source review found overwrite-modal acceptance revocation, first-prefix nested-root association and never-active Commander pane provenance. Authored post-modal/final selection-generation guards, most-specific unique-root matching with overmount revocation, and FolderNavigations creation/all-controller observation seam. Added real modal owner/RO/navigation cases, reversed-order nested-root losses and never-active pane loss; stale future-tense File Manager docs corrected. Runtime remains unrun; compiler idle.
+
+- 2026-10-07T22:25:44+00:00: Exact2f831 strict full focused build reached575/1009 commands then failed on missing QDBusMessage definition and shadowed removal-reply drive variable. Corrected both owned files; no runtime test claim yet. Isolated configure matches installed /usr/libexec fixed authority paths; no owning guard bypass.

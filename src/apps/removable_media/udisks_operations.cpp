@@ -180,8 +180,8 @@ void UDisksBackend::runNext()
             return;
         }
         if (method == QStringLiteral("Eject") || method == QStringLiteral("PowerOff")) {
-            const auto currentDrive = m_objects.value(QDBusObjectPath(m_expected.drive)).value(Drive);
-            if (m_removalReplacementSeen || (!currentDrive.isEmpty() && physicalMediaIdentity(m_expected.drive, currentDrive) != m_expected.driveIdentity)) {
+            const auto repliedDrive = m_objects.value(QDBusObjectPath(m_expected.drive)).value(Drive);
+            if (m_removalReplacementSeen || (!repliedDrive.isEmpty() && physicalMediaIdentity(m_expected.drive, repliedDrive) != m_expected.driveIdentity)) {
                 finish(false, QStringLiteral("The drive changed before safe removal was confirmed."), {},
                        QindaQt::RemovableMedia::OperationStatus::Uncertain);
                 return;

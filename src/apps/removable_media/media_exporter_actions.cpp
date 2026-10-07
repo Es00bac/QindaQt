@@ -3,6 +3,7 @@
 #include "media_public_projection.h"
 #include <qindaqt/services/removable_media_protocol/media_codec.h>
 #include <QDBusError>
+#include <QDBusMessage>
 #include <QUuid>
 
 namespace QindaQt::Apps::RemovableMedia {
