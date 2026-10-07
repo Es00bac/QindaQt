@@ -2,6 +2,7 @@
 #include "libnm_network_manager_port_p.h"
 #include <memory>
 #include <qindaqt/services/network_protocol/network_identity.h>
+#include <qindaqt/services/network_protocol/network_limits.h>
 
 namespace QindaQt::Network::NetworkManager {
 bool hiddenDeviceSecuritySupported(const quint32 capabilities) noexcept {
@@ -37,6 +38,12 @@ void LibnmNetworkManagerPort::submitHiddenConnect(
           nm_device_wifi_get_capabilities(NM_DEVICE_WIFI(device)))) {
     completeAsync(operationId, false,
                   QStringLiteral("hidden-network-security-unsupported"));
+    return;
+  }
+  if (intent.ssid.isEmpty() || intent.ssid.size() > kMaxSsidRawBytes ||
+      !isPresentationSafeText(intent.ssid)) {
+    completeAsync(operationId, false,
+                  QStringLiteral("hidden-network-ssid-invalid"));
     return;
   }
   const QByteArray ssid = intent.ssid.toUtf8();

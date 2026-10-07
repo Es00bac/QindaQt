@@ -76,3 +76,5 @@
 - 2026-10-07T22:38:45+00:00 — ED08 owning boundary checker extension explicitly approved: exact two metadata signatures/one literal SSID field; second/password/oversize poisons authored. Private adapter actual-dispatch fixture authored. Compiler idle awaiting serialized lease.
 
 - 2026-10-07T22:41:02+00:00 — ED08 source authoring complete; static docs524/MkDocs/Network1/Settings/editor-poison/diff gates exit0. Seven new hidden fixtures plus owning regression targets queued, uncompiled. Waiting for root serialized native lease; readonly Media lock guidance delivered without edits.
+
+- 2026-10-07T22:42:37+00:00 — ED08 source-only direct-seam audit tightened transport byte/Unicode/security admission and private adapter pre-encoding bound; authored hostile fixture assertions. Native lease still pending, no runtime claims.

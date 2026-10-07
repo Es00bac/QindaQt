@@ -166,6 +166,19 @@ void HiddenTransportTests::newServicePendingAndReply() {
               .succeeded());
   QCOMPARE(result.kind, OperationKind::ConnectKnownNetwork);
   QCOMPARE(result.status, OperationStatus::Succeeded);
+  QSignalSpy failures(&transport, &NetworkTransport::requestFailed);
+  for (const QString &bad :
+       {QString(33, u'x'), QString(17, QChar(0x00e9)), QString(QChar(0xd800)),
+        QStringLiteral("line\nbreak")}) {
+    transport.requestOperation(
+        4, owner, decoded.epoch, decoded.revision,
+        OperationKind::ConnectKnownNetwork,
+        {{QStringLiteral("deviceInterface"), QStringLiteral("wlan0")},
+         {QStringLiteral("ssid"), bad},
+         {QStringLiteral("security"), quint32(SecuritySuite::Wpa2Personal)}});
+  }
+  QCOMPARE(failures.size(), 4);
+  QCOMPARE(backend->calls.size(), 1);
   transport.stop();
   service->stop();
   service.reset();
