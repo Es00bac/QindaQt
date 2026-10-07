@@ -1,0 +1,11 @@
+# ED17 exact scoped-context candidate handoff
+- Time: 2026-10-07T21:28:57+00:00
+- Candidate: b394effff64d007d2a022ddaa7ca3a88424467ed.
+- Base: f601445c4; branch worker/everyday-foreign-architecture-20261007, preserved in qinda hub.
+- Changed paths: docs/wiki/adr/0353-scoped-desktop-agent-context.md; docs/wiki/architecture/desktop-agent-context.md; tests/design/desktop_agent_context_contract.py; minimal mkdocs.yml/ADR index additions; own worker and ED17 claim/verification records.
+- Existing ED20 ADR/architecture/proof exactly unchanged from c5cdccf319138fa3135e973fbe30590c4bd50a51.
+- Verification: python3 tests/design/desktop_agent_context_contract.py exit 0 (17 cases); python3 tools/validate-docs exit 0 (523 documents); mkdocs build --strict exit 0; git diff --check exit 0.
+- Critical contract: provider-owned additive scoped authority, exact principal/resource/revision/grant/privacy binding, no v1 broad-grant fallback, independent portal/window permissions, grant renewal cannot revive old unexecuted proposals, revoke-before-read/receipt, pre-execution dedup reservation and non-evicting receipts.
+- Caveats: model assumes authenticated fixture peers; production SDK admission/transport/GUI/native-lock/installed journey absent. No ED17 completion claim.
+- Requested next action: independent exact critical review then ED17a public QindaTK scoped policy/host seam in a fresh isolated toolkit worktree at its current hub. First real journey is one Calc Read grant; defer semantic commit until read/privacy transport is qualified.
+- Concrete help offer: worker can implement hardest scoped admission/replay policy after accepted review, or design ED05 cross-filesystem move contract; current production slice path/acceptance table is in owning architecture page. No compiler/runtime resource held.

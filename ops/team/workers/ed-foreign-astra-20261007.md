@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — designing ED17 scoped desktop-agent authority from actual toolkit/provider/portal contracts
+- Status: available — ED17 and ED20 exact candidates await critical review; production routing prepared
 - Outcome: proposed ADR-0353 scoped desktop context and negative design proof; ED20 c5cdccf31 remains immutable under manager review
 - Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
 - Branch: worker/everyday-foreign-architecture-20261007
@@ -13,3 +13,4 @@
 - 2026-10-07T21:21:31+00:00: Revised exact candidate c5cdccf319138fa3135e973fbe30590c4bd50a51 includes upstream title-provenance evidence. Source handoff finished; no live compiler/runtime work claimed. Ready for review repairs, ED17/ED05 hard contracts or accepted ED21/22 implementation.
 - 2026-10-07T21:22:29+00:00: Claimed ED17 ADR0353/architecture/desktop-agent-context.md/tests/design/desktop_agent_context_contract.py with minimal navigation; no compiler or runtime lease. QindaTK hub/checkout 393c1ce5 match; unrelated .obsidian directory preserved.
 - 2026-10-07T21:28:11+00:00: ED17 actual-source audit confirms QindaTK v1 cooperative same-UID grants, not per-task isolation. Proposed scoped extension preserves provider semantics/receipts; 17 negative design cases, docs523, strict MkDocs and diff check pass. Exact first production slice routing prepared.
+- 2026-10-07T21:28:57+00:00: ED17 candidate b394effff64d007d2a022ddaa7ca3a88424467ed handed off for exact critical review. Read Platform queue and offered ED17a toolkit scoped policy/host seam or ED05 hard contract next. No compiler/runtime lease or unattended working claim.
