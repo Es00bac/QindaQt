@@ -94,3 +94,12 @@ Per-volume Trash can be implemented and qualified without mount authority,
 descriptor-relative traversal becomes a shared cross-application boundary, or
 multi-operation recovery needs a durable journal rather than one-level
 process-local state.
+
+## 2026-10-07 failed-copy safety proposal
+
+[ADR-0357](0357-preserve-failed-copy-output-without-cleanup-authority.md) proposes
+superseding only this decision's automatic failed-copy cleanup requirement.
+Actual old-source tests showed that cleanup could delete pre-existing or replaced
+destination data. The historical decision above remains recorded; the proposed
+repair preserves failed output and reports bounded observations. Cross-device
+Move and source-retirement recovery are not implemented by that repair.

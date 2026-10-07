@@ -249,6 +249,7 @@ void MutationController::clearFailure() {
   }
   m_failure = MutationError::None;
   m_failureMessage.clear();
+  m_outputNotice.clear();
   emit stateChanged();
 }
 
@@ -278,6 +279,8 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
   m_failure = MutationError::None;
   m_failureMessage.clear();
   m_resultText.clear();
+  m_outputNotice.clear();
+  m_outputObservations.clear();
   m_progressValue = 0;
   m_progressText = QStringLiteral("Starting file operation");
   m_isUndo = isUndo;
@@ -306,7 +309,9 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
       m_workerContext,
       [guard, backend, request = std::move(request), cancellation,
        progress = std::move(progress)]() mutable {
-        const MutationResult result = backend->execute(request, cancellation, progress);
+        MutationResult result = backend->execute(request, cancellation, progress);
+        result.itemOutcomes = {{true, request.sourcePath, request.destinationPath,
+                                result.error, result.outputObservation}};
         if (guard) {
           QMetaObject::invokeMethod(guard, [guard, result]() {
             if (guard) {
@@ -384,6 +389,8 @@ bool MutationController::submitRequests(MutationKind kind,
   m_failure = MutationError::None;
   m_failureMessage.clear();
   m_resultText.clear();
+  m_outputNotice.clear();
+  m_outputObservations.clear();
   m_progressValue = 0;
   m_progressText = QStringLiteral("Starting file operation");
   m_isUndo = false;
@@ -414,9 +421,16 @@ bool MutationController::submitRequests(MutationKind kind,
         int completed = 0;
         MutationResult outcome;
         QSet<QString> written;
+        QVector<MutationItemOutcome> items;
+        items.reserve(requests.size());
+        for (const auto &request : requests)
+          items.append({false, request.sourcePath, request.destinationPath,
+                        MutationError::None, {}});
+        qsizetype itemIndex = 0;
         for (MutationRequest &request : requests) {
           acceptOwnWrites(request, written);
           if (cancellation->load(std::memory_order_relaxed)) {
+            outcome = {};
             outcome.error = MutationError::Cancelled;
             outcome.diagnostic =
                 QStringLiteral("Cancelled after %1 of %2 items")
@@ -424,21 +438,23 @@ bool MutationController::submitRequests(MutationKind kind,
                     .arg(total);
             break;
           }
-          const int itemIndex = completed;
-          auto itemProgress = [&progress, itemIndex, total,
+          const int progressIndex = completed;
+          auto itemProgress = [&progress, progressIndex, total,
                                &request](const MutationProgress &update) {
             MutationProgress forwarded;
-            forwarded.completedItems = itemIndex;
+            forwarded.completedItems = progressIndex;
             forwarded.totalItems = total;
             forwarded.accessibleText =
                 QStringLiteral("Item %1 of %2 (%3): %4")
-                    .arg(itemIndex + 1)
+                    .arg(progressIndex + 1)
                     .arg(total)
                     .arg(QFileInfo(request.sourcePath).fileName())
                     .arg(update.accessibleText);
             progress(forwarded);
           };
           outcome = backend->execute(request, cancellation, itemProgress);
+          items[itemIndex++] = {true, request.sourcePath, request.destinationPath,
+                                outcome.error, outcome.outputObservation};
           if (!outcome.ok()) {
             outcome.diagnostic =
                 QStringLiteral("Completed %1 of %2 items; %3: %4")
@@ -451,6 +467,7 @@ bool MutationController::submitRequests(MutationKind kind,
           recordWrites(request, written);
           ++completed;
         }
+        outcome.itemOutcomes = std::move(items);
         if (outcome.ok()) {
           outcome.trashToken.clear();
           outcome.undoRequest.reset();
@@ -471,44 +488,10 @@ bool MutationController::submitRequests(MutationKind kind,
   return true;
 }
 
-void MutationController::finish(const MutationResult &result) {
-  m_busy = false;
-  m_progressValue = result.ok() ? 100 : 0;
-  m_progressText.clear();
-  m_cancellation.reset();
-  if (!result.ok()) {
-    m_failure = result.error;
-    m_failureMessage = boundedMutationDiagnostic(result.diagnostic);
-    m_resultText.clear();
-    m_isUndo = false;
-    emit stateChanged();
-    return;
-  }
-  m_failure = MutationError::None;
-  m_failureMessage.clear();
-  m_resultText = m_isUndo ? QStringLiteral("Operation undone")
-                 : result.diagnostic.isEmpty()
-                     ? QStringLiteral("File operation completed")
-                     : boundedMutationDiagnostic(result.diagnostic);
-  m_undoRequest = m_isUndo ? nullptr : result.undoRequest;
-  m_isUndo = false;
-  if (!result.trashToken.isEmpty() && result.outputIdentity) {
-    m_lastTrashToken = result.trashToken;
-    m_lastTrashOriginalPath = result.originalPath;
-    m_lastTrashIdentity = result.outputIdentity;
-  } else if (m_runningKind == MutationKind::Restore ||
-             m_runningKind == MutationKind::EmptyTrash) {
-    m_lastTrashToken.clear();
-    m_lastTrashOriginalPath.clear();
-    m_lastTrashIdentity.reset();
-  }
-  emit stateChanged();
-  emit mutationCommitted();
-}
-
 void MutationController::fail(MutationError error, const QString &message) {
   m_failure = error;
   m_failureMessage = boundedMutationDiagnostic(message);
+  m_outputNotice.clear();
   emit stateChanged();
 }
 
