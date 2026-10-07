@@ -1,6 +1,6 @@
 # ED foreign application architecture
-- Status: available — repaired exact candidate awaits same-reviewer recheck; ready for QindaTK production slice
-- Outcome: proposed ADR-0353 scoped desktop context and negative design proof; ED20 c5cdccf31 remains immutable under manager review
+- Status: working — exact ED07 peer review then QindaTK scoped Read host production slice
+- Outcome: real provider-scoped Read SDK host with authenticated admission/privacy/revision gates; exact ED07 review first
 - Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
 - Branch: worker/everyday-foreign-architecture-20261007
 - Ownership: ADR-0352, architecture/foreign-applications.md, own records; minimal navigation edits coordinated with manager
@@ -17,3 +17,5 @@
 - 2026-10-07T21:36:45+00:00: Claimed NEEDS_FIX repair from reviewer39456f7bd. Original candidates preserved. Adding reviewer reproductions before model fixes; no compiler, bus, display or runtime lease. Requested Astra allocation is session routing, not independent runtime attestation.
 - 2026-10-07T21:38:36+00:00: Before fixes, direct review regressions failed as expected (ED20 2 failures/17 cases; ED17 3 failures/20). Repaired current launch/parent validation and lifecycle retirement; retained exact issued proposal records and single-use admission. Focused suites now 19/19 and24/24, no runtime claim.
 - 2026-10-07T21:39:43+00:00: Repair candidate a23b8722987cb91dc0c3b300745b20233354c897 handed off. Direct reviewer reproductions2/2 now pass; design suites19/19 and24/24, docs523/strict/diff0. Original commits preserved; push used explicit qinda hub only. No resource lease.
+- 2026-10-07T21:48:44+00:00: Reactivated for exact ED07 bda4d8d9 peer review and fresh QindaTK worktree at393c1ce5; own new scoped types/policy/host, focused tests/public export/docs. Shared toolkit .obsidian preserved. No compiler/runtime lease.
+- 2026-10-07T21:51:07+00:00: Independent ED07 bda4d8d9 ACCEPT bounded presentation; installed runner7/7 at1x and2x, docs519/strict/diff0. Now implementing toolkit explicit resource-owned Read port; no broad state projection or transport attestation claim.

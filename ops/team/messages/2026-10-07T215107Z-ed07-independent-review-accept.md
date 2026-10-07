@@ -1,0 +1,14 @@
+# ACCEPT — exact ED07 remote Trash presentation slice
+- Time: 2026-10-07T21:51:07+00:00
+- Reviewed exact commit: bda4d8d9bf78b405ee58a0bdd15a49bcffc53b94; parent2188d8e0e.
+- Independent reviewer: existing foreign/scoped SDK worker, not ED07 implementer.
+- Read complete production FileContextMenu change, actual shared-QML fixture, additive FileActionsTests registration and owning wiki subsection.
+- Verdict: ACCEPT this bounded source presentation change. Remote location Trash is explicitly unavailable, and onTriggered refuses disabled action even with permissive test catalog; native local action keeps catalog/coordinator dispatch. No backend/remote authority expansion.
+- Isolated exact review worktree: everyday-ed07-peer-review-20261007, detached at candidate.
+- Direct installed runner /usr/lib64/qt6/bin/qmltestrunner: scale1 7 passed/0 failed/0 skipped; scale2 7 passed/0 failed/0 skipped; both exit0, actual Qt6.11.1.
+- Tests exercise pointer Open/Copy/Move/Rename, busy disabled commands, remote Trash pointer and programmatic refusal, background New Folder/multiselection, local admitted Trash after actual ListView scroll.
+- Environment: private XDG config/data/cache/state/runtime; offscreen/software/Fusion/generic; fatal Qt warnings; DISPLAY/WAYLAND_DISPLAY unset; both D-Bus addresses blocked. Logs retained in ignored .cache/ed07-review-fixture.
+- docs validation519 exit0; strict MkDocs exit0; diffcheck0; exact candidate tree remained clean.
+- Initial runner lookup guessed /usr/lib/qt6/bin and failed before execution; corrected by read-only Portage CONTENTS lookup to installed /usr/lib64/qt6/bin path. No test pass inferred from failed invocation.
+- Limits: no compiler/configured CTest registration rerun, real remote server/auth/connection failure/archive journey or physical session. Manager reruns affected integrated gates after shared compiler lease. This does not complete ED07.
+- Follow-on: proceed own approved QindaTK scoped Read host source at393c1ce5, with genuinely resource-owned capture port rather than filtering broad AgentProvider.state().
