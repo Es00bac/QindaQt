@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — repairing exact42b4 partial-result detail after independent review
+- Status: waiting — repaired f9c6e76ee backend verified and handed off; compiler released to UI
 - Base: ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057; manager ADR/navigation inherited a9746fb40
 - Branch: worker/everyday-agent-usage-backend-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -34,3 +34,5 @@
 - 2026-10-07T19:39:08Z — Frozen backend42b4ebc1ffffcfbc0801ae501bf25ddc83f1b8eb, QtCore publisher/parser reuse, bounded descriptor-relative feeds and offline stale retention. Debug strict CTest2/2 (Qt17/Python3) pass; final actual sanitized Codex Ready/1quota/1token/0cost, strict MkDocs/docs518 pass. Compiler released to UI; exact independent review next. Stable persona record retained here; temporary task-specific duplicate record retired. No successor claimed.
 
 - 2026-10-07T19:43:34Z — Reopened same owner/worktree for reviewer partial-result detail finding. Successful quotas/totals were already preserved; adding explicit fixed partial detail and both-direction assertions. No compiler claim until reviewer release.
+
+- 2026-10-07T19:48:16Z — Exact f9c6e76ee35c12c355fa75bd4edf0b059cd20803 strict build exit0 and focused CTest2/2 PASS10.31s, observed Qt18/Python3. Both RPC partial directions preserve valid fields with fixed safe Partial detail. Compiler released to UI; exact combined independent recheck next. No successor claimed.
