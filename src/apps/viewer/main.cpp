@@ -44,18 +44,7 @@ int main(int argc, char **argv)
         std::fprintf(stderr, "qindaqt-viewer: %s\n", qPrintable(error.message));
         return 1;
     }
-    const auto updateActions = [&] {
-        for (const auto &action : actions) {
-            bool enabled = true;
-            if (action.menuId == QStringLiteral("view")) enabled = viewer.ready();
-            if (action.id == QStringLiteral("file.close")) enabled = !viewer.fileName().isEmpty();
-            if (action.id == QStringLiteral("view.previous") || action.id == QStringLiteral("view.first"))
-                enabled = viewer.ready() && viewer.page() > 0;
-            if (action.id == QStringLiteral("view.next") || action.id == QStringLiteral("view.last"))
-                enabled = viewer.ready() && viewer.page() + 1 < viewer.pageCount();
-            static_cast<void>(coordinator.setActionEnabled(action.id, enabled));
-        }
-    };
+    const auto updateActions = [&] { updateViewerActions(coordinator, viewer); };
     QObject::connect(&viewer, &QindaQt::Viewer::ViewerController::stateChanged, &coordinator, updateActions);
     updateActions();
 

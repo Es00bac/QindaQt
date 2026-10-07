@@ -23,6 +23,9 @@ void ViewerUiTest::documentInteractionAndLayouts()
     QindaQt::Viewer::ViewerController viewer;
     QindaQt::AppShell::ApplicationCoordinator coordinator;
     QVERIFY(coordinator.replaceActions(QindaQt::Viewer::viewerActions()).ok());
+    connect(&viewer, &QindaQt::Viewer::ViewerController::stateChanged, &coordinator,
+            [&] { QindaQt::Viewer::updateViewerActions(coordinator, viewer); });
+    QindaQt::Viewer::updateViewerActions(coordinator, viewer);
     QQmlApplicationEngine engine;
     QSignalSpy warnings(&engine, &QQmlEngine::warnings);
     auto *provider = new QindaQt::Viewer::FrameProvider;
