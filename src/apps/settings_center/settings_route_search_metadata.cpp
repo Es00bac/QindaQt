@@ -162,6 +162,8 @@ const char *routeKeywords(SettingsRouteComponent component) {
   case SettingsRouteComponent::PortalPermissions:
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "portal, permission, consent, revoke, screen sharing, remote desktop");
+  case SettingsRouteComponent::Printing:
+    return QT_TRANSLATE_NOOP("SettingsSearch", "printer, printing, cups, scanner, scanning, scan, document");
   case SettingsRouteComponent::Keyring:
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "password, passwords, keys, keyring, wallet, secret, collection, credentials");

@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — implementing ED11 delegated printer/scanner Settings route, fixed public catalog/argv boundary and focused source fixtures; compiler resources idle
+- Status: working — freezing ED11 fixed-owner printer/scanner Settings source and executable focused/installed fixture packet for independent review; compiler resources idle
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
 - Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
 - Ownership: new settings/printing module/tests/wiki/ADR0356; approved minimal SettingsCenter route/host/search/CMake and docs wiring
-- Next gate: exact ED11 source freeze, independent root review and leased focused/installed/poison/DPI2 validation; hardware/Portage journey separate
+- Next gate: independent exact ED11 review and leased focused/installed/poison/DPI 2 validation; hardware/Portage journey separate
 
 ## Updates
 
@@ -43,3 +43,5 @@
 - 2026-10-07T22:59:30+00:00: Read current First-party/Platform queues after handoff and offered Platform the exact scanner packaging facts. Existing printer owner source contains connection dialog/retry, test-page and job-cancellation error paths; no runtime claim. Readonly inventory complete; transitioning to available while manager assigns fresh source ownership. All source/evidence commits preserved and all resources remain released.
 
 - 2026-10-07T23:04:59+00:00: Fetched hub main and confirmed exact1a205444cff9264ac0b21a3968506133132db5bc, created fresh isolated printing worktree/branch. Root approved inventory paths/ADR0356. Platform confirms no Network collision; coordinated additive shared CMake. Source authoring only; no compiler, private runtime, service/device/job or Portage action.
+
+- 2026-10-07T23:25:51+00:00: Authored fixed public catalog/argv collaborators, shared compiled Printing route 24 and own-prefix preflight, preserving the prior 23 route indices. Added model/catalog and real page keyboard/compact/normal/DPI 2 fixtures plus relocated withheld-module/restoration gate; corrected affected stale route-count fixtures. Docs links 526 exit 0, strict MkDocs exit 0, new production 11 and test 6 source-shape files zero issues, diff check exit 0. Existing Main.qml 424 shape debt recorded in ADR; registry 484/main 473 stay below 500. No compiler, CTest, installed application launch, service/device/job or hardware qualification claim.

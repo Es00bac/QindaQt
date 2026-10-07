@@ -9,6 +9,7 @@ import QindaQt.SettingsApp.LoginScreen
 import QindaQt.SettingsApp.Voice
 import QindaQt.SettingsApp.Keyring
 import QindaQt.SettingsApp.PortalPermissions
+import QindaQt.SettingsApp.Printing
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -106,6 +107,14 @@ QtObject {
         PortalPermissionsPage {
             objectName: "portalPermissionsPage"
             permissions: PortalPermissionsRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    readonly property Component printing: Component {
+        PrintersScannersPage {
+            objectName: "printersScannersPage"
+            printingSettings: PrintingRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

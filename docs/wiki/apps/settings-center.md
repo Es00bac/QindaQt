@@ -1,11 +1,11 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. Its registry currently contains **23 routes**, in
+modular settings routes. Its registry currently contains **24 routes**, in
 stable order: Notifications, Appearance, Display, Network, Customize, Audio,
 Bluetooth, Power, Clipboard, Color, Accessibility, Input, Streaming,
 Date & time, Windows & workspaces, Default applications, About this computer,
-Startup applications, Screen saver, Login screen, Voice, Passwords & Keys, and Portal permissions.
+Startup applications, Screen saver, Login screen, Voice, Passwords & Keys, Portal permissions, and Printers & scanners.
 The shell owns route identity, selection, responsive presentation, and navigation
 accessibility. Each route owns its domain model, service scope, page state,
 and mutations. Appending a route must preserve existing indices and digit
@@ -26,12 +26,13 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 [About this computer](about-this-computer.md),
 [Startup applications](startup-settings.md),
 [Screen saver](screensaver-settings.md),
-[Login screen](login-screen-settings.md), [Voice](voice-settings.md), and
-[Passwords & Keys](keyring-settings.md) and [Portal permissions](portal-permissions-settings.md) pages.
+[Login screen](login-screen-settings.md), [Voice](voice-settings.md),
+[Passwords & Keys](keyring-settings.md), [Portal permissions](portal-permissions-settings.md),
+and [Printers & scanners](printers-scanners-settings.md) pages.
 Notifications includes Do Not Disturb, Quiet Hours, and per-application
 mute/sound controls; their shell policy is documented under
 [notification presentation](../shell/notification-presentation.md).
-The [23-route completeness inventory](../reference/settings-completeness.md)
+The [24-route completeness inventory](../reference/settings-completeness.md)
 separates registered pages from effective controls and outstanding gaps.
 Route construction or installed-package success does not establish physical
 Bluetooth pairing, battery/lid behavior, color calibration, network radio
@@ -52,8 +53,8 @@ Route IDs are 1–64 lowercase ASCII alphanumeric, hyphen, or underscore
 characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
-must not hide one. The closed component kind maps to one of the 23
-compiled route components, from Notifications through Portal permissions. It is not a QML URL, plugin path, or service locator.
+must not hide one. The closed component kind maps to one of the 24
+compiled route components, from Notifications through Printers & scanners. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page <id>` for any ID in the default
 registry. `--list-routes` emits those IDs in registry order for package
@@ -213,6 +214,14 @@ layouts or routes cannot duplicate a page, its focus side effects, or its
 settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
+
+Printers & scanners owns one engine-local catalog/starter/model composition
+and an ordinary shared compiled route module. It resolves fixed installed tool
+identities through public ApplicationCatalog, rereads on deliberate launch,
+and projects missing-tool/refusal/submission truth without service or device
+authority. The page remains discoverable with all tools absent; refresh never
+launches or repeats an action. The [owning route](printers-scanners-settings.md)
+defines literal argv, keyboard and installed-module poison gates (ADR-0356).
 
 ## Responsive interaction
 
