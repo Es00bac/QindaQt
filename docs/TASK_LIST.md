@@ -1,3 +1,22 @@
+# October 7 — Everyday desktop implementation started
+
+The owner now explicitly authorizes implementation with Codex as orchestrator.
+The earlier audit remains evidence provenance. Current source base is
+`f152d6c9ee04f99c01d4ca07c4dcb46701a42800`; overlay base
+`e62153bc6b1ed54fbda97e63c70bc918e8588bb7`. Isolated qinda manager and
+worker worktrees preserve existing dirty checkouts.
+
+First dispatch: Everyday Platform Sol prepares one coherent reliability delivery
+for ED-01–03; Everyday Files Sol repairs the already documented Network disk
+fallback package prerequisite. Everyday Review Sol reviews exact candidates
+independently. Shared full-package compiler/private-runtime fixtures serialize.
+Packets and timestamped receipts live under
+`ops/team/messages/everyday-desktop-implementation-20261007/`.
+
+No completion or installed adoption is claimed by dispatch. Physical
+unlock/suspend/login and owner-entered authentication remain separate gates;
+implementation authority does not require disrupting the owner's open desktop.
+
 # October 7 — Everyday desktop audit and proposed usability queue
 
 The owner requested **audit, review and documentation only**, with coding by
