@@ -36,8 +36,9 @@ Collection reads bounded normalized reports in
 `$XDG_CONFIG_HOME/qindaqt/agent-usage/reports` (normally
 `~/.config/qindaqt/agent-usage/reports`). Use the installed
 `qindaqt-agent-usage-report` tool to validate/write a provider report, or
-normalize the supported Claude statusline payload. The report tool's help
-describes its schema and arguments. Configure the provider tool separately;
+normalize the supported Claude statusline payload. The report tool's `--help` lists CLI arguments;
+[Agent usage reports](../reference/agent-usage-reports.md) defines the normalized
+schema. Configure the provider tool separately;
 the shell has no account credential entry or account authorization surface.
 
 Codex collection uses the configured local Codex program's documented stdio
@@ -67,7 +68,8 @@ the Codex CLI retains ownership of its account metadata transport.
 The summary button is keyboard focusable and exposes its purpose through an
 accessible name and description. Enter/Space or an accessible press opens the
 shared [PanelPopup](panel-popup-placement.md); Escape closes it. The popup
-scrolls bounded content for compact resolutions and retains text descriptions
+scrolls bounded content for compact resolutions through the keyboard Arrow keys
+after Tab reaches Refresh, or through the mouse wheel, and retains text descriptions
 for provider state, remaining limits, resets and cost.
 
 ## Verification
@@ -75,7 +77,7 @@ for provider state, remaining limits, resets and cost.
 | Gate | Evidence |
 | --- | --- |
 | `qindaqt.agent-usage-applet` | Unknown versus zero, overage clamp, independent scopes, owning source lifetime, pure freshness without refresh, audited constructor denial and shipped third-party denial |
-| `qindaqt.agent-usage-applet-offscreen` | Compiled QML PlainText hostile metadata, denied popup, Space/Refresh/Escape/focus target, mouse reopen, horizontal and compact vertical panels |
+| `qindaqt.agent-usage-applet-offscreen` | Compiled QML PlainText hostile metadata, denied popup, Space/Refresh/Escape/focus target, mouse reopen, Tab-to-Refresh Arrow and wheel reachability, horizontal and compact vertical panels |
 | `qindaqt.agent-usage-applet-boundary` | Presentation contains no collection, file/process/network or private collector access |
 | Manifest/catalog/runtime resolution | 35 manifests, audited capability/registry and one usage placement in each of all 11 stock profiles; all four panel edges |
 | Icon coverage and panel access threading | Packaged QindaQt/Breeze glyph and full runtime host-to-dispatcher property path |
@@ -84,7 +86,7 @@ for provider state, remaining limits, resets and cost.
 | Documentation | Strict MkDocs and repository link/nav checker pass on the combined 519-document UI/backend topology |
 
 The source/controller row has eight QtTest passes including fixture lifecycle;
-the QML row has six passes including both panel orientations, at each DPI.
+the QML row has seven passes including both panel orientations, at each DPI.
 Actual provider account limits require provider-supplied metadata or reports;
 the fixture tests do not claim an installed session, physical desktop or live
 account qualification.

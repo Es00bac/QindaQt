@@ -12,6 +12,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
+#include <QWheelEvent>
 #include <QtTest>
 #include <memory>
 #include <utility>
@@ -122,6 +123,78 @@ private slots:
         auto *diagnostic=findVisual(h.content(),QStringLiteral("agentUsageDiagnostic"));
         QVERIFY(diagnostic); QVERIFY(diagnostic->property("text").toString().contains("denied"));
         QVERIFY(!findVisual(h.content(),QStringLiteral("agentUsageProviderRow")));
+        QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Escape);
+        QTRY_VERIFY(!h.popup()->property("opened").toBool());
+    }
+    void compactPopupScrollReachesLastProviderAndFooter() {
+        Harness h; QString error;
+        QVERIFY2(h.load(QSize(480,30),false,&error),qPrintable(error));
+        QTRY_VERIFY(h.window.isExposed());
+        auto *summary=h.root->findChild<QQuickItem *>(QStringLiteral("agentUsageAppletSummary"));
+        summary->forceActiveFocus();
+        QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Space);
+        QTRY_VERIFY(h.popup()->property("opened").toBool());
+        auto *scroll=h.content();
+        auto *flickable=scroll->property("contentItem").value<QQuickItem *>();
+        QVERIFY(flickable);
+        auto *footer=findVisual(scroll,QStringLiteral("agentUsageSetup"));
+        QVERIFY(footer);
+        const auto footerReached=[&] {
+            return footer->mapToItem(scroll,QPointF(0,footer->height())).y()
+                <= scroll->height()+1;
+        };
+        if (flickable->property("contentHeight").toReal()>flickable->height()+1) {
+            auto *refresh=findVisual(scroll,QStringLiteral("agentUsageRefresh"));
+            QVERIFY(refresh);
+            // Reach the ordinary first action through the actual popup Tab
+            // route; never force focus on an otherwise unreachable scroller.
+            for (int i=0;i<12 && !refresh->hasActiveFocus();++i)
+                QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Tab);
+            QTRY_VERIFY(refresh->hasActiveFocus());
+            // ScrollView exposes its vertical scrollbar's standard arrow
+            // route; PageDown is not handled by this Qt control instance.
+            for (int i=0;i<32;++i)
+                QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Down);
+            QTRY_VERIFY(footerReached());
+            QVERIFY(flickable->property("contentY").toReal()>0);
+            // Reset only isolated harness scroll state, then exercise genuine
+            // wheel dispatch through its popup window rather than setting the
+            // final content position directly.
+            flickable->setProperty("contentY",0);
+            const QPointF point=scroll->mapToScene(QPointF(scroll->width()/2,scroll->height()/2));
+            auto *window=scroll->window();
+            QTest::mouseMove(window,point.toPoint());
+            QTest::qWait(50);
+            const qreal beforeWheel=flickable->property("contentY").toReal();
+            for (int i=0;i<80 && !footerReached();++i) {
+                QWheelEvent wheel(point,window->mapToGlobal(point.toPoint()),
+                    QPoint(),QPoint(0,-120),Qt::NoButton,Qt::NoModifier,
+                    Qt::NoScrollPhase,false);
+                // AGENT-GUARD: Qt rejects repeated wheel events stamped at
+                // the same instant; synthetic ticks need real elapsed cadence.
+                wheel.setTimestamp(static_cast<quint64>(1000+i*200));
+                QCoreApplication::sendEvent(window,&wheel);
+                QTest::qWait(200);
+            }
+            QVERIFY(flickable->property("contentY").toReal()>beforeWheel);
+            QTRY_VERIFY2(footerReached(),qPrintable(QStringLiteral("wheel y=%1 height=%2 viewport=%3 footer=%4 interactive=%5 wheelEnabled=%6")
+                .arg(flickable->property("contentY").toReal()).arg(flickable->property("contentHeight").toReal())
+                .arg(scroll->height()).arg(footer->mapToItem(scroll,QPointF(0,footer->height())).y())
+                .arg(flickable->property("interactive").toBool()).arg(scroll->property("wheelEnabled").toBool())));
+        } else QVERIFY(footerReached());
+        bool mistral=false;
+        const auto visit=[&](auto &&self,QQuickItem *item)->void {
+            if (item->objectName()==QStringLiteral("agentUsageProviderRow")
+                && item->property("row").toMap().value("name").toString()==QStringLiteral("Mistral")) {
+                mistral=true;
+                const qreal bottom=item->mapToItem(scroll,QPointF(0,item->height())).y();
+                QVERIFY(bottom<=scroll->height()+1);
+                QVERIFY(bottom>=0);
+            }
+            for (auto *child:item->childItems()) self(self,child);
+        };
+        visit(visit,scroll);
+        QVERIFY(mistral);
         QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Escape);
         QTRY_VERIFY(!h.popup()->property("opened").toBool());
     }
