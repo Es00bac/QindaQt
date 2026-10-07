@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — integrating accepted r15 recipe and media design; arranging signed build-only and Scuttle motion verification
+- Status: working — QindaQt r15 signed build and Accepted ED04 protocol implementation; Origin stopped as out of scope
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -16,3 +16,4 @@
 - 2026-10-07T17:34:49+00:00 — Files exact Network candidatea77e7ed79 routed to independent reviewer; handoff descendant9ae6d622 retained. Platform compiled strict cohort516 steps exit0 and is finishing serialized private acceptance; reviewer has compiler/offscreen only. Manager only configures a separate warm verification root. Files self-authored live mapping rotates to separate ED04 Proposed ADR0350 worktree, retaining same Network repair loop.
 - 2026-10-07T17:48:32+00:00 — Integrated Network candidate after exact independent ACCEPT; manager required9/9 and release/docs gates pass, source frozenbef80e861 for r15. Platform source17/17 accepted evidence copied verbatim; media design candidateb1f93fb waits review/short fixture proof. Added owner Scuttle task routed to separate assets-only game helper, original desktop objective preserved.
 - 2026-10-07T18:04:31+00:00: Integrated exact r15 mirror e6f8787 and overlay e9f04b8 after independent b19c6d0 acceptance; Accepted ADR0350 after d283465 design review. Runtime freeze remains bef80e861. Release7/7, exact new Manifest row, fork, docs514 and strict MkDocs pass. Whole historical Manifest cmp was an invalid gate because repositories retain different historical rows; corrected exact r15 row matches. Signed build and artifact review next; no installation.
+- 2026-10-07T18:12:50+00:00: Owner explicitly confirmed QindaQt-only scope; withdrew separate Origin lane, which remains isolated/unverified and unintegrated. Platform signed build-only continues; dispatch Accepted ADR0350 protocol module at exact0d15023cc, source-only while compiler lease is held.
