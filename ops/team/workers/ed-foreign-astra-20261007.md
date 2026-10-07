@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — repairing exact ED20 retired-launch and ED17 forged-proposal review findings
+- Status: available — repaired exact candidate awaits same-reviewer recheck; ready for QindaTK production slice
 - Outcome: proposed ADR-0353 scoped desktop context and negative design proof; ED20 c5cdccf31 remains immutable under manager review
 - Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
 - Branch: worker/everyday-foreign-architecture-20261007
@@ -16,3 +16,4 @@
 - 2026-10-07T21:28:57+00:00: ED17 candidate b394effff64d007d2a022ddaa7ca3a88424467ed handed off for exact critical review. Read Platform queue and offered ED17a toolkit scoped policy/host seam or ED05 hard contract next. No compiler/runtime lease or unattended working claim.
 - 2026-10-07T21:36:45+00:00: Claimed NEEDS_FIX repair from reviewer39456f7bd. Original candidates preserved. Adding reviewer reproductions before model fixes; no compiler, bus, display or runtime lease. Requested Astra allocation is session routing, not independent runtime attestation.
 - 2026-10-07T21:38:36+00:00: Before fixes, direct review regressions failed as expected (ED20 2 failures/17 cases; ED17 3 failures/20). Repaired current launch/parent validation and lifecycle retirement; retained exact issued proposal records and single-use admission. Focused suites now 19/19 and24/24, no runtime claim.
+- 2026-10-07T21:39:43+00:00: Repair candidate a23b8722987cb91dc0c3b300745b20233354c897 handed off. Direct reviewer reproductions2/2 now pass; design suites19/19 and24/24, docs523/strict/diff0. Original commits preserved; push used explicit qinda hub only. No resource lease.
