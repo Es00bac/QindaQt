@@ -44,7 +44,9 @@ adapter has been delivered by this decision.
    adapter-confirmed per-user materialization creates a registered entry.
    A current compositor window association additionally requires live transport
    evidence tied to the session, adapter generation, runtime incarnation,
-   launch and window incarnation. Registration IDs, desktop keys, titles,
+   launch and window incarnation. Every origin observation rechecks the live
+   launch relationship; lifecycle retirement withdraws dependent associations
+   before a fresh launch can be admitted. Registration IDs, desktop keys, titles,
    WM_CLASS, argv, environment variables and guessed process ancestry are
    insufficient. Failed or unavailable evidence yields unknown association,
    never a green/blue authenticated app assignment.

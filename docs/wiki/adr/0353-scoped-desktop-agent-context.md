@@ -56,7 +56,10 @@ production scoped access merely from its executable design model.
 
 4. Separate observation, content reading, proposing an action, committing an
    allowed semantic edit, capture and remote input. A proposal is inert typed
-   data. Commit must carry its exact digest and revision and remain inside an
+   data. The provider retains an immutable issued record with its original
+   canonical arguments, binding and deadline; a client-computed digest is not
+   proof of issuance. Commit resolves and consumes that owner record, carries
+   its exact digest and revision, and remains inside an
    application-issued edit scope or exact one-operation approval. Edit never
    implies save/export/send/publish, shell execution, credential access or
    another document. Application validation, undo and partial-result semantics
