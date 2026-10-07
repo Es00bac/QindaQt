@@ -132,6 +132,18 @@ add_dependencies(qindaqt_shell_capture_tests qindaqt-shell-preview)
 qindaqt_enable_warnings(qindaqt_shell_capture_tests)
 add_test(NAME qindaqt.shell-capture-matrix COMMAND qindaqt_shell_capture_tests)
 
+qt_add_executable(qindaqt_screenshot_capture_error_tests
+    tst_screenshot_capture_errors.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/app/screenshotcapture.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/app/screenshotcapture.h")
+target_include_directories(qindaqt_screenshot_capture_error_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/shell/app")
+target_link_libraries(qindaqt_screenshot_capture_error_tests PRIVATE Qt6::Quick Qt6::Test)
+qindaqt_enable_warnings(qindaqt_screenshot_capture_error_tests)
+add_test(NAME qindaqt.shell-capture-errors COMMAND qindaqt_screenshot_capture_error_tests)
+set_tests_properties(qindaqt.shell-capture-errors PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
 add_test(
     NAME qindaqt.decoration-hover
     COMMAND
