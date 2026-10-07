@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — orchestrate remaining ED01–24; implement isolated native-lock startup retry repair and Viewer text/find; independently review accepted candidates and installed usage
+- Status: working — orchestrate remaining ED01–24, review exact copier and Settings candidates, implement isolated Viewer text/find and integrate verified source/package evidence
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -45,3 +45,5 @@
 - 2026-10-07T23:08:50+00:00 — Root independently reviewed SDK4fb/source plus actual3/3 and integrated QindaTK hub/checkout4fb, preserving .obsidian. Installed laptop usage Ready confirms quota/reset/token presence without costs; Claude connected. Lock65 actual strict private-native old11pass2fail, repaired13pass0fail and2/2 registry, logs uploaded. Media64 exact independent old/fixed ACCEPT23Qt; hidden14b own39/254Qt awaiting Astra7 rerun. Root announced qinda integration batch, short first sublease Astra hidden7/old-copier sentinel. ED05 model021 independently33/33 accepted as bounded contract; Viewer private text source authoring; ED11 source and toolkit release metadata dispatched. Full plan/physical gates open.
 
 - 2026-10-07T23:18:52+00:00 — Independent preview ec10 root source review accepted native allocation bounds/exact DPR readback and preserved author57Qt evidence. Hidden14b independently ACCEPT62f and lock65 ACCEPTcd3 records read. Source integration batch underway; manager integrated native gates pending, no package/physical milestone credit. Root retains qinda compiler/private-runtime lease.
+
+- 2026-10-07T23:32:35+00:00 — Actual integratedb77 strict68 targets/1114 actions and73 CTests/685Qt pass; Media public staged consumer/header-poison/restoration pass. SDK frozen4fb source3/43 rerun plainbuild passes; toolkit703/overlay24 independently archive2919/mode/recut verified and hubs/normal checkouts synchronized, preserving .obsidian. Canonical overlay hub ismaster; corrected main-only push by FFmaster too. Dirty normal desktop compositor/queue preserved. Root native resources released to Astra copier223, ED11 then signed toolkit queued; Viewer text UI/source authored uncompiled. Full plan and physical/user gates open.
