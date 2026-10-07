@@ -1,3 +1,41 @@
+# October 7 — Restore the unlock prompt and laptop battery reporting
+
+The fixed native worker names `qindaqt-lock`, but both installed Gentoo
+hosts lacked that PAM service. The fallback `other` policy denied without
+requesting a password, and the greeter only exposes a response field for an
+actual conversation. The independent private regression reproduces that
+denial/no-prompt and a configured synthetic service prompts and authenticates.
+
+Accepted overlay `e62153b` now delivers `sys-auth/qindaqt-lock-pam-1`, using
+mandatory site `system-auth` authentication/account checks and optional native
+keyring notification, without creating another login/logind session
+([ADR-0349](wiki/adr/0349-package-native-lock-authentication-policy.md)).
+Only this policy package was installed from the independently accepted signed
+artifact `5eeb37db` on qinda and qinda-top. Both installations exit zero; the
+one installed file is source-identical, root:root 0644, and world/world_sets,
+existing login PAM stacks and all prior installed packages are unchanged.
+The laptop's desktop remains open and unlocked/unprotected. The next worker
+attempt reads the installed policy; no logout, physical lock or owner password
+authentication was performed for verification.
+
+UPower was installed but dormant while Power1 was already running. Normal
+D-Bus activation restored live ready battery truth; the laptop reported 28%
+charging initially and 46% during installed checks. Its installed system unit
+is now enabled at graphical boot. The separately accepted source repair
+`6921f4c` adds bounded asynchronous UPower activation, fresh unique-owner
+resolution and existing generation/refresh fencing, with private activation,
+failure, timeout, owner and lifetime regressions. It is integrated source for
+a future desktop delivery; the installed r13 Power1 binary was not replaced.
+
+Independent required gates pass: locker 3/3 CTests, 37 Qt checks; Power1 9/9
+CTests, 96 Qt checks. The manager combined tree configures and builds all
+11 focused targets; Power1 9/9 and fatal-warning lock 3/3 CTests pass, totaling
+133 Qt checks with no failures/skips. Strict MkDocs and 511-document links pass.
+No physical prompt/focus/password-unlock or new desktop package claim is made.
+Future desktop recipes must require the PAM policy package; the profile and
+exact current delivery already select it. Earlier unrelated recovery work
+remains preserved at its prior boundary.
+
 # October 4 desktop incident
 
 The owner's authorized SDDM restart replaced the failed laptop tty7 compositor;

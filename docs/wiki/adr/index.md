@@ -383,3 +383,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0347: Controller desktop input yields to games](0347-controller-desktop-integration.md) — Accepted
 
 - [ADR-0348: Reattach keyring after native owner replacement](0348-reattach-keyring-after-owner-replacement.md)
+- [ADR-0349: Package the native lock authentication policy](0349-package-native-lock-authentication-policy.md)

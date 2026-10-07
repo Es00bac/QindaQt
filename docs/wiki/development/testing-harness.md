@@ -3631,8 +3631,16 @@ The focused production-adapter selector is:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.power-service-(sysfs-backlight|upstream-composition|upower-adapter|profiles-adapter|logind-adapter|logind-actions|production-activation|boundary)$'
+  -R '^qindaqt\.power-service-(sysfs-backlight|upstream-composition|upower-adapter|upower-startup|profiles-adapter|logind-adapter|logind-actions|production-activation|boundary)$'
 ```
+
+`qindaqt.power-service-upower-startup` supplies a private activatable UPower
+service and an actual temporary backlight inventory to the production battery
+composition. It proves dormant startup, failed activation, the bounded
+three-second activation timeout with later owner recovery, stop/restart,
+destruction and competing owner arrival. The helper admits only the fixture's
+pinned private bus endpoint; no host activation directory is loaded. Late
+activation cannot revoke newer ready battery truth.
 
 UPower, Power Profiles, and logind rows create one private `dbus-daemon` per
 fixture and connect only by its printed address. Production activation exports
@@ -4187,7 +4195,12 @@ compiled solely into that test executable; the production worker has none.
 socketpair. It covers synthetic authentication plus account approval, wrong
 password, account rejection, cancellation, stale response tokens, malformed
 conversation styles, prompt/message bounds, EOF and caller-selected identity
-rejection. Protocol rows reject altered magic/version/kind/reserved bytes,
+rejection. Its missing-service row supplies only a private deny-all `other`
+stack and proves immediate denial with no secret/visible prompt, while the
+explicit synthetic service still prompts and authenticates. This guards the
+[installed PAM service requirement](../adr/0349-package-native-lock-authentication-policy.md)
+without exercising a host's authentication policy or credentials. Protocol
+rows reject altered magic/version/kind/reserved bytes,
 zero tokens, oversize or embedded-NUL payloads and incomplete frames; transport
 rows cover a bounded deadline and EOF. Actual ptrace attachment to the protected
 ordinary-UID disposable worker fails. Production has no configuration-directory
