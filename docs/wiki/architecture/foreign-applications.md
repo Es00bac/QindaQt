@@ -99,10 +99,10 @@ cannot provide it, a narrowly packaged bridge extension needs its own reviewed
 implementation; do not grant trust to hints to avoid that work.
 
 A read-only source trace sharpens this gate: at Waydroid vendor tree
-\`1b95b85221f4faaa357932fa5e93eacb7430f636\`, the
+`1b95b85221f4faaa357932fa5e93eacb7430f636`, the
 [WindowStateAnimator patch](https://github.com/waydroid/android_vendor_waydroid/blob/1b95b85221f4faaa357932fa5e93eacb7430f636/waydroid-patches/base-patches-33/frameworks/base/0007-wm-Include-task-id-in-surface-name-for-easier-tracki.patch)
 prepends the task ID to the window's title. Hardware tree
-\`6e898e9d18f442873305f4992df6e6148aa1e693\` then
+`6e898e9d18f442873305f4992df6e6148aa1e693` then
 [parses the apparent app ID from that layer-name text](https://github.com/waydroid/android_hardware_waydroid/blob/6e898e9d18f442873305f4992df6e6148aa1e693/hwcomposer/modes/waydroid_mode.cpp)
 and [publishes it as the Wayland app ID](https://github.com/waydroid/android_hardware_waydroid/blob/6e898e9d18f442873305f4992df6e6148aa1e693/hwcomposer/wayland-hwc.cpp).
 Thus even an authenticated HWC connection does not authenticate the package
