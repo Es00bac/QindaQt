@@ -15,6 +15,12 @@ MediaClient::MediaClient(QDBusConnection bus, MediaOwnerLauncher &launcher, QObj
     : MediaSource(parent), m_bus(std::move(bus)), m_launcher(launcher),
       m_watcher(service(), m_bus, QDBusServiceWatcher::WatchForOwnerChange)
 {
+    m_readTimer.setSingleShot(true);
+    m_readTimer.setInterval(5000);
+    connect(&m_readTimer, &QTimer::timeout, this, [this] {
+        ++m_readSerial;
+        publishUnavailable(DiagnosticCode::Unavailable, QStringLiteral("Media support did not respond. Try again."));
+    });
     m_startupTimer.setSingleShot(true);
     m_startupTimer.setInterval(5000);
     connect(&m_startupTimer, &QTimer::timeout, this, [this] {
@@ -37,6 +43,12 @@ void MediaClient::start()
 {
     if (m_started) return;
     m_started = true;
+    if (!m_bus.isConnected()) {
+        publishUnavailable(DiagnosticCode::Unavailable, QStringLiteral("The session bus is unavailable. Try again."));
+        return;
+    }
+    const auto readSerial = ++m_readSerial;
+    m_readTimer.start();
     auto query = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
         QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
         QStringLiteral("GetNameOwner"));
@@ -45,10 +57,11 @@ void MediaClient::start()
     const auto serial = m_ownerSerial;
     auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(query, 5000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
-        [this, serial](QDBusPendingCallWatcher *pending) {
+        [this, serial, readSerial](QDBusPendingCallWatcher *pending) {
             const QDBusPendingReply<QString> reply = *pending;
             pending->deleteLater();
-            if (serial != m_ownerSerial) return;
+            if (serial != m_ownerSerial || readSerial != m_readSerial) return;
+            m_readTimer.stop();
             setOwner(reply.isValid() ? reply.value() : QString{});
         });
 }
@@ -67,6 +80,7 @@ void MediaClient::setOwner(const QString &owner)
                          this, SLOT(changedWire(QByteArray,QDBusMessage)));
     ++m_ownerSerial;
     ++m_readSerial;
+    m_readTimer.stop();
     m_owner = owner;
     m_snapshot = {};
     m_observed = {};
@@ -100,12 +114,14 @@ void MediaClient::requestSnapshot()
     const auto serial = ++m_readSerial;
     const auto ownerSerial = m_ownerSerial;
     const auto owner = m_owner;
+    m_readTimer.start();
     auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(query, 5000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
         [this, serial, ownerSerial, owner](QDBusPendingCallWatcher *pending) {
             const QDBusPendingReply<QByteArray> reply = *pending;
             pending->deleteLater();
             if (ownerSerial != m_ownerSerial || serial != m_readSerial || owner != m_owner) return;
+            m_readTimer.stop();
             if (!reply.isValid()) {
                 const auto error = reply.error().type();
                 const bool old = error == QDBusError::UnknownObject || error == QDBusError::UnknownMethod
@@ -121,6 +137,7 @@ void MediaClient::requestSnapshot()
 void MediaClient::acceptWire(const QByteArray &wire, const QString &owner, quint64 serial)
 {
     if (owner != m_owner || serial != m_readSerial) return;
+    m_readTimer.stop();
     Snapshot next;
     if (!decodeSnapshot(wire, next).succeeded() || next.lineage.owner != owner) {
         publishUnavailable(DiagnosticCode::Invalid, QStringLiteral("Media support sent an invalid inventory. Try again."));
