@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — examining follow-on runner boundaries while exact ED-20 candidate awaits independent review
+- Status: available — exact ED-20 candidate awaiting independent review; ready for manager-routed follow-on
 - Outcome: proposed ADR-0352 and executable feasibility facts before ED-21/22 implementation
 - Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
 - Branch: worker/everyday-foreign-architecture-20261007
@@ -10,3 +10,4 @@
 - 2026-10-07T21:16:39+00:00: Material finding: qinda has no Waydroid; laptop is uninitialized. Kernel binder/memfd support exists; packaged image path avoids OTA bypass. Draft/proof passes 14 tests; docs 521 and strict build pass before provisioning appendix. No real foreign window proof claimed.
 - 2026-10-07T21:17:52+00:00: Verified and handed off candidate 8d50474090ba8e9c22697d31b14ca1e3286dfb0e; pure model 14/14, docs 521, strict MkDocs and diff check exit 0. Read Platform queue; offered Portage provisioning packet and readiness for manager-routed ED17/ED05 hard contracts.
 - 2026-10-07T21:20:46+00:00: Exact upstream trace finds Waydroid app_id derived from window title text despite trusted HWC producer; documenting the static identity counterexample before review. Real task/UID-to-surface bridge remains required.
+- 2026-10-07T21:21:31+00:00: Revised exact candidate c5cdccf319138fa3135e973fbe30590c4bd50a51 includes upstream title-provenance evidence. Source handoff finished; no live compiler/runtime work claimed. Ready for review repairs, ED17/ED05 hard contracts or accepted ED21/22 implementation.
