@@ -45,6 +45,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::Voice:
   case SettingsRouteComponent::Keyring:
   case SettingsRouteComponent::PortalPermissions:
+  case SettingsRouteComponent::Printing:
     return true;
   }
   return false;
@@ -98,6 +99,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("keyring");
   case SettingsRouteComponent::PortalPermissions:
     return QStringLiteral("portal-permissions");
+  case SettingsRouteComponent::Printing:
+    return QStringLiteral("printers-scanners");
   }
   return {};
 }

@@ -427,3 +427,11 @@ add_test(NAME qindaqt.settings-notification-page-admission
 set_tests_properties(qindaqt.settings-notification-page-admission PROPERTIES
     LABELS "offscreen;settings;notifications;service"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
+# ADR-0356: Printing is a shared compiled route, resolved from the same
+# injected QML root as Appearance/Display. These real Main.qml rows need its
+# module built, not a new statically embedded startup/composition authority.
+foreach(test_target IN ITEMS qindaqt_settings_navigation_layout_test
+    qindaqt_settings_navigation_interaction_test qindaqt_settings_command_palette_test)
+    add_dependencies(${test_target} qindaqt_settings_printing_qml qindaqt_settings_printing_qmlplugin)
+endforeach()

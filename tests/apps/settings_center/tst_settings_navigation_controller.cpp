@@ -187,7 +187,11 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
   QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("printers-scanners"));
+  QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("printers-scanners"));
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
   QVERIFY(controller.selectPrevious());
@@ -337,16 +341,18 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
   QVERIFY(controller.selectIndex(22));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
+  QVERIFY(controller.selectIndex(23));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("printers-scanners"));
 
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  // Twenty-three routes now; 23 is the first out-of-bounds index. This line was not in a merge conflict
+  // Twenty-four routes now; 24 is the first out-of-bounds index. This line was not in a merge conflict
   // once and went on asserting that a valid index is rejected; keep it moving
   // with the count above.
-  QVERIFY(!controller.selectIndex(23));
+  QVERIFY(!controller.selectIndex(24));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -404,7 +410,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 23);
+  QCOMPARE(list.size(), 24);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -616,10 +622,12 @@ void SettingsNavigationControllerTest::testRouteAtPositions() {
   QCOMPARE(itemAt20.value(QStringLiteral("component")).toString(),
            QStringLiteral("voice"));
 
-  // Twenty-three routes, so 23 is the first out-of-bounds position.
-  const QVariantMap last = controller.routeAt(22);
-  QCOMPARE(last.value(QStringLiteral("id")).toString(), QStringLiteral("portal-permissions"));
-  const QVariantMap itemOutOfBounds = controller.routeAt(23);
+  // Appending ED11 preserves the prior last identity at 22.
+  QCOMPARE(controller.routeAt(22).value(QStringLiteral("id")).toString(),
+           QStringLiteral("portal-permissions"));
+  const QVariantMap last = controller.routeAt(23);
+  QCOMPARE(last.value(QStringLiteral("id")).toString(), QStringLiteral("printers-scanners"));
+  const QVariantMap itemOutOfBounds = controller.routeAt(24);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

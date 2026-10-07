@@ -244,6 +244,7 @@ T.ApplicationWindow {
             voiceComponent: addedRouteComponents.voice
             keyringComponent: addedRouteComponents.keyring
             portalPermissionsComponent: addedRouteComponents.portalPermissions
+            printingComponent: addedRouteComponents.printing
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -307,6 +308,7 @@ T.ApplicationWindow {
             voiceComponent: addedRouteComponents.voice
             keyringComponent: addedRouteComponents.keyring
             portalPermissionsComponent: addedRouteComponents.portalPermissions
+            printingComponent: addedRouteComponents.printing
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }

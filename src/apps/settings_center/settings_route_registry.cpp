@@ -284,6 +284,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerVoiceRoute();
   registerKeyringRoute();
   registerPortalPermissionsRoute();
+  registerPrintingRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -482,6 +483,23 @@ void SettingsRouteRegistry::registerPortalPermissionsRoute() {
       .description = QCoreApplication::translate("SettingsCenter", "Revoke remembered screen sharing and remote desktop grants"),
       .iconName = QStringLiteral("preferences-system-privacy"),
       .category = QCoreApplication::translate("SettingsCenter", "Privacy"),
+      .available = true,
+      .unavailableReason = QString(),
+  });
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerPrintingRoute() {
+  // ADR-0356: the route remains discoverable when tools are absent. Its own
+  // model diagnoses action availability without changing the stable registry.
+  const bool registered = registerRoute({
+      .id = QStringLiteral("printers-scanners"),
+      .component = SettingsRouteComponent::Printing,
+      .title = QCoreApplication::translate("SettingsCenter", "Printers & scanners"),
+      .description = QCoreApplication::translate("SettingsCenter", "Printer setup, print jobs and document scanning"),
+      .iconName = QStringLiteral("document-print"),
+      .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
       .available = true,
       .unavailableReason = QString(),
   });

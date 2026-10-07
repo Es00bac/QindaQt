@@ -45,7 +45,7 @@ private Q_SLOTS:
 
 void SettingsRouteSearchTest::everyBuiltInRouteHasKeywords() {
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 22);
+  QCOMPARE(registry.count(), 24);
   for (const SettingsRoute &route : registry.routes()) {
     QVERIFY2(route.isValid(), qPrintable(route.id));
     QVERIFY2(!route.keywords.isEmpty(), qPrintable(route.id));
@@ -60,6 +60,10 @@ void SettingsRouteSearchTest::everyBuiltInRouteHasKeywords() {
               ->keywords.contains(QStringLiteral("battery")));
   QVERIFY(registry.route(QStringLiteral("passwords-keys"))
               ->keywords.contains(QStringLiteral("wallet")));
+  QVERIFY(registry.route(QStringLiteral("printers-scanners"))
+              ->keywords.contains(QStringLiteral("cups")));
+  QVERIFY(registry.route(QStringLiteral("printers-scanners"))
+              ->keywords.contains(QStringLiteral("scanner")));
   // W15: Customize is the layout preset page now (ADR-0267).
   QVERIFY(registry.route(QStringLiteral("customize"))
               ->keywords.contains(QStringLiteral("layout presets")));
@@ -81,7 +85,8 @@ void SettingsRouteSearchTest::searchMetadataLeavesOrderAndDigitRoutesUnchanged()
       QStringLiteral("about-computer"), QStringLiteral("startup"),
       QStringLiteral("screensaver"),   QStringLiteral("login-screen"),
       QStringLiteral("voice"),
-      QStringLiteral("passwords-keys"),
+      QStringLiteral("passwords-keys"), QStringLiteral("portal-permissions"),
+      QStringLiteral("printers-scanners"),
   };
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   QStringList actual;
