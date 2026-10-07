@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — read-only Windows fixture identity/cleanup review; Media owns native resources
+- Status: available — copier qualified; ready for exact Windows fixture review or fresh ED05 production packet; no native lease
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
 - Ownership: own ADR0352/0353 pages/design proofs/records; isolated QindaTK scoped types/policy/host, tests, D-308 and public exports at base393c1ce5
 - Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
 ## Updates
+
+- 2026-10-07T23:47:22Z — Available transition after qualified copier handoff, Android help and Windows static caveats; exact runnable Windows fixture not yet delivered, next storage source requires fresh dispatch after integration. No active native resources or uncommitted product edit. Ready for same-worker reactivation; program goal remains active.
 
 - 2026-10-07T23:45:42Z — Reviewed Platform adbb Windows inventory and current runner lifetime seams; concrete stat-then-kill and unknown-scope-as-inactive caveats delivered, no game edits/runtime. Exact bwrap fixture script review pending; source-only. Copier qualified223/receipt83760 and Android helpdf366 handed off; whole crossMove source waits integration/fresh dispatch.
 
