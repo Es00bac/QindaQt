@@ -1,5 +1,15 @@
 # Shell delivery queue
 
+## Full-plan delivery is active — 2026-10-07T21:15:27+00:00
+
+The owner requires completion, including installed AI usage and ED01–24, and
+selects Astra for the hardest bits. Prior source-only stopping boundary is
+superseded. r15 install held. Active packets: r16 plugin release (Platform),
+ED04 client/exporter/consumers (Media), ED20 architecture/feasibility (Astra),
+ED07 remote-menu admission/recovery (root isolated worker). Exact dispatch and
+path/resource contracts are in the new full-plan message. Root owns continuing
+review/integration and later package/installed/physical gates.
+
 ## October 7 authorized implementation wave
 
 Owner authorization supersedes the earlier documentation-only dispatch boundary.
