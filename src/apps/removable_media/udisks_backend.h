@@ -15,6 +15,7 @@ class UDisksBackend final : public MediaBackend {
 public:
     explicit UDisksBackend(QDBusConnection connection, QObject *parent = nullptr);
     QVector<Volume> volumes() const override { return m_volumes; }
+    quint64 authorityGeneration() const override { return m_epoch; }
     bool available() const override { return m_available; }
     QString diagnostic() const override { return m_diagnostic; }
     QStringList formatTypes() const override { return m_formatTypes; }

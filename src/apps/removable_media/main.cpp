@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "media_appearance.h"
 #include "media_controller.h"
+#include "media_exporter.h"
 #include "media_notifications.h"
 #include "udisks_backend.h"
 #include "qindaqt/app_appearance/application_appearance_controller.h"
@@ -27,8 +28,8 @@ namespace {
 constexpr auto serviceName = "org.qindaqt.RemovableMedia1";
 constexpr auto servicePath = "/org/qindaqt/RemovableMedia1";
 
-// AGENT-GUARD: this activation object alone is exported. Storage operations
-// remain local controller calls, never public session-bus methods.
+// AGENT-CONTRACT: Keep Activate compatibility separate from Devices v1.
+// Destructive/credential operations remain private owner UI.
 class Activation final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.RemovableMedia1")
@@ -144,6 +145,8 @@ int main(int argc, char **argv) {
     Activation activation(controller);
     if (!probe && !session.registerObject(QString::fromLatin1(servicePath), &activation,
                                           QDBusConnection::ExportAllSlots)) return 2;
+    MediaExporter devices(*backend, controller, session);
+    if (!probe && !devices.publishObject()) return 2;
     if (probe) controller.select(QStringLiteral("probe-attachment"));
 
     QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(session);

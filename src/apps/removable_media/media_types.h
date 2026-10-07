@@ -15,6 +15,9 @@ using ManagedObjects = QMap<QDBusObjectPath, Interfaces>;
 struct Volume final {
     QString token, path, drive, device, label, kind, identity, driveIdentity, preferenceKey;
     QString mountPath, cryptoBackingDevice;
+    QStringList mountRoots;
+    quint32 partitionNumber = 0;
+    bool readOnlyKnown = false;
     quint64 size = 0;
     bool mountable = false;
     bool readOnly = false;
