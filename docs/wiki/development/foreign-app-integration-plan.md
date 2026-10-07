@@ -1,5 +1,10 @@
 # Android and Windows applications as desktop applications
 
+> Implementation was separately authorized on October 7 after this audit.
+> The repository task list (`docs/TASK_LIST.md`) and [delivery queues](../contributing/flow-team-workflow.md#durable-queue-contract)
+> record current dispatch and evidence. The proposals below remain the planning
+> baseline; assignments alone do not establish delivered behavior.
+
 The owner's October 7 requirement is a native-feeling application experience:
 Android applications run in resizable windows and appear in Applications with
 a **green highlight**; Windows applications through Wine/Proton use a **blue

@@ -1,5 +1,10 @@
 # Everyday desktop delivery plan
 
+> Implementation was separately authorized on October 7 after this audit.
+> The repository task list (`docs/TASK_LIST.md`) and [delivery queues](../contributing/flow-team-workflow.md#durable-queue-contract)
+> record current dispatch and evidence. The proposals below remain the planning
+> baseline; assignments alone do not establish delivered behavior.
+
 This proposed queue implements the owner's October 7 goal: simple graphical
 daily use, full terminal usefulness, and useful scoped AI assistance. The
 [audit](everyday-desktop-audit.md) establishes what exists and what is missing.
