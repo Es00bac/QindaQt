@@ -29,3 +29,5 @@ laptop-inputs.json binds these exact artifacts and marks stageCreated/stageClosu
 - No package phase, host merge/config/account change, initramfs build, mount, KVM/Waydroid/runtime invocation, host bus or guest initialization.
 
 Own resources are settled. Requested next action: Platform different-author exact profile/input review, then root grants the bounded stage gate if accepted. Files tiny source follow-ups were delivered independently; native receipts remain separate.
+
+Freeze correction: broad force-add accidentally included seven generated __pycache__ files in initialbf797. This explicit successor removes only those tracked artifacts; source/manifest/tests/evidence remain unchanged. Original intermediate is preserved, and only the clean successor is the review candidate.
