@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — R18 immutable source/recipe ready for independent review and manager freeze confirmation; no package/native lease
+- Status: waiting — R18 source freeze confirmed and recipe ready for independent review; no package/native lease
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -203,3 +203,5 @@
 - 2026-10-08T06:38:02.482558+00:00 — Root visually accepted compact Audio popup/Settings; native proof33/185 preserved. Fresh R18 desktop5858/overlayb128 trees after explicit hub fetch. Existing R17 directory untouched; source-only preparation, no native/package/install lease.
 
 - 2026-10-08T06:41:41.748344+00:00 — Source5858 archive9747 blobs/39,433,447bytes/SHA620ad2 verified; mirroredr18 explicit libdbus DEPEND/RDEPEND only dependency change. Actual Portage metadata, release contract7/7, docs533/strictMkDocs all0. Overlayaf4e8ed pushed; manager37 gate/artifact/install still pending. No native/compiler/Portage build/install or publication.
+
+- 2026-10-08T06:42:18.149221+00:00 — Root confirms exact5858 runtime37/37 and273Qt pass0fail0skip0blacklist, strict28-target0; own release docs/receipt updated with attributed manager evidence. Immutable620ad2 archive and overlayaf4e8ed unchanged. Independent recipe/artifact/install remain required; no package lease assumed.

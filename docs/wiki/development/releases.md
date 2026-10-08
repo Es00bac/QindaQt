@@ -90,8 +90,11 @@ Desktop revision 0.1.0_pre20261002-r18 pins candidate runtime
 screen-bounded Audio popup and denser Settings presentation, the public
 Bluetooth radio helper and sender-preserving SDK, authenticated Clipboard
 startup and replaced-Power-owner retirement fixes already in that source.
-The manager's combined native gate is still required before the runtime
-freeze is qualified; archive preparation alone does not complete that gate.
+The manager qualified this exact runtime with strict28-target build0,
+33 owning CTests/185 Qt cases and four profile/resolution CTests/88 Qt cases:
+37/37 checks and273 Qt passes, zero failure/skip/blacklist. Raw manager proof
+is retained in ignored .cache/manager-compact-audio-integrated-20261008.
+These are source gates; signed package/image and installed adoption remain open.
 
 The helper and its static public client directly consume libdbus. This recipe
 declares dev-libs/dbus explicitly in both DEPEND and RDEPEND, alongside the
