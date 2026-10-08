@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — Bluetooth focused native batch; repairing exact strict helper compilation failures for peer recheck.
+- Status: working — Bluetooth sender-preserving transport design after actual native authority blocker; source only.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
-- Resources: manager-authorized sole qinda focused compiler/private-fixture lease; compiler settled pending exact repair review. No host bus/device/radio/services or installed actions.
+- Resources: explicitly RELEASED all qinda compiler/private-runtime resources to root; source only. No host bus/device/radio/services or installed actions.
 ## Updates
+
+- 2026-10-08T04:11:29Z — Released native lease;638 broker-policy premise independently NEEDS_FIX70d850 and withdrawn. Proposed0359 now describes owned libdbus sender preservation, GUID-pinned same-bus session factory and exact owner-issued raw-caller delegation. No product edits or native rerun; root/Platform exact contract review next.
 
 - 2026-10-08T04:01:42Z — Actual private diagnostic and official Qt source prove ReplyMessage service() always empty, a production admission blocker. Frozen transport-bound provenance proposal with exact Portage D-Bus broker connection-pair/serial evidence. No guard removal or native retry; source review requested. Resources idle within lease pending manager routing.
 
