@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — private Pulse source03f496 and fresh stage2250 planed55 frozen for root review; no heavy/process held.
+- Status: available — actual private Pulse stage2250 passed; archive2255 proposal frozen for root review; laptop heavy released.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -283,3 +283,5 @@
 - 2026-10-08T22:38:11.299881+00:00: SixthstockPulsebindENOENT retained;6807input0issues/original6730exact, privateendpointpure10cases pass; Audio1 acceptance remains separate.
 
 - 2026-10-08T22:40:17.743307+00:00: Source21/AST and28tinycontrols pass; freshstageplaned55/argva518/source03f preserved, no stage execution.
+
+- 2026-10-08T22:46:18.826576+00:00 — Actual protected stage2250 passed0/6807 inputs/7296 objects; six live cap witnesses and held retirement preserved. Archive2255 exact proposal AST-only, no archive/VM grant consumed.
