@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — archive2340 PASS and exact eleventh VM proposal preserved; awaiting separate root boot grant, no heavy lease.
+- Status: working — eleventh two-window feasibility PASS preserved; source-only public render/input/lifecycle extension, no heavy lease.
 - Outcome: two stock Android app windows, followed by real interaction/lifecycle and public integration.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T23:39:17.816426+00:00 — Actualeleventh0/37.080s withtwo1280x800windows, oneintactterminal, cleanup/QEMU/inputstable. Proof2f1a0c0e preserved; laptopheavyreleased. Interaction/identity/Audio1remainunqualified; nextpublicboundarysourceinspection.
+
+- 2026-10-08T23:38:10.797461+00:00 — Exactplan6a546abf/manifest e2f1a5cc admitted; protected21source/fourinputs rehashed. Eleventhunit2345 active, invocationb950555a47334185813fabac5ed24a52; no retry.
 
 - 2026-10-08T23:36:27.636695+00:00 — Actualarchive2340 PASS0/84.441s, observer0/84.822s, heldouterreaped and sixlivecaps;7296/onewindowsdelta/7295equal. Newinitrd4f8a633b. Exacteleventhplan6a546abf/manifest e2f1a5cc unexecuted; laptopheavyreleased.
 
