@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — exact Clipboard decb2af repair review, then selected-adapter Bluetooth power recovery source; no compiler/device lease.
+- Status: working — selected-adapter Bluetooth power recovery source; Clipboard decb source accepted, native evidence recheck pending.
 - Outcome: review synchronous privacy, native proof lifetime/reentrancy and startup ordering; preserve actual Bluetooth partial counterfactual and queued ED05.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
 ## Updates
+
+- 2026-10-08T02:34:47Z — Independent exact Clipboarddecb source recheck ACCEPT; first-Session observation bounded and pin-once, original Host/SDK bytes unchanged. Direct docs531/strict/boundary/diff0. Native old/fixed, SDK and installed gates remain pending; resume approved Bluetooth source, no runtime lease.
 
 - 2026-10-08T02:32:54Z — Restore own board immediately after claim script used a branch absent from this worktree common repository and truncated the destination. Original record remained intact in Audio worktree; no product source affected. Bluetooth claim now preserved with explicit source paths; Clipboard repaired decb recheck preempts authoring.
 
