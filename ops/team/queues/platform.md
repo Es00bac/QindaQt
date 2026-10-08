@@ -1,3 +1,16 @@
+## Manager current routing — 2026-10-08T13:06:49+00:00
+
+| Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
+| --- | --- | --- | --- |
+| Compact Audio delivery | Platform; source72bf0c28, olda8ff66fe, isolated everyday-audio-qml-install-20261008 | Audio density reviewer; exact source and public-bootstrap review, then separately granted old/new installed-module native gate | Media holds the current short compiler/fixture lease; R19ef002 is immutable NeedsFixa4b3, uninstalled; preserve accepted density proof |
+| Audio gain receipt admission | Media; sourcee7a9, harness5c0c43cf/command431aa563 | Astra; harnesscdd7065a source accepted; one native fixture granted, then exact raw evidence review | Four-source QtCore/Test only; no Core/PipeWire/Portage/old-image grant |
+| Windows owned lifecycle | Platform source635834b1; synthetic80 and fresh preflight21676d00 | Astra; evidencece49/2d4 accepted; next exact source/payload-bound native grant after preceding lease | Native ungranted; no production identity/runner or whole compatibility claim |
+
+R18 remains installed with owner-confirmed device inventory and AI popup. Root
+owns installation and live services; full provider feeds, mixer, physical and
+remaining ED/foreign journeys stay open. Historical sections below retain
+their original evidence boundaries.
+
 ## Current Platform gates — 2026-10-08
 
 Installed R17 Audio1 Ready and Settings inventory are verified. Clipboard
