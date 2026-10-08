@@ -50,8 +50,8 @@ exact559485b after independent09136ab source/raw-native/private-pixel acceptance
 The candidate strict seven-target build and eight owning rows pass44 Qt checks,
 zero failures/skips/blacklists, with normal and doubled-scale captures showing
 the correct page behind the search pane. The genuine stale-raster control and
-all prior compiler/parser/key failures remain preserved. Integrated-tree rerun
-is next before a later immutable package. This is the ED-10 text slice: Viewer
+all prior compiler/parser/key failures remain preserved. Integrated strict7 and owning8/44Qt reruns pass; a later immutable package
+is still required. This is the ED-10 text slice: Viewer
 printing, assistive technology, physical and newcomer journeys remain open.
 Printing/copier integrated26 rows pass; hardware printing/scanning and safe
 cross-volume Move/Trash/recovery are unfinished.
@@ -60,8 +60,11 @@ Full mixer gain/quiet-start still needs exact package-image admission,
 lifecycle qualification and production wiring. Actual repaired input/policy/
 evidence helpers pass31 tests and six AST checks. The first sanitizer attempt's
 Meson preload-order failure is retained; a fresh original-ASan private Portage
-cohort is now running with protected input snapshots and separate mutable
-distfiles. No genuine old module-UAF, fixed image or production gain is claimed.
+cohort used protected input snapshots and separate mutable
+distfiles. It now settles at the upstream test phase with45/51 passing, five
+leak reports and one timeout. No package/cohort image was published; exact
+source/environment and diagnostic admission review are next. No genuine old
+module-UAF, fixed image or production gain is claimed.
 
 Android public AOSP verifier sourcec05d9c16/23ab470 has independent source and
 bounded artifact acceptance. The private signed package6f6837a0 passes separately

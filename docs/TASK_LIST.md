@@ -3,8 +3,8 @@
 R18 remains the last installed and byte-verified desktop; owner device inventory
 is confirmed, while current-session compact layout and full mixer acceptance
 remain open. Viewer exact559 text/find/display source is integrated after
-independent09136 source/native-evidence/pixel acceptance. Candidate strict7/
-owning8 pass44 Qt checks; integrated rerun is next before packaging. The Viewer
+independent09136 source/native-evidence/pixel acceptance. Candidate and integrated strict7/
+owning8 gates pass44 Qt checks; packaging remains next. The Viewer
 packet is ED-10; earlier root849/reviewer091 references to ED06 were mistaken
 identifiers, with no whole-milestone completion claimed.
 
@@ -16,8 +16,9 @@ real private two-window/resize/close observations but correctly fails complete
 prefix cleanupbb732; owned-server repair is next, not overall compatibility.
 
 Audio e704 helpers pass31 actual tests/AST6; root's fresh unpatched-ASan cohort
-has started with held process2259999/start46648907. No package image/native
-module-UAF/PCM/production-gain result is yet claimed. Full ED01–24, providers,
+settled exit1/350.815s at the upstream test phase:45/51 pass, five leak reports
+and one timeout. Input snapshots/final checks and world/profile remain intact;
+no package image/native module-UAF/PCM/production-gain result is claimed. Full ED01–24, providers,
 hardware and newcomer gates remain required. Remaining planning estimate stays
 50workingdays, plausible30–80, crediting the source/native work already done.
 
