@@ -87,7 +87,8 @@ Tk.Dialog {
         }
         Tk.Flex {
             direction: Tk.Flex.Row
-            wrap: true
+            // AGENT-CONTRACT: Flex.wrap is a public enum; a boolean aborts QML loading.
+            wrap: Tk.Flex.Wrap
             gap: Tk.Theme.space.sm
             Tk.CheckBox {
                 id: matchCase

@@ -119,7 +119,8 @@ Qt Quick/Quick Controls/Dialogs/SVG and the Qt imageformats plugins. The Poppler
 floor supplies the documented ReadingOrder API used by page text; the next
 immutable desktop recipe must declare the same floor. The viewer
 build registers the `Viewer` install component, including its executable,
-desktop entry/icon and public AppShell backing libraries. QindaTK and Qt/Poppler
+desktop entry/icon and public AppShell backing libraries. The text action row
+uses the public QindaTK Flex.Wrap enum for its wrapping layout. QindaTK and Qt/Poppler
 remain normal system dependencies. The app's QML is embedded in the executable,
 so it does not depend on source/build-tree import paths after installation.
 

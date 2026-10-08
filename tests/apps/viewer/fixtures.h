@@ -58,7 +58,7 @@ inline QString boundedTextPdf(const QString &directory, int pages, int extracted
     // AGENT-NOTE: Poppler drops tiny glyphs after 50000 characters per page.
     // Ordinary-size, fully in-bounds lines make this a real extraction-limit
     // fixture. ReadingOrder adds one newline per line and one per flow.
-    Q_ASSERT(extractedUnits == 0 || (extractedUnits >= 3 && extractedUnits <= 262145));
+    Q_ASSERT(extractedUnits == 0 || extractedUnits == 262144 || extractedUnits == 262145);
     const int rows = extractedUnits == 0 ? 0 : (extractedUnits + 1022) / 1024;
     int letters = extractedUnits == 0 ? 0 : extractedUnits - rows - 1;
     QByteArray content("BT /F1 10 Tf 14 TL 10 3990 Td\n");
