@@ -1,3 +1,26 @@
+## Current integration and verification boundary — 2026-10-08T10:23:03+00:00
+
+R18 remains the last installed and byte-verified desktop; owner device inventory
+is confirmed, while current-session compact layout and full mixer acceptance
+remain open. Viewer exact559 text/find/display source is integrated after
+independent09136 source/native-evidence/pixel acceptance. Candidate strict7/
+owning8 pass44 Qt checks; integrated rerun is next before packaging. The Viewer
+packet is ED-10; earlier root849/reviewer091 references to ED06 were mistaken
+identifiers, with no whole-milestone completion claimed.
+
+Android signed private verifier6f6837 has bounded artifact acceptancee79edabc,
+actual packaged10/image6 and authentic unsupported-only refusal. It is not
+installed; original phase stdout gap, image licensing/source, guest and trusted
+producer remain open. The Java21 API inference was retracted. Windowsv9 has
+real private two-window/resize/close observations but correctly fails complete
+prefix cleanupbb732; owned-server repair is next, not overall compatibility.
+
+Audio e704 helpers pass31 actual tests/AST6; root's fresh unpatched-ASan cohort
+has started with held process2259999/start46648907. No package image/native
+module-UAF/PCM/production-gain result is yet claimed. Full ED01–24, providers,
+hardware and newcomer gates remain required. Remaining planning estimate stays
+50workingdays, plausible30–80, crediting the source/native work already done.
+
 ## Current installed build and actual native progress — 2026-10-08T09:15:31+00:00
 
 R18 remains Portage-installed and byte-verified; compact Audio is in that image

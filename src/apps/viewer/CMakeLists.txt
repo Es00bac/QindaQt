@@ -2,10 +2,12 @@
 
 find_package(QindaTK CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(POPPLER_QT6 REQUIRED IMPORTED_TARGET poppler-qt6)
+pkg_check_modules(POPPLER_QT6 REQUIRED IMPORTED_TARGET poppler-qt6>=26.01.0)
 
 qt_add_library(qindaqt_viewer_support STATIC
     document_renderer.cpp document_renderer.h
+    document_text.cpp document_text.h
+    viewer_text.cpp
     viewer_controller.cpp viewer_controller.h)
 target_include_directories(qindaqt_viewer_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(qindaqt_viewer_support PUBLIC Qt6::Core Qt6::Gui
@@ -16,7 +18,7 @@ qindaqt_enable_warnings(qindaqt_viewer_support)
 qt_add_executable(qindaqt-viewer main.cpp frame_provider.h viewer_actions.cpp viewer_actions.h)
 qt_add_qml_module(qindaqt-viewer
     URI QindaQt.Viewer VERSION 1.0 RESOURCE_PREFIX /qt/qml
-    QML_FILES qml/Main.qml qml/ViewerMenuBar.qml)
+    QML_FILES qml/Main.qml qml/ViewerMenuBar.qml qml/ViewerTextDialog.qml)
 target_link_libraries(qindaqt-viewer PRIVATE qindaqt_viewer_support
     QindaTK::qindatk QindaQt::AppShell QindaQt::AppShellMenuExport
     Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::DBus)

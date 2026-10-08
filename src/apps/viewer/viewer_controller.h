@@ -18,6 +18,15 @@ class ViewerController final : public QObject {
     Q_PROPERTY(bool busy READ busy NOTIFY stateChanged)
     Q_PROPERTY(bool locked READ locked NOTIFY stateChanged)
     Q_PROPERTY(bool ready READ ready NOTIFY stateChanged)
+    Q_PROPERTY(bool pdf READ pdf NOTIFY stateChanged)
+    Q_PROPERTY(bool textAllowed READ textAllowed NOTIFY stateChanged)
+    Q_PROPERTY(QString pageText READ pageText NOTIFY stateChanged)
+    Q_PROPERTY(QString textError READ textError NOTIFY stateChanged)
+    Q_PROPERTY(bool searchBusy READ searchBusy NOTIFY stateChanged)
+    Q_PROPERTY(QString searchMessage READ searchMessage NOTIFY stateChanged)
+    Q_PROPERTY(int matchStart READ matchStart NOTIFY stateChanged)
+    Q_PROPERTY(int matchLength READ matchLength NOTIFY stateChanged)
+    Q_PROPERTY(bool matchReady READ matchReady NOTIFY stateChanged)
     Q_PROPERTY(int pageCount READ pageCount NOTIFY stateChanged)
     Q_PROPERTY(int page READ page NOTIFY stateChanged)
     Q_PROPERTY(QSizeF pageSize READ pageSize NOTIFY stateChanged)
@@ -30,6 +39,18 @@ public:
     bool busy() const { return m_busy; }
     bool locked() const { return m_locked; }
     bool ready() const { return m_pageCount > 0 && !m_locked && !m_frame.isNull(); }
+    bool pdf() const { return m_pdf; }
+    bool textAllowed() const { return m_textAllowed; }
+    QString pageText() const { return m_pageText; }
+    QString textError() const { return m_textError; }
+    bool searchBusy() const { return m_searchBusy; }
+    QString searchMessage() const { return m_searchMessage; }
+    int matchStart() const { return m_matchStart; }
+    int matchLength() const { return m_matchLength; }
+    bool matchReady() const {
+        return !m_busy && m_matchStart >= 0 && m_pageText == m_matchText
+            && m_matchStart <= m_pageText.size() - m_matchLength;
+    }
     int pageCount() const { return m_pageCount; }
     int page() const { return m_page; }
     QSizeF pageSize() const { return m_pageSize; }
@@ -41,6 +62,8 @@ public:
     Q_INVOKABLE void unlock(const QString &password);
     Q_INVOKABLE void goToPage(int page);
     Q_INVOKABLE void rotate(int degrees);
+    Q_INVOKABLE void find(const QString &query, bool backward, bool caseSensitive);
+    Q_INVOKABLE void cancelSearch();
     Q_INVOKABLE void renderAt(double zoom, double devicePixelRatio);
 signals:
     void stateChanged();
@@ -50,10 +73,17 @@ signals:
 private:
     void requestRender();
     void acceptResult(RenderResult result);
+    void resetSearch();
+    void acceptSearch(TextSearchResult result);
     QThread m_thread;
     QObject *m_worker = nullptr;
     std::shared_ptr<std::atomic<quint64>> m_latest;
     std::shared_ptr<DocumentRenderer> m_renderer;
+    std::shared_ptr<std::atomic<quint64>> m_latestSearch;
+    QString m_pageText, m_textError, m_searchMessage, m_lastQuery, m_matchText;
+    int m_matchStart = -1, m_matchLength = 0;
+    bool m_pdf = false, m_textAllowed = false, m_searchBusy = false;
+    bool m_lastCaseSensitive = false;
     RenderRequest m_request;
     QImage m_frame;
     QString m_error;

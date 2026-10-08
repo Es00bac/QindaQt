@@ -27,6 +27,8 @@ Tk.AppWindow {
         case "file.open": fileDialog.open(); break
         case "file.close": viewer.close(); break
         case "file.quit": window.close(); break
+        case "edit.text":
+        case "edit.find": textDialog.open(); break
         case "view.previous": viewer.goToPage(viewer.page - 1); break
         case "view.next": viewer.goToPage(viewer.page + 1); break
         case "view.first": viewer.goToPage(0); break
@@ -58,11 +60,11 @@ Tk.AppWindow {
         delegate: Shortcut {
             required property var modelData
             sequence: modelData.shortcut
-            enabled: modelData.enabled
+            enabled: modelData.enabled && !textDialog.visible
             onActivated: coordinator.activateAction(modelData.id)
         }
     }
-    Shortcut { sequence: "Ctrl+="; enabled: viewer.ready; onActivated: viewport.zoomIn() }
+    Shortcut { sequence: "Ctrl+="; enabled: viewer.ready && !textDialog.visible; onActivated: viewport.zoomIn() }
 
     menuBar: ViewerMenuBar {
         objectName: "viewerMenuBar"
@@ -132,6 +134,15 @@ Tk.AppWindow {
             tooltip: qsTr("Fit width (Ctrl+2)")
             onClicked: viewport.fitWidth()
         }
+        Tk.Button {
+            objectName: "findTextButton"
+            text: qsTr("Find text…")
+            available: viewer.ready && viewer.pdf && viewer.textAllowed && !viewer.busy
+            tooltip: viewer.pdf && !viewer.textAllowed
+                ? qsTr("This PDF does not allow text copying.")
+                : qsTr("Find and select PDF text (Ctrl+F)")
+            onClicked: coordinator.activateAction("edit.find")
+        }
         Tk.IconButton {
             objectName: "rotateButton"
             iconName: "rotate-cw"
@@ -159,7 +170,9 @@ Tk.AppWindow {
                 Image {
                     objectName: "documentImage"
                     anchors.fill: parent
-                    source: viewer.ready ? "image://document/" + viewer.frameRevision : ""
+                    // AGENT-CONTRACT: provider revision follows image staging;
+                    // the controller's state notification does not promise it.
+                    source: viewer.ready ? "image://document/" + framePublication.revision : ""
                     cache: false
                     smooth: true
                     Accessible.role: Accessible.Graphic
@@ -219,6 +232,11 @@ Tk.AppWindow {
         nameFilters: [qsTr("Images and PDFs (*.pdf *.png *.jpg *.jpeg *.gif *.webp *.bmp *.tif *.tiff *.svg)"),
                       qsTr("All files (*)")]
         onAccepted: viewer.open(selectedFile)
+    }
+    ViewerTextDialog {
+        id: textDialog
+        hostItem: window.contentItem
+        viewerModel: viewer
     }
     Tk.Dialog {
         id: passwordDialog

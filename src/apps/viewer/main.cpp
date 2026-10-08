@@ -44,26 +44,17 @@ int main(int argc, char **argv)
         std::fprintf(stderr, "qindaqt-viewer: %s\n", qPrintable(error.message));
         return 1;
     }
-    const auto updateActions = [&] {
-        for (const auto &action : actions) {
-            bool enabled = true;
-            if (action.menuId == QStringLiteral("view")) enabled = viewer.ready();
-            if (action.id == QStringLiteral("file.close")) enabled = !viewer.fileName().isEmpty();
-            if (action.id == QStringLiteral("view.previous") || action.id == QStringLiteral("view.first"))
-                enabled = viewer.ready() && viewer.page() > 0;
-            if (action.id == QStringLiteral("view.next") || action.id == QStringLiteral("view.last"))
-                enabled = viewer.ready() && viewer.page() + 1 < viewer.pageCount();
-            static_cast<void>(coordinator.setActionEnabled(action.id, enabled));
-        }
-    };
+    const auto updateActions = [&] { updateViewerActions(coordinator, viewer); };
     QObject::connect(&viewer, &QindaQt::Viewer::ViewerController::stateChanged, &coordinator, updateActions);
     updateActions();
 
     QQmlApplicationEngine engine;
     auto *provider = new QindaQt::Viewer::FrameProvider;
     engine.addImageProvider(QStringLiteral("document"), provider);
+    auto *publication = new QindaQt::Viewer::FramePublication(*provider, &engine);
     QObject::connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged,
-                     &engine, [&] { provider->setFrame(viewer.frame()); });
+                     publication, [&] { publication->setFrame(viewer.frame()); });
+    engine.rootContext()->setContextProperty(QStringLiteral("framePublication"), publication);
     engine.rootContext()->setContextProperty(QStringLiteral("viewer"), &viewer);
     engine.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
     engine.loadFromModule(QStringLiteral("QindaQt.Viewer"), QStringLiteral("Main"));

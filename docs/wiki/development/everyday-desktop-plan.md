@@ -45,28 +45,39 @@ and token data exist; useful real Claude reporting and other provider feeds
 remain unfinished. Source adapters or normalized fixtures alone do not establish
 live usage for those providers.
 
-Viewer candidatea8927f432 passes the strict seven-target build and all eight
-owning native rows (44Qt checks, zero failure/skip/blacklist), including actual
-focused Return/keypad Enter, clipboard and relocated CLI/install paths. Earlier
-parser/QML/keyboard failures are preserved. Separate normal and2x captures
-pass; final exact source/pixel acceptance and integration are still required.
-Printing/copier integrated26 rows pass; physical printing/scanning and Viewer
-printing remain open. Safe cross-volume Move/Trash/recovery is unfinished.
+Viewer PDF text selection/search and frame publication are integrated from
+exact559485b after independent09136ab source/raw-native/private-pixel acceptance.
+The candidate strict seven-target build and eight owning rows pass44 Qt checks,
+zero failures/skips/blacklists, with normal and doubled-scale captures showing
+the correct page behind the search pane. The genuine stale-raster control and
+all prior compiler/parser/key failures remain preserved. Integrated-tree rerun
+is next before a later immutable package. This is the ED-10 text slice: Viewer
+printing, assistive technology, physical and newcomer journeys remain open.
+Printing/copier integrated26 rows pass; hardware printing/scanning and safe
+cross-volume Move/Trash/recovery are unfinished.
 
-Full mixer gain/quiet-start remains source-only pending exact package-image
-admission, lifecycle and production wiring. The first real private unpatched
-ASan Portage attempt reaches Meson and fails because the sanitizer runtime does
-not precede the sandbox preload. This is a cohort setup failure, not the required
-loopback lifetime reproducer. Narrow private ASan/cache source repair is active;
-no lifecycle, fixed-image or working production-gain claim follows.
+Full mixer gain/quiet-start still needs exact package-image admission,
+lifecycle qualification and production wiring. Actual repaired input/policy/
+evidence helpers pass31 tests and six AST checks. The first sanitizer attempt's
+Meson preload-order failure is retained; a fresh original-ASan private Portage
+cohort is now running with protected input snapshots and separate mutable
+distfiles. No genuine old module-UAF, fixed image or production gain is claimed.
 
-Android read-only inputs/public signature-verifier package candidatesc05d9c16/
-23ab470 have independent source acceptanced97ea819 and15 passing pure tests.
-Actual Java/package/signatures, resolved whole-image source/license coverage,
-guest initialization and authenticated app-window producer remain required.
-Windows v7 actual private native attempt fails Xwayland XKB readiness before any
-app launch. V8 candidate03af625 has independent source acceptancef98936ec; a
-fresh preflight and separately granted single bounded app attempt are next.
+Android public AOSP verifier sourcec05d9c16/23ab470 has independent source and
+bounded artifact acceptance. The private signed package6f6837a0 passes separately
+observed10 packaged-CLI cases, six Calculator/DeskClock signature/tamper/restore
+checks, and the authentic unsupported-only signature refusal. Original build
+phase stdout was unavailable and is not inferred from its exit0. It is not yet
+installed; whole-image source/license correspondence, guest initialization and
+authenticated window producer remain required. The review's mistaken Java21
+API inference was explicitly retracted; actual runtime checks used Java25.
+
+Windows v9 exact9721b98 passes fresh source-bound preflight and observes real
+Notepad/WordPad windows in separate prefixes, ordered server resize/close and
+empty final inventory. Complete acceptance still fails because the second
+prefix stop returns1; namespace retirement alone does not prove prefix cleanup.
+The failure is preserved and the independently reviewed owned-server lifetime
+repair is next. No client-render/input or authenticated blue identity is proven.
 Neither platform has passed a complete ordinary app journey.
 
 USB/File Manager integration, safe file mutations, enterprise/VPN networking,

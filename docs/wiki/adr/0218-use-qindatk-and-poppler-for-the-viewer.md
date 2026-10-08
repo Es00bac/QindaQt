@@ -66,3 +66,28 @@ The [Viewer contract](../apps/viewer.md) and
 [Default applications contract](../apps/default-applications.md) own supported
 formats, interaction details and verification. Image/PDF editing, annotations,
 and a new rendering engine are outside this decision.
+
+
+## October 7 text/find consequence
+
+The read-only Viewer extension keeps page extraction and literal search inside
+the existing serialized Poppler worker; only bounded value-owned strings and
+match offsets cross into the GUI. QindaTK's public dialog, text and clipboard
+controls present selectable page text separately from raster rendering.
+Respect Poppler copy permissions and never interpret extracted text as markup.
+Search retirement is independent of raster zoom and occurs on close,
+replacement, manual navigation and explicit cancellation.
+
+The documented ReadingOrder extraction API introduces a minimum
+`poppler-qt6>=26.01.0` configure/runtime dependency for the next immutable
+package. This retains the accepted engine and process boundary. Returned-text,
+query and page-visit bounds do not provide a sandbox or hard parser deadline.
+Native source tests, independent review, installed adoption and physical/AT
+qualification remain separate; no print/edit/form capability follows from
+selectable text.
+
+The text pane assigns Return/keypad Enter to search rather than dialog
+acceptance. It gates the public Dialog primary action and supplies an explicit
+public footer Close button, preserving Escape and keyboard access. Consumers
+bind Tk.Button capability through available; the toolkit retains its busy-state
+enabled binding. No toolkit-private item or transport dependency is introduced.

@@ -32,6 +32,9 @@ attempt and cancellation leaves a visible Unlock action.
 | Command | Shortcut |
 | --- | --- |
 | Open / close document / quit | Ctrl+O / Ctrl+W / Ctrl+Q |
+| Find in PDF | Ctrl+F |
+| Select PDF text | Ctrl+Shift+F |
+| Copy selected PDF text in the text pane | Ctrl+C |
 | Previous / next PDF page | Page Up / Page Down |
 | First / last PDF page | Ctrl+Home / Ctrl+End |
 | Zoom in / out | Ctrl++ or Ctrl+= / Ctrl+- |
@@ -48,9 +51,46 @@ in narrow windows; QindaTK controls retain keyboard focus and accessible names.
 Errors and empty/locked state are visible in the content area. Rendering runs
 off the GUI thread and leaves a status message while work is pending.
 
-The local File/View menu and standard exported menu share AppShell's action
+The local File/Edit/View menu and standard exported menu share AppShell's action
 snapshot and enabled state. The local menu remains visible unless the desktop
 confirms that it hosts this exact menu endpoint. No private transport is added.
+
+## PDF text and find
+
+Use **Find text…**, Ctrl+F, or **Select PDF text…**, Ctrl+Shift+F, to open the selectable
+plain text pane for the current PDF page. Select with the mouse or keyboard;
+Ctrl+C and **Copy selection** copy only the selection. Page text stays literal,
+including markup-like content. Copying does not write or modify the document.
+The pane is separate from the raster viewport; it does not provide a geometric
+selection overlay or continuous-page layout.
+
+Enter a query and press Return, **Next**, or **Previous**. Search is literal,
+case-insensitive by default, with an optional **Match case** toggle; it wraps
+around the document and selects the matched text in the pane. A match on another
+page advances the ordinary page viewport. **Stop search**, editing the query,
+closing the pane/document, replacing the document, or manual page navigation
+retires pending search results. Return and keypad Enter keep the pane open;
+Escape or the keyboard-accessible **Close** button closes it. The pane gates
+QindaTK Dialog's public primary action and supplies its explicit footer action;
+it does not depend on toolkit-private items. Button capabilities bind through
+the public `available` property so toolkit busy state still disables them. Focused
+text-pane buttons consume Return/keypad Enter through the public button click
+method only when enabled; Space and accessible press retain toolkit behavior.
+PDF page/zoom shortcuts are suspended while the pane owns keyboard focus so
+Ctrl+Home and page scrolling keep their ordinary text-selection meaning.
+
+Locked PDFs require the existing password flow. PDFs whose Poppler permission
+result forbids copying expose no page text or search and show a plain explanation.
+Images have no PDF text action; a textless PDF page shows its own empty state.
+No OCR or font reconstruction engine is added.
+
+Each page result is bounded to **262144 UTF-16 units**; an oversized page is
+refused as a whole instead of silently truncating it. Queries are bounded to
+**512 UTF-16 units**, and one search visits at most **4096 pages**. Reaching the
+page limit reports an incomplete search, never “no matches”; the user can
+continue from another page. Only one search is admitted at a time. Search and
+raster rendering share the owning worker thread but have separate retirement
+revisions, so zoom cannot resurrect a retired search.
 
 ## Ownership and resource limits
 
@@ -60,6 +100,12 @@ or decoded image on a serialized worker thread. `ViewerController` owns that
 thread and joins it during teardown. Only value requests/results cross the
 thread boundary; Poppler objects never enter QML or the scene graph. Each
 request has a revision, and close/open/navigation/zoom invalidate old results.
+A private GUI-thread publication object stages the engine-owned provider's
+copied frame before publishing its revision to QML. Its constructor takes that
+provider and composition parents it to the engine, without relying on provider
+QObject inheritance across Qt versions. Image URL updates consume that revision; a controller
+notification alone cannot promise that a separate image-staging slot ran first.
+Provider requests hold only a short mutex while copying the image.
 Obsolete queued work is skipped, and Poppler's cancellation callback stops an
 obsolete PDF render. Closing a document clears cached pixels and passwords.
 Password strings cross the Poppler Qt6 boundary using its documented Latin-1
@@ -68,38 +114,54 @@ byte encoding, including non-ASCII legacy-PDF passwords.
 Raster output is limited to **16 Mi pixels**, with an **8192-pixel maximum
 edge**. Unsupported full-image scaling rejects source images above 64 Mi
 pixels before decode; Qt's image allocation limit remains enabled at 256 MiB.
-These bounds limit application-owned raster allocations, not all memory used
-inside a PDF parser. A complex PDF may take time to parse; no process sandbox
+These bounds limit application-owned raster allocations and returned text, not all memory used
+inside a PDF parser. Text bounds apply after Poppler extraction; they do not impose a parser allocation cap. A complex PDF may take time to parse; no process sandbox
 or hard parser deadline is claimed. Passwords are not logged by application
 code. The renderer does not execute PDF JavaScript, follow document links, or
 launch applications.
 
 ## Build and verification
 
-The app requires installed QindaTK, Poppler's `poppler-qt6` pkg-config module,
-Qt Quick/Quick Controls/Dialogs/SVG and the Qt imageformats plugins. The viewer
+The app requires installed QindaTK, Poppler's `poppler-qt6>=26.01.0` pkg-config module,
+Qt Quick/Quick Controls/Dialogs/SVG and the Qt imageformats plugins. The Poppler
+floor supplies the documented ReadingOrder API used by page text; the next
+immutable desktop recipe must declare the same floor. The viewer
 build registers the `Viewer` install component, including its executable,
-desktop entry/icon and public AppShell backing libraries. QindaTK and Qt/Poppler
+desktop entry/icon and public AppShell backing libraries. The text action row
+uses the public QindaTK Flex.Wrap enum for its wrapping layout. QindaTK and Qt/Poppler
 remain normal system dependencies. The app's QML is embedded in the executable,
 so it does not depend on source/build-tree import paths after installation.
 
 ```sh
 cmake --build build/dev --target qindaqt-viewer qindaqt_viewer_renderer_test \
-  qindaqt_viewer_controller_test qindaqt_viewer_ui_test -j2
+  qindaqt_viewer_controller_test qindaqt_viewer_ui_test \
+  qindaqt_viewer_text_test qindaqt_viewer_text_controller_test \
+  qindaqt_viewer_text_ui_test
 ctest --test-dir build/dev -R '^apps.viewer\.' --output-on-failure
 ```
 
-The four focused gates render genuine generated PDFs and every advertised
-image format, check password failures/success, navigation/rotation/size bounds,
+The eight focused gates render genuine generated PDFs and every advertised
+image format, check actual displayed red/blue pixels after next/previous page
+navigation (a correct controller frame alone is insufficient), password
+failures/success, navigation/rotation/size bounds,
 latest-open and close fencing, QindaTK UI keyboard paths and 960×680/640×480
 captures, then exercise CLI paths/file URLs and a relocated `Viewer` install.
+Text gates use real Poppler Unicode/markup-like text, copy-restricted and password
+fixtures, forward/backward/case/wrap and real page/query/text bounds. Ordinary-size,
+in-bounds fixtures first verify actual Poppler extraction at the text cap and
+cap-plus-one, avoiding its tiny-character discard safeguard. Controller
+gates check close/replacement/navigation retirement and single-flight admission.
+The text UI gates exercise actual keyboard focus, native clipboard selection,
+search selection, Return/keypad Enter in the query and focused Previous/Next/Copy
+buttons, explicit Close, busy-state capability and compact/normal/2x layout; they save private screenshots.
 All run with isolated home/runtime roots and offscreen Qt. `--screenshot PATH`
 is the verification seam: capture a settled window and exit, nonzero on an
 open/capture error or a 30-second verification deadline. Host desktop settings
 are never needed for these gates.
 
-This is a read-only image/PDF viewer. Search, text selection/copy, annotation,
-printing, PDF forms, image editing, animation and continuous-page layout are
-not implemented. The offscreen checks do not claim physical-display or
+This is a read-only image/PDF viewer. Annotation, printing, PDF forms, image
+editing, animation and continuous-page layout remain unimplemented. The new
+text/find source is a candidate until its exact native and independent review
+gates pass; authored fixtures alone do not qualify the installed application. The offscreen checks do not claim physical-display or
 assistive-technology qualification. QindaTK's existing theme is used directly;
 there is no viewer-specific theme or token derivation.
