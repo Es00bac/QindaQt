@@ -252,4 +252,4 @@ digests and both actual staged-header poison/restoration identities. Exact
 40 owning CTests pass, including the staged production applet; 28 Qt Totals
 report 282/0/0/0. This is private/offscreen/package evidence, not installed-radio
 acceptance. The next immutable desktop recipe must explicitly declare
-dev-libs/dbus as a direct build/runtime dependency.
+sys-apps/dbus as a direct build/runtime dependency.

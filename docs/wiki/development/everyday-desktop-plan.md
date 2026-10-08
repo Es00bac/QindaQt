@@ -37,8 +37,12 @@ Settings and the installed AI popup opens. Compact b021/00c is independently
 source-accepted and root visually accepted at owner scale. Integration5858bcc
 passes strict28 targets,33/185 owning and4/88 profile/resolution gates.
 The Settings page is denser; the popup is bounded and scrollable with separate
-stream controls. R18 source14e4406/overlay af4e8ed awaits exact recipe review,
-signed build and installation. The compact presentation is not installed.
+stream controls. Initial R18 source14e4406/overlay af4e8ed passed exact source
+review; actual Portage resolution then rejected the nonexistent dev-libs/dbus
+atom before compilation. Platform is correcting the recipe to sys-apps/dbus
+and qualifying actual pretend resolution for an independent exact recheck.
+The failed build is preserved at 4fe2a58ac; no R18 artifact or installation
+exists. The compact presentation is not installed.
 
 Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 checks pass.
 Bluetooth 3040022/7686226 is integrated at 3b4275ace with independently verified
