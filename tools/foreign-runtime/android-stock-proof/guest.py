@@ -75,7 +75,7 @@ def main():
             conf.chmod(0o644)
             spawn(["/usr/bin/dbus-daemon", "--nofork", "--config-file=" + str(conf)])
             wait_path(ROOT / (name + "-bus"))
-        call(["/usr/bin/waydroid", "init"])
+        call(["/usr/bin/waydroid", "--details-to-stdout", "init"])
         config = configparser.ConfigParser()
         config.read("/var/lib/waydroid/waydroid.cfg")
         expected = {"images_path": "/usr/share/waydroid-extra/images",
@@ -132,7 +132,7 @@ def main():
         # Entire namespace/kernel is fixture-owned, yet stop observation remains
         # distinct from QEMU containment. No cleanup is inferred from exit 0.
         try:
-            call(["/usr/bin/waydroid", "container", "stop"])
+            call(["/usr/bin/waydroid", "--details-to-stdout", "container", "stop"])
             stopped = call(["/usr/bin/lxc-info", "-P", "/var/lib/waydroid/lxc",
                             "-n", "waydroid", "-sH"], capture_output=True, text=True)
             result["cleanupQualified"] = stopped.stdout.strip() == "STOPPED"

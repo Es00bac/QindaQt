@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — actual Android archive and protected four inputs qualified; exact first-VM plan awaits root grant. Voice final pair accepted; no active process or resource held.
+- Status: available — first Android VM failed at stock init and retired; diagnostic-only source frozen for review. No resources held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -235,3 +235,5 @@
 - 2026-10-08T21:20:42.619253+00:00 — Archive once0/34.474s, full source/inventory stable, exact initramfs3542cc frozen; heavy released. Preserving input transfer and constructing actual four-input manifest next; no guest grant yet.
 
 - 2026-10-08T21:28:57.916788+00:00 — Vendor-only continuation0 and protected copies0 settled; original transfer timeout retained. Four actual input pins and prospective unchanged KVM argv frozen for separate first-boot review; no guest or host initialization.
+
+- 2026-10-08T21:41:06.188644+00:00: First VM unit1/8.258s, ownedQEMUretired, inputstable, guestinitCalledProcessError; preserved raw and root-authorized stock diagnostic argv only. R22sourcepairACCEPTca5.
