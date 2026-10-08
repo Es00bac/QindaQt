@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — preserving fourth Android failure and freezing stock LXC diagnostic-only successor; no runtime lease held.
+- Status: available — exact LXC diagnostic source and archive2225 plan preserved; awaiting one archive grant, no runtime resource held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -265,3 +265,5 @@
 - 2026-10-08T22:15:01.353095+00:00: Actualarchive0/21.525s/allpins+oneguestparity; fourthd98377/plane97ee pendingdiagnosticboot.
 
 - 2026-10-08T22:20:59.232009+00:00: Fourth VM settled1/23.577s, nested socket/image mounts observed, LXC RUNNING timeout, cleanup qualified; proof d973d5a7 verified9payloads. Root authorized only container DEBUG forwarding source change.
+
+- 2026-10-08T22:22:22.055630+00:00: a8204 source and54da plan frozen; actual logging2/2 andAST3 pass, no archive or fifthVM execution.
