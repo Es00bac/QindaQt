@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Owned-server fixture source and70 synthetic controls frozen for Astra exact review; no Wine/native/preflight/compiler/Java/Portage resources held.
+- Status: available — Exact eb28 repaired source and static bundle preserved; waiting same-Astra safety recheck before repaired child controls. No resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -271,3 +271,7 @@
 - 2026-10-08T10:41:58+00:00: Cohesive owned-child/files/server/ledger source authored; actual kernel lock/SO_PEERCRED/pidfd and checked subreaper known-orphan/unknown-doublefork controls run withoutWine/namespace. First nested synthetic code2fail and reserved-shell status recorder failure preserved, meaningful source policies unchanged; final focused evidence recorded. Initial server incarnation permanently latched, source mode/peer/current lock rechecks, SIGINT retirement, unknown survivors rejected/no peer signals. Preparing exact different-author source freeze.
 
 - 2026-10-08T10:51:48+00:00: Source-only owned-server candidate frozen at exact0fcc authorbase. Actual33 owned-process/files/lifecycle,3 checkedsubreaper/detached-doublefork,10 complete-retirement admission,13authority and11publicdata =70/70 pass. AST/docs475/strict7.94/diff0; module189/61/116/50/87 lines, largesttest201. Bundleef76a7d7/71680/12 current11source digests; same19publicpayload plan and unchanged inside/X11/scenario/readonlyplan. First nested-script2fail and reserved-shell observer failure retained; no guard relaxation. Original ambiguous provenance key clarified with distinct archive/server digests, oldrecord intact. No installedWine, namespace/bus/Java/Portage/compiler action. Exact different-author source review then new preflight/grant remain.
+
+- 2026-10-08T11:04:30+00:00: Exact reviewer counterexample and unbounded synthetic-release hazard acknowledged; oldd3af70/raw intact. Adding permanent pre/post deadline failure and final-publication boundary facts, plus self-expiring every synthetic generation/finally-ownedpidfd supervisor settlement/reaping with pre-release and communication-timeout controls. Source/AST freeze goes to same Astra before repaired synthetic rerun; no Wine/preflight/namespace/Java/Portage/compiler.
+
+- 2026-10-08T11:26:10+00:00: Root preserved exacteb28 source repair after original-user authorization was recognized; root receipt read and finally refinements inspected. Refreshed own source manifest/bundle12 and AST including embedded3/expanded2 only; no repaired child controls executed, prior d3af70 remains prior-only. No native/preflight/compiler/Portage/Java resources held. Same Astra safety recheck required before execution.
