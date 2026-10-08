@@ -172,7 +172,7 @@ Tk.AppWindow {
                     anchors.fill: parent
                     // AGENT-CONTRACT: provider revision follows image staging;
                     // the controller's state notification does not promise it.
-                    source: viewer.ready ? "image://document/" + frameProvider.revision : ""
+                    source: viewer.ready ? "image://document/" + framePublication.revision : ""
                     cache: false
                     smooth: true
                     Accessible.role: Accessible.Graphic

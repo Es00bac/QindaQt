@@ -51,9 +51,10 @@ int main(int argc, char **argv)
     QQmlApplicationEngine engine;
     auto *provider = new QindaQt::Viewer::FrameProvider;
     engine.addImageProvider(QStringLiteral("document"), provider);
+    auto *publication = new QindaQt::Viewer::FramePublication(*provider, &engine);
     QObject::connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged,
-                     provider, [&] { provider->setFrame(viewer.frame()); });
-    engine.rootContext()->setContextProperty(QStringLiteral("frameProvider"), provider);
+                     publication, [&] { publication->setFrame(viewer.frame()); });
+    engine.rootContext()->setContextProperty(QStringLiteral("framePublication"), publication);
     engine.rootContext()->setContextProperty(QStringLiteral("viewer"), &viewer);
     engine.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
     engine.loadFromModule(QStringLiteral("QindaQt.Viewer"), QStringLiteral("Main"));
