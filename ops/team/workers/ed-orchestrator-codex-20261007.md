@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: paused — owner requests logout/login to test installed r16; all workers/resources released and exact checkpoints preserved on qinda
+- Status: working — verify fresh installed r16 session, repair Viewer strict/keyboard gates, review ED05 and route one bounded Windows application attempt
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -55,3 +55,5 @@
 - 2026-10-08T00:09:14+00:00 — Routed fresh exact385 ED05 production source worktree to Astra; proposed contract/model is source dispatch only. Media actual551 full18/87 plus public SDK passed/released; root independent acceptance underway. Windows v3 failed strict env guard before apps; root actual evidence read and v4 diagnostic-only source accepted for one preflight rerun. Viewer exact15 source preserved on hub, different-author Media read-only review and separate laptop focused native prep active. No qinda compiler held.
 
 - 2026-10-08T00:28:43+00:00: Owner explicitly pauses full-plan work for fresh login. Source551 Printing independently accepted with author18/18/87Qt and SDK1/1/11Qt; integration/docs530/strict pass, integrated native rerun pending. Installed laptopr16 verified; old running shell remains. Platforma8cf, Astrac398 WIP and Media3a4 partial review exact self-authored pause records imported. No new Windows app/compiler/Portage/session action. Viewer failed strict proof preserved on qinda; all ED outcomes remain incomplete. Resume only on owner instruction.
+
+- 2026-10-08T01:13:44+00:00: User returned and goal resumed. Actual running laptop shell209845 matches installedr16 SHA2564881f914; no desktop interruption. Corrected source-of-truth hubmain fromd728 to preserveddd631 via explicit hub push (origin is GitHub). Platform granted one exactv6 app fixture only after direct archive8/source7/payload12 rehash0issues; no retry/toolkit grant. Astra resumes manifest/source and Media exact411 read-only review. Root Viewer strict aggregate repair and old/fixed keyboard tests remain isolated.
