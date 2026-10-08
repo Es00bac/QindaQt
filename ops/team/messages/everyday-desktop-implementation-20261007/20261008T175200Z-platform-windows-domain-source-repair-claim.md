@@ -1,0 +1,3 @@
+# Windows causal lifetime source repair claim
+
+Existing isolated everyday-windows-owned-server-20261008 branch at abea5c1 retains exact635 source/failure. Root routed source-only repair from independent307ae diagnosis after Android review. Own tests/foreign_apps/windows_private_proof collaborators, focused control sources, source manifest/bundle and primary Windows plan paragraph only. Two closed per-prefix childless subreaper workers/private generation receipts, held initial server fences, no numeric/adopted signal authority and terminal kernel ECHILD are mandatory. No children, Wine, preflight, namespace, compiler, Portage or host actions granted/executed. Exact source safety recheck precedes synthetic generation controls.

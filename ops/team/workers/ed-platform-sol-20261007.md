@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — One reviewed short-TMPDIR synthetic cohort actual80/80 passed and raw proof preserved; waiting same-Astra evidence review, no resources held.
+- Status: available — Windows causal-domain source frozen for same-reviewer safety check; no generation/native resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -285,3 +285,23 @@
 - 2026-10-08T11:48:50+00:00: Root independently read exactharness5234/0adb and Astraa595 SOURCE ACCEPT; granted one invocation with unchanged25/90/1MiB/heldpidfd policy, scratch retained. Immediate harness hash admitted; original5d4f raw untouched. No Wine/preflight/namespace/compiler/Portage/Java/bus/device action.
 
 - 2026-10-08T11:49:56+00:00: Exact0adb oneinvocation exit0; actual summaries33owned/5ledger/12retirement/9deadline/10authority/11prerequisite=80/80, no fails/errors/skips, all heldmodulePIDs reaped/absent. No83 inferred from prospective counts; oldd3af70 remains historical claim. Actual scratch/tmp/w-5xqeorws0700/currentUID/admitted101bytes retained; original5d4f negative unchanged. Frozen raw20/bundle21; no Wine/preflight/native/package actions/resources. Same Astra raw review then separate rootgrant remains.
+
+- 2026-10-08T16:17:22+00:00 — Claimed private fixed-image package plan at da559/29cbc; signed build and actual image unpack remain ungranted.
+- 2026-10-08T16:21:38+00:00 — Cached ZIPs rehashed; exact data pretend0/onlytarget, runtime pretend1/libcap static-libs. Exact task8 plan frozen; no heavy resources or build/image unpack performed.
+- 2026-10-08T16:32:50+00:00 — Corrected seven tracked-source inventory; exact LF/json checks and five fake-only settlement scenarios pass. Archive/product unchanged, no actual processes/build/image unpack or resource lease.
+- 2026-10-08T16:44:39+00:00 — Root c693 grant read; fourpins/seven source files/cacheZIP heldcopies admitted, private directories guarded, before controls saved. Starting one owned resource-unit dispatcher.
+- 2026-10-08T16:45:58+00:00 — Granted unit2495915/start48974573 settled1/0.114s before settings; complete raw retained, beforeafter unchanged. No retry or package/unpack; heavy lease released.
+- 2026-10-08T16:50:12+00:00 — 7da grant read; exact source/plan/dispatcher and copied ZIPs rehashed; command-only cwd correction frozen, previous failure unchanged.
+- 2026-10-08T16:53:07+00:00 — Settings0/pretend0 then build2498733/start49008751 unpack1/ELOOP; no image/package/src_test. Actual wrapper links/Portage source and complete raw retained; no retry/merge/runtime.
+- 2026-10-08T17:07:32+00:00 — Independently checked486/base29cbc:15tiny controls0, original12source-equal, helper/Manifest/provenance/notice unchanged; explicit Portage-original-directory contract, no real image unpack/build.
+- 2026-10-08T17:09:06+00:00 — Exact486 review15/15tiny0/original12unchanged; fresh plan+input pins/phase paths frozen, no actual image unpack/build. Prior526c failure preserved; no resources held.
+- 2026-10-08T17:16:42+00:00 — Claimed exact f676 KVM source review; no VM/init/package/native/heavy lease, separate data486 plan awaits Files.
+- 2026-10-08T17:26:44+00:00 — f676 independent11-file source review9pure0/8AST/shell0; actual Portage tool/kernel/module input metadata pinned, runtime closure/libcapstatic pending. No VM/package/native/heavy resource held.
+- 2026-10-08T17:32:06.528854+00:00 — Claimed sole heavy lane under manager213322; exact486 source, private signed data attempt with 8-job/12GiB envelope; KVM source acceptance remains separate.
+- 2026-10-08T17:36:49.840948+00:00 — Actual signed data build0 and exact four-file image qualified; raw phase test count not retained, reported rather than inferred. Package02f97185/proof frozen for different-worker review; all resources released.
+- 2026-10-08T17:38:26.984306+00:00 — Preserved exact phase-log gap observer: configured test flag/defined phase, but actual15 summary unobserved; default T/build.log routing and successful cleanup distinguished from causal inference. Resources remain released.
+- 2026-10-08T17:48:09.563694+00:00 — Read exact9d0f and thirteen pinned recipes, checked eight prerequisite raw rows/hooks, and ran only eighteen tiny synthetic inventory controls; preparing bounded source-only disposition and postpackage evidence proposal.
+- 2026-10-08T17:49:06.728397+00:00 — Independent exact9d0f SOURCE acceptance:18 tiny controls/13 recipe hashes, exact8 prerequisite and ABI32/hook caveats; new unchanged15-control postpackage proposal prepared, not run. Runtime/merge/test grants remain manager-owned.
+- 2026-10-08T17:52:00.665158+00:00 — Claimed existing Windows owned-server branch after Android source handoff; read full307ae, preserve635/nativefailure and implement closed per-prefix workers with kernel ECHILD retirement, no observed/adopted PID signal authority. Source safety review precedes generation tests.
+
+- 2026-10-08T18:07:09.963640+00:00 — Frozen Windows closed per-prefix worker/ledger/protocol and authored negative/kernel controls; only AST23+embedded3/docs checked. Exact safety review before all generation/native gates; Android artifact and postpackage-test proposal preserved separately.

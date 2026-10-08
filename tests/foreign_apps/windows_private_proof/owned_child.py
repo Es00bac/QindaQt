@@ -6,9 +6,9 @@ from pathlib import Path
 from processes import identity
 
 class OwnedChild:
-    def __init__(self,argv,env,log):
+    def __init__(self,argv,env,log,pass_fds=()):
         self.process=subprocess.Popen(argv,env=env,stdin=subprocess.DEVNULL,
-            stdout=log,stderr=subprocess.STDOUT,close_fds=True)
+            stdout=log,stderr=subprocess.STDOUT,close_fds=True,pass_fds=pass_fds)
         self.fd=None;self.failed=False;self.retiring=False;self.reaped=False
         try:
             self.fd=os.pidfd_open(self.process.pid)

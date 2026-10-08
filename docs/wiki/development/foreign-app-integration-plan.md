@@ -188,3 +188,33 @@ release file; the supervisor and outer test settle held owners and reap adopted
 children on failure, retaining temporary data whenever settlement is uncertain.
 These repaired controls require separate source review and execution; the prior
 70-control receipt does not qualify the repaired source.
+
+
+### Causal per-prefix supervisor source repair
+
+The exact source635 native attempt refused an unknown adopted child before any
+window steps. It observed and retired its two initial servers, but did not
+qualify either app or the global child ledger. Polling ancestry could miss the
+intermediate in Wine's real double-fork paths; the retained evidence does not
+identify the triggering child. Faster polling or UID/prefix matching would
+not establish the missing authority.
+
+The next fixture source assigns each fixed built-in to a separate supervisor.
+Each supervisor is a checked subreaper and kernel-childless before launching
+only its own held initial server and app. A private inherited bounded
+sequenced-packet control FD binds a fresh nonce, fixed domain and held
+supervisor PID/start lifetime to every request/receipt. The driver independently
+checks XRes, normal-window type and the fixed PE argument against the current
+domain receipt. This is causal trusted-fixture membership, not production
+authenticated app identity.
+
+No observed or adopted process receives signal authority. Normal retirement
+first settles the exact direct owners, then waits/reaps adopted children until
+the kernel reports ECHILD; a nonblocking wait returning zero is not empty.
+Server socket/peer/lock incarnation, initiating owner and deadlines remain
+fenced before/after blocking work. Child census retains bounded PID/parent/
+start/state observations including zombies only as diagnostics. Failure
+containment signals only unreaped held direct owners, and outer namespace
+retirement is never promoted into successful per-app cleanup. All source and
+synthetic controls require exact safety review before any new generation,
+preflight or Wine execution; source authoring adds no Windows completion.
