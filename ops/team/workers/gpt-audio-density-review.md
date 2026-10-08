@@ -3,7 +3,7 @@
 - Name: GPT Audio density reviewer
 - Role: Independent Audio density and immutable release source/documentation reviewer
 - Identity: Live collaboration task /root/everyday_audio_density_review
-- Status: available — exact Audio install source/private-native accepted; integration and fresh release proof are next
+- Status: available — integrated Audio evidence and repaired image-only helper source accepted; exact R20 pins are next
 - Outcome: Exact Audio QML install-rule/source-regression review and bounded native-proof follow-up
 - Base: 9a48f76440a6dc95b67f5f47ba59eca77643986f
 - Candidate: 72bf0c28359ffe876742ec71bc1cfed567a2b417
@@ -44,3 +44,7 @@
 - 2026-10-08T13:32:15Z: Claimed root-routed read-only native evidence review for accepted72bf0c28359ffe876742ec71bc1cfed567a2b417 and old-controla8ff66fe5c3a6ace4ddb16f2b0f11dfcd21b5f54. Platform reports old build0 then causal missing fallback/CTest8, fixed seven owning CTests/30 installed probes0; these remain reports until exact indexed raw inspected. Requested frozen payload/receipt boundary; no native rerun/compiler/Portage/host action.
 
 - 2026-10-08T13:40:16Z: Published PRIVATE-NATIVE ACCEPT for exact72bf/source-equal6d56 with olda8ff control. Independently hashed100archive members/99payloads; full raw/JUnit/registry prove fixed7/7,Qt28/0/0/0 and30probes incl23causal disk errors/recovery0. All27 staged module ledger files/23source blobs/11console match, qmldir restored; four unique actual fullpage1×/2×frames manually viewed, all12fixedframes bound by byte equality. Old compiled0→precheck3→declaredpath failure/CTest8 bounded truth retained; no interrupted-restoration or warning-free-configure claim. No native/compiler/Portage execution; full own staged/candidate checks required, R19 stays NeedsFix.
+
+- 2026-10-08T13:54:20Z: Claimed root-routed read-only integrated98342aa820576c792669ae8a33d878e5336f8296 proof and package-only helperbe2924e269a0b9f036eb4d7dd86b7283f27479fe source prerequisites. Exact owning code/tests equal accepted72bf; package helper must use installed public Tokens/ThemeLoader/IconRuntime and metadata rows, never unavailable SettingsAppearance SDK/source QML. Root separately owns R20 archive/recipe work; no helper/native/compiler/Portage/install action granted.
+
+- 2026-10-08T14:08:21Z: Completed integrated98342 EVIDENCE ACCEPT:37/36 archive/payload hashes, strict four-target0/14.221s, sevenCTest/Qt28/30actual probes,27staged/23source-equal/11console/restored and12prior-viewed capture equality; final docs534/strict0/8.23/diff0. Original helperbe2924 SOURCE NEEDS_FIX matched14false rejections from23real poison raws; same implementer repairs51d845/38bee preserved. Exact38bee HELPER-SOURCE ACCEPT verifies all6files/7members/publicSDK/bootstrap/no-I/O rows/causal matcher/final pinned input and public dependency target rechecks/bounds/cleanup. UNCOMPILED/UNRUN; future concrete argv/package grant separate. Own full staged/candidate checks accompany receipts; available for root-routed R20 exact source pair or frozen package inputs.
