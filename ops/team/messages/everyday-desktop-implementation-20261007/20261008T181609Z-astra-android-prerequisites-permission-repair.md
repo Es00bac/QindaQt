@@ -1,0 +1,11 @@
+# Android prerequisite permission-domain repair — SOURCE ONLY
+
+Supersedes exact1f3 proposal; independent blocker bfa776370c10e51e679e5c94bc04481f2a6d777b is preserved. Frozen argv 20261008T181609Z-astra-android-prerequisites-permission-argv.json, SHA256 8da483c42af4724e246a1951eb03312995579f0d0c9d7bcadb4bda4c5abdea11.
+
+The old common root0700 would deny preserved userpriv/userfetch phases traversal. New fresh run root is root:portage0710; only traversal is granted to the admitted Portage group. Root-only0700 private subtree holds backups, old signed libcap preservation binpkgs and authoritative pin journals. Nonsecret config is root:portage0750 with0640 files and no group write; secret signing credentials remain in existing root authority, are neither copied nor exposed to Portage. Root must inspect includes/symlinks and explicitly select nonsecret config inputs. The writable2770 workspace contains only nonsecret build/cache/distfiles/log/new-binpkg state. Mutable workspace files never authorize privileged config or account changes.
+
+Before any merge, root must prepare and verify exact ownership/modes/no-symlink ancestor, current Portage UID/GID, effective config and source hashes. Under the actual Portage identity, bounded read/traverse probes must cover exact source archives, selected recipe/eclass/Manifest and nonsecret config inputs; a sentinel create/unlink may test only the mutable workspace. No permission change outside this new run root is permitted. Source-only proposal does not execute these probes or prepare any privileged directory.
+
+Only path domains and fresh unit/output names changed. Eight atoms, libcap ABI32/PAM and account effects, signed preservation requirement, FEATURES including userpriv/usersandbox/userfetch, resource caps8/12GiB, phase bounds120/60/1200, account collision refusal, world/profile preservation, no daemon merge and no automatic rollback remain exactly1f3. Normal signing credentials remain root-only. No commands, tests creating children, builds, merges or runtime actions were executed.
+
+Static JSON/delta assertions pass: three phases have equal argv lengths; all changes are explicit path/unit arguments; target atoms and post-merge obligations are identical. Platform same-pair source recheck requested, followed only by root's separate protected-preparation/transaction grant.
