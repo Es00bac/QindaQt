@@ -14,5 +14,5 @@ int main(int argc, char **argv)
     QindaQt::Audio::AudioClient client(&transport);
     const auto snapshot = client.snapshot();
     return client.state() == QindaQt::Audio::ClientState::Stopped
-        && !client.hasSnapshot() && snapshot.devices.isEmpty() ? 0 : 1;
+        && !client.hasSnapshot() && snapshot.outputs.isEmpty() && snapshot.inputs.isEmpty() ? 0 : 1;
 }
