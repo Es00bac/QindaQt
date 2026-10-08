@@ -1,3 +1,13 @@
+## Integrated Audio Settings gates — 2026-10-08T11:49:34+00:00
+
+Manager integration ed325f6 passes seven strict owning targets (0/0.264s),
+nine CTests (0/17.085s) and full seven Qt summaries 57/0/0/0. Source/tests
+remain byte-equal to accepted d050. Links pass 534 documents; strict MkDocs
+passes0/8.377s. Independent integrated source review3af103b also accepts the
+ADR metadata and limits. The integrated raw archive b62990aa is preserved and
+all six indexed payloads verified on both hosts. Portage R19 preparation is
+next; R18 remains installed. Physical audio and all full-plan gates stay open.
+
 ## Reviewed compact Audio Settings integration — 2026-10-08T11:42:35+00:00
 
 Exact d050c1f3d3ee017db9e535be642c121131e45ba5 is integrated after
