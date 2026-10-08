@@ -1,3 +1,19 @@
+## Corrected scope and elapsed-time estimate — 2026-10-08T14:37:10+00:00
+
+The manager withdraws the earlier50-working-day/10-week estimate: it mixed
+integration, verification and human scheduling and was not grounded in actual
+throughput. The task is completing the existing QindaQt components and the
+audit/delivery/foreign-app plans, plus useful AI usage and the owner's integrated
+audio requirements. Existing runtimes, file/package tools and service boundaries
+remain the foundation. Scope is not reduced by this estimate correction.
+
+The provisional planning range is3–7 elapsed days of sustained parallel work.
+Android runtime/window integration and the complete audio mixer are the greatest
+remaining uncertainties; private acceptance does not qualify physical/newcomer
+journeys. Compact Audio is the immediate release, estimated about1–2 hours if
+the corrected build and package gates pass. This is a forecast, not acceptance
+evidence, a feature-weight advance or a promise that unresolved gates pass.
+
 ## Current R20 delivery and remaining work — 2026-10-08T14:27:06+00:00
 
 R20 source/recipe0ae/322 is independently accepted7baf59ac; runtime98342
