@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — first Android protected stage refused missing intermediate libgbinder link; raw preserved, heavy released, exact input-closure repair ready to route.
+- Status: available — Android hop-closure86b source and fresh6730 input plan frozen; queued Voice/Windows exact review, no stage/native lease.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -223,3 +223,7 @@
 - 2026-10-08T20:41:21.614673+00:00 — Protected20files/hash/mode root0400 and172currentVDB pins passed; exact546/e03efdb copier launched once under4CPU/5GiB cap, awaiting settlement. Normal laptop origin fetched; existing4ahead/1222behind branch/untracked work preserved.
 
 - 2026-10-08T20:43:25.034211+00:00 — Actual546 copy exit1/3.624s after653MB at final symlink closure. All20protected/172VDB pins match; unitcaps/settlement read; no archive/VM/retry. Root/Platform notified HEAVYreleased; causal missing intermediate link identified without weakening admission.
+
+- 2026-10-08T20:45:15.921025+00:00 — Root authorized exact hop-preserving collector correction and light chain/cycle/escape controls; fresh inventory/plan only, no copy retry.
+
+- 2026-10-08T20:49:32.832808+00:00 — Hop-closure86b frozen:4linksadded/regularsunchanged/0issues,51tiny/AST14/docs0. Original6726/failedstage preserved; fresh2050root uncreated and newstage ungranted.
