@@ -249,22 +249,22 @@ void AudioAppletModelTests::boundsRowsAndReportsOverflow()
     Snapshot snapshot = snapshotWithCounts(12, 6, 10);
     const AudioAppletModel model = AudioAppletModel::project(
         Phase::Ready, {}, &snapshot, {});
-    QCOMPARE(model.deviceRows().size(), kMaxDeviceRows);
+    QCOMPARE(model.deviceRows().size(), kMaxDeviceRows + 6);
     QCOMPARE(model.streamRows().size(), kMaxStreamRows);
-    QCOMPARE(model.overflowDeviceCount(), 18 - kMaxDeviceRows);
+    QCOMPARE(model.overflowDeviceCount(), 12 - kMaxDeviceRows);
     QCOMPARE(model.overflowStreamCount(), 10 - kMaxStreamRows);
     // The bounded window keeps protocol order: the first eight outputs.
     QCOMPARE(model.deviceRows().first().serial(), 1ULL);
-    QCOMPARE(model.deviceRows().last().serial(), 8ULL);
-    QVERIFY(std::all_of(model.deviceRows().cbegin(), model.deviceRows().cend(),
-                        [](const DeviceRow &row) { return row.isOutput(); }));
+    QCOMPARE(model.deviceRows()[7].serial(), 8ULL);
+    QCOMPARE(model.deviceRows()[8].serial(), 13ULL);
+    QCOMPARE(model.deviceRows().last().serial(), 18ULL);
+    QVERIFY(!model.deviceRows()[8].isOutput());
 }
 
 void AudioAppletModelTests::defaultLabelsStayCorrectBeyondWindow()
 {
     Snapshot snapshot = snapshotWithCounts(12, 6, 0);
-    // The default input is the first input, serial 13, far beyond the
-    // retained window. The label must still resolve from the snapshot.
+    // Input has its own bounded window, so eight outputs cannot hide it.
     QCOMPARE(snapshot.defaultInput.serial, 13ULL);
     const AudioAppletModel model = AudioAppletModel::project(
         Phase::Ready, {}, &snapshot, {});

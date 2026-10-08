@@ -279,3 +279,84 @@ set_tests_properties(
     qindaqt.audio-applet-coalescing
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+# Bounded actual popup-window wheel/keyboard/focus geometry, on the same
+# compiled production module as the existing drag and volume-wheel fixtures.
+qt_add_executable(qindaqt_audio_applet_scroll_tests tst_audio_applet_scroll.cpp)
+target_include_directories(qindaqt_audio_applet_scroll_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/../../services/audio_client")
+target_link_libraries(qindaqt_audio_applet_scroll_tests PRIVATE
+    QindaQt::ShellAudioAppletRuntime QindaQt::TokensQml QindaQt::ShellIcons
+    qindaqt_shell_iconsplugin qindaqt_shell_audio_applet_runtimeplugin
+    qindaqt_themes Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test)
+target_compile_definitions(qindaqt_audio_applet_scroll_tests PRIVATE
+    QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+add_dependencies(qindaqt_audio_applet_scroll_tests
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin)
+qindaqt_enable_warnings(qindaqt_audio_applet_scroll_tests)
+qt_import_qml_plugins(qindaqt_audio_applet_scroll_tests)
+foreach(scale IN ITEMS 1 2)
+    add_test(NAME qindaqt.audio-applet-scroll-dpi${scale}
+        COMMAND qindaqt_audio_applet_scroll_tests
+        -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-1280x720.json")
+    set_tests_properties(qindaqt.audio-applet-scroll-dpi${scale} PROPERTIES
+        LABELS "shell;audio;presentation;offscreen;scroll;accessibility"
+        ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=${scale}")
+endforeach()
+
+add_test(NAME qindaqt.audio-applet-scroll-fractional
+    COMMAND qindaqt_audio_applet_scroll_tests
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-1536x864.json")
+set_tests_properties(qindaqt.audio-applet-scroll-fractional PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;scroll;accessibility"
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1.25")
+add_test(NAME qindaqt.audio-applet-geometry-ambiguous
+    COMMAND qindaqt_audio_applet_scroll_tests
+    selectedOutputGeometryUsesCurrentWindowScreen
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-ambiguous.json")
+set_tests_properties(qindaqt.audio-applet-geometry-ambiguous PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;negative"
+    ENVIRONMENT "QT_QUICK_BACKEND=software")
+
+# Real selected-output evidence remains valid without unique display names.
+add_test(NAME qindaqt.audio-applet-scroll-unnamed
+    COMMAND qindaqt_audio_applet_scroll_tests
+    constrainedPopupReachesFooterWithoutChangingAudio -platform offscreen)
+add_test(NAME qindaqt.audio-applet-scroll-duplicate
+    COMMAND qindaqt_audio_applet_scroll_tests
+    constrainedPopupReachesFooterWithoutChangingAudio
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-ambiguous.json")
+set_tests_properties(qindaqt.audio-applet-scroll-unnamed
+    qindaqt.audio-applet-scroll-duplicate PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;scroll;selected-output"
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1")
+
+# Actual fresh-popup stream text/control bounds, independent of scrolling.
+qt_add_executable(qindaqt_audio_stream_layout_tests tst_audio_stream_layout.cpp)
+target_include_directories(qindaqt_audio_stream_layout_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/../../services/audio_client")
+target_link_libraries(qindaqt_audio_stream_layout_tests PRIVATE
+    QindaQt::ShellAudioAppletRuntime QindaQt::TokensQml QindaQt::ShellIcons
+    qindaqt_shell_iconsplugin qindaqt_shell_audio_applet_runtimeplugin
+    qindaqt_themes Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test)
+target_compile_definitions(qindaqt_audio_stream_layout_tests PRIVATE
+    QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+add_dependencies(qindaqt_audio_stream_layout_tests
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin)
+qindaqt_enable_warnings(qindaqt_audio_stream_layout_tests)
+qt_import_qml_plugins(qindaqt_audio_stream_layout_tests)
+
+add_test(NAME qindaqt.audio-applet-stream-layout-constrained
+    COMMAND qindaqt_audio_stream_layout_tests
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-1280x720.json")
+add_test(NAME qindaqt.audio-applet-stream-layout-owner
+    COMMAND qindaqt_audio_stream_layout_tests
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-owner-1536x864-scale125.json")
+set_tests_properties(qindaqt.audio-applet-stream-layout-constrained PROPERTIES
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1")
+set_tests_properties(qindaqt.audio-applet-stream-layout-owner PROPERTIES
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1.25")

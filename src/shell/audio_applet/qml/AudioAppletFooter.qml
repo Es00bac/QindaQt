@@ -88,17 +88,15 @@ ColumnLayout {
         }
     }
 
-    // AGENT-GUARD: rendered only when a composition has supplied something
-    // that can actually open Settings. Nothing does today — see the
-    // `desktopControls` note in AudioApplet.qml — so no dead affordance is
-    // ever shown.
+    // Render only the composed public launch facade; the action opens generic
+    // Settings, not a dedicated Audio route and not a QML-side executable.
     AudioAppletPad {
         objectName: "audioOpenSettings"
         Layout.alignment: Qt.AlignRight
         visible: footer.desktopControls !== null
                  && Boolean(footer.desktopControls?.canOpenSettings)
-        text: qsTr("Audio settings…")
-        accessibleDescription: qsTr("Opens the Audio page of QindaQt Settings")
+        text: qsTr("Settings…")
+        accessibleDescription: qsTr("Opens QindaQt Settings")
         onClicked: footer.desktopControls.openSettings()
     }
 }

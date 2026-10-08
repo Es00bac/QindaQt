@@ -8,6 +8,7 @@ set(runtime_root "${SOURCE_ROOT}/src/shell/audio_applet")
 file(GLOB applet_runtime_sources
     "${runtime_root}/audio_applet_controller.h"
     "${runtime_root}/audio_applet_controller.cpp"
+    "${runtime_root}/audio_popup_geometry.cpp"
     "${runtime_root}/qml/*.qml")
 set(composition_sources "")
 foreach(candidate IN ITEMS

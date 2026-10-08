@@ -396,3 +396,25 @@ set_tests_properties(
     ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
 )
+
+qt_add_executable(qindaqt_settings_audio_density_tests
+    tst_audio_page_density.cpp audio_page_test_support.h stub_audio_settings_model.h)
+target_include_directories(qindaqt_settings_audio_density_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_compile_definitions(qindaqt_settings_audio_density_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_AUDIO_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/audio/qml/AudioPage.qml")
+target_link_libraries(qindaqt_settings_audio_density_tests PRIVATE
+    qindaqt_settings_audio qindaqt_settings_appearance QindaQt::TokensQml
+    qindaqt_themes QindaQt::ShellIcons qindaqt_shell_iconsplugin
+    Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+qindaqt_enable_warnings(qindaqt_settings_audio_density_tests)
+add_dependencies(qindaqt_settings_audio_density_tests qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin qindaqt_settings_audio_qmlplugin qindaqt_shell_iconsplugin)
+foreach(scale IN ITEMS 1 2)
+    add_test(NAME qindaqt.settings-audio-density-dpi${scale}
+        COMMAND qindaqt_settings_audio_density_tests)
+    set_tests_properties(qindaqt.settings-audio-density-dpi${scale} PROPERTIES
+        LABELS "offscreen;settings;audio;presentation;accessibility"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=${scale}")
+endforeach()
