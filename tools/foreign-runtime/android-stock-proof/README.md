@@ -228,3 +228,5 @@ receipt explicitly keeps audioIntegrationQualified false.
 The boot-readiness property query uses only the remaining existing 190-second window-proof budget; other stock commands retain ten seconds. A timed-out command is never retried. Bounded stage/stdout/stderr diagnostics are retained in windows.json and guest serial, including whether the compositor baseline and boot-completed value were actually observed. This does not qualify app journeys or Audio1 integration.
 
 The guest terminal result is emitted only on its inherited serial console after filesystem sync, then explicitly drained before PID1 returns. Any post-publication output/drain error holds PID1 for the existing host timeout, so a queued success line cannot qualify an output failure. The strict host single-result parser and real cleanup criteria stay unchanged.
+
+Console admission uses the inherited character-device identity (Linux console5:1 or ttyS0 4:64), plus isatty and termios capability. A pathname lookup is unsuitable for the kernel-opened console after devtmpfs replaces the initramfs device view.

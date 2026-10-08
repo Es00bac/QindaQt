@@ -1,16 +1,21 @@
 """Injected console/flush/drain controls; never operate a real TTY or child."""
 from contextlib import ExitStack
+from types import SimpleNamespace
+import os
+import stat
 import unittest
 from unittest.mock import patch
 import guest
 
 
 class TerminalTests(unittest.TestCase):
-    def setup_calls(self, stack, tty=True, name="/dev/console"):
+    def setup_calls(self, stack, tty=True, device=(5, 1), mode=stat.S_IFCHR):
         events = []
         stack.enter_context(patch.object(guest.sys.stdout, "fileno", return_value=1))
         stack.enter_context(patch.object(guest.os, "isatty", return_value=tty))
-        stack.enter_context(patch.object(guest.os, "ttyname", return_value=name))
+        stack.enter_context(patch.object(guest.os, "ttyname", side_effect=AssertionError("no-path-lookup")))
+        stack.enter_context(patch.object(guest.os, "fstat", return_value=SimpleNamespace(
+            st_mode=mode, st_rdev=os.makedev(*device))))
         stack.enter_context(patch.object(guest.termios, "tcgetattr",
                                         side_effect=lambda fd: events.append("attributes")))
         stack.enter_context(patch.object(guest.os, "sync",
@@ -41,9 +46,22 @@ class TerminalTests(unittest.TestCase):
                 guest.emit_terminal({"success": True})
             output.assert_not_called(); drain.assert_not_called(); hold.assert_not_called()
 
-    def test_other_tty_refuses_before_publication(self):
+    def test_foreign_character_device_refuses_before_publication(self):
         with ExitStack() as stack:
-            _, output, drain, hold = self.setup_calls(stack, name="/dev/pts/0")
+            _, output, drain, hold = self.setup_calls(stack, device=(136, 0))
+            with self.assertRaisesRegex(RuntimeError, "terminal-not-guest-console"):
+                guest.emit_terminal({"success": True})
+            output.assert_not_called(); drain.assert_not_called(); hold.assert_not_called()
+
+    def test_serial_device_is_also_admitted(self):
+        with ExitStack() as stack:
+            _, _, drain, hold = self.setup_calls(stack, device=(4, 64))
+            guest.emit_terminal({"success": True})
+            drain.assert_called_once_with(1); hold.assert_not_called()
+
+    def test_regular_file_with_copied_device_number_refuses(self):
+        with ExitStack() as stack:
+            _, output, drain, hold = self.setup_calls(stack, mode=stat.S_IFREG)
             with self.assertRaisesRegex(RuntimeError, "terminal-not-guest-console"):
                 guest.emit_terminal({"success": True})
             output.assert_not_called(); drain.assert_not_called(); hold.assert_not_called()
