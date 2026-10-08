@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: waiting — Audio Settings local slider floor frozen for exact source review; no native/compiler work.
-- Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
-- Branch: worker/everyday-core-release-20261008
+- Status: available — reviewed Audio915 native31/31 and captures5/5 handed off; all resources released, independent visual/evidence review next.
+- Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
+- Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -164,12 +164,24 @@
 
 - 2026-10-08T04:31:14.329537+00:00 — Freeze staticpure4poisons/runtimepoison/icon/diff0, docs531strict0. Fullshape1 baselineerrors plus approvedhost352→353onebinding; nofalsepass. Oldregression1ae preserved, fixeddefaultmic/viewport/facade/density matrixUNRUN. No compiler/native/installedusabilityclaim.
 
-- 2026-10-08T04:57:38+00:00: Root routed actual23/29 native failures to anchor-window selected-screen repair. Frozen old-production regression d4fb740cb includes unnamed/duplicate popup rows and actual outputSpace diagnostics. Production repair now resolves current screen membership/positive geometry and observes Window.screen identity; density thresholds unchanged. No new native run.
+- 2026-10-08T04:38:48.539773+00:00 — Root exactf3 SOURCE ACCEPT/solelaptop32/16 lease. Fetched explicithub, created isolatedold1ae/fixedf3 worktrees; originalmain untrackedwork preserved. Configuring oldproduction+newregression FIRST with strictDebug/ShellON/ProductionShellON/pluginOFF/usr/libexec. ExplicitprivateHOME/XDG/shortmode700TMPDIR/softwareQt/invalidhostbuses. No live audio or settings actions.
 
-- 2026-10-08T04:58:37+00:00: Frozen repair c98ca4c05 and production-unchanged unnamed/duplicate regression d4fb740cb pushed to explicit qinda hub. Static boundary/poison/icon/docs531/strict MkDocs/diff all0. Requested exact source review and fresh laptop old-first qualification grant; all original six failures retained, no native rerun.
+- 2026-10-08T04:46:08+00:00: Root accepted exact old764/fixed4cf one-assertion fixture repair; production src equality exit0. Original old strict compile failure230/232 retained, zero tests/old behavior claims. Same isolated laptop32/16 lane resumed old incremental owning build; host buses/control excluded.
 
-- 2026-10-08T05:22:37+00:00: Actual c98 cohort20/31 pass,Qt162pass9fail0skip. Primary Qt6.11.1 shows screen QML property belongs to QQuickWindowQmlImpl, unlike fixture plain QQuickWindow. Prepared actual native screenChanged notification plus existing attached Screen facts; native helper unchanged. Existing stage plugin and hidden default-button fixture findings sent for exact scoped directions. No native rerun/captures.
+- 2026-10-08T04:47:46+00:00: Old764 strict owning build exit0; old normal/DPI2 CTests2/2 failed after validated Ready at actual popup height bound and missing default input, Qt4pass/4fail/0skip. Fixed4cf strict configure exit0, all20 targets admitted, complete owning registry collected; focused fixed build active32/16 with invalid host buses.
 
-- 2026-10-08T05:23:03+00:00: Root authorized always-visible/enabled volume-control density fixture with unchanged22/128 thresholds and sole StartMenu dynamic plugin prerequisite. Frozen native-window signal plus density correction for exact review; original20/31 c98 failures retained. No native rerun/captures, laptop lane not reused.
+- 2026-10-08T04:53:51+00:00: Fixed4cf strict20-target build exit0/506 actions; owning cohort23/29 pass exit8. New scroll normal/2x/fractional/ambiguous passes; existing drag/wheel, two density and two unbuilt shell closure rows fail. Stopped before captures/reruns/repair, preserving raw logs/XML/LastTest. No host controls.
 
-- 2026-10-08T05:30:54+00:00: Root authorized local AudioLevelRow slider minimumHeight22 after actual bb4 density2 failures; all other29 owning rows including popup/control/stage closure passed. Source layout floor preserves shared toolkit/visual track/larger implicit sizing; tests unchanged. Docs531/strictMkDocs/diff/testequality0. Await exact review/native continuation; all failures retained.
+- 2026-10-08T05:02:38+00:00: Root accepted d4 production-unchanged regression/c98 screen repair and granted laptop32/16 continuation. Prior4cf23/29/161Qtpass4fail and all old failures retained. Old unnamed/duplicate two-row reproduction first, then fixed20+only shell/preview prerequisites31-row owning and captures.
+
+- 2026-10-08T05:10:27+00:00: Actual d4 unnamed/duplicate selected-screen rows reproduce one-pixel popup (outputSpace invalid) exit8,Qt4pass2fail. Fixed c98 configure0/registry31/target22 admission0; strict32/16 shell/preview prerequisite build active580/1633, no failed action observed. Prior raw evidence digests preserved separately; no host actions.
+
+- 2026-10-08T05:21:51+00:00: c98 strict22 allowed targets built0;31 owning rows20pass11fail exit8,Qt162pass9fail0skip. Public native helper passes but QML Window subclass screen-property assumption collapses real C++-window popup. Settings fixture targets intentionally hidden default button. Missing stage prerequisite is qindaqt_start_menu_qmlplugin. All evidence frozen, no captures/reruns.
+
+- 2026-10-08T05:25:20+00:00: Root exact-reviewed bb4 binding/density repair and sole StartMenu plugin prerequisite; granted one focused continuation23 targets/31 serial rows then captures if pass. Prior c98 all11 failures and old negatives preserved. No host actions.
+
+- 2026-10-08T05:29:45+00:00: bb4 strict23 targets exit0/50 actions; actual31 cohort29pass2fail exit8,Qt169pass2fail0skip. Original drag/wheel and all popup screen/scale/migration rows plus installed stage closures pass. Only Settings density minimum22 height fails at both scales. No captures/reruns; proposed owning slider minimum hit-area22 keeps all assertions/action policy. Native processes settled.
+
+- 2026-10-08T05:33:14+00:00: Root exact-reviewed915 sole production minimum22 and byte-identical tests; granted same23-target/31-row strict laptop qualification, captures only after31pass. All bb4 density failures preserved; no added targets or old rerun.
+
+- 2026-10-08T05:37:37+00:00: Exact915 strict23 target build0; owning31/31 exit0,171Qtpass0fail0skip; five captures5/5 exit0,24Qtpass0fail0skip. Product/test source equality0,39 raw artifacts indexed. Actual screens normal1280x720,2x640x360,fractional1229x691 (not user1536logical); all prior failures preserved. Compiler/private/offscreen resources RELEASED; no install/host action. Requested exact visual/evidence review then manager integration.
