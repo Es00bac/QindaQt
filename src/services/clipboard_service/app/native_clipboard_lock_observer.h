@@ -20,7 +20,10 @@ public:
                                 QString runtimeDirectory, QString socketBasename,
                                 QObject *parent = nullptr);
     ~NativeClipboardLockObserver() override;
-    // Successful start installs observation; unlocked truth requires a fresh
+    // Startup observes initially absent owners with one bounded timer before
+    // pinning any incarnation. Exhaustion retires it; repeated start cannot
+    // extend the budget. Successful start installs observation; unlocked truth
+    // requires a fresh
     // targeted native nonce receipt and its authenticated empty method reply.
     bool start();
     void stop();
@@ -30,6 +33,7 @@ Q_SIGNALS:
     void contentMayBeShownChanged(bool allowed);
 
 private:
+    void probeInitialOwner();
     class Private;
     std::unique_ptr<Private> d;
 };

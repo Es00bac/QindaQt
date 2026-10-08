@@ -255,9 +255,16 @@ mutation notification returns Uncertain rather than stale success.
 Getters cannot revive a cached unlocked state after observed denial. Fresh
 native authenticated state is required. Attachment revocation or observer stop
 retires the composition; replacement owners need a fresh resident composition.
-Initial missing session/socket authority remains unavailable. Late native
-interfaces use only the existing bounded receipt retry. A successful observer
-start means observation installed, not unlocked or capture enabled.
+Resident refresh precedes Session1 publication on ordinary login. Before any
+owner is selected, initially absent names use one bounded timer, at most eleven
+lookup attempts and a 30-second monotonic window; privacy remains closed.
+Repeated start neither restarts the window nor allocates parallel probes. First
+resolution pins the owner pair once. Timeout, invalid local/socket/PID proof,
+stop or post-selection loss retires the observer; late-after-timeout names and
+replacement owners cannot revive it. Late native interfaces use only the
+existing separate bounded receipt retry. A successful observer start means
+observation installed, not unlocked or capture enabled. Installed ordinary
+fresh-login ordering remains an acceptance gate.
 
 `clipboard_service` owns the model, all payload bytes, the adapter, and the
 private D-Bus name in one Qt event-loop thread. It installs a D-Bus activation

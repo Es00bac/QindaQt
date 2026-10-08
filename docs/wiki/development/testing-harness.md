@@ -3674,7 +3674,7 @@ operation results, `clipboard-service` opt-in/lock/purge/copy behavior,
 aliased capture cancellation and reentrant Copy/Changed uncertainty,
 `native-clipboard-startup` actual private-bus split-owner/ordinary socket/native
 receipt composition (including old legacy refusal, wrong PID, receipt spoofing,
-owner loss before queued watchers and delayed native object),
+owner loss before queued watchers, delayed first Session1/timeout/stop and delayed native object),
 `clipboard-settings-consent` schema/profile-default denial plus explicit
 user-override acceptance, `clipboard-request-cache` FIFO result eviction and
 the exact 64-caller ceiling,

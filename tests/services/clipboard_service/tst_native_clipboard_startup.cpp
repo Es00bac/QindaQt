@@ -9,6 +9,7 @@
 #include <qindaqt/services/session_lock_state/session_lock_state_monitor.h>
 #include <qindaqt/services/session_lock_state/session_lock_transport.h>
 
+#include <QtCore/QTimer>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
@@ -190,19 +191,84 @@ private Q_SLOTS:
         QCOMPARE(fixture.backend->requests, 1);
         QVERIFY(adapter.captureEnabled);
     }
-    void foreignSocketBasenameAndMissingOwnerFailClosed_data() {
-        QTest::addColumn<bool>("missingSession");
-        QTest::newRow("foreign-basename") << false;
-        QTest::newRow("missing-session-owner") << true;
+    void lateFirstSessionOwnerEnablesWithoutRebinding() {
+        NativeClipboardFixture fixture;
+        QVERIFY(fixture.start(true, false));
+        Clipboard::NativeClipboardLockObserver observer(
+            fixture.client, getpid(), fixture.runtime.path(), fixture.basename);
+        FakeWaylandAdapter adapter;
+        Clipboard::ClipboardHost host(&adapter, 18, [&] { return observer.contentMayBeShown(); });
+        bind(observer, host);
+        const bool observing = observer.start();
+        QVERIFY(!host.snapshot().privacyAllowed);
+        QVERIFY(!adapter.captureEnabled);
+        QCOMPARE(fixture.backend->requests, 0);
+        // Real normal-login ordering: resident process exists first, Session1
+        // is advertised later. Preserve this exact row against immutable064.
+        QVERIFY(fixture.session.registerService(QStringLiteral("org.qindaqt.Session1")));
+        QTRY_VERIFY_WITH_TIMEOUT(host.snapshot().privacyAllowed, 3000);
+        QVERIFY(observing);
+        QVERIFY(adapter.captureEnabled);
+        adapter.offer(value());
+        QCOMPARE(entries(host.snapshot()), 1);
     }
-    void foreignSocketBasenameAndMissingOwnerFailClosed() {
-        QFETCH(bool, missingSession);
+    void firstOwnerAfterShortReceiptRetryBudgetStillAdmits() {
+        NativeClipboardFixture fixture;
+        QVERIFY(fixture.start(true, false));
+        Clipboard::NativeClipboardLockObserver observer(
+            fixture.client, getpid(), fixture.runtime.path(), fixture.basename);
+        FakeWaylandAdapter adapter;
+        Clipboard::ClipboardHost host(&adapter, 20, [&] { return observer.contentMayBeShown(); });
+        bind(observer, host);
+        const bool observing = observer.start();
+        QVERIFY(!host.snapshot().privacyAllowed);
+        bool published = false;
+        QTimer::singleShot(2500, &observer, [&] {
+            published = fixture.session.registerService(QStringLiteral("org.qindaqt.Session1"));
+        });
+        QTRY_VERIFY_WITH_TIMEOUT(host.snapshot().privacyAllowed, 6500);
+        QVERIFY(observing && published);
+        QVERIFY(adapter.captureEnabled);
+        QCOMPARE(fixture.backend->requests, 1);
+    }
+    void absentFirstOwnerTimeoutIsTerminal() {
+        NativeClipboardFixture fixture;
+        QVERIFY(fixture.start(true, false));
+        Clipboard::NativeClipboardLockObserver observer(
+            fixture.client, getpid(), fixture.runtime.path(), fixture.basename);
+        FakeWaylandAdapter adapter;
+        Clipboard::ClipboardHost host(&adapter, 19, [&] { return observer.contentMayBeShown(); });
+        bind(observer, host);
+        QVERIFY(observer.start());
+        QTRY_VERIFY_WITH_TIMEOUT(!observer.start(), 35'000);
+        QVERIFY(!host.snapshot().privacyAllowed);
+        QCOMPARE(fixture.backend->requests, 0);
+        QVERIFY(fixture.session.registerService(QStringLiteral("org.qindaqt.Session1")));
+        QTest::qWait(150);
+        QVERIFY(!observer.start());
+        QVERIFY(!observer.contentMayBeShown());
+        QVERIFY(!adapter.captureEnabled);
+        QCOMPARE(fixture.backend->requests, 0);
+        QCOMPARE(entries(host.snapshot()), 0);
+    }
+    void stopCancelsPendingFirstOwnerObservation() {
+        NativeClipboardFixture fixture;
+        QVERIFY(fixture.start(true, false));
+        Clipboard::NativeClipboardLockObserver observer(
+            fixture.client, getpid(), fixture.runtime.path(), fixture.basename);
+        QVERIFY(observer.start());
+        observer.stop();
+        QVERIFY(fixture.session.registerService(QStringLiteral("org.qindaqt.Session1")));
+        QTest::qWait(150);
+        QVERIFY(!observer.start());
+        QVERIFY(!observer.contentMayBeShown());
+        QCOMPARE(fixture.backend->requests, 0);
+    }
+    void foreignSocketBasenameFailsClosed() {
         NativeClipboardFixture fixture;
         QVERIFY(fixture.start());
-        if (missingSession)
-            QVERIFY(fixture.session.unregisterService(QStringLiteral("org.qindaqt.Session1")));
-        Clipboard::NativeClipboardLockObserver observer(fixture.client, getpid(),
-            fixture.runtime.path(), missingSession ? fixture.basename : QStringLiteral("wayland-0"));
+        Clipboard::NativeClipboardLockObserver observer(
+            fixture.client, getpid(), fixture.runtime.path(), QStringLiteral("wayland-0"));
         QVERIFY(!observer.start());
         QVERIFY(!observer.contentMayBeShown());
     }

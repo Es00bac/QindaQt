@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — validating frozen clipboard source and preparing bounded native gates during independent trust review
+- Status: working — repairing normal-login clipboard initial owner ordering and preparing exact native regression gates
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
@@ -87,3 +87,5 @@
 - 2026-10-08T02:20:23+00:00: Complete bounded clipboard production source and ADR0358 authored with strict new public constructor symbols, pinned native attachment/receipt composition, synchronous descriptor/capture/Copy guards, purge-before-cancel and reentrant completion checks. Two real failure-mode fixtures and installed-only symbol consumer authored; native unexecuted. Clipboard persistence/logging boundary and diff checks exit0. Ordinary installed fresh-login owner/socket ordering remains required before repair claim. Root holds integrated Printing/Copier lease; freezing source for independent Astra trust review now.
 
 - 2026-10-08T02:22:13+00:00: Exact clipboard06463d7 source preserved on hub for Astra/root review. Actual documentation links531 exit0, strict MkDocs exit0, production shape14/test shape15 both zero issues, boundary/diff0; source maximum Host173/privacy99/main97/native96 nonblank. Log hashes/evidence saved in ignored .cache/clipboard-static. No compile/CTest/native/installed/content capture; preparing immutable-old source harness while root holds native lease.
+
+- 2026-10-08T02:31:51+00:00: Astra exact064 source review8ef070c found one P1: supervisor resident refresh precedes Session1 publication, so initial absence permanently retired observer. Root authorized same-worktree repair. Authored one bounded initial-owner timer/30-second monotonic window/max11 lookups, pin-once/no post-admission replacement, late-first owner beyond short receipt budget, timeout/late-after-timeout and stop cases. Actual docs531/strict/shapes14+15/boundary/diff0; native unexecuted. Frozen repaired source goes to exact review now; root retains integrated Printing/Copier lease.

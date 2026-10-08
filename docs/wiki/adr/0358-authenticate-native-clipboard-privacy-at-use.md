@@ -27,8 +27,13 @@ notifications can also synchronously reenter the host.
 The production clipboard application privately owns NativeClipboardLockObserver.
 The ordinary Wayland adapter supplies only its connection's kernel SO_PEERCRED
 PID. Environment values select the runtime directory and socket basename;
-neither supplies PID or unlocked authority. First startup resolves and pins one
-Session1 unique owner and the native compositor owner. SessionAdmission
+neither supplies PID or unlocked authority. Normal login starts resident services before Session1 is published. Before
+selecting any owner, startup observes initial name publication with one timer,
+at most eleven synchronous lookup attempts, ten fixed delays and a 30-second
+monotonic observation window. Repeated start cannot reset that window or add
+pending work. No name lookup activates an owner. Privacy/capture stay closed.
+The first resolved pair pins one Session1 unique owner and native compositor
+owner before independent socket/receipt admission. SessionAdmission
 re-resolves Session1 to that exact owner on the constructing bus. Public
 CompositorAttachment validates runtime/socket access, actual kernel peer,
 PIDFD/socket lifetime, same bus daemon and current compositor owner/PID.
@@ -36,8 +41,10 @@ PIDFD/socket lifetime, same bus daemon and current compositor owner/PID.
 The public native monitor separately requires targeted nonce-correlated state
 receipts and matching authenticated empty method replies from that exact
 compositor. ScreenSaver/Lock1 payloads, UID alone, executable paths and
-environment-supplied PIDs grant no authority. Initial missing proof stays
-closed; a late native interface can recover only through the existing bounded
+environment-supplied PIDs grant no authority. Initial absent owners remain closed while that bounded observation is pending.
+Exhaustion or explicit stop retires it, so an owner published after timeout
+cannot revive history. Invalid local/socket/PID proof and post-selection owner
+loss are terminal. A late native interface can recover only through the existing bounded
 native receipt retry. Start means observation installed, never unlocked.
 Attachment revoke or explicit stop retires the composition and its receipts.
 There is no replacement-owner rebind, legacy fallback, service activation,
@@ -73,9 +80,10 @@ required. Explicit Settings1 user-overrides consent stays independent.
 
 - Enabled history can be available on the native split-owner session without
   weakening legacy monitor policy or granting Shell clipboard payload access.
-- Startup missing owners/socket/receipt remains unavailable. Starting a fresh
-  resident composition after failure requires normal activation/restart; no
-  observer chooses a replacement incarnation silently.
+- Initially missing owners remain unavailable until first admission within the
+  bounded startup window. Timeout, invalid socket/PID proof or later authority
+  loss requires a fresh resident composition via normal activation/restart;
+  no observer silently chooses a replacement incarnation.
 - A synchronous authority check may emit a content-free Changed signal, purge
   history and cancel an adapter transfer. Callers must respect same-thread
   lifetime and reentrancy contracts.
@@ -90,8 +98,9 @@ required. Explicit Settings1 user-overrides consent stays independent.
 Separate fixtures exercise real private-bus owner/PID proof and UNIX socket
 peers, targeted native receipts, old split-owner rejection, native unlocked
 capture, lock/presentation transitions, missing/spoofed/duplicate receipts,
-wrong kernel PID, owner replacement before an event-loop turn and late native
-objects. Synthetic adapter fixtures cover synchronous host purge, empty/throwing/
+wrong kernel PID, owner replacement before an event-loop turn, delayed first Session1 publication
+(including beyond the shorter native-interface retry budget), timeout followed
+by late owner publication, stop during initial observation and late native objects. Synthetic adapter fixtures cover synchronous host purge, empty/throwing/
 recursive admission, cancellation of aliased capture storage, changed consent,
 pre-publish denial and post-publish/notification uncertainty.
 
