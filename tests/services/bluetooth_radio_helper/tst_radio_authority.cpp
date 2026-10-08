@@ -76,7 +76,34 @@ private Q_SLOTS:
         // the test event loop services independent fake peer connections.
         auto answer = std::async(std::launch::async, [helper, sender, request] {
             QtRadioAuthority authority(helper, helper);
-            return authority.current(sender, request);
+            const bool admitted = authority.current(sender, request);
+            if (!admitted) {
+                // Diagnostic fixture only: synthetic private peers, no payloads.
+                auto describe = [](const char *label, const QDBusMessage &reply) {
+                    qInfo() << label << "type" << reply.type() << "signature"
+                            << reply.signature() << "sender" << reply.service()
+                            << "error" << reply.errorName();
+                };
+                auto owner = QDBusMessage::createMethodCall(
+                    QStringLiteral("org.freedesktop.DBus"),
+                    QStringLiteral("/org/freedesktop/DBus"),
+                    QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
+                owner << QStringLiteral("org.qindaqt.Bluetooth1");
+                describe("owner", helper.call(owner, QDBus::Block, 250));
+                auto intentQuery = QDBusMessage::createMethodCall(sender,
+                    QString::fromLatin1(kIntentPath), QString::fromLatin1(kIntentInterface),
+                    QStringLiteral("Current"));
+                intentQuery << QVariant::fromValue(request);
+                describe("intent", helper.call(intentQuery, QDBus::Block, 250));
+                auto addressQuery = QDBusMessage::createMethodCall(request.bluezOwner,
+                    request.adapterPath, QStringLiteral("org.freedesktop.DBus.Properties"),
+                    QStringLiteral("Get"));
+                addressQuery << QStringLiteral("org.bluez.Adapter1") << QStringLiteral("Address");
+                describe("address", helper.call(addressQuery, QDBus::Block, 250));
+                qInfo() << "request-valid" << validRequest(request)
+                        << "deadline-current" << (boottimeMilliseconds() < request.deadlineBoottimeMs);
+            }
+            return admitted;
         });
         QVERIFY(QTest::qWaitFor([&answer] {
             return answer.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
