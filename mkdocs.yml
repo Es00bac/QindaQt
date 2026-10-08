@@ -558,3 +558,4 @@ nav:
       - "0355: Preserve source bytes during cross-device moves": adr/0355-preserve-source-bytes-during-cross-device-moves.md
       - "ADR-0356: Delegate printer/scanner Settings to installed tools": adr/0356-delegate-printer-and-scanner-settings-to-installed-tools.md
       - '0360: Retire replaced Power1 at session entry': adr/0360-retire-replaced-power-owner-at-session-entry.md
+      - '0362: Compact Audio device details': adr/0362-present-audio-devices-with-two-lines-and-disclosed-details.md
