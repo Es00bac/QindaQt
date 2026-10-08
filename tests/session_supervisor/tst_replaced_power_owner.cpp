@@ -133,7 +133,7 @@ private Q_SLOTS:
             SessionActivationScope::PhysicalDesktop, {}, factory).isEmpty());
         QCOMPARE(factories, 0);
     }
-    void unretiredOwnerIsBoundedAndCallerContinues()
+    void unretiredOwnerReturnIsBounded()
     {
         auto bus = QDBusConnection::sessionBus();
         QVERIFY(bus.registerService(Power));
@@ -146,10 +146,9 @@ private Q_SLOTS:
         QElapsedTimer elapsed; elapsed.start();
         const auto result = retireReplacedActivationOwners(bus, {Power},
             SessionActivationScope::PhysicalDesktop, {}, factory);
-        // Same best-effort call shape as main: unresolved retirement returns
-        // without terminating the caller or forcing a restart/settings write.
-        const bool desktopCanContinue = true;
-        QVERIFY(result.isEmpty()); QVERIFY(desktopCanContinue);
+        // This fixture establishes bounded return and retained owner only.
+        // It does not execute the supervisor's full desktop startup caller.
+        QVERIFY(result.isEmpty());
         QCOMPARE(signalCount, 1);
         QVERIFY(elapsed.elapsed() >= 1500); QVERIFY(elapsed.elapsed() < 3500);
         QVERIFY(bus.interface()->isServiceRegistered(Power).value());
