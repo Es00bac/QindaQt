@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Compact Audio Settings against the owner feedback, verify fresh Claude report publication, and route Windows cleanup/source and old-ASan diagnostic policy gates.
+- Status: working — Integrate the exact reviewed compact Audio Settings change and route repaired Windows/static and original-ASan diagnostic policy gates; installed R18 and full ED outcomes remain distinct.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -120,3 +120,5 @@
 - 2026-10-08T10:52:00+00:00 — Owner confirms Audio device inventory but rejects remaining wasted space. Local installed Claude2.1.289/publisher/statusline configuration observed; allowlisted report metadata shows two quota windows and context/session token/cost fields, approximately13010s old. No fresh publication or authenticity claim. Current source already projects documented quota/reset/context fields. Root claims isolated Audio density follow-up at exact40d7, presentation only; no installed/physical or backend completion claim. First orchestration interpolation error occurred before tool execution or filesystem changes.
 
 - 2026-10-08T11:05:49+00:00 — Isolated Audio density candidate874e6ec61 frozen on hub and clean qinda author after test-onlyb4d native negative control: strict1build0/10.427s, actualQt2pass2fail0skip0blacklist, both widths74px; productionunchanged40d7. Currentbaseline strict7/9owning/four normal2x captures all0. Two-row common controls/Details follows actual ownerfeedback; fresh strict/native/regressions/captures and exact independentreview pending. Root laptop compiler/privateoffscreen lane active; no qinda native/package lease. Windowsd3af exact Astra two source blockers routed to same Platform. Media source-only oldASan diagnostic policy authoring from0007; failed51 remainsfailed, no retry/suppression/runtime grant.
+
+- 2026-10-08T11:28:13+00:00 — Audio874e actualstrict7 exit0/18.092s, nineowningCTest exit0/17.286s, sevenrawQt summaries57pass0fail0skip0blacklist including19wheel (JUnittruncateswheel; fullLastTest preserved). All four newwide/compact normal2x captures manually inspected, bothmicrophonecontrols visible at420x320. Independent0751 finds only acceptedADR0288 three-line reversal/docsprose blocker; doc-onlyd050 addsProposedADR0362/metadata/nav/index and matching64px/DetailsTab evidence, code/test equality0. Nativeproof892922bytes/SHAfa51cf00 with33indexedpayloads/34members ready forqinda. Windows worker authorization-context rejection resolved by ROOT-approved exactsourcefreezeeb28, coordinatedfinallyrefinements only/nochildrun; Platformownstatic635 withnewclosedbundle awaits Astra safety recheck. MediaWIP source-policy only. No installation, milestone or runtime qualifier inferred.
