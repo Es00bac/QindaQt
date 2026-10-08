@@ -112,6 +112,28 @@ qindaqt_enable_warnings(qindaqt_audio_routing_tests)
 add_test(NAME qindaqt.audio-routing COMMAND qindaqt_audio_routing_tests)
 set_tests_properties(qindaqt.audio-routing PROPERTIES LABELS "service;audio")
 
+# Manual, read-only mapper diagnostic. Never registered as a CTest and never
+# constructs a Worker/backend (which would realise saved console state).
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(WirePlumberObserver REQUIRED IMPORTED_TARGET wireplumber-0.5>=0.5)
+qt_add_executable(qindaqt_audio_graph_observer audio_graph_observer.cpp)
+target_include_directories(qindaqt_audio_graph_observer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+target_link_libraries(qindaqt_audio_graph_observer PRIVATE
+    QindaQt::AudioService PkgConfig::WirePlumberObserver)
+target_compile_definitions(qindaqt_audio_graph_observer PRIVATE QT_NO_KEYWORDS)
+qindaqt_enable_warnings(qindaqt_audio_graph_observer)
+
+qt_add_executable(qindaqt_audio_channel_projection_tests tst_wireplumber_channel_projection.cpp)
+target_include_directories(qindaqt_audio_channel_projection_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+target_compile_definitions(qindaqt_audio_channel_projection_tests PRIVATE QT_NO_KEYWORDS)
+target_link_libraries(qindaqt_audio_channel_projection_tests PRIVATE
+    QindaQt::AudioService Qt6::Test PkgConfig::WirePlumberObserver)
+qindaqt_enable_warnings(qindaqt_audio_channel_projection_tests)
+add_test(NAME qindaqt.audio-channel-projection COMMAND qindaqt_audio_channel_projection_tests)
+set_tests_properties(qindaqt.audio-channel-projection PROPERTIES LABELS "audio;service;pure")
+
 # AGENT-GUARD: This defaults ON for broad build jobs. The pinned native plugin
 # lane disables only these process-launching rows because Gentoo's official
 # binhost has no PipeWire `extra` variant providing pw-cat.

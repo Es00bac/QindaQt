@@ -291,9 +291,14 @@ void AudioServiceTests::malformedBackendFailsClosed()
     coordinator.start();
     Snapshot malformed = audioSnapshot();
     malformed.outputs[0].volume = 2.0;
+    malformed.diagnostic = QStringLiteral("private-backend-detail");
+    malformed.outputs[0].name = QStringLiteral("private-device-name");
     backend.publish(malformed);
     QCOMPARE(coordinator.snapshot().availability, Availability::Degraded);
     QCOMPARE(coordinator.snapshot().reasonCode, QStringLiteral("backend-malformed"));
+    QCOMPARE(coordinator.snapshot().diagnostic,
+             QStringLiteral("Backend snapshot rejected: invalid-device"));
+    QVERIFY(validateSnapshot(coordinator.snapshot()).accepted);
     QVERIFY(coordinator.snapshot().outputs.isEmpty());
     // The graph capabilities are withdrawn, but the console is the user's own
     // configuration and survives a malformed graph payload - so its bits stay.

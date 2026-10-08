@@ -312,3 +312,52 @@ uses plain cmake --build, preserving the harness's native job policy.
 This package/SDK closure evidence does not establish live Audio1 backend
 readiness, hardware controls or installed-session behavior. Those remain
 separate service and actual delivery gates.
+
+
+## Read-only graph diagnosis
+
+The manual owning target qindaqt_audio_graph_observer requires an explicit
+--observe argument and is never a CTest. It loads only the public mixer and
+default-nodes API modules, reads an object manager, then calls the production
+graph mapper and strict snapshot validator. It never constructs the backend
+or worker, realises console state, captures audio, creates nodes, changes
+defaults/levels, or writes metadata. Its client-local mixer scale matches the
+service. A bounded settle window provides one observation, not graph stability.
+
+Output includes fixed validator tokens, counts and indexed field-shape
+summaries; it omits names, paths, media text and raw properties. Per-row checks
+clear default/target references only in disposable diagnostic copies, so the
+full snapshot validation remains the authority for graph-wide failures.
+Missing API/core readiness is an error, not an empty healthy graph. Run it
+only with the operator's selected runtime and a process timeout; it does not
+select or start an upstream service. A manual observer does not qualify any
+physical control operation.
+
+
+## Channel projection and rejection diagnostics
+
+The private wireplumber_volume collaborator owns mixer dictionary decoding
+and projection. Numeric dictionary keys retain their channel positions,
+including missing indices. The negotiated node map bounds the resulting
+vector. A larger mixer vector contradicts the node layout, so channel values
+become unknown (an empty vector) while aggregate controls remain available.
+Publishing only a prefix would incorrectly authorize a partial channel write,
+because mixer-api retains unspecified channels. Missing positions within a
+non-contradictory map use the aggregate only when that aggregate is known. If a required position
+and aggregate are both unknown, the published channel vector is empty.
+The mapper never invents zero gain or compacts a later reading into an earlier
+channel. Empty maps can retain a complete indexed mixer vector. Aggregate
+known/mute/control flags keep their existing meaning.
+
+Both device and stream projections obey the unchanged strict protocol
+validator. A malformed backend snapshot still withdraws the entire graph and
+makes pending actions uncertain. Its diagnostic now contains only the fixed
+validator rejection token prefixed by Backend snapshot rejected; rejected
+device names, media text and backend diagnostics are never copied.
+
+The direct owning fixture invokes the production dictionary decoder and
+projection, then the strict validator and real coordinator with a fake
+backend. Device and stream rows cover contraction, expansion, unknown and
+sparse indexed readings, unordered dictionaries and absent maps. The private
+PipeWire runtime and latency fixtures validate every observed snapshot, not
+only row presence. These gates do not establish physical-device usability.
