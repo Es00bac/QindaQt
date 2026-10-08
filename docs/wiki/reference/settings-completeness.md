@@ -1,10 +1,10 @@
 # Settings completeness inventory
 
-This is the source-backed inventory of the 23 routes registered by
+This is the source-backed inventory of the 24 routes registered by
 `SettingsRouteRegistry::registerBuiltInRoutes()` and
-`registerAppendedRoutes()` on the current qinda source branch. Registration
-and the [active Loader witness](../adr/0250-require-active-loader-witness-for-every-settings-route.md)
-prove that each route can construct or show its declared unavailable state.
+`registerAppendedRoutes()` on the current qinda source branch. Registration records every required route; the
+[active Loader witness](../adr/0250-require-active-loader-witness-for-every-settings-route.md)
+gate verifies construction after it passes for the exact package.
 They do not prove physical hardware behavior or that every stored schema key
 has a consumer. The [Settings1 key catalog](../handbook/catalog/settings.md)
 classifies all 86 storage keys separately; many routes use native service
@@ -34,10 +34,10 @@ authority outside Settings1.
 | 20 | `login-screen` | [SDDM theme, autologin/session, numeric lock and cursor theme](../apps/login-screen-settings.md) | Privileged helper/polkit and SDDM configuration own writes; no live greeter reboot test is implied. |
 | 21 | `voice` | [Desktop voice opt-in, provider preference and panel transcript choice](../apps/voice-settings.md) | Confirmed preference gates QindaQt activation; an independently running provider is not terminated. |
 | 22 | `passwords-keys` | [Native Passwords & Keys](../apps/keyring-settings.md) | Uses the standard Secret Service client; password entry is delegated to its prompt and resident lock policy requires separately confirmed observation. |
-
 | 23 | `portal-permissions` | [Remembered ScreenCast and RemoteDesktop grants](../apps/portal-permissions-settings.md) | Existing frontend PermissionStore owns tokens. Revocation does not close active sessions; full executable route gate belongs to the integrated package build. |
+| 24 | `printers-scanners` | [Installed printer setup/jobs and Document Scanner entry](../apps/printers-scanners-settings.md) | Fixed public catalog/argv launch only; tool availability/submission is distinct from service/device/job success. Source fixtures, installed dependency and physical gates remain separately recorded. |
 
-The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–23
+The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–24
 are reached from the wide sidebar or compact tabs and retain their registry
 order. A route's unavailable diagnostic is a supported construction result,
 not proof that its backing service or device is present on this computer.

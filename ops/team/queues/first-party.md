@@ -1,3 +1,11 @@
+## Owner-requested logout/login checkpoint — 2026-10-08
+
+Work is paused at the owner request. Laptop Portage has desktop r16/source2188 installed and verified; the saved top bar includes agent-usage after Power. The running shell is the replaced old executable, not the installed r16 bytes; a fresh login loads r16. No session action or new package transaction is performed by this checkpoint.
+
+Printing source55113184 is independently accepted (ADR0356): actual author18/18 CTests/87Qt and public SDK1/1/11Qt plus corrupt-header/restoration gates pass. Its integrated-tree native rerun, future package and hardware journeys remain open. Viewer source15eec7 needs keyboard capability repairs and fails strict compilation on two partially initialized search-result aggregates; original failures are retained. ED05 collaborator41165258 review/native gates are incomplete, manifest c3989529 is preserved unfinished WIP. Windows v6 b516 passes isolated preflight bound to receipt a3baa; no application test grant/run follows. Android image licensing/trusted producer and signed toolkit artifact remain open. All ED01–24 outcomes and required real journeys remain incomplete.
+
+Workers preserve their own paused records and release resources. Resume from exact candidates and their receipts, rerun affected integrated gates, then create a new immutable desktop release; r16 is unchanged.
+
 # First-party delivery queue
 
 ## Current integrated outcomes and next gates — 2026-10-07T23:52:31+00:00

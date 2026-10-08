@@ -30,10 +30,6 @@ QStringList keywordList(const char *commaSeparated) {
 // tst_settings_route_search compares these ids with the page's list.
 QList<SettingsRouteDestination> inputDestinations() {
   return {
-      {.id = QStringLiteral("controllers"),
-       .title = QCoreApplication::translate(SearchContext, "Controllers"),
-       .keywords = keywordList(QT_TRANSLATE_NOOP(
-           "SettingsSearch", "controller, gamepad, xbox, playstation, dualsense, nintendo, gyro, dictation button"))},
       {.id = QStringLiteral("pointers"),
        .title = QCoreApplication::translate(SearchContext, "Mouse & touchpad"),
        .keywords = keywordList(QT_TRANSLATE_NOOP(
@@ -60,6 +56,10 @@ QList<SettingsRouteDestination> inputDestinations() {
        .keywords = keywordList(QT_TRANSLATE_NOOP(
            "SettingsSearch", "touchscreen, touch screen, swipe, gestures, "
                              "edge swipe, hold time"))},
+      {.id = QStringLiteral("controllers"),
+       .title = QCoreApplication::translate(SearchContext, "Controllers"),
+       .keywords = keywordList(QT_TRANSLATE_NOOP(
+           "SettingsSearch", "controller, gamepad, xbox, playstation, dualsense, nintendo, gyro, dictation button"))},
   };
 }
 
@@ -119,7 +119,7 @@ const char *routeKeywords(SettingsRouteComponent component) {
                              "a11y, high contrast, reduce motion, reduced "
                              "motion, transparency, text size, large text");
   case SettingsRouteComponent::Input:
-    // The five sub-pages carry the specific terms (mouse, keyboard, pen...).
+    // The six sub-pages carry the specific terms (mouse, keyboard, pen...).
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "peripherals, input devices, hid");
   case SettingsRouteComponent::Streaming:
@@ -162,6 +162,8 @@ const char *routeKeywords(SettingsRouteComponent component) {
   case SettingsRouteComponent::PortalPermissions:
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "portal, permission, consent, revoke, screen sharing, remote desktop");
+  case SettingsRouteComponent::Printing:
+    return QT_TRANSLATE_NOOP("SettingsSearch", "printer, printing, cups, scanner, scanning, scan, document");
   case SettingsRouteComponent::Keyring:
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "password, passwords, keys, keyring, wallet, secret, collection, credentials");

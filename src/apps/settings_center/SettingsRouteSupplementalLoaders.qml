@@ -15,6 +15,7 @@ Item {
     property alias voiceLoader: voiceLoader
     property alias keyringLoader: keyringLoader
     property alias portalPermissionsLoader: portalPermissionsLoader
+    property alias printingLoader: printingLoader
 
     Loader {
         id: defaultApplicationsLoader
@@ -114,5 +115,17 @@ Item {
                 && host.navigation?.activeRouteComponent === "portal-permissions"
                 && host.portalPermissionsComponent !== null
         sourceComponent: host.portalPermissionsComponent
+    }
+
+    Loader {
+        id: printingLoader
+        objectName: host.objectNamePrefix + "PrintingLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && (host.navigation?.activeRouteAvailable ?? false)
+                && host.navigation?.activeRouteComponent === "printers-scanners"
+                && host.printingComponent !== null
+        sourceComponent: host.printingComponent
     }
 }

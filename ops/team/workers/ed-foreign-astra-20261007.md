@@ -1,11 +1,23 @@
 # ED foreign application architecture
-- Status: available — copier qualified; ready for exact Windows fixture review or fresh ED05 production packet; no native lease
+- Status: paused — user-requested logout/login checkpoint; ED05 unfinished source preserved on qinda, no compiler/runtime resources held.
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
 - Ownership: own ADR0352/0353 pages/design proofs/records; isolated QindaTK scoped types/policy/host, tests, D-308 and public exports at base393c1ce5
 - Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
 ## Updates
+
+- 2026-10-08T00:26:41Z — User-requested safe pause. Preserved uncompiled/unregistered manifest draft in explicit unfinished checkpoint atop411652583; no milestone acceptance or installed change. First slice remains native/review-unqualified. All resources released (none held); no next work until resumed.
+
+- 2026-10-08T00:21:51Z — Froze first ED05 real values/codec/store/statx-admission source and focused real filesystem fixtures. Docs528/strict/boundary/diff pass; native unexecuted under Platform lease. Root exact review requested; continuing bounded descriptor manifest collaborator and gate preparation. No cross-volume outcome claim.
+
+- 2026-10-08T00:11:34Z — Claimed manager-created everyday-cross-volume-move-20261008 at3859cc785 after fresh hub fetch. Implementing strict recovery records/store and live descriptor mount admission first; then manifest/publish/retire/inspect/restore through existing coordinator. No native lease; Accepted357 preservation remains.
+
+- 2026-10-08T00:04:34Z — Rechecked exact Windows v3 bundle26ad5908: all8 members match; own19/19 pure checks including prior counterexamples pass. Bounded trusted-experiment source ACCEPT; no native execution. Released active review claim pending manager-routed preflight receipt or fresh ED05 source packet.
+
+- 2026-10-08T00:01:46Z — Exact Windows bundle01d5849 NEEDS_FIX: inherited stdin, result-receipt admission, server-geometry overclaim and source/preflight binding. Verified all8 bytes; two pure mocked admission cases, no native processes. Same author notified; awaiting exact repaired bundle for recheck.
+
+- 2026-10-07T23:54:47Z — Reactivated by root for exact Windows fixture bundle01d5849e isolation, evidence and cleanup review on Platform baseadbb. No namespace/compiler/display/EXE run authorized; Media retains native lease. Copier223 now integrated78361e; fresh whole crossMove packet follows review.
 
 - 2026-10-07T23:47:22Z — Available transition after qualified copier handoff, Android help and Windows static caveats; exact runnable Windows fixture not yet delivered, next storage source requires fresh dispatch after integration. No active native resources or uncommitted product edit. Ready for same-worker reactivation; program goal remains active.
 
