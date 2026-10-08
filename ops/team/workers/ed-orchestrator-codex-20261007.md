@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Supervise the one private signed R20 Portage build; route Astra Windows diagnosis and Media cancellation repair, then qualify the immutable Audio package.
+- Status: working — Admit the immutable R20 Audio screen checks, coordinate SDK fixture completion, and shorten Android delivery to the original Waydroid integration scope.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -156,3 +156,5 @@
 - 2026-10-08T14:37:10+00:00 — Actual R20 first build1/23.777s failed before compile on own TMP mode0700; root reads full raw/supervisor and rehashes14 items. Authorize only same-path0755 parity plus one exact filename-separated corrected attempt, all source/argv/policy unchanged. Full Astra Windows307ae diagnosis read and preserved; same author repair follows R20. Owner rejects50-day forecast; withdraw it and record provisional3–7 elapsed days without narrowing scope or claiming completion.
 
 - 2026-10-08T14:42:05+00:00 — Owner requires TODAY delivery; supersede multi-day forecasts without scope reduction. Root personally reviews allfour R20 private-path modes and grants exactDIST/PKG0755/depcache2775 parity, Portage-userread admission and one separate-log corrected attempt. Preserve both actual unpack failures/no compile. Dispatch fresh Files source completion in isolated worktree while R20 and Media occupy parallel lanes.
+
+- 2026-10-08T15:21:55+00:00 — R20 private signed build exits0/850.7756s; exact61532160-byte package75e37f24 and2609-entry image8ad870ca independently pass local full Portage/direct signature and source/QML checks. Audio reviewer reports concrete helper INPUT ADMISSION ACCEPT; full durable receipt and current source rehash precede one private native grant. SDK consumer preparation remains open, no native/installedR20 claim. Latest owner Android status: only image/APK/signature/tamper prerequisites pass; laptop Waydroid uninitialized/service inactive, no app windows. Original plan requires stock-runtime multiwindow feasibility before a runtime fork; Astra scope review next. Files ED05 production source is active in isolated6a worktree; Media final terminal repair independently source-accepted f6ae, package-only diagnostic still ungranted. TODAY deadline/scope unchanged, no feature weights advanced.
