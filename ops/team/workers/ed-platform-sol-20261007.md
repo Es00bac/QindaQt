@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — Audio binding/density repair frozen for exact recheck; no active native/compiler process.
+- Status: waiting — Audio Settings local slider floor frozen for exact source review; no native/compiler work.
 - Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
 - Branch: worker/everyday-core-release-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -171,3 +171,5 @@
 - 2026-10-08T05:22:37+00:00: Actual c98 cohort20/31 pass,Qt162pass9fail0skip. Primary Qt6.11.1 shows screen QML property belongs to QQuickWindowQmlImpl, unlike fixture plain QQuickWindow. Prepared actual native screenChanged notification plus existing attached Screen facts; native helper unchanged. Existing stage plugin and hidden default-button fixture findings sent for exact scoped directions. No native rerun/captures.
 
 - 2026-10-08T05:23:03+00:00: Root authorized always-visible/enabled volume-control density fixture with unchanged22/128 thresholds and sole StartMenu dynamic plugin prerequisite. Frozen native-window signal plus density correction for exact review; original20/31 c98 failures retained. No native rerun/captures, laptop lane not reused.
+
+- 2026-10-08T05:30:54+00:00: Root authorized local AudioLevelRow slider minimumHeight22 after actual bb4 density2 failures; all other29 owning rows including popup/control/stage closure passed. Source layout floor preserves shared toolkit/visual track/larger implicit sizing; tests unchanged. Docs531/strictMkDocs/diff/testequality0. Await exact review/native continuation; all failures retained.
