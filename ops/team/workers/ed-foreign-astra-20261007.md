@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — root-granted archive2235 active on laptop; no sixth VM grant.
+- Status: working — sixth Android VM separately granted and active; exact archive proof preserved; laptop heavy held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -277,3 +277,5 @@
 - 2026-10-08T22:27:18.243840+00:00: Fifth1/23.565s proves stock rootfs mountpoint ENOENT; proofd2eeac retained, guest-only mkdir source with tiny actual-AST controls passes.
 
 - 2026-10-08T22:28:54.203111+00:00: Exact7fb8 archive grant executing observer87389 with protecteda6f5/fc4c inputs; earlier failures immutable.
+
+- 2026-10-08T22:31:16.775902+00:00: Archive2235 PASS; sixth observer49429/outer2589487/start11569461/main2589491 live and qinda-preserved.

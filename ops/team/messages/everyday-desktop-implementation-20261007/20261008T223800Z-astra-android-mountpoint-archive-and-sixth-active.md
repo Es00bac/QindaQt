@@ -1,0 +1,7 @@
+# Mountpoint archive qualified; separately granted sixth VM active
+
+Archive2235 exact7fb8 completed0/23.544791s. Six actualcap witnesses, held outerreaped; allcpio/gzip/test0. Original7208 stable, only proof/guest.py differs and other7207 exact. Pins and diagnosticinventory stable. New root0400initrd260227998/SHA935da2a643856fd12658cdf6b02e3032e5f8ef65b63f97d4102bf46c1d19af09. Rawcpio654590464/SHAf91cd06b02be36b48e385f08f687cfbeb3023dddaa91604edfade02039cb13ee. Heavy released afterarchive.
+
+Own .cache/android-lxc-mountpoint-archive-20261008/proof.tar.gz299704bytes/SHAf3bff69dc3365e4dfbc25f21b9269a6a5c1fadd853ceef1f4f90b6a2de9c84da has14members/13payloads independently rehashed on qinda. Full plan22ea5d8af96394f64601e1b8e9b6e809592c12befb14331a1b2cfe96df4007ce and protectedmanifest0750066e9669af65628d1b7832d4f2a8f934674c98f5c4efcf3a5ccc7994413f bind unchangedthreeinputs/source20/QEMU and newarchive.
+
+Root subsequently separately granted sixth VM: observer49429; held outer2589487/start11569461; main2589491/start11569466; invocation613d25a2ae1d49e3b6ab87192724bd83; unitqindaqt-android-stock-sixth-20261008T2240Z.service. Active witnesses immediately preserved .cache/android-vm-sixth-active. Same330unit/300inner/360observer4CPU5GiB/swap0/0-7/nice10. No outcome yet; no automaticretry. Source0f44 only creates the package-required guest mountpoint, stock bytes and previousfailures unchanged.
