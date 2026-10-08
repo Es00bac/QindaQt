@@ -14,7 +14,10 @@ def positive():
     value={'passed':True,'deadlineQualified':True,'clients':[{'application':r['app'],'fixedProgram':'notepad.exe' if i==0 else 'wordpad.exe',
         'normalWindowType':True,'fixedProgramArgumentObserved':True,'xid':str(i+1),
         'xresLocalPid':10+i,'prefix':r['prefix'],'starttime':10+i} for i,r in enumerate(rows)],
-        'steps':[{'stage':s} for s in ['resize-a','close-a','resize-b','close-b']],
+        'steps':[{'stage':'type-'+letter,'clipboardText':'qinda '+letter+' 3108',
+          'focusWithinClient':True,'beforeSHA256':'a'*64,'afterSHA256':'b'*64,
+          'pixelBytes':69120} for letter in ['a','b']]+
+          [{'stage':s} for s in ['resize-a','close-a','resize-b','close-b']],
         'serverReadiness':rows,'serverRetirement':[{'app':r['app'],'pid':r['pid'],'starttime':r['starttime'],
             'prefix':r['prefix'],'qualified':True,'exit':0,'pidfdDead':True,'reaped':True,
             'signal':'SIGINT','heldLockReleased':True,'currentLockSame':True,'replacementOwnerAbsent':True} for r in rows],

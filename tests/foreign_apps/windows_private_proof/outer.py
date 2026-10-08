@@ -10,7 +10,7 @@ REQUIRED=["/usr/bin/bwrap","/usr/bin/python3","/usr/bin/qindaqt-wm","/usr/bin/qi
 "/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/notepad.exe","/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/wordpad.exe",
 "/usr/bin/sh","/usr/bin/xkbcomp","/usr/share/xkeyboard-config-2/rules/evdev",
 "/usr/share/xkeyboard-config-2/symbols/us","/usr/share/xkeyboard-config-2/keycodes/evdev","/usr/share/xkeyboard-config-2/types/complete","/etc/fonts/fonts.conf",
-"/usr/lib64/libX11.so.6","/usr/lib64/libXRes.so.1","/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so"]
+"/usr/lib64/libX11.so.6","/usr/lib64/libXRes.so.1","/usr/lib64/libXtst.so.6","/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so"]
 ENV={"PWD":"/fixture","PATH":"/usr/bin","LANG":"C.UTF-8","LC_ALL":"C.UTF-8","HOME":"/fixture/home","USER":"fixture","LOGNAME":"fixture",
 "XDG_CONFIG_HOME":"/fixture/config","XDG_DATA_HOME":"/fixture/data","XDG_CACHE_HOME":"/fixture/cache",
 "XDG_STATE_HOME":"/fixture/state","XDG_RUNTIME_DIR":"/fixture/runtime","TMPDIR":"/tmp",
@@ -30,7 +30,7 @@ def command(root,phase):
 
 def source_identity():
     hashes=json.loads((HERE/"source-sha256.json").read_text())
-    if not isinstance(hashes,dict) or set(hashes)!={"outer.py","inside.py","driver.py","processes.py","x11.py","scenario.json","readonly-plan.json","owned_child.py","server_files.py","owned_server.py","child_ledger.py","domain_ledger.py","domain_protocol.py","prefix_worker.py","prefix_domain.py","wine_inputs.py"}:
+    if not isinstance(hashes,dict) or set(hashes)!={"outer.py","inside.py","driver.py","processes.py","x11.py","scenario.json","readonly-plan.json","owned_child.py","server_files.py","owned_server.py","child_ledger.py","domain_ledger.py","domain_protocol.py","prefix_worker.py","prefix_domain.py","wine_inputs.py","typing_probe.py"}:
         raise RuntimeError("exact source manifest members absent")
     for name,digest in hashes.items():
         if hashlib.sha256((HERE/name).read_bytes()).hexdigest()!=digest:

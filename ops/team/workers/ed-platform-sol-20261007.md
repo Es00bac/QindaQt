@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Media package plan and Windows985 fresh preflight/native plan frozen; separate grants pending, no resources held.
+- Status: available — Windows real typing/private readback source frozen for same-reviewer admission;31 tiny controls pass, no native resources.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -319,3 +319,5 @@
 - 2026-10-08T18:31:46+00:00 — Actual four Windows985 modules21 methods allOK; raw indexed, source rehash0; resources released, no native grant.
 
 - 2026-10-08T18:45:47+00:00 — Bound Windows985 exact runtime16/currentpayload19/actual21 accepted evidence; honest input-unqualified next native proposal, no execution.
+
+- 2026-10-08T19:52:03+00:00 — Added narrow real typing witnesses/strict driver admission; lifecycle bytes unchanged985; actual31 pure controls, no preflight/native.
