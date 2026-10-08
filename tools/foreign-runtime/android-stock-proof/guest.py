@@ -69,6 +69,9 @@ def main():
             raise RuntimeError("unexpected-image-override")
         if Path("/var/lib/waydroid").exists():
             raise RuntimeError("unexpected-existing-runtime")
+        # Stock Waydroid creates /var/lib/waydroid with mkdir, not parents.
+        # /var is a fresh guest-only tmpfs; no host directory is adopted.
+        Path("/var/lib").mkdir(mode=0o755, exist_ok=True)
         for name in ("system", "session"):
             conf = ROOT / (name + ".conf")
             conf.write_text(bus_config(str(ROOT / (name + "-bus"))))

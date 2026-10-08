@@ -180,3 +180,9 @@ are preserved. Stock init and stop now use --details-to-stdout so the next
 separately admitted disposable guest exposes the actual stock diagnostic on
 the already bounded serial channel. This changes no success, isolation,
 resource or identity admission. No second boot is implied by this source change.
+
+The guest now creates /var/lib within its fresh /var tmpfs before stock calls.
+The pinned stock launcher uses nonrecursive mkdir for /var/lib/waydroid before
+logging initialization, making the absent parent a concrete source explanation
+for the first failure. This remains an inference until the repaired boot;
+stock diagnostics remain enabled and no host directory is adopted.
