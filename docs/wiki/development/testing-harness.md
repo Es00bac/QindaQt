@@ -4993,3 +4993,6 @@ control, hardware effects or whole-desktop acceptance.
 The radio ledger fixtures retain A's unexpired nonce across actual A→B→A
 well-known alias ownership and refuse a full global ledger without eviction.
 These exercise injected platform writes only, not physical radio access.
+
+Viewer text-bound fixtures use ordinary-size in-bounds glyphs and direct Poppler
+ReadingOrder cap/cap-plus-one extraction preconditions before renderer admission.

@@ -76,6 +76,10 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     auto *area = window->findChild<QQuickItem *>(QStringLiteral("viewerPageText"));
     auto *dialog = window->findChild<QObject *>(QStringLiteral("viewerTextDialog"));
     QVERIFY(query && area && dialog);
+    QTest::keyClick(window, Qt::Key_F, Qt::ControlModifier | Qt::ShiftModifier);
+    QTRY_VERIFY(dialog->property("visible").toBool() && query->hasActiveFocus());
+    QTest::keyClick(window, Qt::Key_Escape);
+    QTRY_VERIFY(!dialog->property("visible").toBool());
     QTest::keyClick(window, Qt::Key_F, Qt::ControlModifier);
     QTRY_VERIFY(dialog->property("visible").toBool() && query->hasActiveFocus());
     QCOMPARE(area->property("textFormat").toInt(), 0);
