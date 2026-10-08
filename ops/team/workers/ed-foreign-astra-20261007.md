@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — archive2255 passed with stable7296 inventory; seventh VM exact504617/49a75 proposal awaits root grant; laptop heavy released.
+- Status: working — preserving seventh first readiness timeout; authoring root-approved windows.py-only bounded readiness correction, no heavy lease.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -289,3 +289,7 @@
 - 2026-10-08T22:47:52.762197+00:00 — Archive2255 exact6f443/c53d/e5d dispatched; actual active MainPID2623656/invocation016fe26ba5874b55981b3a8c1b1f6667,4CPU5GiB. Preserving one attempt, no VM.
 
 - 2026-10-08T22:49:05.950931+00:00 — Actual archive2255 all3phases0/52.522s, stable source/inventory, held outer retired. Frozen seventh VM plan only; no guest run.
+
+- 2026-10-08T22:50:21.855264+00:00 — Exact504617/49a75 admitted; all21source/fourinput pins pass, unit2300 invocation1740badf60a1497f9d04c62bf674395c running under4CPU5GiB. No retry.
+
+- 2026-10-08T22:51:46.941030+00:00 — SeventhVM failed first10s boot property call; real privatePulse/container/Compositorbaseline reached, noapps. Allownedretirement/inputsqualified. Source-only narrow readiness repair authorized.
