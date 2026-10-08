@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — Android hop-closure86b source and fresh6730 input plan frozen; queued Voice/Windows exact review, no stage/native lease.
+- Status: available — corrected Android protected stage actual PASS preserved; heavy released. Voice exact repair source recheck next, then archive/KVM plan only.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -227,3 +227,5 @@
 - 2026-10-08T20:45:15.921025+00:00 — Root authorized exact hop-preserving collector correction and light chain/cycle/escape controls; fresh inventory/plan only, no copy retry.
 
 - 2026-10-08T20:49:32.832808+00:00 — Hop-closure86b frozen:4linksadded/regularsunchanged/0issues,51tiny/AST14/docs0. Original6726/failedstage preserved; fresh2050root uncreated and newstage ungranted.
+
+- 2026-10-08T20:57:51.897204+00:00 — Actual86b/665b stage0/5.270s,7208objects/allREQUIRED/653MB,22protected172VDB andlivecaps verified. Evidence33/32 preserved; originalfailure retained. No archive/VM.
