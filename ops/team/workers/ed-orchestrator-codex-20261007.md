@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Preserve the first Windows native child-ledger failure and route corrected R20 signed packaging; source-only audio cancellation repair remains active with Astra review.
+- Status: working — Integrate accepted R20 release source and admit its private signed build; preserve Windows first failure for Astra and route Media source-only cancellation repair.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -146,3 +146,7 @@
 - 2026-10-08T14:06:52+00:00 — Audio98342 qualified; root grants one frozen635 Windows150s execute-approved after current11 source/19 payload hashes and preflight093a match. Initial extra-membership guard stopped before any native call on generated processes.pyc; pure recompilation proves byte-for-byte88db source equality without executing/importing module or changing frozen copy. Root owns private-native lease; no retry, host network/audio/bus/session/Portage/install. R20 and Media plans remain source-only.
 
 - 2026-10-08T14:18:29+00:00 — First exact635 native execution2390010/start48027884 settles1/4.306s, owned parent reaped/absent, wrapper2390012 settles1 with containment/no namespace-exit uncertainty. Both prefix server readiness and real SIGINT retirement exit0/pidfddead/reaped/lockreleased/replacementabsent qualify; before any window scenario, child ledger refuses unknown adopted child. App/children cleanup remains unqualified, empty steps mean no new normal-window/resize/input pass. All raw retained and no retry. Root native lease released; same-pair readonly diagnosis next. R20 recipe source/docs review and build plan pending; helper38bee source accepted/unrun.
+
+- 2026-10-08T14:27:06+00:00 — Read full R20 accepted0ae/322/7baf and repaired helper38bee verifier/template. Root independently matches all9,837 archive blobs/modes, exact mirrored recipe and historical source boundary. Import only three release paths plus immutable replies; peer live records remain owned. Root release/docs gates precede one private signed build-only grant. Windows once1/4.306s is preserved for Astra read-only diagnosis; Media source-only cooperative cancellation repair active. No installed/full ED/weight advancement.
+
+- 2026-10-08T14:28:48+00:00 — R20 integrated release gates pass: two syntax checks, exact recipe contract,7/7 release tests, links534, strict MkDocs and diff0. Runtime98342/archivee7fc unchanged; artifact/build/adoption remain open. Preparing exact source integration commit and separate one-attempt build-only lease.

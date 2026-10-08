@@ -1,3 +1,21 @@
+## Current R20 delivery and remaining work — 2026-10-08T14:27:06+00:00
+
+R20 source/recipe0ae/322 is independently accepted7baf59ac; runtime98342
+and the39,571,486-byte archivee7fc remain exact. Complete Audio installation
+passes root strict7/Qt28/probes30 and independent integrated evidenceb049.
+Root rechecked all9,837 archive blobs/modes and imports only the additive
+release paths and immutable replies. Private signed build, image-only Audio
+Devices/Mixer and other package gates, artifact review and Portage adoption
+remain next. R18 is installed; immutable R19 is rejected/uninstalled.
+
+Windows635's first native attempt failed1 in4.306s before window steps.
+Both owned Wine servers retired qualified0; unknown adopted-child refusal
+leaves app/child cleanup unqualified. Astra diagnoses the preserved failure;
+no retry or compatibility completion. Media c10 package plan needs the
+same implementer's cooperative cancellation/deadline repair after Astra084;
+repair is source-only. Actual Qt-only36 acceptancee85 remains bounded.
+Full mixer, provider feeds, Android/Windows and remaining ED journeys stay open.
+
 ## Integrated complete Audio installation gates — 2026-10-08T13:49:37+00:00
 
 Manager source7993df5f passes strict four-target build0/14.221s, owning7/7

@@ -1,0 +1,5 @@
+# R20 staged-proof documentation finding resolved
+
+- Original 2eeadd447ce75503300afdb37a837990a94bf93a releases.md incorrectly said all 27 staged files matched source. The qualified native proof contains 23 source-equal QML inputs and four generated metadata/ELF outputs. Hashing all 27 does not establish Git-source equality for the latter.
+- The same implementer repaired only the prose at 50728d30485a51487841f2801ffd1f05047914e9: 27 files rehashed, 23 QML inputs match Git source, original qmldir restored and no withheld files remain. Exact successor 0aeaeefcd011bba87c8ded30a4414fe1447b1d80 changes only the author's records after that correction. Product/tests/packaging/archive/recipe/runtime/overlay identities are unchanged.
+- Final source review verifies the correction against the already inspected integrated native evidence, reads the repaired strict-doc raw and independently passes 534-document links and full candidate diff-check. Finding closed within SOURCE/RECIPE scope; original commit/raw remain preserved and R19 retains its immutable artifact NeedsFix outcome.
