@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — priority image recipe Portage DISTDIR repair; KVM dispatcher source draft preserved, unreviewed and unexecuted.
+- Status: working — image repair486 source frozen for Platform review; continuing minimal stock Android KVM boot/input source.
 - Outcome: reviewable package-to-two-window feasibility fixture; ordinary windows first, app identity authority remains separate.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated qinda worktree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T16:57:39Z — Froze/pushed overlay486feb2 original-DISTDIR repair after actual29cbc ELOOP. Verifier/Manifest/provenance and original12 tests unchanged;15 tiny synthetic cases pass, bash/diff0. No real unpack/package/VM. Direct Platform message hit thread-limit, manager has exact routing packet. Resume preserved183b KVM draft, no runtime lease.
 
 - 2026-10-08T16:54:15+00:00 — Preserved unreviewed minimal KVM draft: fixed readonly disk/kernel/initramfs input plan, guest stock phases and separate cleanup observations. Pure plan5/5, Python AST7 and shell syntax pass; no VM/build or guest action. Root reprioritized actual29cbc Portage unpack ELOOP: inspect PORTAGE_ACTUAL_DISTDIR and repair original image recipe without weakening nofollow verifier.
 
