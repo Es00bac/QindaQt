@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Supervise sole capped Files native recovery cohort; preserve installed R20 and route source-reviewed Android package and Audio gain gates.
+- Status: working — Supervise sole capped repaired Android data package; route Files compile rename and Audio diagnostic qualification, preserve installed R20.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -172,3 +172,5 @@
 - 2026-10-08T17:19:42+00:00 — Integrated exact accepted da559 primary architecture/Proposed ADR0352 paths only, keeping active Astra board intact. Current handoff/task/queues/foreign plan now record actual R20 Portage installation, Ready Audio snapshot, source-reviewed486 images/5eb resource8 and retained first Files prepare failure/corrected d6daa plan. Full ED scope and native/installed/physical limits remain. Docs/links strict rerun follows before handoff.
 
 - 2026-10-08T17:21:50+00:00 — Exact d6daa literal-argv successor independently accepted602bde and root complete-normalized parity/help/source checks pass. Renew one Files heavy cohort, preserve first prepare failure; Android data and Media diagnostics serialized next. Integrated current architecture/routing documentation gates pass534/strict8.292/diff0 under quota1CPU/2G, actual167.7M/swap0. Preserve current main and docs to hub; no milestone credit.
+
+- 2026-10-08T17:26:53+00:00 — Files actual corrected preparation/wrappers0,7,124/configure0 passed then first strict Debug compile1/12.44s Qt local slots macro collision; exact rawfbf092 retained and lease released. Approved smallest same-author rename/source review only. Root exact Android486 fresh plan/source/archive/current-space admission passes; grant one data-only private signed package under8/8/halfcores/12G, no merge/init/runtime. Claude laptop official feed newly observed17:24:16 with2quota/contexttoken/sessioncost fields; no invented provider metric.
