@@ -4935,7 +4935,11 @@ dispatch over an in-memory radio platform, correct-serial/nonce foreign replies,
 error/malformed/late replies, lost owners, cancellation/deletion during the
 borrowed callback, and GUID/address refusal. Both helper and port must complete
 the positive path. A forged reply may consume the pending call and cause
-uncertainty; it must never cause success. The session broker uses its ordinary
+uncertainty; it must never cause success. A separate native pending-call witness
+requires the actual returned frame to carry the foreign connection's real sender
+and the held serial/nonce before asserting rejection, paired with legitimate
+success. Callback cancellation is positively observed before the no-completion
+assertion. The session broker uses its ordinary
 permissive policy. New source execution remains pending.
 
 Separately record the effective installed helper namespace and RW-open
