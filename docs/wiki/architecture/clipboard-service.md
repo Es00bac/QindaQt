@@ -320,6 +320,26 @@ and the pure-model seam ahead of the Wayland adapter — are recorded in
 [ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md) and the C1 process
 boundary in [ADR-0058](../adr/0058-isolate-clipboard-capture-in-a-volatile-host.md).
 Native authority and synchronous disclosure guards are specified in
-[ADR-0358](../adr/0358-authenticate-native-clipboard-privacy-at-use.md). The current
-repair is source-authored; native old/fixed regression, independent acceptance,
-integrated rerun and installed capture qualification remain separate gates.
+[ADR-0358](../adr/0358-authenticate-native-clipboard-privacy-at-use.md).
+
+## Native startup repair qualification
+
+Author qualification at exact fixture candidate
+0bdcac43aa0a9baad8b47e27b6433782f6b05a10 (production unchanged from independently
+source-reviewed decb2afc5) passed the actual strict executable build and focused
+22/22 CTest rows with 172 Qt checks, zero failures/skips/blacklisted. The direct
+immutable old Host/header/MOC control had 16 failures; the unchanged repaired
+privacy fixture passes 20/20 including setup/cleanup. Two unchanged delayed-first
+Session1 rows fail on actual immutable 064 observer/header/MOCs and pass on the
+repair. The full native startup fixture passes 17/17 including the real bounded
+timeout and late-after-timeout denial.
+
+The installed-only Core/DBus consumer links both strict constructor symbols
+from staged archives. Its positive stage passes; withholding the explicitly
+injected staged Host header produces an actual missing-header compile failure,
+and byte-identical restoration rebuilds and runs successfully without ambient
+SDK fallback. These test counts overlap and are not added as unique coverage.
+No host clipboard or selection content was inspected/captured. Independent
+native-evidence acceptance, manager integrated rerun and ordinary installed
+fresh-login/capture qualification remain open. These are bounded source and
+private synthetic-fixture gates, not a whole desktop completion claim.

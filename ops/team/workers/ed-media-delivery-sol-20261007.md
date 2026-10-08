@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — executing sole bounded clipboard immutable-old/repaired native and installed SDK gates
+- Status: available — clipboard native handoff preserved; independent integration and installed-login gates pending
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
 - Ownership: clipboard service Host/Resident public overloads and private privacy-state/app observer, owning CMake/focused tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: actual strict Clipboard old/fixed/native/SDK/poison/restoration under root-granted sole lease; release promptly afterward
+- Next gate: Astra exact final native-evidence review, then manager integration/rerun and ordinary installed fresh-login acceptance; no resources held
 
 ## Updates
 
@@ -93,3 +93,7 @@
 - 2026-10-08T02:36:20+00:00: Exactdecb source independently accepted60a6facb4e9aa8e030b1db2430538ac3bef942a3. Root integrated Printing/Copier gates passed and all resources released; explicit sole qinda compiler/private-bus lease now granted for Clipboard old/fixed/SDK gates. Confirming exact product commit and actual MAKEOPTS, configure strict/usr/libexec with both host buses blocked/private XDG, no host capture. Native results not inferred yet.
 
 - 2026-10-08T02:43:31+00:00: Actual strict foundation build0, immutable original a6 Host/header/MOCs build0 and regression4passed16failed0skip/blacklist(exit16); immutable064 observer/header/MOCs build0 and unchanged delayed-first fixture2passed2failed0skip/blacklist(exit2). Raw txt/XML/provenance retained. Strengthened own staged-only consumer header selection against ambient SDK fallback before poison execution; production and both regression fixture bytes unchangeddecb. Repaired owning build/runtime/SDK gates next under current lease; no host content capture.
+
+- 2026-10-08T02:52:10+00:00: Exact0bd strict repaired build116actions exit0; focused22/22 CTest64.35s, actual19Qt suites172passed0fail/skip/blacklist. New privacy20/20 and native17/17 include delayed first owner, real timeout and late-after-timeout denial. Staged public constructor consumer passes; withheld absolute staged header compile1 with actual missing-path marker, exact restoration rebuild0/run0. Immutable controls retained4pass16fail and2pass2fail. Explicitly released all compiler/private-bus/runtime/staging resources to root before parsing direct XML/counts/hashes. No host content, install or whole-plan completion claim; final evidence preserved for independent review.
+
+- 2026-10-08T02:56:45+00:00: Final handoff preserves exact 0bd source, 22/22 CTest rows and 172/0/0/0 Qt totals, immutable old failures, staged missing-header failure and byte-exact restoration. All compiler/private-bus/runtime/staging resources remain released. Offering bounded read-only integration-evidence or next exact different-author review help; no new product packet or host clipboard actions claimed.
