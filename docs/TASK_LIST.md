@@ -10,7 +10,7 @@ The full ED01–24/Android/Windows/AI/mixer scope below remains required; no who
 milestone is completed by these slices.
 
 
-Current core qualification: R17 Audio inventory/control recovery is verified; owner confirms Settings inventory but compact scrolling/UI remains open. Exact f3 source is accepted for old/fixed laptop native qualification only. Display Preview legacy lock-quorum mismatch is queued for private native-positive reproduction, not a proven transaction failure. All ED01–24, foreign-app integration and full mixer requirements remain required.
+Current core qualification: R17 Audio inventory/control recovery is verified; owner confirms Settings inventory but compact scrolling/UI remains open. Exact c98 attached-screen source is accepted for native qualification after preserved old764/d4 and fixed4cf failures; current31-row closure and installed compact UI remain open. Display Preview legacy lock-quorum mismatch is queued for private native-positive reproduction, not a proven transaction failure. All ED01–24, foreign-app integration and full mixer requirements remain required.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
