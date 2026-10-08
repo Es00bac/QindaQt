@@ -13,6 +13,7 @@ add_subdirectory(${AUDIO_SOURCE_ROOT}/src/services/audio_protocol audio_protocol
 add_executable(audio_graph_observer
  ${AUDIO_SOURCE_ROOT}/tests/services/audio_service/audio_graph_observer.cpp
  ${AUDIO_SOURCE_ROOT}/src/services/audio_service/src/wireplumber_graph.cpp
+ ${AUDIO_SOURCE_ROOT}/src/services/audio_service/src/wireplumber_volume.cpp
  ${AUDIO_SOURCE_ROOT}/src/services/audio_service/src/wireplumber_latency.cpp
  ${AUDIO_SOURCE_ROOT}/src/services/audio_service/src/latency_policy.cpp)
 target_include_directories(audio_graph_observer PRIVATE ${AUDIO_SOURCE_ROOT}/src/services/audio_service/src)

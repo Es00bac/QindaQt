@@ -394,7 +394,10 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         unavailable.availability = Availability::Degraded;
         unavailable.capabilities = {};
         unavailable.reasonCode = QStringLiteral("backend-malformed");
-        unavailable.diagnostic.clear();
+        // Fixed validator vocabulary only: never publish the rejected row's
+        // device/media names, properties or backend diagnostic.
+        unavailable.diagnostic = QStringLiteral("Backend snapshot rejected: %1")
+                                     .arg(validation.reasonCode);
         unavailable.defaultOutput = {};
         unavailable.defaultInput = {};
         unavailable.outputs.clear();

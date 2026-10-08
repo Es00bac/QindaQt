@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/services/audio_protocol/audio_dbus.h>
+#include <qindaqt/services/audio_protocol/audio_validation.h>
 #include <qindaqt/services/audio_service/wireplumber_audio_backend.h>
 
 #include <QtCore/QDir>
@@ -597,6 +598,14 @@ void WirePlumberRuntimeTests::isolatedGraphOperationsAndAuthorityRestart()
              QStringLiteral("stale-handle"));
 
     exerciseReconnectStress(backend, snapshots, outcomes, wireplumber, environment);
+
+    // A raw adapter fixture must meet the real coordinator's admission gate;
+    // row presence alone previously hid whole-graph invalid-device rejection.
+    for (const auto &emission : snapshots) {
+        const Snapshot observed = emission.at(1).value<Snapshot>();
+        const auto validation = validateSnapshot(observed);
+        QVERIFY2(validation.accepted, qPrintable(validation.reasonCode));
+    }
 
     backend.stop();
     stopWithDiagnostic(wireplumber, "wireplumber:");
