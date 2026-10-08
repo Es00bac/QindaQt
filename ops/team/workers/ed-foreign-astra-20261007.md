@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — exact ec1 Audio image/lifecycle source review handed off; ready for bounded qualification findings or next manager-routed hard packet.
-- Outcome: independently review Audio image/lifecycle/Portage qualification before any execution; production gain remains separate.
-- Base: exact99295b5df3c20f63086050b1332a9d6cd95badc4; prior accepted de491/c17 and overlay b489.
-- Branch: review/everyday-audio-image-astra-20261008; isolated matching review worktree.
-- Ownership: own review receipts and stable board only; Media owns all product/test/recipe repairs.
+- Status: available — exact R18 source/recipe review accepted and handed off; ready for package evidence review or next hard packet.
+- Outcome: source/package review before a manager-authorized R18 build; no installed or runtime acceptance.
+- Base: desktop14e440673b488ae8d77698bf56abb35345340766; runtime5858bccd; overlayaf4e8ed at masterb128.
+- Branch: review/everyday-r18-astra-20261008; isolated desktop and overlay review worktrees.
+- Ownership: own review board/receipts only; Platform owns R18 recipes and package qualification.
 - Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T06:50:03Z — Exact R18 desktop14e440/overlayaf4e8 SOURCE ACCEPT: independently all9747 archive blobs/modes/links and digest/size, mirrors/history, frozen src/tests/compositor/build bytes and normalized r17 recipe verified. Both shell parsers/release contract7 tests/docs533/strict/diff0. No package/compiler/runtime/install action; signed image/SDK/helper effective policy and adoption remain open.
+
+- 2026-10-08T06:45:51Z — Claimed exact R18 source/package review in fresh isolated qinda desktop/overlay checkouts after explicit hub fetch. Checking frozen source/archive and recipe/history/dependencies; no compiler/package/runtime/host lease or author edits.
 
 - 2026-10-08T06:43:24Z — Exactec1 source-only ACCEPT after full992 review and independently proven newline-only repair; d096 receipt descendant has identical product/test/recipe/wiki bytes. AST5/docs532/strict/diff0. No compiler/Core/package/native/host action; all runtime/production gain gates remain open. Own review handoff pushed to explicit qinda hub, no resource lease.
 
