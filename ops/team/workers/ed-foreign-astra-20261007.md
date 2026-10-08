@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — permission archive2210 qualified, laptop heavy released, exact fourth VM plan awaits root grant.
+- Status: working — preserving fourth Android failure and freezing stock LXC diagnostic-only successor; no runtime lease held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -263,3 +263,5 @@
 - 2026-10-08T22:13:55.989340+00:00: Root granted exact81045 once; two protected inputs and mechanicalonlydelta pass; held observer running.
 
 - 2026-10-08T22:15:01.353095+00:00: Actualarchive0/21.525s/allpins+oneguestparity; fourthd98377/plane97ee pendingdiagnosticboot.
+
+- 2026-10-08T22:20:59.232009+00:00: Fourth VM settled1/23.577s, nested socket/image mounts observed, LXC RUNNING timeout, cleanup qualified; proof d973d5a7 verified9payloads. Root authorized only container DEBUG forwarding source change.
