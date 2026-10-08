@@ -1,3 +1,12 @@
+## Prepared R19 source and recipe — 2026-10-08T11:54:06+00:00
+
+New additive desktop/overlay recipe pins qualified runtime e884c310d. The
+39,521,461-byte reproducible archive a7158408 matches both cuts and all9,803
+Git blobs/modes. Dependencies/build/install match r18. Focused release tests
+7/7, syntax and source contract pass. Independent recipe/archive review and
+private signed Portage build/image/installation remain next; R18 stays current.
+No whole milestone or physical acceptance is inferred.
+
 ## Integrated Audio Settings gates — 2026-10-08T11:49:34+00:00
 
 Manager integration ed325f6 passes seven strict owning targets (0/0.264s),
