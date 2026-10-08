@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Verify installed R17 recovery, integrate qualified core startup repairs, and dispatch complete mixer behavior while preserving the full ED/foreign-app delivery scope.
+- Status: working — Qualify compact Audio surfaces, preserve observed core-service defects, and route full mixer/Bluetooth repairs before signed delivery.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -68,3 +68,5 @@
 - 2026-10-08T03:59:31+00:00 — R17 signed image independently accepted and installed through Portage on laptop;2313objects+4symlinks exact,world/profile preserved. Audio-only restart Ready8outputs/5inputs/24streams,8strips/8buses; actual Bluetooth volume down/readback/guarded restoration0. Root proof2862f5bd preserved on qinda. Integrated Clipboard exactfa2 strict22/22/172Qt0fail/skip/blacklist passed, not yet installed. Power c7e2 author reports strict6/6/56Qt; independent exact evidence read/integration next, no fresh-login claim. Astra Bluetooth actual Qt reply.service empty blocker remains under guarded provenance repair. Media full auditab855 and refined8782 gain ownership proposal read; no implementation/native credit. Full plan remains active.
 
 - 2026-10-08T04:15:05+00:00 — Root independently accepted exactPowerc7e2/full11hashes, preserved14-member13,885,440-byte proof8f2feef4 on qinda, merged source and ran actual strict integrated6/6/56Qt0fail/skip/blacklist. Qinda native lease released. Current status docs now record installedR17/owner-confirmed Settings inventory, compact/no-scroll UI defect, Clipboard22/172 integrationpass and fullplanremaining. Astra stronger BT88 contract accepted348 but product/native stillNeedsFix; Platform reused for urgentUI due four-thread limit, Media gain sourceactive. Full ETA given as planning10weeks/range6–16, not completioncredit.
+
+- 2026-10-08T04:41:55+00:00 — Exact Audio popup/Settings f3c656f2 source independently reviewed and accepted for bounded laptop native qualification only. Old1ae first; no scroll/visual/installed completion claim. New core observation archive d6674c65 independently verifies10,240bytes/4members/all3 indexed payload digests on both hosts. Potential Display Preview legacy lock-quorum defect queued for private native-positive reproduction. Gain board import deferred until author publishes actual hub ref; two staging/fetch driver failures occurred before edits and are retained, not product failures.

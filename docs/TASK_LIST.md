@@ -9,6 +9,9 @@ bounded implementation packets. See [current exact evidence](HANDOFF.md).
 The full ED01–24/Android/Windows/AI/mixer scope below remains required; no whole
 milestone is completed by these slices.
 
+
+Current core qualification: R17 Audio inventory/control recovery is verified; owner confirms Settings inventory but compact scrolling/UI remains open. Exact f3 source is accepted for old/fixed laptop native qualification only. Display Preview legacy lock-quorum mismatch is queued for private native-positive reproduction, not a proven transaction failure. All ED01–24, foreign-app integration and full mixer requirements remain required.
+
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
 The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.

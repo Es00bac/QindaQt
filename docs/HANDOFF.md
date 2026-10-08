@@ -36,6 +36,8 @@ end-to-end completion. Planning estimate: best10workingweeks, range6–16weeks f
 the complete requested scope; immediate core/UI work1–3workingdays. These are
 estimates with hardware/runtime uncertainty, not acceptance evidence.
 
+Exact Audio popup/Settings f3c656f2f10f20d3e5da9eec0f8d024f7f492af0 has manager source acceptance only. Platform holds one laptop native lease: old1ae first, then strict owning normal/2×/fractional rows with actual captures. No installed compact UI claim. Root preserved new Display geometry/owner equality and rfkill open-only evidence on qinda:10,240bytes/4members/SHA256d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32; all3 indexed payload digests match. Display legacy same-owner safety requires a focused native-positive reproduction; O_RDWR access is not a helper/kernel write qualification.
+
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
 The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.

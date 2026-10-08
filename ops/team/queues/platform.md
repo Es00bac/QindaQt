@@ -9,6 +9,9 @@ installs. Qinda native batch released after Power; laptop native lane unleased.
 All physical, foreign-runtime and remaining ED gates stay open. Exact evidence
 and full scope: [Handoff](../../../docs/HANDOFF.md).
 
+
+New read-only laptop owner equality confirms Compositor and ScreenSaver owners differ. Display runtime still uses legacy same-owner SessionLockStateMonitor; Preview safety may remain Unknown despite ready inventory. Next gate: focused native-positive private reproduction and repair through the public native attachment boundary, preserving locked/unknown/loss guards. No display transaction, lock or sleep was attempted. Astra Bluetooth owned-wire source remains uncompiled pending exact review.
+
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
 The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.
