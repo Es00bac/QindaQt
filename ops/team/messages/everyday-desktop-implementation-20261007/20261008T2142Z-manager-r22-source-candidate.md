@@ -1,0 +1,5 @@
+# Isolated R22 Voice and Files release source candidate
+
+Program Manager acts as isolated release implementer. Exact desktop base/freeze b5221845aa795db99c1b544b8ba21890e8061951; overlay base 3229765cb33bdafc909664b2d855bd03a18e88ba. Separate worker/everyday-voice-release-r22-20261008 worktrees preserve normal checkouts and historical recipes/archives. Ownership is new R22 recipe, exact new DIST Manifest row, owning delivery-plan note and this receipt.
+
+Archive SHA256 d6ac3fbf02fe922149f87a0d3d88a57df375adfaa6ff3d5a4c0e05f07a02a8d1; 39755276 bytes; recipe SHA256 8b0a27dbd416e1dae342e6977f9a6d536484d56d7f2ff74be9dc893ecaefd634. All 9951 archive blobs/modes match Git freeze. Mirrored recipe and new Manifest row are byte-identical. Runtime floor remains compatible with old Voice1; paired installed delivery explicitly requires Gabbee-r6 and its optional VoiceConfiguration1 capability. No global MAKEOPTS/FEATURES changes or package installation. Next independent source/archive review, bounded signed Portage build, image gates and paired adoption. Peripheral Power is separate.
