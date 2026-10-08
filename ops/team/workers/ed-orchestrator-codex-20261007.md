@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Integrate independently accepted complete Audio QML installation, run owning manager gates and prepare a corrected signed Portage release; preserve R19 failure and all remaining full-plan boundaries.
+- Status: working — Preserve verified compact Audio integration and prepare corrected R20 signed delivery; route fresh gain-package and Windows qualification while all whole-plan gates remain active.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -140,3 +140,5 @@
 - 2026-10-08T13:33:47+00:00 — Actual Platform old-control configure/build and compiled normal/2x pass before causal declared fallback failure; fixed exact72 native registry7/CTest7/7 pass, 30 installed-module probes observed. Compiler/private-QML lease released; same Audio reviewer independently reads raw/captures. Media exact strict Qt-only receipt fixture observes36/0/0/0, now under same-Astra evidence review; no old/Core/Portage image grant. Root source-of-truth fetch and laptop FF preserve showcase/untracked work; corrected immutable successor and integrated gates remain next. R19 remains uninstalled, Windows native ungranted and all whole ED/foreign/hardware journeys open.
 
 - 2026-10-08T13:44:10+00:00 — Read full9c5feb and e85 independent acceptance, all99 Audio raw hashes/fullLastTest and100 safe proof members. Integrating only five accepted Audio product/test/wiki paths plus immutable replies; peer live records are preserved. Root reserves compiler/private-QML lane for strict owning integrated7/28/30 rerun. Corrected R20 and live adoption remain next; Media fresh old-only diagnostic preparation stays source-only, Windows native ungranted.
+
+- 2026-10-08T13:49:37+00:00 — Actual manager7993 native configure0/45.056s, strict four-target build0/14.221s, exact registry7, CTest7/7/0/21.334s and full Qt28/0/0/0 plus30 probes. Every owning input unchanged; staged27 files/23QML rehashed/source equal, metadata restored/no.withheld. First docs534/strict/diff pass; final annotations next. Root lease released; fresh R20 preparation is next, no package/install yet.

@@ -1,3 +1,16 @@
+## Integrated complete Audio installation gates — 2026-10-08T13:49:37+00:00
+
+Manager source7993df5f passes strict four-target build0/14.221s, owning7/7
+CTest0/21.334s, Qt28/0/0/0 and all30 installed-module probes. All23 staged
+QML files (11 console) match source, original metadata is restored and no
+withheld file remains. Source/tests stay byte-equal accepted72bf. Independent
+source/native review63b274/9c5feb and root raw/capture checks are preserved.
+Links534, strict MkDocs and diff checks passed; final annotation checks follow.
+The compiler/private-QML lease is released. Corrected R20 source/recipe/archive
+preparation and signed package inspection precede installation. R18 remains
+installed; immutable R19ef002 remains rejected. Full mixer, provider, foreign,
+hardware and all remaining ED journeys stay open.
+
 ## Reviewed complete Audio installation repair — 2026-10-08T13:44:10+00:00
 
 Exact72bf0c28 is independently accepted by source63b274 and native9c5feb.

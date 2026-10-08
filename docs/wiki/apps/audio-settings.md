@@ -484,6 +484,9 @@ The repaired strict owning cohort passes7/7 CTests,28 Qt checks and30
 installed-module probes, including23 causal file omissions and disk/compiled
 restoration. All23 installed QML inputs (11 console) equal source; full-page
 normal/2× Devices/Mixer captures have no undefined-token/script diagnostics.
-These are metadata-row offscreen staging results. Manager integrated reruns,
-a new immutable signed package and installed/physical qualification remain
-separate gates; R19 is still rejected and uninstalled.
+Manager integration7993df5f independently passes the strict four-target
+build, the same7/7 CTests,28/0/0/0 Qt summaries and30 probes. Its27-file
+staged module is rehashed:23 QML inputs equal source and original qmldir
+is restored with no withheld files. These are metadata-row offscreen
+staging results. A new immutable signed package and installed/physical
+qualification remain separate gates; R19 is still rejected and uninstalled.

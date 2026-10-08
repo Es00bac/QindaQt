@@ -1,3 +1,10 @@
+## Current verified Audio source and release gate — 2026-10-08T13:49:37+00:00
+
+Integrated source7993df5f passes strict build, owning7/7, Qt28/0/0/0 and
+30 staged probes after independent72bf/9c5feb acceptance. Corrected R20
+recipe/archive/package and installed qualification are next. R18 remains
+installed; R19 rejected/uninstalled. No whole ED or full-mixer completion.
+
 ## Current Audio delivery gate — 2026-10-08T13:44:10+00:00
 
 Reviewed source72bf0c28 fixes complete Audio QML installation; author native
