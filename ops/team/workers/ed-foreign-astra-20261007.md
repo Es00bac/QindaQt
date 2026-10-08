@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: working — preserving actual Bluetooth40d session teardown crash and freezing registration-owned cleanup repair for exact review; native stopped.
+- Status: working — Bluetooth304 private qualification handed off/resources released; beginning assigned source-only c17 Audio fixture and b489 Portage hook-lifetime review.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
-- Resources: sole qinda compiler/private-fixture lease granted by root; strict Debug -j24 -l24, serial CTests; no host bus/radio/device/installed actions.
+- Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T05:16:32Z — RELEASED all native resources. Exact304 strict main build0/main32of32, applet strict build0/7of7; main240Qt and applet42Qt, zero failures/skips/blacklisted. Both staged header poisons/restores verified. Original failures preserved; final exact evidence handoff for root review, installed radio open. Continuing assigned Audio/overlay source recheck only.
+
+- 2026-10-08T05:13:48Z — Exact304 independently SOURCE ACCEPTED; strict build0/main32of32 exit0, unchanged session regression now passes. Direct staged header poisons fail on each missing absolute header and restored bytes match source. Standalone7 configure/build/test is the only remaining native cohort; no host action.
 
 - 2026-10-08T05:10:05Z — Strict40d build0; main32 settled31pass/1session SIGSEGV exit8. Wrong-GUID refusal destroys a connection before filter registration; unconditional removal crashes libdbus. Minimal registration-owned cleanup frozen, original fixture unchanged; no further native cohort before root recheck. Applet unrun; no host action.
 
