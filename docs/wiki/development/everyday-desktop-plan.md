@@ -39,8 +39,9 @@ passes strict28 targets,33/185 owning and4/88 profile/resolution gates.
 The Settings page is denser; the popup is bounded and scrollable with separate
 stream controls. Initial R18 source14e4406/overlay af4e8ed passed exact source
 review; actual Portage resolution then rejected the nonexistent dev-libs/dbus
-atom before compilation. Platform is correcting the recipe to sys-apps/dbus
-and qualifying actual pretend resolution for an independent exact recheck.
+atom before compilation. Exact repaired recipe ea14088c/overlay a829b04f
+uses sys-apps/dbus, passes actual private pretend resolution and has
+independent superseding acceptance 7c2f2e99. Signed build/artifact gates follow.
 The failed build is preserved at 4fe2a58ac; no R18 artifact or installation
 exists. The compact presentation is not installed.
 

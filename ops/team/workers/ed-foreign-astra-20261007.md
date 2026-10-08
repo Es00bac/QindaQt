@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — exact R18 source/recipe review accepted and handed off; ready for package evidence review or next hard packet.
+- Status: available — repaired R18 ea14088/a829b04 exact source and actual resolver evidence accepted; ready for artifact/failure recheck.
 - Outcome: source/package review before a manager-authorized R18 build; no installed or runtime acceptance.
 - Base: desktop14e440673b488ae8d77698bf56abb35345340766; runtime5858bccd; overlayaf4e8ed at masterb128.
 - Branch: review/everyday-r18-astra-20261008; isolated desktop and overlay review worktrees.
 - Ownership: own review board/receipts only; Platform owns R18 recipes and package qualification.
 - Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T07:12:31Z — Superseding exact R18 acceptance: ea14088/a829b04 only correct nonexistent dev-libs/dbus to actual sys-apps/dbus provider, archive/runtime unchanged. Original failed build1 and reviewaca238 preserved; acknowledged missed existence check. Read actual private pretend0/onlyr18 and bound logs to exact recipe hash; independently installed ownership/static7/docs533/strict/diff0. No real build retry or native/host action by reviewer.
+
+- 2026-10-08T07:08:07Z — Reopened exact R18 review after author real pre-compilation resolver failure: dev-libs/dbus atom absent; original textual/aux_get acceptance missed package existence. Awaiting minimal mirrored sys-apps/dbus repair and real private pretend/buildpkgonly resolver evidence. No compiler/native/host action.
 
 - 2026-10-08T06:50:03Z — Exact R18 desktop14e440/overlayaf4e8 SOURCE ACCEPT: independently all9747 archive blobs/modes/links and digest/size, mirrors/history, frozen src/tests/compositor/build bytes and normalized r17 recipe verified. Both shell parsers/release contract7 tests/docs533/strict/diff0. No package/compiler/runtime/install action; signed image/SDK/helper effective policy and adoption remain open.
 

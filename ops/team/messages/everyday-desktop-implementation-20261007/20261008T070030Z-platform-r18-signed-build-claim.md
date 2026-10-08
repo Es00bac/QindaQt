@@ -1,0 +1,3 @@
+# R18 private signed build claim
+
+Independent source/recipe ACCEPT aca238228906b83a1d553eb7bf4460c0837850d7 and root explicit sole qinda lease. Runtime5858bccdf82808a74a6bab358d8e6f08c7ac256a/archive620ad2 unchanged. Accepted overlayaf4e8ed. Actual Portage settings observed MAKEOPTS=-j24 -l24 and signing configured. Exact --buildpkgonly, private PKGDIR/DISTDIR/PORTAGE_TMPDIR/depcache and process-only repository override, no host settings/features/world/profile/installed service changes. Raw argv/PID/starttime/status/logs at .cache/r18-build. Artifact signature/image/SDK/helper-unit/ABI/AgentUsage/Network gates after actual build settlement; any genuine failure stops for review.
