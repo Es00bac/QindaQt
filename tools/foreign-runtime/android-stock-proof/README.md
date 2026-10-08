@@ -170,3 +170,13 @@ Dummy file controls exercise copied-inode independence, input mutation/modes,
 source/destination links, FIFO refusal, existing output preservation, deadlines,
 VDB pins, guest-rooted links and exact privilege exceptions. They establish no
 real laptop stage, complete dynamic runtime closure or boot compatibility.
+
+
+## First guest diagnostic boundary
+
+The first actual laptop VM boot reached stock Waydroid init, which failed before
+container startup or app windows. Its serial log and unqualified guest cleanup
+are preserved. Stock init and stop now use --details-to-stdout so the next
+separately admitted disposable guest exposes the actual stock diagnostic on
+the already bounded serial channel. This changes no success, isolation,
+resource or identity admission. No second boot is implied by this source change.
