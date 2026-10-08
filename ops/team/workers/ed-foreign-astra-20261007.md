@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — terminal source368c/6fake controls/docs pass; archive2315 exact3bca awaiting rootreview; no heavy held.
+- Status: available — terminalarchive2315 passed0/oneguestobject; ninth115a/9350 proposal awaits rootgrant; laptopheavyreleased.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -307,3 +307,7 @@
 - 2026-10-08T23:02:11.612065+00:00 — Eighthactual Calculator+Clock distinctwindows/bootcomplete; hostreceipt failed fromPID1panic interleaving. Strictfailurepreserved; QEMUretired/inputs stable, laptopheavyreleased.
 
 - 2026-10-08T23:04:44.334608+00:00 — Froze guest-only drain/quarantine and existingoneobject archiveproposal; sixinjectedcontrols/AST/docs pass; eighthfailure/twowindow observation preserved.
+
+- 2026-10-08T23:06:50.072090+00:00 — Archive2315 exact3bca/52ec admitted, actualmain2664180/invocation337b9fdfd4ff4e49b8aa30164bf60746 under4CPU5GiB; no retry.
+
+- 2026-10-08T23:08:06.463806+00:00 — Actual terminalarchive all3phases0/31.959s,7295otherobjects unchanged, heldretirement qualified. Ninthplanfrozenonly.
