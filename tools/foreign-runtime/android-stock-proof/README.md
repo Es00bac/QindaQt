@@ -224,3 +224,5 @@ Android audio integration: real app streams must later enter QindaQt's
 Audio1 graph, retain trustworthy app association, support per-app gain/mute
 and configured bus/output routing alongside native playback. The guest
 receipt explicitly keeps audioIntegrationQualified false.
+
+The boot-readiness property query uses only the remaining existing 190-second window-proof budget; other stock commands retain ten seconds. A timed-out command is never retried. Bounded stage/stdout/stderr diagnostics are retained in windows.json and guest serial, including whether the compositor baseline and boot-completed value were actually observed. This does not qualify app journeys or Audio1 integration.
