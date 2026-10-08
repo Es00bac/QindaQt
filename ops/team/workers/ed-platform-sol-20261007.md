@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — test-only fresh-opening owner-geometry capture frozen for review; accepted915 native31/171 preserved.
+- Status: available — fresh owner-geometry Audio capture passed; all native resources released, immutable R18 packaging waits manager freeze.
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -186,4 +186,6 @@
 
 - 2026-10-08T05:37:37+00:00: Exact915 strict23 target build0; owning31/31 exit0,171Qtpass0fail0skip; five captures5/5 exit0,24Qtpass0fail0skip. Product/test source equality0,39 raw artifacts indexed. Actual screens normal1280x720,2x640x360,fractional1229x691 (not user1536logical); all prior failures preserved. Compiler/private/offscreen resources RELEASED; no install/host action. Requested exact visual/evidence review then manager integration.
 
-- 2026-10-08T05:45:15+00:00: Root requested fresh-opening actual1536logical at1.25 capture because prior image was post-refusal/scrolled. Capture-only environment branch preserves normal31-row assertions;1920physical config plus actualgeometry/DPR/image checks. Whole production equals915 exit0, docs531/strict/diff0. No render/native continuation before exact review.
+- 2026-10-08T05:46:59+00:00: Root exact-reviewed435 capture-only fixture and granted existing scroll target strict32/16 rebuild plus one named fresh render. No full31 repeat/addedtarget; production equal915, private buses invalid and host actions excluded.
+
+- 2026-10-08T05:48:22+00:00: Single reviewed435 fresh capture build0/render0,Qt3pass0fail0skip; actual1536x864 logical/1.25DPR/360x480 popup/450x600 image,contentY0/no feedback/zero operations. Production equals915; prior91531/171 proof unchanged, no full31 rerun. Native lane RELEASED; image/log/argv/digests frozen. Await root visual review/source-only R18 pin.
