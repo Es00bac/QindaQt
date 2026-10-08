@@ -1,3 +1,12 @@
+## Owner deadline: finish today — 2026-10-08T14:42:05+00:00
+
+The owner requires completion today,2026-10-08 America/Denver. The prior50-day
+and revised3–7-day forecasts are superseded. Preserve the full requested scope;
+organize parallel implementation and integration around today's deadline.
+R20 compact Audio is the immediate installation. Existing components remain
+the foundation. Report actual completed outcomes and concrete blockers; never
+replace a required real journey with a fixture or count unintegrated work.
+
 ## Corrected scope and elapsed-time estimate — 2026-10-08T14:37:10+00:00
 
 The manager withdraws the earlier50-working-day/10-week estimate: it mixed
