@@ -10,6 +10,8 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QList>
+#include <QtCore/QPointer>
+#include <qindaqt/services/bluetooth_radio_helper/radio_power_port.h>
 
 namespace QindaQt::Bluetooth
 {
@@ -54,6 +56,17 @@ struct BluezAdapterBackend::State
         bool powered = false;
     };
 
+    struct Power {
+        BackendRequest request;
+        QString path;
+        QString owner;
+        quint64 generation = 0;
+        quint64 radioId = 0;
+        quint64 bluezId = 0;
+    };
+    QPointer<QindaQt::BluetoothRadio::RadioPowerPort> radio;
+    QHash<quint64, Power> powers;
+    QHash<quint64, Power> queuedPowers;
     Bluez::BluezTransport transport;
     Bluez::BluezObjectStore store;
     Bluez::BluezPairingAgent pairingAgent;

@@ -241,3 +241,10 @@ The details surface uses `Popup.Window`, so it extends beyond its originating
 panel and receives keyboard focus independently of the panel. Escape and
 outside presses dismiss it; closing Bluetooth details still releases the
 discovery lease through its existing controller contract.
+
+## Adapter power feedback
+
+Fixed public power reasons distinguish hardware/software block, authority
+refusal, stale selection and uncertainty. No raw BlueZ error is rendered and
+operation results do not invent Powered; accepted snapshots drive the toggle.
+See [selected radio recovery](../adr/0359-recover-only-the-selected-bluetooth-radio.md).

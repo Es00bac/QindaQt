@@ -4,6 +4,7 @@
 #include <qindaqt/services/bluetooth_bluez_adapter/bluez_backend_mode.h>
 #include <qindaqt/services/bluetooth_model/deterministic_backend_factory.h>
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
+#include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QLoggingCategory>
@@ -38,13 +39,14 @@ int main(int argc, char **argv)
     // B0 empty backend. Production consumes org.bluez on the system bus
     // through an injected connection and tolerates BlueZ absence at startup.
     const QString requestedBackend = qEnvironmentVariable("QINDAQT_BLUETOOTH_BACKEND");
+    QindaQt::BluetoothRadio::QtRadioPowerPort radio(sessionConnection);
     std::unique_ptr<AdapterBackend> backend;
     if (resolveBluetoothBackendMode(requestedBackend)
         == BluetoothBackendMode::Deterministic) {
         backend = makeDeterministicAdapterBackend();
     } else {
         backend = std::make_unique<BluezAdapterBackend>(
-            QDBusConnection::systemBus());
+            QDBusConnection::systemBus(), &radio);
     }
     ResidentBluetoothService service(std::move(backend), sessionConnection);
     const ServiceStartStatus status = service.start();

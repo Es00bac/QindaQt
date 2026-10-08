@@ -173,3 +173,10 @@ The route distinguishes an unavailable upstream service from a current empty
 adapter inventory, provides a single Try again observation action, and shows
 themed device icons instead of letter abbreviations. Search instructions and
 errors avoid protocol, lease, and raw reason-code language.
+
+## Adapter power feedback
+
+Fixed public power reasons distinguish hardware/software block, authority
+refusal, stale selection and uncertainty. No raw BlueZ error is rendered and
+operation results do not invent Powered; accepted snapshots drive the toggle.
+See [selected radio recovery](../adr/0359-recover-only-the-selected-bluetooth-radio.md).

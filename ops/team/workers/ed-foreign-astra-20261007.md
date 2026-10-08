@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — selected-adapter Bluetooth power recovery source; Clipboard decb source accepted, native evidence recheck pending.
+- Status: working — freezing selected-adapter Bluetooth source and native gate packet; no compiler or device resources.
 - Outcome: review synchronous privacy, native proof lifetime/reentrancy and startup ordering; preserve actual Bluetooth partial counterfactual and queued ED05.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
 ## Updates
+
+- 2026-10-08T03:15:00Z — Bluetooth source draft now includes helper authority/platform, backend lifetime wiring, fixed UI diagnostics, Proposed ADR0359 and owning negative/SDK fixtures. Source statics pass; compilation/private fixture and actual RW namespace/device qualification remain pending. Preparing exact hub freeze and controlled manager-base rebase.
 
 - 2026-10-08T03:02:00Z — Verified Clipboard afa/0bd final evidence: 33 hashes match, raw 22/22 CTest and 172 Qt checks; actual old sources/fixtures and SDK poison/restoration inspected. Exact bounded ACCEPT posted; continuing Bluetooth source-only recovery and lifecycle tests.
 

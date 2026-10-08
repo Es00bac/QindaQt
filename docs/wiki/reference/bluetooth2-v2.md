@@ -97,3 +97,12 @@ Stable pairing reason tokens include `paired`, `pairing-cancelled`,
 `no-prompt`, `stale-prompt`, `wrong-prompt-kind`, `pairing-rejected`, and the
 shared Bluetooth1 uncertainty/transport family. Cancellation always uses the
 double-l `-cancelled` spelling.
+
+## Power recovery diagnostics
+
+Power enable may use the optional [selected-radio helper](../adr/0359-recover-only-the-selected-bluetooth-radio.md)
+without schema/capability changes. Fixed reasons include radio-hardware-blocked,
+radio-software-blocked, radio-blocked (kind unknown), radio-not-authorized,
+radio-stale-target, radio-busy, radio-change-uncertain and bluez-power-uncertain.
+Consumers show fixed text, never upstream messages. Failed is not proof of no
+effect; current Powered remains independently published. No replay is allowed.

@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "../bluetooth_bluez_adapter/support/private_bus.h"
+#include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
+#include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusVirtualObject>
+#include <QtTest/QTest>
+
+using namespace QindaQt::BluetoothRadio;
+namespace {
+class Helper final : public QDBusVirtualObject {
+public:
+    QString introspect(const QString &) const override { return {}; }
+    bool handleMessage(const QDBusMessage &message, const QDBusConnection &) override {
+        if (message.member() != QLatin1String("ObserveAndUnblock")) return false;
+        pending = message; issued = qdbus_cast<Request>(message.arguments().constFirst());
+        received = true; return true; // Deliberately deferred: inspect real live intent.
+    }
+    QDBusMessage pending;
+    Request issued;
+    bool received = false;
+};
+class Connections final {
+public:
+    explicit Connections(const QString &address) {
+        for (int index = 0; index < 3; ++index) {
+            const auto name = QStringLiteral("radio-intent-%1").arg(QUuid::createUuid().toString());
+            names.append(name); buses.append(QDBusConnection::connectToBus(address, name));
+        }
+    }
+    ~Connections() { for (const auto &name : names) QDBusConnection::disconnectFromBus(name); }
+    QStringList names;
+    QList<QDBusConnection> buses;
+};
+bool ask(const QDBusConnection &sender, const QString &owner, const Request &request) {
+    auto message = QDBusMessage::createMethodCall(owner, QString::fromLatin1(kIntentPath),
+        QString::fromLatin1(kIntentInterface), QStringLiteral("Current"));
+    message << QVariant::fromValue(request);
+    QDBusPendingCallWatcher watcher(sender.asyncCall(message, 500));
+    if (!QTest::qWaitFor([&watcher] { return watcher.isFinished(); }, 1000)) return false;
+    const auto reply = watcher.reply();
+    return reply.type() == QDBusMessage::ReplyMessage && reply.signature() == QLatin1String("b")
+        && reply.arguments().size() == 1 && reply.arguments().constFirst().toBool();
+}
+}
+class RadioIntentTest : public QObject {
+    Q_OBJECT
+private Q_SLOTS:
+    void onlyExactIssuedRequestAndCurrentHelperCanQuery() {
+        QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start());
+        Connections peers(bus.address);
+        auto service = peers.buses[0], helperBus = peers.buses[1], foreign = peers.buses[2];
+        Helper helper;
+        QVERIFY(helperBus.registerVirtualObject(QString::fromLatin1(kPath), &helper));
+        QVERIFY(helperBus.registerService(QString::fromLatin1(kService)));
+        QtRadioPowerPort port(service);
+        bool live = true;
+        const auto id = port.observeAndUnblock(QStringLiteral(":1.90"), QStringLiteral("/org/bluez/hci0"),
+            QStringLiteral("12:34:56:78:9A:BC"), foreign.baseService(), [&live] { return live; });
+        QVERIFY(id); QTRY_VERIFY(helper.received);
+        QVERIFY(ask(helperBus, service.baseService(), helper.issued));
+        QVERIFY(!ask(foreign, service.baseService(), helper.issued));
+        auto forged = helper.issued; forged.adapterPath = QStringLiteral("/org/bluez/hci1");
+        QVERIFY(!ask(helperBus, service.baseService(), forged));
+        forged = helper.issued; ++forged.deadlineBoottimeMs;
+        QVERIFY(!ask(helperBus, service.baseService(), forged));
+        forged = helper.issued; forged.initiatingCaller = helperBus.baseService();
+        QVERIFY(!ask(helperBus, service.baseService(), forged));
+        live = false; QVERIFY(!ask(helperBus, service.baseService(), helper.issued));
+        live = true; port.cancel(id);
+        QVERIFY(!ask(helperBus, service.baseService(), helper.issued));
+        helperBus.unregisterObject(QString::fromLatin1(kPath));
+    }
+    void sameUidReplacementHelperCannotReviveIntent() {
+        QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start()); Connections peers(bus.address);
+        auto service = peers.buses[0], helperBus = peers.buses[1], replacement = peers.buses[2];
+        Helper helper;
+        QVERIFY(helperBus.registerVirtualObject(QString::fromLatin1(kPath), &helper));
+        QVERIFY(helperBus.registerService(QString::fromLatin1(kService)));
+        QtRadioPowerPort port(service);
+        QVERIFY(port.observeAndUnblock(QStringLiteral(":1.90"), QStringLiteral("/org/bluez/hci0"),
+            QStringLiteral("12:34:56:78:9A:BC"), service.baseService(), [] { return true; }));
+        QTRY_VERIFY(helper.received);
+        QVERIFY(helperBus.unregisterService(QString::fromLatin1(kService)));
+        QVERIFY(replacement.registerService(QString::fromLatin1(kService)));
+        QVERIFY(!ask(helperBus, service.baseService(), helper.issued));
+        QVERIFY(!ask(replacement, service.baseService(), helper.issued));
+        helperBus.unregisterObject(QString::fromLatin1(kPath));
+    }
+};
+QTEST_GUILESS_MAIN(RadioIntentTest)
+#include "tst_radio_intent.moc"

@@ -6,7 +6,7 @@ existing clients, while `org.qindaqt.Bluetooth2` is the current control and
 observation boundary. BlueZ remains the owner of pairing, trust, keys, device
 records, profiles, and authorization. Bluetooth2 forwards pairing, trust, and
 record-removal intents to that authority and publishes one bounded Agent1
-prompt; it does not store trust, duplicate BlueZ records, touch rfkill, or own
+prompt; it does not store trust, duplicate BlueZ records, directly touch rfkill, or own
 Bluetooth audio nodes (PipeWire does).
 
 The exact wire contracts are in the frozen
@@ -242,3 +242,24 @@ repeat a pending mutation. Settings provides one Try again action when the
 service is unavailable and separately explains missing hardware. A distribution
 whose BlueZ activation unit alias is absent still requires the system service
 to be enabled; the desktop does not install or configure system units.
+
+## Selected-adapter power recovery
+
+[ADR-0359](../adr/0359-recover-only-the-selected-bluetooth-radio.md) defines the
+optional bluetooth_radio_helper boundary. The daemon composes a borrowed
+same-thread RadioPowerPort. Explicit enable delegates one bounded request;
+disable retains direct BlueZ behavior. The helper checks same-bus owner/caller,
+complete issued intent, exact BlueZ Address, pinned HCI/rfkill parent identity
+and existing user ACLs. Its separate unit leaves the daemon sandbox untouched.
+
+One selected unblock may precede one independently admitted BlueZ power call.
+Definitive no-write absence/unobservable state can retain legacy direct
+behavior; known block/refusal or possible-write uncertainty cannot. No startup
+write, CHANGE_ALL, retry, reblock, pairing or discovery is added. Queued work
+and replies retire on caller, run, owner or adapter-incarnation loss. Method
+replies never synthesize Powered; property publications remain current truth.
+Fixed public reasons distinguish block, authority and uncertain outcome.
+
+This source draft and focused fixtures remain uncompiled. Exact review, native
+tests, effective RW namespace qualification, Portage installation and ordinary
+selected control remain open. A read-only probe does not qualify writing.

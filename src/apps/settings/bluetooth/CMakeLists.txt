@@ -4,6 +4,7 @@ qt_add_library(qindaqt_settings_bluetooth STATIC)
 target_sources(
     qindaqt_settings_bluetooth
     PRIVATE bluetooth_settings_model.cpp bluetooth_settings_pairing.cpp
+            bluetooth_settings_feedback.cpp
             bluetooth_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS

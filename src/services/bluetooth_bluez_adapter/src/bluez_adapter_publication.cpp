@@ -35,6 +35,7 @@ void BluezAdapterBackend::handleOwnerReplaced()
     }
     // AGENT-GUARD: Any org.bluez owner transition retires all truth bound to
     // the previous owner before a fresh enumeration may publish.
+    retirePower();
     const auto outstanding = std::exchange(d->outstanding, {});
     for (auto it = outstanding.cbegin(); it != outstanding.cend(); ++it) {
         finishOperation(it.value().operationId, BackendOperationStatus::Uncertain,
@@ -64,6 +65,9 @@ void BluezAdapterBackend::applyProperties(const QString &path,
         if (d->store.adapter(path) == nullptr) {
             return;
         }
+        if (changed.contains(QStringLiteral("Address"))
+            || invalidated.contains(QStringLiteral("Address")))
+            retirePower(path);
         const bool discoveringReported =
             changed.contains(QStringLiteral("Discovering"));
         BluezInterfaces patch;
@@ -97,6 +101,7 @@ void BluezAdapterBackend::retireObjects(const QString &path,
 {
     QString adapterAddress;
     if (interfaces.contains(QString(kAdapterInterface))) {
+        retirePower(path);
         if (const BluezAdapterState *adapter = d->store.adapter(path);
             adapter != nullptr) {
             adapterAddress = adapter->address;
