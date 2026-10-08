@@ -146,17 +146,27 @@ Item {
         // must scroll inside the output, including a scaled/small output;
         // neither its content nor a physical-pixel export sizes the window.
         // Bind the selected item's screen facts and each-open revision, so
-        // Window.screen identity is also a dependency: equal-size/name output
-        // migration must recompute without retaining a borrowed QScreen.
+        // A C++ QQuickWindow does not expose the QML Window subclass's screen
+        // property. Observe its public screenChanged signal instead, so equal-
+        // size/name migration recomputes without retaining a borrowed QScreen.
+        property int screenSelectionRevision: 0
+        Connections {
+            target: summary.Window.window
+            function onScreenChanged() {
+                details.screenSelectionRevision = details.screenSelectionRevision === 2147483647
+                    ? 0 : details.screenSelectionRevision + 1
+            }
+        }
         readonly property size outputSpace: {
-            const revision = placementRevision + (root.controller?.popupGeometryRevision ?? 0)
-            const screen = summary.Window.window?.screen
-            const width = screen?.width ?? 0
-            const height = screen?.height ?? 0
-            if (revision < 0 || width <= 0 || height <= 0)
+            const revision = placementRevision + screenSelectionRevision
+                + (root.controller?.popupGeometryRevision ?? 0)
+            const attachedWindow = summary.Window.window
+            const width = summary.Screen.width
+            const height = summary.Screen.height
+            if (!attachedWindow || revision < 0 || width <= 0 || height <= 0)
                 return Qt.size(0, 0)
             return root.controller
-                ? root.controller.popupAvailableSize(summary, screen?.name ?? "")
+                ? root.controller.popupAvailableSize(summary, summary.Screen.name)
                 : Qt.size(0, 0)
         }
         readonly property real widthLimit: Math.max(1,

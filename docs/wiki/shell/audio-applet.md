@@ -128,7 +128,9 @@ collaborator resolves the anchor window’s actual current screen without
 primary-screen or virtual-desktop inference. Empty or duplicated names are
 valid selected-output evidence; an explicitly supplied nonempty hint must match.
 Missing/retired window or screen and nonpositive geometry fail closed. The QML
-binding observes window-screen identity even across equal-size/name migration.
+binding observes the actual window’s public screenChanged signal even across
+equal-size/name migration. It also works for plain C++ QQuickWindow anchors,
+which do not expose the QML Window subclass’s screen property.
 Screen geometry/add/remove notifications and each-open binding refresh this value,
 without retaining a screen pointer across hotplug.
 
