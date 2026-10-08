@@ -32,19 +32,15 @@ void AudioAppletController::initializePopupGeometry()
 QSize AudioAppletController::popupAvailableSize(QQuickItem *anchor,
                                                 const QString &screenName) const
 {
-    if (!anchor || !anchor->window() || screenName.isEmpty())
+    if (!anchor || !anchor->window())
         return {};
-    QScreen *selected = nullptr;
-    for (auto *screen : QGuiApplication::screens()) {
-        if (screen->name() != screenName)
-            continue;
-        // Do not guess among duplicate output names, or consult primary.
-        if (selected)
-            return {};
-        selected = screen;
-    }
-    if (!selected)
+    // The anchor's actual window selects the output even when names are
+    // empty or duplicated. No primary-screen or virtual-union inference.
+    auto *selected = anchor->window()->screen();
+    if (!selected || !QGuiApplication::screens().contains(selected)
+        || (!screenName.isEmpty() && selected->name() != screenName))
         return {};
-    return selected->availableGeometry().size();
+    const auto size = selected->availableGeometry().size();
+    return size.width() > 0 && size.height() > 0 ? size : QSize{};
 }
 } // namespace QindaQt::Shell::AudioApplet

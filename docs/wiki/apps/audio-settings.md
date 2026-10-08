@@ -415,3 +415,7 @@ page/console/wheel/stream-routing tests qualify readability and traversal.
 This is presentation only: backend availability, gain law, routing,
 persistence and public Audio1 validation are unchanged. Source-only authoring
 does not prove the installed Settings surface or hardware controls.
+
+The focused density fixture waits for both device-action buttons to reach their
+minimum laid-out height before measuring card spacing, so an unpolished zero-size
+layout cannot satisfy the compactness assertion.

@@ -22,11 +22,12 @@ private Q_SLOTS:
     QVERIFY(first != nullptr);
     QVERIFY(second != nullptr);
     QVERIFY(viewport != nullptr);
+    // Wait for both laid-out controls before comparing their spacing.
+    QTRY_VERIFY(first->height() >= 22);
+    QTRY_VERIFY(second->height() >= 22);
     // Observe laid-out action positions, not the padding implementation.
     QTRY_VERIFY(second->mapToItem(viewport, 0, 0).y()
                 - first->mapToItem(viewport, 0, 0).y() <= 128);
-    QVERIFY(first->height() >= 22);
-    QVERIFY(second->height() >= 22);
     QVERIFY(findItem(page, QStringLiteral("audioOutputVolume_10")) != nullptr);
     QVERIFY(findItem(page, QStringLiteral("audioInputMute_20")) != nullptr);
     const auto path = qEnvironmentVariable("QINDAQT_AUDIO_SETTINGS_CAPTURE_PATH");

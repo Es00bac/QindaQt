@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — frozen bounded Audio presentation source awaits independent review/laptop fixture lease; no native resources held.
+- Status: working — repairing Audio popup selected-screen geometry and density readiness; source-only, native lane released.
 - Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
 - Branch: worker/everyday-core-release-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -163,3 +163,5 @@
 - 2026-10-08T04:23:52.503581+00:00 — Material finding actual8-output projector hid all inputs; preserved oldproduction+newregression1ae then implemented per-kind8/default-retained bounded projection. Authored selected-output availableGeometry collaborator/Qt-lifetime notifications, explicit viewport/key/focus, truthful composed genericSettingsfooter and compactdevice padding. Owning normal/DPI2/fractional/ambiguity/facade tests authored, UNRUN/nolease. No host actions or service/persistence edits.
 
 - 2026-10-08T04:31:14.329537+00:00 — Freeze staticpure4poisons/runtimepoison/icon/diff0, docs531strict0. Fullshape1 baselineerrors plus approvedhost352→353onebinding; nofalsepass. Oldregression1ae preserved, fixeddefaultmic/viewport/facade/density matrixUNRUN. No compiler/native/installedusabilityclaim.
+
+- 2026-10-08T04:57:38+00:00: Root routed actual23/29 native failures to anchor-window selected-screen repair. Frozen old-production regression d4fb740cb includes unnamed/duplicate popup rows and actual outputSpace diagnostics. Production repair now resolves current screen membership/positive geometry and observes Window.screen identity; density thresholds unchanged. No new native run.

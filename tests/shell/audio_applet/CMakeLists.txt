@@ -314,7 +314,7 @@ set_tests_properties(qindaqt.audio-applet-scroll-fractional PROPERTIES
     ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1.25")
 add_test(NAME qindaqt.audio-applet-geometry-ambiguous
     COMMAND qindaqt_audio_applet_scroll_tests
-    selectedOutputGeometryRejectsUnknownAndAmbiguousNames
+    selectedOutputGeometryUsesCurrentWindowScreen
     -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-ambiguous.json")
 set_tests_properties(qindaqt.audio-applet-geometry-ambiguous PROPERTIES
     LABELS "shell;audio;presentation;offscreen;negative"

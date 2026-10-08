@@ -136,8 +136,9 @@ public:
     Q_INVOKABLE void clearFeedback();
 
     // Presentation-only, same-thread synchronous borrowed anchor. Resolves
-    // its attached output, never primary/virtual desktop; unknown/ambiguous
-    // names return an empty size and cannot authorize a large popup.
+    // its current window-selected screen, never primary/virtual desktop. Empty
+    // or duplicate names are valid; a nonempty hint must match. Missing or
+    // retired screen/window and nonpositive geometry return an empty size.
     Q_INVOKABLE QSize popupAvailableSize(QQuickItem *anchor,
                                          const QString &screenName) const;
 
