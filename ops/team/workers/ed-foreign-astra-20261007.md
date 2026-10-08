@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — Android laptop profile/source input candidate frozen for independent review; no stage, package or guest execution. Available for Files native evidence.
+- Status: working — prepare exact protected Android laptop staging proposal; narrow Voice0364 source review at this checkpoint. No stage/guest/native actions.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -211,3 +211,5 @@
 - 2026-10-08T20:00:11.805016+00:00 — Root assigned laptop4vCPU/4GiB profile at exactf343. Existing qinda profile preserved; minimal manifest-to-envelope/argv threading and installed public closure checks underway.
 
 - 2026-10-08T20:15:06.895290+00:00 — Fixed laptop profile/source freeze:25pure/AST10/strictdocs0; installed public inventory6,726objects/172owners/653MB with0selected static issues, preserved exact raw. Stage/boot/runtime remain open; no host software change.
+
+- 2026-10-08T20:22:13.406519+00:00 — Claimed manager source-only protected-stage proposal at f1c0913101310d01ba09cf43eea3b1e2ebacb400; reading exact Voicec54 public design. No process/resource lease.
