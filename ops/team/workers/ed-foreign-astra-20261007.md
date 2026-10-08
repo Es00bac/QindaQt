@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — protected laptop staging proposal frozen; Voice0364 design source accepted for implementation. Awaiting exact profile review/copy-source authorization, no stage or guest lease.
+- Status: working — implement authorized inventory-to-stage copier and dummy controls; no real stage or guest action.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -215,3 +215,5 @@
 - 2026-10-08T20:22:13.406519+00:00 — Claimed manager source-only protected-stage proposal at f1c0913101310d01ba09cf43eea3b1e2ebacb400; reading exact Voicec54 public design. No process/resource lease.
 
 - 2026-10-08T20:24:17.934116+00:00 — Preserved exact protected-stage proposal with current helper/inventory pins, missing narrow copier explicitly identified; no stage/archive/runtime. Voicec54 design SOURCE ACCEPT with bounded I/O/current-owner implementation gates.
+
+- 2026-10-08T20:26:26.357828+00:00 — Root authorized narrow copier source. Preserve fixed inventory/source/VDB and directory authority; disposable synthetic controls only.

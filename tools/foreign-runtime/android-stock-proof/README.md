@@ -130,3 +130,43 @@ all REQUIRED entries/aliases and dependency checks, archive digest admission,
 then a separately granted one-shot VM. No host package merge is needed if
 that stage qualifies. The existing qinda prerequisite proposal remains a
 fallback, not an action executed by selecting this profile.
+
+## Protected installed-input copier (source candidate)
+
+copy_stage.py is the single missing stage copier; it is not a boot or archive
+runner. The manager must first grant and prepare a fresh root-owned0700
+/var/tmp/qindaqt-android-laptop-stage-* root, protected inputs/plan.json,
+inputs/inventory.json and exact source helpers under inputs/source.
+The command is /usr/bin/python3 -B INPUTS/source/copy_stage.py RUN_ROOT
+PLAN_SHA256 under the separately observed laptop4CPU/5GiB/nice10 envelope,
+with a cleared environment and fixed public PATH. No imports from staged
+payloads occur. The protected plan pins the copier itself and every owning
+source; the inventory binds all installed VDB CONTENTS/public bytes. The
+manager validates those protected inputs before launching Python, since
+Python imports the owning helpers before the copier's own hash check.
+
+The copier validates the current172 VDB inputs, creates the reviewed overlay,
+then copies only canonical public /usr entries through nofollow parent/file
+descriptors. Source size/version/SHA256/VDB MD5/mode are checked. Regular
+outputs use exclusive creation and are new single-link root-owned files;
+source hardlinks do not confer destination linking authority. No xattr,
+capability, ACL or source ownership is copied. Symlinks retain exact admitted
+targets and must resolve within the guest root. Only reviewed mount/umount
+privilege normalization is allowed. Missing real parents are generated0755.
+All partial outputs are retained on refusal; there is no cleanup authority.
+
+The exact complete expected inventory is built from admitted package hashes
+and the generated overlay before public copies, not blindly learned from
+whatever bytes appeared in the final stage. Existing stage admission checks
+all paths/modes/hashes and REQUIRED targets; VDB, protected source and inventory
+pins are rechecked. Success writes the stage inventory and pure cpio plan,
+not an archive. The operation bounds20,000 public objects,2GiB copied bytes,
+256MiB per-file memory and120s cooperative time, with the manager owning the
+external deadline. A success receipt is admissible only with actual process0,
+bounded final settlement and current resource evidence; a late final-write
+deadline refusal is not overridden by an earlier receipt field.
+
+Dummy file controls exercise copied-inode independence, input mutation/modes,
+source/destination links, FIFO refusal, existing output preservation, deadlines,
+VDB pins, guest-rooted links and exact privilege exceptions. They establish no
+real laptop stage, complete dynamic runtime closure or boot compatibility.
