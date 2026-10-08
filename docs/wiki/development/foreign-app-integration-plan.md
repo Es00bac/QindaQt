@@ -166,6 +166,27 @@ Adapters exchange bounded typed records, not shell command strings or private
 configuration. A runtime restart cannot silently bind an old app handle to a
 new unrelated window.
 
+### Selective lessons from Google and Valve (October 2026)
+
+[Googlebook's Android developer guide](https://developer.android.com/develop/adaptive-apps/guides/googlebook/overview)
+describes desktop Android apps in freely resizable windows with keyboard,
+pointer, multi-instance and cross-window drag/drop behavior. Use those as
+compatibility scenarios for QindaQt's stock Android app windows and honest
+app-quality reporting. Googlebook uses an Android technology base and ChromeOS
+desktop foundations; QindaQt's Gentoo host and stock Android runtime remain
+separate implementation boundaries.
+
+[Valve Proton](https://github.com/ValveSoftware/Proton) supplies Wine-based
+Windows compatibility, while the
+[Steam Runtime](https://github.com/ValveSoftware/steam-runtime) pairs recent
+Proton versions with predictable, versioned container environments. Extract
+QindaLutris's existing UMU/Proton launch planning into a public ordinary-app
+runner: pin the chosen runtime and prefix per app, preserve environment and
+lifetime authority, and test actual window, input, controller, fullscreen and
+Audio1 behavior. Running an installed Wine executable in the private two-app
+fixture does not by itself qualify the complete Proton/Steam Runtime stack.
+Adopt any additional open components through Portage and retain their licenses.
+
 Start by proving Waydroid's actual multi-window behavior on the native
 compositor. If essential window isolation or resizing cannot be made reliable,
 record the reproducer and compare a bounded runtime alternative in the ADR.
