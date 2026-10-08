@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: available — exact ED11 source and native handoff preserved; all resources released; compatible First-party and package-provenance help offered
+- Status: working — independently reviewing exact root Viewer15eec7ec source read-only; no compiler or native runtime resource use
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
-- Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
-- Ownership: new settings/printing module/tests/wiki/ADR0356; approved minimal SettingsCenter route/host/search/CMake and docs wiring
-- Next gate: root independent acceptance of exact 55113184, integration and affected gates; later Portage and physical journeys remain separate
+- Outcome: different-author exact Viewer PDF text/find source review; ED11 source unchanged and prior handoff preserved
+- Ownership: own board and timestamped review records only; root owns all Viewer source/docs/tests
+- Next gate: source-only review findings at exact15eec7ec, then inspect actual root native gates when supplied; no runtime acceptance inferred
 
 ## Updates
 
@@ -53,3 +53,5 @@
 - 2026-10-08T00:04:47+00:00: Exact55113184 strict production build exit0; full native/offscreen/relocated CTest18/18 with87 Qt passed and zero failures/skips/blacklisted. Installed public catalog1/1 with11 Qt passed, actual staged-header poison build exit1, restored build+1/1 exit0; four staged producer headers/zero source leaks/14 byte-matched payloads/Core-only. Docs526/strict/production11+test6 shape/diff pass. Original83e and488 16/18 failures preserved; root approved precise Controllers metadata/page order and palette fixture repair. Explicitly RELEASED all compiler/runtime/staging resources to root before receipt; no Portage/hardware/service claim.
 
 - 2026-10-08T00:07:36+00:00: Exact handoff and configure reproduction flags preserved in79dedf91b. Read current hub First-party queue at3859cc78 and offered root/Platform bounded installed-owner delegation or read-only scanner package provenance help. No new source ownership assumed. Transitioning to available pending exact root review or next compatible packet; compiler/runtime remain released.
+
+- 2026-10-08T00:09:16+00:00: Root reactivated me as different-author read-only reviewer of exact15eec7ec915d9388f5c0128f58438e3359ebceeb at base1a205444c. Confirmed clean exact Viewer worktree and source freeze; read repository instructions and owning wiki. Inspecting permission-aware extraction, UTF-16/query/page bounds, search semantics, serialized worker and GUI/lifetime fences, PlainText/dialog/clipboard/keyboard behavior and real tests. Native source is uncompiled; Platform alone owns qinda Windows diagnostic lease. No Viewer production edits or ED11 source changes.
