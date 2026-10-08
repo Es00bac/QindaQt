@@ -122,6 +122,11 @@ void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
     QVERIFY(QTest::qWaitForWindowExposed(popupWindow));
     // Old fixed620 popup fails on scaled constrained output and also fails
     // the compact480 budget; this assertion does not infer scrolling failure.
+    const auto outputSpace = popup->property("outputSpace").toSize();
+    qInfo() << "selected-output" << window.screen()->name()
+            << available.size() << "popup-space" << outputSpace
+            << "popup-height" << popup->property("height").toDouble();
+    QCOMPARE(outputSpace, available.size());
     QVERIFY(popup->property("height").toDouble() <= qMin(480, available.height() - 28 - 16));
     QVERIFY(popup->property("width").toDouble() <= qMin(360, available.width() - 16));
     QVERIFY(content->clip());
