@@ -68,6 +68,23 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
                      copy->mapToScene(QPointF(copy->width()/2, copy->height()/2)).toPoint());
     QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("BETA"));
+    for (const auto name : {QStringLiteral("viewerFindPrevious"),
+                            QStringLiteral("viewerFindNext"),
+                            QStringLiteral("viewerCopyText")}) {
+        auto *button = window->findChild<QQuickItem *>(name);
+        QVERIFY(button && button->isEnabled());
+        QVERIFY(button->setProperty("busy", true));
+        QVERIFY(!button->isEnabled());
+        QVERIFY(button->setProperty("busy", false));
+        QVERIFY(button->isEnabled());
+    }
+    query->forceActiveFocus();
+    QSignalSpy keypadSearch(&viewer, &QindaQt::Viewer::ViewerController::stateChanged);
+    QTest::keyClick(window, Qt::Key_Enter);
+    QTRY_VERIFY(!keypadSearch.isEmpty());
+    QTRY_VERIFY(!viewer.searchBusy() && !viewer.busy());
+    QVERIFY(dialog->property("visible").toBool());
+    QTRY_COMPARE(area->property("selectedText").toString(), QStringLiteral("BETA"));
     QVERIFY(window->grabWindow().save(QStringLiteral(VIEWER_ARTIFACTS_DIR "/text-normal.png")));
     window->resize(420, 320); QTest::qWait(200);
     for (int index = 0; index < 12; ++index) QTest::keyClick(window, Qt::Key_Tab);
@@ -79,6 +96,13 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     QTest::keyClick(window, Qt::Key_Escape);
     QTRY_VERIFY(!dialog->property("visible").toBool());
     QVERIFY(!viewer.searchBusy());
+    QTest::keyClick(window, Qt::Key_F, Qt::ControlModifier);
+    QTRY_VERIFY(dialog->property("visible").toBool());
+    auto *close = window->findChild<QQuickItem *>(QStringLiteral("viewerTextClose"));
+    QVERIFY(close && close->isEnabled());
+    close->forceActiveFocus();
+    QTest::keyClick(window, Qt::Key_Space);
+    QTRY_VERIFY(!dialog->property("visible").toBool());
     viewer.close();
     QVERIFY(viewer.pageText().isEmpty());
     QCOMPARE(warnings.size(), 0);

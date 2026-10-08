@@ -85,3 +85,9 @@ query and page-visit bounds do not provide a sandbox or hard parser deadline.
 Native source tests, independent review, installed adoption and physical/AT
 qualification remain separate; no print/edit/form capability follows from
 selectable text.
+
+The text pane assigns Return/keypad Enter to search rather than dialog
+acceptance. It gates the public Dialog primary action and supplies an explicit
+public footer Close button, preserving Escape and keyboard access. Consumers
+bind Tk.Button capability through available; the toolkit retains its busy-state
+enabled binding. No toolkit-private item or transport dependency is introduced.

@@ -68,7 +68,11 @@ case-insensitive by default, with an optional **Match case** toggle; it wraps
 around the document and selects the matched text in the pane. A match on another
 page advances the ordinary page viewport. **Stop search**, editing the query,
 closing the pane/document, replacing the document, or manual page navigation
-retires pending search results. Return keeps the pane open; Escape closes it.
+retires pending search results. Return and keypad Enter keep the pane open;
+Escape or the keyboard-accessible **Close** button closes it. The pane gates
+QindaTK Dialog's public primary action and supplies its explicit footer action;
+it does not depend on toolkit-private items. Button capabilities bind through
+the public `available` property so toolkit busy state still disables them.
 PDF page/zoom shortcuts are suspended while the pane owns keyboard focus so
 Ctrl+Home and page scrolling keep their ordinary text-selection meaning.
 
@@ -134,7 +138,7 @@ Text gates use real Poppler Unicode/markup-like text, copy-restricted and passwo
 fixtures, forward/backward/case/wrap and real page/query/text bounds. Controller
 gates check close/replacement/navigation retirement and single-flight admission.
 The text UI gates exercise actual keyboard focus, native clipboard selection,
-search selection and compact/normal/2x layout; they save private screenshots.
+search selection, Return/keypad Enter, explicit Close, busy-state capability and compact/normal/2x layout; they save private screenshots.
 All run with isolated home/runtime roots and offscreen Qt. `--screenshot PATH`
 is the verification seam: capture a settled window and exit, nonzero on an
 open/capture error or a 30-second verification deadline. Host desktop settings
