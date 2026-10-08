@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "kind": "protected-laptop-stage-proposal-not-executed",
+  "sourceCommit": "source-tree-pinned-by-sourcePins; see owning exact handoff commit",
+  "host": "qinda-top",
+  "root": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z",
+  "rootMode": "0700",
+  "owner": "root:root",
+  "resourceProfile": "laptop",
+  "limits": {
+    "CPUQuota": "400%",
+    "CPUAffinity": "0-7",
+    "MemoryMax": 5368709120,
+    "MemorySwapMax": 0,
+    "TasksMax": 256,
+    "Nice": 10,
+    "RuntimeMaxSec": 120,
+    "TimeoutStopSec": 5,
+    "jobs": 4,
+    "load": 4
+  },
+  "inputInventory": {
+    "path": ".cache/android-laptop-inputs-links-20261008/inventory.json",
+    "sha256": "5d57a34877757cf7ab552479e0e5e2e16bdb56a6488bb470d847b493d04fe699",
+    "bytes": 4220171,
+    "objects": 6730,
+    "regularBytes": 653337381,
+    "owners": 172
+  },
+  "proof": {
+    "path": ".cache/android-laptop-inputs-links-20261008/proof.tar.gz",
+    "sha256": "d6ee797ccca089eb057e6c07ef1c2d1da88a13680263098dee9e27e37c499911"
+  },
+  "sourcePins": {
+    "tools/foreign-runtime/android-stock-proof/README.md": "c5dabd4a952aa7c21733f1697007686c6b43d9c8bb24d626adcd5f72b4871454",
+    "tools/foreign-runtime/android-stock-proof/RUNTIME-INPUTS.md": "f19815b4a618636b18f913aee09577425fee26a06ec63342589853aed24f2abf",
+    "tools/foreign-runtime/android-stock-proof/boot_plan.py": "6c378966529a0c8e53890c3b99ca3f97f14b2d83650268f685654c13eb49a485",
+    "tools/foreign-runtime/android-stock-proof/copy_stage.py": "6bc80119cba3a72971947971406db84bfe27b023010b192c2d3067fe90d71a4e",
+    "tools/foreign-runtime/android-stock-proof/guest-init.sh": "b12a17cfe8bb3c3783c611a33adffc4edef61c7f03711b8b1edb1a65497f6346",
+    "tools/foreign-runtime/android-stock-proof/guest.py": "13c6da6500787a28408dc515c284dd35898c343ef8d814fdf2c4c5c0f8a5209f",
+    "tools/foreign-runtime/android-stock-proof/input_links.py": "644fc11a40ba1f3aa7c569f77e5f18e322e21a9c23d7658defda75764add87b9",
+    "tools/foreign-runtime/android-stock-proof/laptop-inputs.json": "d06728d6864803cc8d9de6ae226cd9b790f8c8e3c0330ca5ee31106db8ec6462",
+    "tools/foreign-runtime/android-stock-proof/prepare_overlay.py": "3dfa3075dcdf853c87f5c56053e56bafe9773aa0cb4a26f2fa3c3f32cf09ad0a",
+    "tools/foreign-runtime/android-stock-proof/run_vm.py": "4bbb8c9a3836554c78f3f627a74a4101edb4134e40fd30c8a5c0612a8c09a4b5",
+    "tools/foreign-runtime/android-stock-proof/runtime-inputs.json": "f7b0b9c32e50e4b29496a73df6753910e934b41997d68c1adb7226584c98c5a2",
+    "tools/foreign-runtime/android-stock-proof/scenario.json": "b1dcb1e2850b463884ea4106523dc0a3efa7d05dbf99d0e186bbf41bcb3539d2",
+    "tools/foreign-runtime/android-stock-proof/stage_inventory.py": "8f3d1cddee2ece44415a1ed80b1645964ebf4ee0575bed4b444941f6de043d47",
+    "tools/foreign-runtime/android-stock-proof/test_boot_plan.py": "bc3b52dfd28aa4976d112f79aea6e1e2caaf1d66ee504ea3ee911b07af3d8d4c",
+    "tools/foreign-runtime/android-stock-proof/test_copy_stage.py": "e0c1846bf03446fec7916e148aadb54102bca29bea8833a99edd731b501cbf9c",
+    "tools/foreign-runtime/android-stock-proof/test_input_links.py": "e229582ef39c453c48a56e82e2ff9fd8598af73c2b2d718d607d3c24bbcbe82e",
+    "tools/foreign-runtime/android-stock-proof/test_stage_inventory.py": "b3c26ae180d1183d7da7556b82fce7ac506f657028b1f0c37b59047cc642eb33",
+    "tools/foreign-runtime/android-stock-proof/test_vm_plan.py": "4b475dfbeff6efc4078acacbc369273497a21231c41786f4f4fe9fee09f93b25",
+    "tools/foreign-runtime/android-stock-proof/vm_plan.py": "0dde453a7ed2051db7fdb0c3ab71a0da647cdd007ac45a58f409a7363f857deb",
+    "tools/foreign-runtime/android-stock-proof/windows.py": "0ca5e11bc840e30cc2517c6df550c22835c1e5a40293d06aa26605a56905d788"
+  },
+  "stage": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage",
+  "protectedInputs": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/inputs",
+  "result": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage-result.json",
+  "proposedExistingArgv": [
+    [
+      "/usr/bin/python3",
+      "-B",
+      "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/inputs/source/copy_stage.py",
+      "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z",
+      "EXACT_ADJACENT_PLAN_SHA256"
+    ]
+  ],
+  "copyStep": "copy_stage.py now implements the previously missing bounded copier; source-only, never run on actual input.",
+  "archiveAuthorized": false,
+  "guestAuthorized": false,
+  "executed": false,
+  "environment": {
+    "PATH": "/usr/bin:/bin",
+    "LANG": "C.UTF-8",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "invocationPolicy": "manager supplies actual plan SHA256 in final argv; root protects all inputs before Python imports; no automatic stage grant",
+  "predecessorPlanSHA256": "e03efdb0fa01916f8e75e2602cba80800a8e07cf27bf1e771f05256626c01438",
+  "priorFailedRoot": "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z",
+  "priorFailedRootPolicy": "Retain untouched; never resume/copy into it."
+}

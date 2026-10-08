@@ -23,20 +23,20 @@
   "load": 4,
   "nice": 10,
   "inputInventory": {
-    "sha256": "6031e7f6008aec83f208a0660a4f145d958bcb1b82ab8d24f0a7a7d3d99585b4",
-    "size": 4171260,
-    "objects": 6726,
+    "sha256": "5d57a34877757cf7ab552479e0e5e2e16bdb56a6488bb470d847b493d04fe699",
+    "size": 4220171,
+    "objects": 6730,
     "regularBytes": 653337381,
     "portageOwners": 172,
     "elfObjects": 1171,
     "selectedStaticIssues": 0
   },
   "proof": {
-    "sha256": "19b5acf222e9a708143266cfeaca6596fb4cb60d7ebc37204cfba9b175b5f0c5",
-    "size": 2945082,
-    "members": 18,
-    "indexedPayloads": 17,
-    "indexSha256": "8100d9a74d0dfd8b4c24637852d92c54c91ab26b2aba678e2085ed385a63eb52"
+    "sha256": "d6ee797ccca089eb057e6c07ef1c2d1da88a13680263098dee9e27e37c499911",
+    "size": 1048077,
+    "members": 12,
+    "indexedPayloads": 11,
+    "indexSha256": "d221f88819ab4c6aaa6a2b09f3615f664401f9d935bfe9d2e67e81d32c125b6b"
   },
   "runtimePackages": [
     "app-containers/lxc-7.0.0",
@@ -82,5 +82,7 @@
   "stageCreated": false,
   "stageClosureQualified": false,
   "runtimeAuthorized": false,
-  "nextGate": "Independent exact source/input review, then separately granted fresh protected stage and existing REQUIRED/inventory/archive validation. A VM requires a later root grant."
+  "nextGate": "Independent exact source/input review, then separately granted fresh protected stage and existing REQUIRED/inventory/archive validation. A VM requires a later root grant.",
+  "predecessorInventorySha256": "6031e7f6008aec83f208a0660a4f145d958bcb1b82ab8d24f0a7a7d3d99585b4",
+  "inputChange": "Four intermediate VDB-owned symlinks retained; all original regular-file records byte-equal. Failed original stage/inventory preserved."
 }
