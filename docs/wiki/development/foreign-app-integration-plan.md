@@ -218,3 +218,16 @@ containment signals only unreaped held direct owners, and outer namespace
 retirement is never promoted into successful per-app cleanup. All source and
 synthetic controls require exact safety review before any new generation,
 preflight or Wine execution; source authoring adds no Windows completion.
+
+The next private trusted Windows fixture source adds real XTest key events to
+each admitted fixed Notepad/WordPad client. Current XRes PID/starttime and causal
+domain membership are checked before/after and throughout input; focus must
+remain within that client. The two distinct fixed ASCII sentinels must round-trip
+through Ctrl+A/C and the same private X display's UTF8 clipboard. Small client
+pixel captures before/after must differ. These prove separate input/readback and
+pixel-change witnesses, not physical keyboard input, OCR of rendered text, or
+trusted blue identification. Both typing receipts are mandatory before the
+unchanged resize/independent-close and held-server/domain cleanup admission.
+No host clipboard, display, provider data or user files enter the fixture.
+The added libXtst is an existing Portage-owned fixture dependency, not installed
+outside Portage. Source/pure controls do not qualify actual Windows usability.

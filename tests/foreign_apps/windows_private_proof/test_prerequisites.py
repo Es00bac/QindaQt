@@ -55,9 +55,10 @@ class PublicRuntimeTests(unittest.TestCase):
         self.assertIn("--unshare-all",args);self.assertIn("--clearenv",args)
     def test_manifest_actual_members(self):
         hashes=outer.source_identity()
-        self.assertEqual(len(hashes),16)
+        self.assertEqual(len(hashes),17)
     def test_public_payloads_bound(self):
-        self.assertEqual(len(outer.REQUIRED),19)
+        self.assertEqual(len(outer.REQUIRED),20)
+        self.assertIn("/usr/lib64/libXtst.so.6",outer.REQUIRED)
         self.assertIn("/usr/bin/sh",outer.REQUIRED)
         self.assertIn("/etc/fonts/fonts.conf",outer.REQUIRED)
 if __name__=="__main__":unittest.main()

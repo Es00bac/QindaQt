@@ -114,6 +114,19 @@ def main():
         evidence["clients"]=[{"application":app["name"],"fixedProgram":app["fixture"],"normalWindowType":True,"fixedProgramArgumentObserved":True,"xid":str(window),"xresLocalPid":pid,"starttime":value["starttime"],"prefix":app["environment"]["WINEPREFIX"],"geometry":x.geometry(window)} for app,(window,pid,value) in zip(apps,selected)]
         evidence["twoLiveWindows"]=snapshot()
         a,b=[v[0] for v in selected]
+        from typing_probe import TypingIO,probe
+        typing=TypingIO(x)
+        def current_clients():
+            checkpoint()
+            current=pairs()
+            if not current or any((a[0],a[1],a[2]["starttime"])!=(b[0],b[1],b[2]["starttime"])
+                    for a,b in zip(current,selected)):
+                raise RuntimeError("typing client incarnation changed")
+        for app,(window,pid,value) in zip(apps,selected):
+            letter=app["name"][-1]
+            typed=probe(typing,window,"qinda "+letter+" 3108",current_clients,
+                min(deadline,time.monotonic()+8),ROOT/("typing-"+app["name"]))
+            evidence["steps"].append({"stage":"type-"+letter,**typed})
         original_b=x.geometry(b)
         x.resize(a,520,320)
         bounded_wait("first client server geometry updates after resize request",lambda:x.geometry(a) and x.geometry(a)[2:]==[520,320])

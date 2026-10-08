@@ -67,8 +67,11 @@ def admit_driver(value):
             raise RuntimeError("independent fixture identity absent")
     if any(not v.get("starttime") for v in clients):
         raise RuntimeError("process starttime absent")
-    if [v.get("stage") for v in steps]!=["resize-a","close-a","resize-b","close-b"]:
+    if [v.get("stage") for v in steps]!=["type-a","type-b","resize-a","close-a","resize-b","close-b"]:
         raise RuntimeError("complete two-client steps absent")
+    from typing_probe import admit_typing
+    for step,marker in zip(steps[:2],["qinda a 3108","qinda b 3108"]):
+        admit_typing(step,marker)
     ready=value.get("serverReadiness",[])
     if len(ready)!=2 or {v.get("app") for v in ready}!={"app-a","app-b"}:
         raise RuntimeError("two initial server readiness receipts absent")
