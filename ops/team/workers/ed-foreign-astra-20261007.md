@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — Android diagnostic archive source/argv frozen; first VM failure preserved, awaiting root execution routing; no resources held.
+- Status: working — preparing authorized guest-only missing-parent repair and exact one-object diagnostic archive successor; no execution lease.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -239,3 +239,5 @@
 - 2026-10-08T21:41:06.188644+00:00: First VM unit1/8.258s, ownedQEMUretired, inputstable, guestinitCalledProcessError; preserved raw and root-authorized stock diagnostic argv only. R22sourcepairACCEPTca5.
 
 - 2026-10-08T21:44:21.589972+00:00: Froze exact one-object diagnostic archive plan c8338 and driver756e; original7208 metadata/bytes fenced, no archive or second VM execution.
+
+- 2026-10-08T21:47:27.167358+00:00: Root authorized generated guest /var/lib creation based on stock nonrecursive mkdir trace; diagnostics preserved, no second boot.
