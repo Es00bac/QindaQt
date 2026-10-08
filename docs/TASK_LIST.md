@@ -1,3 +1,24 @@
+## Current delivery state — 2026-10-08T23:50:00+00:00
+
+R23 desktop and Gabbee R6 are installed through paired, signed Portage
+packages with independently checked installed-image parity and unchanged
+world/profile. The current login still runs its pre-install process images;
+fresh-login UI, ElevenLabs authentication and physical peripheral readings
+remain unqualified. Audio1, PipeWire/WirePlumber, Bluetooth1, Network1,
+Power1 and keyring run; the session portal owns its bus name while a duplicate
+disabled systemd portal unit failed on duplicate composition; user-unit
+reload/reset cleared its stale failure, but lifecycle repair remains.
+
+Stock Android has two actual simultaneous Calculator/Clock windows in a
+private guest with strict cleanup. Rendered input, resize, independent
+close/relaunch, ordinary launcher identity, persistence and Audio1 remain.
+Windows has two actual Wine windows but no guarded text input or full
+ordinary app journey. Its proposed Global Menu HMENU bridge is not
+implemented; same-PID/focus/epoch and hosted-acknowledgement contracts apply.
+The complete mixer, remaining ED-01–24, AI provider feeds, hardware and
+newcomer acceptance remain required. No feature weight advances from
+package presence, candidate branches or this planning update.
+
 ## Current foreign-app Audio1 acceptance and R23 delivery — 2026-10-08T22:36:17.754819+00:00
 
 The owner requires Android and Windows application audio to use QindaQt's Audio1

@@ -1,3 +1,38 @@
+## Installed R23/R6 and current acceptance boundary — 2026-10-08T23:50:00+00:00
+
+The signed desktop R23 package (SHA256 5e04a27e…) and Gabbee R6 package
+(SHA256 25fc928a…) passed independent full signature, source/recipe and
+installed-image review. Paired laptop Portage adoption exited 0 in 35.78 s:
+2343 desktop files and four symlinks, 269 provider files and one symlink
+match the reviewed image ledgers. World, saved profile and recipes are
+unchanged. The packages are installed, but the live shell and provider were
+not restarted; fresh-login UI and real ElevenLabs authentication remain open.
+R21/R22 archives remain immutable and unbuilt.
+
+Current Audio1, PipeWire, WirePlumber, Bluetooth1, Network1, Power1 and
+keyring processes are running. The session-owned appearance portal owns its
+standard D-Bus names; an older independently activated, disabled systemd
+portal unit failed from duplicate native composition. A user-unit reload
+and reset-failed cleared the stale unit state; the session portal retained
+its D-Bus names. Diagnose the lifecycle conflict before relying on restart.
+No physical audio, Bluetooth or power-device journey is inferred from service
+presence.
+
+An eleventh isolated stock Android guest passed simultaneous Calculator and
+Clock windows with distinct IDs and strict cleanup; rendered input,
+resize/close/relaunch, authenticated app identity and Audio1 are still open.
+Windows has shown two Wine app windows, but target focus was lost before
+the first guarded key; ordinary typing/save/resize/close/relaunch and public
+runner remain open. The Windows Global Menu HMENU adapter is a feasibility
+candidate only and must preserve exact same-process menu authority and local
+fallback. The full mixer, ED-01–24 and newcomer scope stay active. Worker
+branches and source-only work add no product progress until integrated.
+
+Keep one qinda 8CPU/12GiB heavy and at most one 2CPU/2GiB small unit,
+and one laptop 4CPU/5GiB heavy plus at most one 1CPU/1GiB small unit.
+Next gates: fresh R23 login checks; Windows ordinary input, Android private
+rendered interaction, old-only Audio1 diagnostic, and the remaining ED flows.
+
 ## Current integration boundary — 2026-10-08T22:37:29.388848+00:00
 
 QindaQt hub main is 2f1c7f47d and QindaGentoo hub master is fe462009b.

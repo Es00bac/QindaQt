@@ -12,10 +12,25 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
+## Current runtime evidence — October 8, 17:50 MDT
+
+The eleventh isolated stock Waydroid guest passed two simultaneous
+Calculator/Clock windows with distinct window IDs and strict guest and
+QEMU cleanup. The private Pulse endpoint enabled guest startup only.
+Rendered pixels and semantic input, resize, independent close/relaunch,
+ordinary application registration, authenticated window identity and
+Audio1 playback have not passed. A bounded private input/capture
+candidate is in source review. Windows has produced two genuine Wine app
+windows; target focus changed before the first admitted key, so the
+normal typing/save/resize/close/relaunch journey remains unqualified.
+Its public non-game runner and blue identity have not landed. A standard
+HMENU Global Menu bridge is a separate feasibility gate, not evidence of
+current menu integration. All ED-20–24 requirements below remain active.
+
 ## Reassessed next outcomes — October 8, 13:06 MDT
 
-Implementation remains paused for the owner's R20 login test and planning
-checkpoint. The [revised delivery order](everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt)
+At the October 8, 13:06 checkpoint implementation was paused for the
+owner's R20 login test. The [revised delivery order](everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt)
 governs the next dispatch after resumption.
 
 Use the existing Wine/QindaLutris path for a complete two-app lifecycle and
