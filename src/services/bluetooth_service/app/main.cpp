@@ -4,6 +4,8 @@
 #include <qindaqt/services/bluetooth_bluez_adapter/bluez_backend_mode.h>
 #include <qindaqt/services/bluetooth_model/deterministic_backend_factory.h>
 #include <qindaqt/services/bluetooth_service/resident_bluetooth_service.h>
+#include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
+#include <qindaqt/services/bluetooth_radio_helper/radio_service_session.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QLoggingCategory>
@@ -21,7 +23,18 @@ int main(int argc, char **argv)
     QCoreApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
     QCoreApplication::setOrganizationDomain(QStringLiteral("qindaqt.org"));
 
-    QDBusConnection sessionConnection = QDBusConnection::sessionBus();
+    const QString constructingAddress = qEnvironmentVariable("DBUS_STARTER_BUS_TYPE") == QLatin1String("session")
+        && !qEnvironmentVariableIsEmpty("DBUS_STARTER_ADDRESS")
+        ? qEnvironmentVariable("DBUS_STARTER_ADDRESS") : qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS");
+    QindaQt::BluetoothRadio::RadioServiceSession radioSession(constructingAddress);
+    if (!radioSession.prepared() && !radioSession.legacyStartupAllowed()) {
+        qCritical("Bluetooth1 constructing bus incarnation could not be preserved");
+        return 1;
+    }
+    // Optional helper preparation before selecting a peer cannot prevent legacy
+    // inventory/device operations. An admitted peer loss never takes this path.
+    QDBusConnection sessionConnection = radioSession.prepared()
+        ? radioSession.authorityConnection() : QDBusConnection::sessionBus();
     // AGENT-GUARD: This activated process belongs to exactly the bus that
     // constructed it. Bus replacement must terminate the process; reconnecting
     // would expose stale backend/epoch state under a new authority lineage.
@@ -38,13 +51,16 @@ int main(int argc, char **argv)
     // B0 empty backend. Production consumes org.bluez on the system bus
     // through an injected connection and tolerates BlueZ absence at startup.
     const QString requestedBackend = qEnvironmentVariable("QINDAQT_BLUETOOTH_BACKEND");
+    auto radio = radioSession.prepared()
+        ? std::make_unique<QindaQt::BluetoothRadio::QtRadioPowerPort>(radioSession)
+        : std::make_unique<QindaQt::BluetoothRadio::QtRadioPowerPort>(sessionConnection);
     std::unique_ptr<AdapterBackend> backend;
     if (resolveBluetoothBackendMode(requestedBackend)
         == BluetoothBackendMode::Deterministic) {
         backend = makeDeterministicAdapterBackend();
     } else {
         backend = std::make_unique<BluezAdapterBackend>(
-            QDBusConnection::systemBus());
+            QDBusConnection::systemBus(), radio.get());
     }
     ResidentBluetoothService service(std::move(backend), sessionConnection);
     const ServiceStartStatus status = service.start();

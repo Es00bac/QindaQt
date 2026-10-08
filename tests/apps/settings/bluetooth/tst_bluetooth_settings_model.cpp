@@ -20,6 +20,7 @@ private Q_SLOTS:
   void rejectsUnpairedAndFencesPendingOperations();
   void ownerReplacementClearsTruthAndRetiresLease();
   void pairingPromptRepliesWhilePairIsPending();
+  void powerRefusalShowsFixedFeedbackWithoutOptimism();
 
 private:
   struct Fixture {
@@ -207,6 +208,19 @@ void BluetoothSettingsModelTest::pairingPromptRepliesWhilePairIsPending() {
                                      fixture.transport.fetches.constLast().second,
                                      paired);
   }
+}
+
+void BluetoothSettingsModelTest::powerRefusalShowsFixedFeedbackWithoutOptimism() {
+  Fixture fixture;
+  const auto adapter = fixture.model.adapters().constFirst().toMap();
+  QVERIFY(fixture.model.requestAdapterPower(adapter.value(QStringLiteral("id")).toString(), false));
+  const auto submission = fixture.transport.submissions.constLast();
+  auto result = successResult(submission, 6);
+  result.status = OperationStatus::Rejected;
+  result.reasonCode = QStringLiteral("radio-hardware-blocked");
+  fixture.transport.finishOperation(submission, result);
+  QTRY_VERIFY(fixture.model.errorText().contains(QStringLiteral("hardware switch")));
+  QVERIFY(fixture.model.adapters().constFirst().toMap().value(QStringLiteral("powered")).toBool());
 }
 
 QTEST_MAIN(BluetoothSettingsModelTest)

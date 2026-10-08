@@ -129,6 +129,12 @@ public:
     void emitInterfacesRemoved(const QString &path, const QStringList &interfaces);
     void replyDeferredConnects(const QString &errorName);
 
+    int powerCalls = 0;
+    bool deferPower = false;
+    bool powerReplyOnly = false;
+    QString powerError;
+    QList<QDBusMessage> deferredPowerRequests;
+    void replyDeferredPower(const QString &errorName = {});
     int startDiscoveryCalls = 0;
     int stopDiscoveryCalls = 0;
     int connectCalls = 0;

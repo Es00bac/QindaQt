@@ -10,6 +10,7 @@ target_sources(
     PRIVATE
         src/bluez_adapter_backend.cpp
         src/bluez_operation_completion.cpp
+        src/bluez_power_operations.cpp
         src/bluez_adapter_backend_p.h
         src/bluez_adapter_publication.cpp
         src/bluez_backend_mode.cpp
@@ -30,7 +31,7 @@ target_sources(
 target_link_libraries(
     qindaqt_bluez_adapter
     PUBLIC QindaQt::BluetoothModel Qt6::Core
-    PRIVATE Qt6::DBus
+    PRIVATE Qt6::DBus QindaQt::BluetoothRadioClient
 )
 target_compile_features(qindaqt_bluez_adapter PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_bluez_adapter PRIVATE QT_NO_KEYWORDS)

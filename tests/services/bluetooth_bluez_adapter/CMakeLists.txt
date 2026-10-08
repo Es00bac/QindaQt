@@ -139,3 +139,15 @@ set_tests_properties(
     qindaqt.bluetooth-bluez-boundary-poison
     PROPERTIES LABELS "service;bluetooth;bluez;policy;hostile"
 )
+
+qt_add_executable(qindaqt_bluez_power_recovery_tests
+    tst_bluez_power_recovery.cpp support/bluez_harness.h support/bluez_compose.h
+    support/fake_bluez.cpp support/fake_bluez_pairing.cpp support/fake_bluez.h support/private_bus.h)
+target_compile_definitions(qindaqt_bluez_power_recovery_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
+target_link_libraries(qindaqt_bluez_power_recovery_tests PRIVATE
+    QindaQt::BluezAdapter QindaQt::BluetoothRadioClient Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_bluez_power_recovery_tests)
+add_test(NAME qindaqt.bluetooth-power-recovery COMMAND qindaqt_bluez_power_recovery_tests)
+set_tests_properties(qindaqt.bluetooth-power-recovery PROPERTIES
+    LABELS "service;bluetooth;bluez;dbus;authority" TIMEOUT 45 RUN_SERIAL TRUE)

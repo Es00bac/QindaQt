@@ -541,6 +541,8 @@ nav:
 
       - "0357: Preserve failed copy output": adr/0357-preserve-failed-copy-output-without-cleanup-authority.md
       - "0358: Authenticate native clipboard privacy at use": adr/0358-authenticate-native-clipboard-privacy-at-use.md
+      - "0359: Selected Bluetooth radio recovery": adr/0359-recover-only-the-selected-bluetooth-radio.md
+
       - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md

@@ -1,11 +1,67 @@
 # ED foreign application architecture
-- Status: available — exact Audio e053 source/native handoff complete; ready for same-author review repair and manager-routed package follow-through.
-- Outcome: restore usable Audio aggregate controls through strict channel projection; exact e053e1f85 awaits independent review and manager installed/live gates. ED05 remains preserved/open.
-- Base: a462c415a3678dc8dc96f15bd996abdceea20189; final Audio source e053e1f85310ea921fed6f48d470e04f460fade7.
-- Branch: worker/everyday-audio-recovery-20261008 at a462c415a3678dc8dc96f15bd996abdceea20189.
-- Ownership: Audio service mapper/coordinator diagnostic, owning focused tests/observer and audio-service wiki sections; no protocol/SDK/unit/UI edits. Platform owns SDK closure paragraph.
-- Resources: focused qinda compiler/private-runtime lease released after8/8 owning gates; no host graph/bus/device/installed actions.
+- Status: working — Bluetooth304 private qualification handed off/resources released; beginning assigned source-only c17 Audio fixture and b489 Portage hook-lifetime review.
+- Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
+- Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
+- Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
+- Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
+- Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T05:16:32Z — RELEASED all native resources. Exact304 strict main build0/main32of32, applet strict build0/7of7; main240Qt and applet42Qt, zero failures/skips/blacklisted. Both staged header poisons/restores verified. Original failures preserved; final exact evidence handoff for root review, installed radio open. Continuing assigned Audio/overlay source recheck only.
+
+- 2026-10-08T05:13:48Z — Exact304 independently SOURCE ACCEPTED; strict build0/main32of32 exit0, unchanged session regression now passes. Direct staged header poisons fail on each missing absolute header and restored bytes match source. Standalone7 configure/build/test is the only remaining native cohort; no host action.
+
+- 2026-10-08T05:10:05Z — Strict40d build0; main32 settled31pass/1session SIGSEGV exit8. Wrong-GUID refusal destroys a connection before filter registration; unconditional removal crashes libdbus. Minimal registration-owned cleanup frozen, original fixture unchanged; no further native cohort before root recheck. Applet unrun; no host action.
+
+- 2026-10-08T05:02:51Z — Old762 actual strict build0 and immutable regression2pass3fail reproduced. Revised58af configure0/actual32rows25targets; strict build1 missing QDBusMessage definition in only new native-service fixture. All running jobs settled; production helper linked but no revised tests. Frozen explicit test include repair for root recheck; no warning/authority relaxation.
+
+- 2026-10-08T04:59:48Z — Root58af SOURCE ACCEPT; native lease claimed. Exact six old762/original8c02 source files verified against committed provenance, current product/test bytes58af match, strict Debug cache/private700 XDG verified. A transcribed hash preflight failed and non-fail-fast orchestration still configured old harness0; preserved, no target build/test then. Corrected to committed full-hash manifest before build, fail-fast restored.
+
+- 2026-10-08T04:55:34Z — Handoff: Bluetooth58af9d542 exact test-only descendant pushed, production remains04a6; no new native execution. Root recheck/grant pending. Audiofc378 NeedsFix03c7 delivered with direct source/package evidence. Resources none; available for same-reviewer repairs or separate proposed Portage lifetime patch review, not claiming program completion.
+
+- 2026-10-08T04:53:09Z — Audio exactfc378 independent NEEDS_FIX preserved03c7ac3 with three confirmed source blockers and Portage archive provenance; no native. Root Bluetooth04a6 review requested non-vacuous native foreign-reply delivery witness and observed cancellation. Added test-only repair plus owning harness prose; production bytes unchanged, source review before native.
+
+- 2026-10-08T04:44:06Z — Frozen sender-preserving native source for exact manager review: GUID-bound owner session, delegated caller/full intent, real sender/serial, lifetime negatives and installed header closure. Docs531/strict/boundary/diff0; global shapes63 errors all reported files unchanged from exact5b7. New C++ remains uncompiled; native lane unleased. Prior failures preserved.
+
+- 2026-10-08T04:36:28Z — Drafted owned libdbus wire/codec/helper authority and full raw-caller intent delegation, GUID-pinned Qt authority session and deferred/refound completion. Added real private reply/session negatives; all new source remains uncompiled. Original7d7 failures retained; root exact source review required before native continuation. Access-only O_RDWR namespace fact is not helper/write/installed acceptance.
+
+- 2026-10-08T04:11:29Z — Released native lease;638 broker-policy premise independently NEEDS_FIX70d850 and withdrawn. Proposed0359 now describes owned libdbus sender preservation, GUID-pinned same-bus session factory and exact owner-issued raw-caller delegation. No product edits or native rerun; root/Platform exact contract review next.
+
+- 2026-10-08T04:01:42Z — Actual private diagnostic and official Qt source prove ReplyMessage service() always empty, a production admission blocker. Frozen transport-bound provenance proposal with exact Portage D-Bus broker connection-pair/serial evidence. No guard removal or native retry; source review requested. Resources idle within lease pending manager routing.
+
+- 2026-10-08T03:52:26Z — Strict814 build passed. First main private CTest26/29 exit8: positive authority false, immediate queued-feedback assertion, missing Keyring static plugin in real Settings fixture. Preserve all failures; manager authorized bounded synthetic reply diagnostics and owning fixture corrections. Product admission unchanged; peer review before native continuation.
+
+- 2026-10-08T03:46:48Z — Strict4649 retry exit1 exposes XML raw-string delimiter collision and missing QDBusConnection include in helper service object. Preserve exact failed log/argv; freeze minimal syntax/include repair for Platform recheck. No tests yet.
+
+- 2026-10-08T03:41:56Z — Actual strict8c02 build failed on reply-local variable shadow after1743/2150 actions; original log retained. Frozen one-variable rename for Platform exact recheck; no tests or radio actions, no warning relaxation.
+
+- 2026-10-08T03:33:15Z — Claimed manager's sole qinda Bluetooth compiler/private fixture lease after Platform source acceptance b86b5bc8. Production8c02 exact, strict warnings, -j24 -l24 and serial CTests. No host bus/radio/device/service/display action; effective RW unit/installed controls remain root-owned.
+
+- 2026-10-08T03:25:03Z — Verified/frozen source repair: globally bounded owner/nonce retention and A/B/A policy/private-bus fixtures; portable staged builds restored. Docs531/strict16.38s/radio boundary/diff pass, all new native tests unrun. Available for Platform exact recheck; no resources held.
+
+- 2026-10-08T03:22:08Z — Claimed Platform's exact762 blocking source repairs: retain unexpired owner/nonce pairs across alias owner changes, add direct A/B/A engine and private-bus negatives, remove staged child hard-coded native options. Original762 remains immutable; no compiler, private bus or radio execution.
+
+- 2026-10-08T03:18:17Z — Available: Bluetooth 762 frozen/clean/pushed, manager requested no rebase until Platform exact review. Bounded independent Audio gain/mono/trim routing trace corroborated Media source finding only. No native resources; next work is exact review repair or explicit manager native dispatch.
+
+- 2026-10-08T03:15:00Z — Bluetooth source draft now includes helper authority/platform, backend lifetime wiring, fixed UI diagnostics, Proposed ADR0359 and owning negative/SDK fixtures. Source statics pass; compilation/private fixture and actual RW namespace/device qualification remain pending. Preparing exact hub freeze and controlled manager-base rebase.
+
+- 2026-10-08T03:02:00Z — Verified Clipboard afa/0bd final evidence: 33 hashes match, raw 22/22 CTest and 172 Qt checks; actual old sources/fixtures and SDK poison/restoration inspected. Exact bounded ACCEPT posted; continuing Bluetooth source-only recovery and lifecycle tests.
+
+- 2026-10-08T02:59:04Z — Working: Bluetooth helper/power lifecycle source draft is uncompiled and not accepted; independently reading Media's final Clipboard 0bd/afa raw old/fixed evidence now. No compiler, bus, device, or installed resources held.
+
+- 2026-10-08T02:34:47Z — Independent exact Clipboarddecb source recheck ACCEPT; first-Session observation bounded and pin-once, original Host/SDK bytes unchanged. Direct docs531/strict/boundary/diff0. Native old/fixed, SDK and installed gates remain pending; resume approved Bluetooth source, no runtime lease.
+
+- 2026-10-08T02:32:54Z — Restore own board immediately after claim script used a branch absent from this worktree common repository and truncated the destination. Original record remained intact in Audio worktree; no product source affected. Bluetooth claim now preserved with explicit source paths; Clipboard repaired decb recheck preempts authoring.
+
+- 2026-10-08T02:25:31Z — Exact06463 source NEEDS_FIX: supervisor refresh includes clipboard before first Session1 registration; observer permanently retires if started in that window. Author acknowledged bounded initial-admission repair and direct old/fixed fixture. Other inspected Host/native proof boundaries have no additional source blocker; native/installed qualification pending.
+
+- 2026-10-08T02:22:06Z — Claimed manager-assigned exact Clipboard06463d source review; read Host/private admission/native observer/production composition and real fixtures. No native proof claim. Root Bluetooth counterfactual: selected software unblock succeeded but immediate power reply still Failed, later snapshot powered on; exact generic upstream Failed is observed, not Blocked. Helper concept remains separate from complete power repair.
+
+- 2026-10-08T02:06:07Z — Handed off f46e6808 bounded Bluetooth RCA/authority proposal; main sandbox and unrelated overrides preserved, actual upstream error/namespace remain manager evidence gates. Confirmed existing releaseOwner seam and qindaqt-desktop Portage ownership. Ready for explicit fresh production packet or Media clipboard freeze; no native/runtime resources held.
+
+- 2026-10-08T02:03:15Z — Root actual Bluetooth enable fails while hci0 is software-blocked; traced generic BlueZ error erasure and misleading nearby-device advice. Official KDE rfkill API performs all-Bluetooth CHANGE_ALL directly, not a privileged helper. Proposed isolated selected-index user-authority helper, preserving existing daemon sandbox; root exact upstream error and effective namespace remain gating facts. No production edit or radio action.
+
+- 2026-10-08T01:56:19Z — Root reactivated independent Clipboard1 native privacy review at Media a6. Read actual Host/adapter, public CompositorAttachment and NativeLockStateMonitor; advised synchronous disclosure/capture/Copy guard and exact owner/same-bus/receipt rechecks. No verdict before frozen source. Audio accepted by Media cc318 and root fixed readonly observation passes; source integration reported ed3.
 
 - 2026-10-08T01:49:41Z — Available after clean exact e053 source/d6a evidence handoff. All requested owning gates passed; awaiting independent exact review and manager live fixed observer/integration/package gates. No resources held and no installed-control completion claim. Ready for immediate same-author repair reactivation.
 

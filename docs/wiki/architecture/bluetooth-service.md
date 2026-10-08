@@ -6,7 +6,7 @@ existing clients, while `org.qindaqt.Bluetooth2` is the current control and
 observation boundary. BlueZ remains the owner of pairing, trust, keys, device
 records, profiles, and authorization. Bluetooth2 forwards pairing, trust, and
 record-removal intents to that authority and publishes one bounded Agent1
-prompt; it does not store trust, duplicate BlueZ records, touch rfkill, or own
+prompt; it does not store trust, duplicate BlueZ records, directly touch rfkill, or own
 Bluetooth audio nodes (PipeWire does).
 
 The exact wire contracts are in the frozen
@@ -242,3 +242,45 @@ repeat a pending mutation. Settings provides one Try again action when the
 service is unavailable and separately explains missing hardware. A distribution
 whose BlueZ activation unit alias is absent still requires the system service
 to be enabled; the desktop does not install or configure system units.
+
+## Selected-adapter power recovery
+
+[ADR-0359](../adr/0359-recover-only-the-selected-bluetooth-radio.md) defines the
+optional bluetooth_radio_helper boundary. The daemon composes a borrowed
+same-thread RadioPowerPort. Explicit enable delegates one bounded request;
+disable retains direct BlueZ behavior. The helper checks same-bus owner/caller,
+complete issued intent, exact BlueZ Address, pinned HCI/rfkill parent identity
+and existing user ACLs. Its separate unit leaves the daemon sandbox untouched.
+
+One selected unblock may precede one independently admitted BlueZ power call.
+Definitive no-write absence/unobservable state can retain legacy direct
+behavior; known block/refusal or possible-write uncertainty cannot. No startup
+write, CHANGE_ALL, retry, reblock, pairing or discovery is added. Queued work
+and replies retire on caller, run, owner or adapter-incarnation loss. Method
+replies never synthesize Powered; property publications remain current truth.
+Fixed public reasons distinguish block, authority and uncertain outcome.
+
+The revised composition owns a native transport and a Qt authority connection
+to one GUID-pinned Unix bus through public RadioServiceSession. The native
+caller is explicitly delegated in the full pending intent; real native sender
+and reply serial checks cover success and error replies. Qt reply service()
+is never used as peer identity. A foreign correct-serial response can cause
+refusal or uncertainty, never success or replay. Cancellation/current-callback
+reentrancy re-finds the pending entry before completion. The module privately
+links libdbus-1; the installed static consumer declares that dependency.
+
+A pre-peer preparation failure may retain Qt-only inventory/device startup
+with a definitive no-write unavailable port. Supplied malformed addresses,
+selected GUID mismatch, connection loss or possible dispatch never enable a
+new fallback or reconnection. The existing main daemon sandbox is unchanged.
+
+The original strict build passed but native tests exposed the reply-identity
+defect. Revised exact candidate 3040022a03 passed the strict build, 32 main
+private-fixture gates, seven standalone applet gates and staged public SDK
+header poison/restoration checks. Failed-open teardown removes a filter only
+when its registration succeeded; the unchanged wrong-GUID regression verifies
+that refusal remains safe. Independent final native-evidence review, full
+effective helper-unit qualification, Portage installation and ordinary selected
+control remain open. A separate
+transient O_RDWR open/fstat/close with zero bytes transferred proves access
+only, not radio mutation or helper behavior.
