@@ -55,6 +55,34 @@ applet. Source/recipe review, private signed full-source artifact review and
 Portage-installed session adoption are separate gates. Preparation does not
 claim an installed plugin or completion of the remaining ED-01–24 journeys.
 
+### October 8 urgent core repair delivery: r17
+
+Desktop revision 0.1.0_pre20261002-r17 freezes the manager-qualified runtime
+5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. It contains the accepted Audio graph
+channel projection/observer diagnostics repair and the existing public
+audio_console.h FILE_SET export, together with the reviewed Printing/Copier
+cohort already in that exact source. It retains compiled AgentUsage, its
+QtCore publisher/public SDK/all eleven profiles, Network fallback, fork r6,
+lock-PAM >=1 and native power exclusivity OFF. Runtime/build dependency
+declarations and whole-tree install are identical to r16.
+
+The reproducible git archive plus gzip-n distribution contains 9,626 tracked
+blobs (9,594 regular, 32 executable), 39,276,265 bytes, SHA256
+bbb3bc4715d2dd4ac5df5f47648f8d6ab2a60d79dae0b1b558f7be3a379e2709.
+Git blob contents and git-archive default tar modes are verified against the
+exact freeze; two independent cuts match. The new recipe and distfile record
+mirror exactly, preserving each repository's historical Manifest records.
+Inherited older Manifest inventories differ and are not rewritten.
+
+Manager integrated Audio 24 CTest/221 Qt, real public SDK positive/required-header
+poison/restoration and Printing/Copier 26 CTest/157 Qt evidence qualified that
+runtime freeze. Recipe review, private signed full-source artifact/image
+verification, exact artifact review and later Portage-installed session
+controls remain separate gates. Preparation does not prove installed volume
+or speaker controls. Unaccepted Clipboard/Bluetooth/Power work is deferred
+to a later revision. Immutable r16 recipe/archive/artifact stays unchanged;
+it remains the rollback package boundary.
+
 ## Build and qualify
 
 Use the exact qindaqt-kwin development package the manifest pins. A fresh build root
