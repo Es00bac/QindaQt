@@ -42,7 +42,7 @@ def publish_driver_result(evidence,deadline,path):
 def main():
     evidence={"trustedFixturesOnly":True,"prefixesAreNotPerAppSandbox":True,"authenticatedBadge":False,"steps":[],"prefixesRetained":True}
     evidence["xauthorityInput"]=authority_state()
-    apps=[];domains=[];x=None
+    apps=[];domains=[];documents=[];x=None
     deadline=time.monotonic()+110
     def checkpoint():
         require_driver_time(evidence,deadline)
@@ -82,12 +82,14 @@ def main():
         evidence["before"]=snapshot()
         for name,fixture in [("app-a","notepad.exe"),("app-b","wordpad.exe")]:
             checkpoint()
+            from private_document import PrivateDocument
+            document=PrivateDocument(ROOT,name);documents.append(document)
             domain=PrefixDomain(name,deadline);domains.append(domain)
             ready=domain.startup
             evidence.setdefault("serverReadiness",[]).append({"app":name,**ready["serverReadiness"]})
             evidence.setdefault("appLaunch",[]).append({"app":name,**ready["appLaunch"]})
             apps.append({"name":name,"domain":domain,"fixture":fixture,
-                "environment":wine_environment(name),"known":{}})
+                "environment":wine_environment(name),"document":document,"known":{}})
         evidence["subreaperChecked"]=len(domains)==2 and all(d.startup["subreaperChecked"] is True for d in domains)
         def pairs():
             results=[]
@@ -126,7 +128,9 @@ def main():
             letter=app["name"][-1]
             typed=probe(typing,window,"qinda "+letter+" 3108",current_clients,
                 min(deadline,time.monotonic()+8),ROOT/("typing-"+app["name"]))
-            evidence["steps"].append({"stage":"type-"+letter,**typed})
+            typing.chord(window,"s");current_clients()
+            saved=bounded_wait("private document CtrlS content",lambda:app["document"].read_saved("qinda "+letter+" 3108"),3)
+            evidence["steps"].append({"stage":"type-"+letter,**typed,**saved})
         original_b=x.geometry(b)
         x.resize(a,520,320)
         bounded_wait("first client server geometry updates after resize request",lambda:x.geometry(a) and x.geometry(a)[2:]==[520,320])
@@ -170,6 +174,7 @@ def main():
         evidence["childrenRetirement"]={"qualified":qualified,
             "kernelECHILDRequired":True,"perPrefixDomains":len(domains),
             "adoptedSignals":0,"unknownSurvivors":False if qualified else None}
+        for document in documents:document.close()
         if x:
             try:x.close()
             except Exception:evidence.setdefault("uncertainCleanup",[]).append("X11")

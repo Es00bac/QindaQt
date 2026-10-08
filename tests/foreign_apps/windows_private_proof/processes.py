@@ -72,6 +72,8 @@ def admit_driver(value):
     from typing_probe import admit_typing
     for step,marker in zip(steps[:2],["qinda a 3108","qinda b 3108"]):
         admit_typing(step,marker)
+        from private_document import admit_saved
+        admit_saved(step,marker,"app-"+marker.split()[1])
     ready=value.get("serverReadiness",[])
     if len(ready)!=2 or {v.get("app") for v in ready}!={"app-a","app-b"}:
         raise RuntimeError("two initial server readiness receipts absent")

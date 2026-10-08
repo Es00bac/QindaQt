@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Actual final driver admission rejects incomplete/foreign/forced retirement."""
-import copy,os,unittest
+import copy,os,unittest,hashlib
 from processes import admit_driver
 
 def positive():
@@ -16,7 +16,11 @@ def positive():
         'xresLocalPid':10+i,'prefix':r['prefix'],'starttime':10+i} for i,r in enumerate(rows)],
         'steps':[{'stage':'type-'+letter,'clipboardText':'qinda '+letter+' 3108',
           'focusWithinClient':True,'beforeSHA256':'a'*64,'afterSHA256':'b'*64,
-          'pixelBytes':69120} for letter in ['a','b']]+
+          'pixelBytes':69120,'captures':[{'sha256':v*64,'pixelBytes':69120,'bytes':69134} for v in ['a','b']],
+          'privateDocument':'/fixture/app-'+letter+'/prefix/qinda-fixture.txt',
+          'savedText':'qinda '+letter+' 3108','savedBytes':12,
+          'savedSHA256':hashlib.sha256(('qinda '+letter+' 3108').encode()).hexdigest(),
+          'ctrlSObserved':True,'sameDocumentIncarnation':True} for letter in ['a','b']]+
           [{'stage':s} for s in ['resize-a','close-a','resize-b','close-b']],
         'serverReadiness':rows,'serverRetirement':[{'app':r['app'],'pid':r['pid'],'starttime':r['starttime'],
             'prefix':r['prefix'],'qualified':True,'exit':0,'pidfdDead':True,'reaped':True,

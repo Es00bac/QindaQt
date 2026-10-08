@@ -231,3 +231,14 @@ unchanged resize/independent-close and held-server/domain cleanup admission.
 No host clipboard, display, provider data or user files enter the fixture.
 The added libXtst is an existing Portage-owned fixture dependency, not installed
 outside Portage. Source/pure controls do not qualify actual Windows usability.
+
+The private two-editor typing fixture opens one exclusive, no-follow fixed
+`qinda-fixture.txt` beneath each owned prefix. Its closed launch argument is
+that private text document, not a caller-supplied path. After synthetic typing
+it sends Ctrl+S, reads the same held file incarnation through a bounded
+no-follow descriptor, and requires exact ASCII content (RichEdit's optional
+final CRLF only) before normal window close. A save dialog, unsaved text,
+foreign content, replaced file or missed close refuses the journey; containment
+cannot qualify close. Pixel witnesses require distinct valid SHA256 values and
+the actual fixed PPM byte counts. Clipboard readback plus changed client pixels
+does not claim OCR or physical-keyboard input.
