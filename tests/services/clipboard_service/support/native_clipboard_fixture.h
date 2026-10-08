@@ -91,13 +91,13 @@ private:
 
 class NativeClipboardFixture final {
 public:
-    bool start(bool object = true) {
+    bool start(bool object = true, bool sessionOwner = true) {
         if (!privateBus.start() || !runtime.isValid()) return false;
         compositor = privateBus.connectClient(QStringLiteral("compositor"));
         session = privateBus.connectClient(QStringLiteral("session"));
         client = privateBus.connectClient(QStringLiteral("observer"));
         attacker = privateBus.connectClient(QStringLiteral("attacker"));
-        if (!session.registerService(QStringLiteral("org.qindaqt.Session1"))
+        if ((sessionOwner && !session.registerService(QStringLiteral("org.qindaqt.Session1")))
             || !session.registerService(QStringLiteral("org.freedesktop.ScreenSaver"))
             || !session.registerService(QStringLiteral("org.kde.screensaver"))) return false;
         backend = std::make_unique<ClipboardNativeBackend>(compositor, attacker);

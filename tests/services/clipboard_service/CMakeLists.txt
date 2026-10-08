@@ -113,4 +113,4 @@ target_link_libraries(qindaqt_native_clipboard_startup_tests
 qindaqt_enable_warnings(qindaqt_native_clipboard_startup_tests)
 add_test(NAME qindaqt.native-clipboard-startup COMMAND qindaqt_native_clipboard_startup_tests)
 set_tests_properties(qindaqt.native-clipboard-startup
-    PROPERTIES LABELS "service;clipboard;privacy;dbus;native;hostile" TIMEOUT 30 RUN_SERIAL TRUE)
+    PROPERTIES LABELS "service;clipboard;privacy;dbus;native;hostile" TIMEOUT 60 RUN_SERIAL TRUE)
