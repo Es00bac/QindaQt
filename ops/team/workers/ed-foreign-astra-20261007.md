@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — exact fixed-launch source/archive proposal frozen; inspecting next public interaction boundary while root reviews; no heavy lease.
+- Status: available — archive2340 PASS and exact eleventh VM proposal preserved; awaiting separate root boot grant, no heavy lease.
 - Outcome: two stock Android app windows, followed by real interaction/lifecycle and public integration.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T23:36:27.636695+00:00 — Actualarchive2340 PASS0/84.441s, observer0/84.822s, heldouterreaped and sixlivecaps;7296/onewindowsdelta/7295equal. Newinitrd4f8a633b. Exacteleventhplan6a546abf/manifest e2f1a5cc unexecuted; laptopheavyreleased.
 
 - 2026-10-08T23:31:56.119005+00:00 — Source328fcf22b ten injected tests/docs/strict pass. Archive2340 plan6f76ebef and exact windows14e0a0 frozen, unexecuted. Tenth full receipt failed Clock launch10s; console/cleanup qualified. Immutable proof15payloads preserved; laptop heavy released.
 
