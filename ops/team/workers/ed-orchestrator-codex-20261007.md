@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Integrate accepted R20 release source and admit its private signed build; preserve Windows first failure for Astra and route Media source-only cancellation repair.
+- Status: working — Supervise the one private signed R20 Portage build; route Astra Windows diagnosis and Media cancellation repair, then qualify the immutable Audio package.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -150,3 +150,5 @@
 - 2026-10-08T14:27:06+00:00 — Read full R20 accepted0ae/322/7baf and repaired helper38bee verifier/template. Root independently matches all9,837 archive blobs/modes, exact mirrored recipe and historical source boundary. Import only three release paths plus immutable replies; peer live records remain owned. Root release/docs gates precede one private signed build-only grant. Windows once1/4.306s is preserved for Astra read-only diagnosis; Media source-only cooperative cancellation repair active. No installed/full ED/weight advancement.
 
 - 2026-10-08T14:28:48+00:00 — R20 integrated release gates pass: two syntax checks, exact recipe contract,7/7 release tests, links534, strict MkDocs and diff0. Runtime98342/archivee7fc unchanged; artifact/build/adoption remain open. Preparing exact source integration commit and separate one-attempt build-only lease.
+
+- 2026-10-08T14:29:46+00:00 — Root grants only frozenR20 plan d28f settings/pretend/one private build under actual configured policy, held-handle7200s/128MiB limits and before/after controls. Source hub878bc/overlay322 are integrated; native package helpers, host install, service/session changes and Windows retry remain ungranted.
