@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — critical Audio mapper observer, strict producer regressions and bounded rejection diagnostic.
+- Status: available — exact Audio e053 source/native handoff complete; ready for same-author review repair and manager-routed package follow-through.
 - Outcome: restore usable Audio aggregate controls through strict channel projection; exact e053e1f85 awaits independent review and manager installed/live gates. ED05 remains preserved/open.
 - Base: a462c415a3678dc8dc96f15bd996abdceea20189; final Audio source e053e1f85310ea921fed6f48d470e04f460fade7.
 - Branch: worker/everyday-audio-recovery-20261008 at a462c415a3678dc8dc96f15bd996abdceea20189.
 - Ownership: Audio service mapper/coordinator diagnostic, owning focused tests/observer and audio-service wiki sections; no protocol/SDK/unit/UI edits. Platform owns SDK closure paragraph.
 - Resources: focused qinda compiler/private-runtime lease released after8/8 owning gates; no host graph/bus/device/installed actions.
 ## Updates
+
+- 2026-10-08T01:49:41Z — Available after clean exact e053 source/d6a evidence handoff. All requested owning gates passed; awaiting independent exact review and manager live fixed observer/integration/package gates. No resources held and no installed-control completion claim. Ready for immediate same-author repair reactivation.
 
 - 2026-10-08T01:47:26Z — Froze Audio e053e1f85 after actual immutable-old12pass8fail and final8/8 CTest80Qt0fail0skip, docs530/strict/boundary/diff0. Root live readonly observer confirmed two dimension mismatches; conservative unknown per-channel truth preserves aggregate controls and refuses partial writes. Media exact review and root readonly fixed observation requested; no installed usability claim. Native lease RELEASED.
 
