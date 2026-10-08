@@ -5,7 +5,7 @@ file(MAKE_DIRECTORY "${viewer_test_root}/home" "${viewer_test_root}/runtime")
 file(CHMOD "${viewer_test_root}/runtime" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
 set(viewer_test_env
     "QT_QPA_PLATFORM=offscreen;QSG_RHI_BACKEND=software;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;QT_QPA_PLATFORMTHEME=;HOME=${viewer_test_root}/home;XDG_CONFIG_HOME=${viewer_test_root}/home/config;XDG_DATA_HOME=${viewer_test_root}/home/data;XDG_RUNTIME_DIR=${viewer_test_root}/runtime;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent;DISPLAY=;WAYLAND_DISPLAY=")
-foreach(part IN ITEMS renderer controller)
+foreach(part IN ITEMS renderer controller text text_controller)
     qt_add_executable(qindaqt_viewer_${part}_test tst_${part}.cpp)
     target_link_libraries(qindaqt_viewer_${part}_test PRIVATE qindaqt_viewer_support Qt6::Test)
     target_compile_definitions(qindaqt_viewer_${part}_test PRIVATE
@@ -14,10 +14,17 @@ foreach(part IN ITEMS renderer controller)
     add_test(NAME apps.viewer.${part} COMMAND qindaqt_viewer_${part}_test)
     set_tests_properties(apps.viewer.${part} PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 45)
 endforeach()
+# The bound fixture checks real Poppler extraction before invoking the renderer.
+# Imported targets belong to their directory subtree; keep this test dependency
+# local instead of reaching into the sibling production directory's target.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(VIEWER_TEXT_TEST_POPPLER REQUIRED IMPORTED_TARGET poppler-qt6>=26.01.0)
+target_link_libraries(qindaqt_viewer_text_test PRIVATE PkgConfig::VIEWER_TEXT_TEST_POPPLER)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/artifacts")
 qt_add_executable(qindaqt_viewer_ui_test tst_ui.cpp
-    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp")
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/frame_provider.h")
 target_link_libraries(qindaqt_viewer_ui_test PRIVATE qindaqt_viewer_support
     QindaQt::AppShell Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 target_compile_definitions(qindaqt_viewer_ui_test PRIVATE
@@ -35,3 +42,19 @@ add_test(NAME apps.viewer.cli-install
         --build "${PROJECT_BINARY_DIR}"
         --root "${CMAKE_CURRENT_BINARY_DIR}/install-smoke")
 set_tests_properties(apps.viewer.cli-install PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 60)
+
+qt_add_executable(qindaqt_viewer_text_ui_test tst_text_ui.cpp
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/frame_provider.h")
+target_link_libraries(qindaqt_viewer_text_ui_test PRIVATE qindaqt_viewer_support
+    QindaQt::AppShell Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+target_compile_definitions(qindaqt_viewer_text_ui_test PRIVATE
+    VIEWER_MAIN_QML="${PROJECT_SOURCE_DIR}/src/apps/viewer/qml/Main.qml"
+    VIEWER_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+    VIEWER_ARTIFACTS_DIR="${CMAKE_CURRENT_BINARY_DIR}/artifacts")
+qindaqt_enable_warnings(qindaqt_viewer_text_ui_test)
+add_test(NAME apps.viewer.text-ui COMMAND qindaqt_viewer_text_ui_test)
+set_tests_properties(apps.viewer.text-ui PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 60)
+add_test(NAME apps.viewer.text-ui-dpi2 COMMAND qindaqt_viewer_text_ui_test)
+set_tests_properties(apps.viewer.text-ui-dpi2 PROPERTIES
+    ENVIRONMENT "${viewer_test_env};QT_SCALE_FACTOR=2" TIMEOUT 60)

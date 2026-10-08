@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "viewer_actions.h"
+#include "viewer_controller.h"
+#include <qindaqt/app_shell/application_coordinator.h>
 #include <QCoreApplication>
 
 namespace QindaQt::Viewer {
@@ -14,7 +16,8 @@ AppShell::ActionSpec action(const char *id, const char *menu, const char *menuLa
     value.label = QCoreApplication::translate("ViewerActions", label);
     value.shortcut = QKeySequence(QString::fromLatin1(shortcut));
     value.order = order;
-    value.menuOrder = value.menuId == QStringLiteral("file") ? 0 : 1;
+    value.menuOrder = value.menuId == QStringLiteral("file") ? 0
+        : value.menuId == QStringLiteral("edit") ? 1 : 2;
     return value;
 }
 } // namespace
@@ -24,6 +27,8 @@ QList<AppShell::ActionSpec> viewerActions()
         action("file.open", "file", "File", "Open…", "Ctrl+O", 0),
         action("file.close", "file", "File", "Close document", "Ctrl+W", 1),
         action("file.quit", "file", "File", "Quit", "Ctrl+Q", 2),
+        action("edit.text", "edit", "Edit", "Select PDF text…", "Ctrl+Shift+F", 0),
+        action("edit.find", "edit", "Edit", "Find in PDF…", "Ctrl+F", 1),
         action("view.previous", "view", "View", "Previous page", "PgUp", 0),
         action("view.next", "view", "View", "Next page", "PgDown", 1),
         action("view.first", "view", "View", "First page", "Ctrl+Home", 2),
@@ -35,5 +40,21 @@ QList<AppShell::ActionSpec> viewerActions()
         action("view.width", "view", "View", "Fit width", "Ctrl+2", 8),
         action("view.rotate", "view", "View", "Rotate clockwise", "Ctrl+R", 9),
     };
+}
+void updateViewerActions(AppShell::ApplicationCoordinator &coordinator,
+                         const ViewerController &viewer)
+{
+    for (const auto &spec : viewerActions()) {
+        bool enabled = true;
+        if (spec.menuId == QStringLiteral("view")) enabled = viewer.ready();
+        if (spec.menuId == QStringLiteral("edit"))
+            enabled = viewer.ready() && viewer.pdf() && viewer.textAllowed() && !viewer.busy();
+        if (spec.id == QStringLiteral("file.close")) enabled = !viewer.fileName().isEmpty();
+        if (spec.id == QStringLiteral("view.previous") || spec.id == QStringLiteral("view.first"))
+            enabled = viewer.ready() && viewer.page() > 0;
+        if (spec.id == QStringLiteral("view.next") || spec.id == QStringLiteral("view.last"))
+            enabled = viewer.ready() && viewer.page() + 1 < viewer.pageCount();
+        static_cast<void>(coordinator.setActionEnabled(spec.id, enabled));
+    }
 }
 } // namespace QindaQt::Viewer

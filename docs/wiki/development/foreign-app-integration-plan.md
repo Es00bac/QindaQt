@@ -14,18 +14,29 @@ implemented feature or an assertion of universal application compatibility.
 
 ## October 8 implementation progress
 
-Android candidatesc05d9c16/23ab470 and independent source reviewd97ea819
-establish bounded input inspection and a Portage-owned public AOSP signature
-verifier recipe with15 pure checks. Actual Java/package/signature execution,
-resolved image source/license correspondence, guest startup and authenticated
-window identity remain open. No Android app-window success is claimed.
+Android sourcec05d9c16/23ab470 and source reviewd97ea819 establish bounded
+input inspection and a Portage-owned public AOSP verifier. The private signed
+package6f6837a0 has bounded independent artifact acceptancee79edabc: required
+signature/image/embedded recipe and28 indexed raw files/29 archive members match.
+Actual Java25/API33 packaged10 and Calculator/DeskClock6 checks pass, including
+matching-new-hash signed-entry poison and unchanged restoration. The authentic
+unsupported-only signature fixture also refuses as expected. The original
+build phase stdout gap is retained; no original test count is inferred from
+emerge0. This package is not installed. Resolved whole-image source/license
+correspondence, runtime startup and authenticated window identity remain open.
+No Android app-window success is claimed.
 
-Windows v7 reached the real private native Xwayland startup and failed XKB
-readiness before application execution. Independently source-accepted v8
-03af625/f98936ec supplies the missing synthetic public /bin alias without
-mounting host private data. Fresh preflight and one separately granted bounded
-two-app attempt are next. The failure and source repair are progress; neither
-complete compatibility journey nor green/blue presentation is delivered.
+Windows source-accepted v9 9721b98 has a fresh source/payload-bound preflight and
+an actual private attemptbb732a4. Notepad and WordPad have distinct observed
+XRes PIDs/prefixes and normal windows, with ordered server geometry/close steps
+and final empty compositor inventory. The second prefix stop returns1, so the
+complete cleanup admission correctly refuses. Empty windows and final namespace
+retirement cannot replace per-prefix cleanup proof. The next fixture owns each
+foreground persistent server's initial lifetime/readiness and verifies exact
+retirement and orphan accounting. Server geometry is not client-render/input
+proof; no production origin authority or green/blue presentation is delivered.
+Prior XKB and authority failures are preserved. Neither platform has completed
+the full compatibility journey.
 
 ## Existing foundation and remaining work
 

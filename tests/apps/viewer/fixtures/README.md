@@ -16,3 +16,16 @@ same simple red rectangle and uses owner password `fixture-owner`; its header
 declares GPL-3.0-or-later. The controller regression first renders it directly
 using Poppler's documented Latin-1 byte API, then unlocks through the QString
 facade so an accidental UTF-8 conversion cannot pass unnoticed.
+
+## Copy-restricted fixture
+
+`copy-restricted.pdf` is a self-authored GPL-3.0-or-later page containing only
+“QindaQt restricted fixture”, in the standard PDF Helvetica font. It opens with
+an empty user password and forbids copying/printing through PDF permissions.
+The public synthetic owner password is `viewer-fixture-owner`. It checks
+Poppler's real copy-permission result, rather than replacing Poppler with a fake.
+
+Recreate it with `python3 generate-copy-restricted.py`, using Portage-owned
+qpdf12.3.2. The generator uses deterministic encryption only for this public
+test asset; those settings must never be used for a private document. No
+fixture-generation package is a production Viewer dependency.
