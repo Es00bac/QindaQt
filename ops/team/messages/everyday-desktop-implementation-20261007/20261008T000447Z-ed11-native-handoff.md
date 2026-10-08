@@ -50,7 +50,22 @@ The 18 actual CTest rows are five Printing gates; registry, navigation controlle
 
 ## Reproduction
 
-In the assigned worktree, the exact source is `.cache/printing-exact-83e` (directory name retained; final HEAD is 55113184) and build is `.cache/printing-native-build`. The full configure command is preserved in the original native claim and configure log. Actual targets:
+In the assigned worktree, the exact source is `.cache/printing-exact-83e` (directory name retained; final HEAD is 55113184) and build is `.cache/printing-native-build`. The configuration is retained in the actual build CMakeCache.txt and original configure output. The observed Qt Core package version is 6.11.1. Under the same private XDG and blocked-bus environment, its reproduction flags are:
+
+```sh
+cmake -S .cache/printing-exact-83e -B .cache/printing-native-build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/usr \
+  -DKDE_INSTALL_LIBEXECDIR=libexec -DCMAKE_INSTALL_LIBEXECDIR=libexec \
+  -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON \
+  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+  -DQINDAQT_ENABLE_STRICT_WARNINGS=ON -DQINDAQT_ENABLE_HOST_UINPUT_TESTS=OFF \
+  -DQINDAQT_BUILD_KWIN_PLUGIN=OFF -DQINDAQT_BUILD_PRODUCTION_SHELL=OFF \
+  -DQINDAQT_BUILD_SHELL=OFF -DQINDAQT_BUILD_VIEWER=OFF \
+  -DQINDAQT_BUILD_QINDALUTRIS=OFF -DQINDAQT_BUILD_SYSTEM_MONITOR=OFF \
+  -DQINDAQT_BUILD_OBS_BRIDGE=OFF
+```
+
+Actual targets:
 
 ```sh
 cmake --build .cache/printing-native-build --target \
