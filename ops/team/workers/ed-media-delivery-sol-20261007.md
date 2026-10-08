@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: paused — user requested safe logout/login checkpoint; incomplete read-only ED05 review preserved and all resources released
-- Branch: worker/everyday-printing-settings-20261007
-- Worktree: everyday-printing-settings-20261007
-- Outcome: different-author exact ED05 recovery codec/store/mount collaborator source review; Viewer repair pending and ED11 preserved
-- Ownership: own board and timestamped review records only; Astra owns ED05 product/docs/tests and root owns Viewer
-- Next gate: user resume and root exact packet; incomplete ED05 source review and Viewer repair recheck remain pending
+- Status: available — clipboard native handoff preserved; independent integration and installed-login gates pending
+- Branch: worker/everyday-clipboard-startup-20261008
+- Worktree: everyday-clipboard-startup-20261008
+- Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
+- Ownership: clipboard service Host/Resident public overloads and private privacy-state/app observer, owning CMake/focused tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
+- Next gate: Astra exact final native-evidence review, then manager integration/rerun and ordinary installed fresh-login acceptance; no resources held
 
 ## Updates
 
@@ -63,3 +63,37 @@
 - 2026-10-08T00:25:44+00:00: Root reactivated independent read-only ED05 first collaborator review at exact41165258389ad58922b2ea4f73514317f9cf07af/base3859cc785. Confirmed clean source, read owning ADR0355/0357 and recovery/wiki contract. Inspecting strict codec/append-only durability/exclusive no-follow filesystem/statx descriptor lifetimes and real authored fault fixtures. Only own board/review records edited; no Astra source, compiler/native lease, whole Move or durability execution claim.
 
 - 2026-10-08T00:27:00+00:00: User requested safe stopping point through root; paused review/refill immediately. Preserved incomplete exact41165258 review after codec/types/store/admission inspection; actual fault fixtures and native/static review gates remain pending. One same-inode post-file-fsync/pre-readback durability concern is recorded as unexecuted, not a reproduced blocker. No product edits/compiler/native lease. Viewer807 NeedsFix and Printing551 qualified source handoff remain unchanged.
+
+- 2026-10-08T01:13:58+00:00: User returned and root reactivated exact411 review from3a4b checkpoint. Fetched hub main, confirmed own clean preserved branch; Astra live sourcec398 is newer, so immutable411 fixtures read from hub. Actual record/mount fixtures now inspected, completing codec/store/statx/lifetime review. Astra acknowledges absent pre-fsync same-inode version baseline and will author old-source rewrite regression/repair. No native test, lease or source edit; Printing551 integrateddd631 with manager/adoption gates separate.
+
+- 2026-10-08T01:22:50+00:00: Completed immutable411 source review NEEDS_FIX_SOURCE P0/P1/P2/P3=0/1/0/0, same-inode post-fsync and identical-byte replacement-inode readback branches. Exacta2b625cf baseline-bound repair is source-satisfactory within four-collaborator scope; native acceptance pending. Actual fixtures inspected; original/regression function unchanged. Independent both snapshots docs528/strict/boundary+negative matcher/diff0, original max191/repaired store211. Manifest WIP excluded. Root reprioritized user-critical R16 fresh-login Audio/Bluetooth/core startup; preserved review checkpoint and offered different-author core candidate capacity. All resources released; no whole ED05 completion claim.
+
+- 2026-10-08T01:27:13+00:00: Activated read-only different-author Audio RCA from exact a462c415a3678dc8dc96f15bd996abdceea20189. Root reports running native Audio service with backend-malformed empty graph while raw PipeWire has devices; tracing strict protocol validation and WirePlumber mapping only. No live state or compiler actions. ED05 repaired source checkpoint and Viewer NeedsFix remain preserved/native pending.
+
+- 2026-10-08T01:30:50+00:00: Exact a462 read-only Audio RCA complete: manager public backend-malformed/1984 matches whole graph rejection; production channel projection does not contract longer arrays or reconcile partial nonempty unknown-aggregate state, while strict validator rejects mismatched counts. Existing PipeWire runtime test lacks strict snapshot validation. Precise rejection-field map, privacy-safe manager probes and actual-helper/coordinator regression recommendations preserved. No product edits/compiler/native/live actions. Offered different-author exact core repair recheck; ED05/Viewer pending.
+
+- 2026-10-08T01:37:30+00:00: Claimed different-author read-only observer2a3613664586d947742dce6e729abe049b38b048. Inspect helper/portable recipe against actual producer and validator, read-only graph/lifetime/settle and output privacy contract. Author compile17-action evidence is not reviewer execution; no compiler or host probe by this worker.
+
+- 2026-10-08T01:41:34+00:00: Independent exact2a361 helper/standalone source ACCEPT with SHA256s matched and original producer/protocol bytes unchanged. Read-only call surface, callback drain/settle cleanup and fixed-token/count/flag output traced. Parent project imported-target scope defect separately NEEDS_FIX; author configure failure attributed and standalone unaffected. No reviewer compile/host/native actions. Root may perform authorized bounded read-only observation; live attribution and controls recovery not inferred. Ready for exact CMake/mapper fix review.
+
+- 2026-10-08T01:45:22+00:00: Claimed clipboard enabled-history/unlocked-login recovery at exact manager a6f0953d5acd87cdb9451c03aa596d629b9fa9a9 (hub main matched), new isolated worktree/branch. Read instructions/wiki/native observer inventory; no product edits or compiler/host clipboard capture. Current highest ADR0357; requesting0358 reservation. Source RCA/proposed smallest safe composition precedes implementation, public attachment/native receipt boundary only.
+
+- 2026-10-08T01:47:01+00:00: Manager reserved clipboard ADR0358 and prioritized newly frozen Audio e053e1f85310ea921fed6f48d470e04f460fade7 review. Clipboard source unchanged; legacy all-three-owner quorum and PID admission conflict with split native compositor/session facade source-traced. Reviewing exact Audio fix and author raw80Qt/old8failure evidence now, no independent compiler/host actions while Platform owns native lease.
+
+- 2026-10-08T01:50:29+00:00: Exact Audio e053 source ACCEPT0/0/0/0; all8 author log hashes independently matched, LastTest actual8passed/80Qt0fail0skip, original12pass8fail records inspected. Conservative empty channel truth blocks partial writes without weakening validation; helper unchanged and parent CMake scope repaired. Reviewer compiler/host/native idle. Preserved exact acceptance receipt and resumed clipboard source proposal in isolated a6 tree; ADR0358 reserved.
+
+- 2026-10-08T02:10:19+00:00: Manager approved bounded Host/Resident public admission overload and private cohesive privacy state plus native attachment observer. Authoring production code and failure-mode fixtures now; no compiler/native/host clipboard capture or install action. Existing explicit consent and strict lock/attachment authority remain independent.
+
+- 2026-10-08T02:20:23+00:00: Complete bounded clipboard production source and ADR0358 authored with strict new public constructor symbols, pinned native attachment/receipt composition, synchronous descriptor/capture/Copy guards, purge-before-cancel and reentrant completion checks. Two real failure-mode fixtures and installed-only symbol consumer authored; native unexecuted. Clipboard persistence/logging boundary and diff checks exit0. Ordinary installed fresh-login owner/socket ordering remains required before repair claim. Root holds integrated Printing/Copier lease; freezing source for independent Astra trust review now.
+
+- 2026-10-08T02:22:13+00:00: Exact clipboard06463d7 source preserved on hub for Astra/root review. Actual documentation links531 exit0, strict MkDocs exit0, production shape14/test shape15 both zero issues, boundary/diff0; source maximum Host173/privacy99/main97/native96 nonblank. Log hashes/evidence saved in ignored .cache/clipboard-static. No compile/CTest/native/installed/content capture; preparing immutable-old source harness while root holds native lease.
+
+- 2026-10-08T02:31:51+00:00: Astra exact064 source review8ef070c found one P1: supervisor resident refresh precedes Session1 publication, so initial absence permanently retired observer. Root authorized same-worktree repair. Authored one bounded initial-owner timer/30-second monotonic window/max11 lookups, pin-once/no post-admission replacement, late-first owner beyond short receipt budget, timeout/late-after-timeout and stop cases. Actual docs531/strict/shapes14+15/boundary/diff0; native unexecuted. Frozen repaired source goes to exact review now; root retains integrated Printing/Copier lease.
+
+- 2026-10-08T02:36:20+00:00: Exactdecb source independently accepted60a6facb4e9aa8e030b1db2430538ac3bef942a3. Root integrated Printing/Copier gates passed and all resources released; explicit sole qinda compiler/private-bus lease now granted for Clipboard old/fixed/SDK gates. Confirming exact product commit and actual MAKEOPTS, configure strict/usr/libexec with both host buses blocked/private XDG, no host capture. Native results not inferred yet.
+
+- 2026-10-08T02:43:31+00:00: Actual strict foundation build0, immutable original a6 Host/header/MOCs build0 and regression4passed16failed0skip/blacklist(exit16); immutable064 observer/header/MOCs build0 and unchanged delayed-first fixture2passed2failed0skip/blacklist(exit2). Raw txt/XML/provenance retained. Strengthened own staged-only consumer header selection against ambient SDK fallback before poison execution; production and both regression fixture bytes unchangeddecb. Repaired owning build/runtime/SDK gates next under current lease; no host content capture.
+
+- 2026-10-08T02:52:10+00:00: Exact0bd strict repaired build116actions exit0; focused22/22 CTest64.35s, actual19Qt suites172passed0fail/skip/blacklist. New privacy20/20 and native17/17 include delayed first owner, real timeout and late-after-timeout denial. Staged public constructor consumer passes; withheld absolute staged header compile1 with actual missing-path marker, exact restoration rebuild0/run0. Immutable controls retained4pass16fail and2pass2fail. Explicitly released all compiler/private-bus/runtime/staging resources to root before parsing direct XML/counts/hashes. No host content, install or whole-plan completion claim; final evidence preserved for independent review.
+
+- 2026-10-08T02:56:45+00:00: Final handoff preserves exact 0bd source, 22/22 CTest rows and 172/0/0/0 Qt totals, immutable old failures, staged missing-header failure and byte-exact restoration. All compiler/private-bus/runtime/staging resources remain released. Offering bounded read-only integration-evidence or next exact different-author review help; no new product packet or host clipboard actions claimed.

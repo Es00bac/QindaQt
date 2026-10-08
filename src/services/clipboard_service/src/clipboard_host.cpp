@@ -1,30 +1,50 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/services/clipboard_service/clipboard_host.h>
-
 #include <qindaqt/services/clipboard_model/clipboard_descriptor.h>
+
+#include "clipboard_privacy_state_p.h"
+
+#include <utility>
 
 namespace QindaQt::Services::Clipboard {
 
 ClipboardHost::ClipboardHost(ClipboardWayland::ClipboardWaylandAdapter *adapter,
                              quint64 epoch, QObject *parent)
+    : ClipboardHost(adapter, epoch, [] { return true; }, parent)
+{
+}
+
+ClipboardHost::ClipboardHost(ClipboardWayland::ClipboardWaylandAdapter *adapter,
+                             quint64 epoch, PrivacyAdmission admission, QObject *parent)
     : QObject(parent), m_adapter(adapter), m_epoch(epoch == 0 ? 1 : epoch)
 {
     Q_ASSERT(m_adapter != nullptr);
+    m_privacy = std::make_unique<ClipboardPrivacyState>(*m_adapter, std::move(admission),
+        [this](const ClipboardModel::HistorySnapshot &before) { publishIfChanged(before); });
     m_adapter->setObserver(this);
     m_adapter->setCaptureEnabled(false);
 }
 
 ClipboardHost::~ClipboardHost()
 {
-    m_adapter->setCaptureEnabled(false);
     m_adapter->setObserver(nullptr);
+    m_adapter->setCaptureEnabled(false);
 }
 
 Snapshot ClipboardHost::snapshot() const
 {
-    const ClipboardModel::HistorySnapshot history = m_history.snapshot();
-    const auto encoded = ClipboardModel::encodeDescriptorList(history.entries);
+    (void)m_privacy->check();
+    auto history = m_privacy->history.snapshot();
+    auto encoded = ClipboardModel::encodeDescriptorList(history.entries);
+    // Admission may deny reentrantly. Never return the descriptor copy encoded
+    // before that reconciliation, even when flags alone changed.
+    (void)m_privacy->check();
+    const auto current = m_privacy->history.snapshot();
+    if (current != history) {
+        history = current;
+        encoded = ClipboardModel::encodeDescriptorList(history.entries);
+    }
     return {.schemaVersion = kSchemaVersion,
             .epoch = m_epoch,
             .generation = history.generation,
@@ -35,66 +55,52 @@ Snapshot ClipboardHost::snapshot() const
             .wireValid = encoded.accepted()};
 }
 
-void ClipboardHost::publishIfChanged(quint32 generation, quint64 revision,
-                                     bool enabled, bool allowed)
+void ClipboardHost::publishIfChanged(const ClipboardModel::HistorySnapshot &before)
 {
-    const auto current = m_history.snapshot();
-    if (generation != current.generation || revision != current.revision
-        || enabled != current.historyEnabled || allowed != current.privacyAllowed) {
-        Q_EMIT changed(m_epoch, current.generation, current.revision);
-    }
+    const auto current = m_privacy->history.snapshot();
+    if (before != current) Q_EMIT changed(m_epoch, current.generation, current.revision);
 }
 
-void ClipboardHost::setHistoryOptIn(bool enabled)
-{
-    const auto before = m_history.snapshot();
-    m_optedIn = enabled;
-    m_history.setHistoryEnabled(enabled);
-    m_adapter->setCaptureEnabled(m_optedIn && m_unlocked && m_adapter->isAvailable());
-    publishIfChanged(before.generation, before.revision, before.historyEnabled,
-                     before.privacyAllowed);
-}
-
-void ClipboardHost::setUnlocked(bool unlocked)
-{
-    const auto before = m_history.snapshot();
-    m_unlocked = unlocked;
-    m_history.setPrivacyAllowed(unlocked);
-    m_adapter->setCaptureEnabled(m_optedIn && m_unlocked && m_adapter->isAvailable());
-    publishIfChanged(before.generation, before.revision, before.historyEnabled,
-                     before.privacyAllowed);
-}
-
+void ClipboardHost::setHistoryOptIn(bool enabled) { m_privacy->setHistoryOptIn(enabled); }
+void ClipboardHost::setUnlocked(bool unlocked) { m_privacy->setUnlocked(unlocked); }
 void ClipboardHost::captureAvailabilityChanged(bool available)
 {
-    m_adapter->setCaptureEnabled(available && m_optedIn && m_unlocked);
+    m_privacy->synchronizeCapture(available);
+}
+
+bool ClipboardHost::operationAdmitted(quint32 generation)
+{
+    return m_privacy->check() && m_privacy->history.isHistoryEnabled()
+        && m_privacy->history.generation() == generation;
 }
 
 void ClipboardHost::captured(ClipboardWayland::SelectionKind kind,
                              const ClipboardModel::ClipboardValue &value)
 {
-    const auto before = m_history.snapshot();
+    // AGENT-GUARD: denied admission cancels the adapter transfer synchronously.
+    // value may alias that destroyed transfer; do not touch it after denial.
+    if (!m_privacy->check() || !m_privacy->history.isHistoryEnabled()) return;
+    const auto before = m_privacy->history.snapshot();
     const QString label = kind == ClipboardWayland::SelectionKind::Clipboard
         ? QStringLiteral("Wayland clipboard") : QStringLiteral("Wayland primary");
-    const auto admitted = m_history.admit(value, before.generation, label, ++m_tick);
-    if (admitted.accepted()) {
-        const auto after = m_history.snapshot();
-        Q_EMIT changed(m_epoch, after.generation, after.revision);
-    }
+    const auto admitted = m_privacy->history.admit(value, before.generation, label, ++m_tick);
+    if (!admitted.accepted() || !operationAdmitted(before.generation)) return;
+    const auto after = m_privacy->history.snapshot();
+    Q_EMIT changed(m_epoch, after.generation, after.revision);
+    (void)m_privacy->check();
 }
 
 void ClipboardHost::captureRefused(ClipboardWayland::SelectionKind,
                                    ClipboardModel::ClipboardError)
 {
-    // Intentionally silent: refusal reason is testable policy state, while
-    // producer MIME/payload details must never become diagnostics.
+    // Intentionally silent: producer MIME/payload details never become diagnostics.
 }
 
 OperationResult ClipboardHost::resultFor(const OperationRequest &request,
                                          OperationStatus status,
                                          const QString &reasonCode) const
 {
-    const auto current = m_history.snapshot();
+    const auto current = m_privacy->history.snapshot();
     return {.kind = request.kind,
             .status = status,
             .requestId = request.requestId,
@@ -124,56 +130,62 @@ QString ClipboardHost::reasonFor(ClipboardModel::ClipboardError error)
 
 OperationResult ClipboardHost::submit(const OperationRequest &request)
 {
-    if (request.expectedEpoch != m_epoch) {
+    (void)m_privacy->check();
+    if (request.expectedEpoch != m_epoch)
         return resultFor(request, OperationStatus::Rejected, QStringLiteral("stale-epoch"));
-    }
-    const auto before = m_history.snapshot();
+    const auto before = m_privacy->history.snapshot();
     if (request.expectedGeneration != before.generation
-        || request.expectedRevision != before.revision) {
+        || request.expectedRevision != before.revision)
         return resultFor(request, OperationStatus::Rejected, QStringLiteral("stale-lineage"));
-    }
 
+    auto &history = m_privacy->history;
     ClipboardModel::ClipboardError error = ClipboardModel::ClipboardError::None;
     bool uncertain = false;
+    bool sent = false;
     switch (request.kind) {
-    case OperationKind::Select: {
-        const auto outcome = m_history.promote(request.entry, request.expectedGeneration, ++m_tick);
-        error = outcome.error;
+    case OperationKind::Select:
+        error = history.promote(request.entry, request.expectedGeneration, ++m_tick).error;
         break;
-    }
     case OperationKind::Delete:
-        error = m_history.removeEntry(request.entry, request.expectedGeneration).error;
+        error = history.removeEntry(request.entry, request.expectedGeneration).error;
         break;
     case OperationKind::Clear:
-        error = m_history.clear(request.clearAll ? ClipboardModel::ClearScope::All
-                                                : ClipboardModel::ClearScope::UnpinnedOnly,
-                                request.expectedGeneration).error;
+        error = history.clear(request.clearAll ? ClipboardModel::ClearScope::All
+                                              : ClipboardModel::ClearScope::UnpinnedOnly,
+                              request.expectedGeneration).error;
         break;
     case OperationKind::Copy: {
-        if (!m_adapter->isAvailable()) {
-            return resultFor(request, OperationStatus::Failed,
-                             QStringLiteral("wayland-unavailable"));
-        }
-        const auto outcome = m_history.promote(request.entry, request.expectedGeneration, ++m_tick);
+        const bool available = m_adapter->isAvailable();
+        if (!operationAdmitted(before.generation))
+            return resultFor(request, OperationStatus::Rejected, QStringLiteral("privacy-changed"));
+        if (!available)
+            return resultFor(request, OperationStatus::Failed, QStringLiteral("wayland-unavailable"));
+        // promote returns an owned payload copy. No reference into history
+        // survives the external admission/publication calls.
+        const auto outcome = history.promote(request.entry, request.expectedGeneration, ++m_tick);
         error = outcome.error;
         if (outcome.accepted()) {
+            if (!operationAdmitted(before.generation))
+                return resultFor(request, OperationStatus::Rejected, QStringLiteral("privacy-changed"));
+            sent = true;
             uncertain = !m_adapter->publishSelection(
                 ClipboardWayland::SelectionKind::Clipboard, outcome.value);
+            if (!operationAdmitted(before.generation))
+                return resultFor(request, OperationStatus::Uncertain, QStringLiteral("privacy-changed"));
         }
         break;
     }
     }
-    if (error != ClipboardModel::ClipboardError::None) {
+    if (error != ClipboardModel::ClipboardError::None)
         return resultFor(request, OperationStatus::Rejected, reasonFor(error));
-    }
-    const auto after = m_history.snapshot();
-    if (after.revision != before.revision) {
-        Q_EMIT changed(m_epoch, after.generation, after.revision);
-    }
-    return resultFor(request, uncertain ? OperationStatus::Uncertain
-                                        : OperationStatus::Succeeded,
-                     uncertain ? QStringLiteral("wayland-uncertain")
-                               : QStringLiteral("ok"));
+    if (!operationAdmitted(before.generation))
+        return resultFor(request, OperationStatus::Uncertain, QStringLiteral("privacy-changed"));
+    publishIfChanged(before);
+    if (!operationAdmitted(before.generation))
+        return resultFor(request, OperationStatus::Uncertain, QStringLiteral("privacy-changed"));
+    return resultFor(request, uncertain && sent ? OperationStatus::Uncertain
+                                                : OperationStatus::Succeeded,
+                     uncertain ? QStringLiteral("wayland-uncertain") : QStringLiteral("ok"));
 }
 
 } // namespace QindaQt::Services::Clipboard

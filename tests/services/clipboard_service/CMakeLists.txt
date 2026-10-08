@@ -85,3 +85,32 @@ add_test(
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_staged_install.cmake"
 )
 set_tests_properties(qindaqt.clipboard-staged-install PROPERTIES LABELS "package;clipboard")
+
+# Admission and native authority are separate fixtures: neither touches the host
+# display, system bus, real selection contents or installed service ownership.
+qt_add_executable(qindaqt_clipboard_privacy_admission_tests
+    tst_clipboard_privacy_admission.cpp support/reentrant_wayland_adapter.h)
+target_link_libraries(qindaqt_clipboard_privacy_admission_tests
+    PRIVATE QindaQt::ClipboardService Qt6::Test)
+qindaqt_enable_warnings(qindaqt_clipboard_privacy_admission_tests)
+add_test(NAME qindaqt.clipboard-privacy-admission
+    COMMAND qindaqt_clipboard_privacy_admission_tests)
+set_tests_properties(qindaqt.clipboard-privacy-admission
+    PROPERTIES LABELS "service;clipboard;privacy;hostile" TIMEOUT 20)
+
+qt_add_executable(qindaqt_native_clipboard_startup_tests
+    tst_native_clipboard_startup.cpp support/native_clipboard_fixture.h
+    support/fake_wayland_adapter.h support/private_bus.h
+    "${CMAKE_SOURCE_DIR}/src/services/clipboard_service/app/native_clipboard_lock_observer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/services/clipboard_service/app/native_clipboard_lock_observer.h")
+target_include_directories(qindaqt_native_clipboard_startup_tests
+    PRIVATE "${CMAKE_SOURCE_DIR}/src/services/clipboard_service/app")
+target_compile_definitions(qindaqt_native_clipboard_startup_tests
+    PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
+target_link_libraries(qindaqt_native_clipboard_startup_tests
+    PRIVATE QindaQt::ClipboardService QindaQt::SessionLockState
+            QindaQt::CompositorAttachment qindaqt_compositor_names Qt6::Test)
+qindaqt_enable_warnings(qindaqt_native_clipboard_startup_tests)
+add_test(NAME qindaqt.native-clipboard-startup COMMAND qindaqt_native_clipboard_startup_tests)
+set_tests_properties(qindaqt.native-clipboard-startup
+    PROPERTIES LABELS "service;clipboard;privacy;dbus;native;hostile" TIMEOUT 60 RUN_SERIAL TRUE)

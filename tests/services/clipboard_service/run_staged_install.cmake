@@ -79,6 +79,7 @@ execute_process(
             "-DQINDAQT_STAGE_INCLUDE_DIR=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
             "-DQINDAQT_CLIPBOARD_PROTOCOL_LIBRARY=${staged_protocol}"
             "-DQINDAQT_CLIPBOARD_MODEL_LIBRARY=${staged_model}"
+            "-DQINDAQT_CLIPBOARD_SERVICE_LIBRARY=${staged_service}"
             "-DQINDAQT_CONSUMER_SOURCE=${QINDAQT_CONSUMER_SOURCE}"
     RESULT_VARIABLE configure_status OUTPUT_VARIABLE configure_output
     ERROR_VARIABLE configure_error)

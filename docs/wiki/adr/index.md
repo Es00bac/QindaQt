@@ -399,3 +399,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0355: Preserve source bytes during cross-device moves](0355-preserve-source-bytes-during-cross-device-moves.md) — Proposed
 - [ADR-0356: Delegate printer and scanner Settings to installed tools](0356-delegate-printer-and-scanner-settings-to-installed-tools.md) — Accepted
+
+| [ADR-0358](0358-authenticate-native-clipboard-privacy-at-use.md) | Accepted | Authenticate native clipboard privacy at every disclosure and publication |
