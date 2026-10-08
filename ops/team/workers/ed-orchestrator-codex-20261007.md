@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Verify Viewer displayed pixels, review signed Android verifier, and route Windows preflight and audio helper gates after installed R18.
+- Status: working — Compact Audio Settings against the owner feedback, verify fresh Claude report publication, and route Windows cleanup/source and old-ASan diagnostic policy gates.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -116,3 +116,5 @@
 - 2026-10-08T10:23:03+00:00 — Accepted exactViewer559 merged, preserving current manager board and appending source-worker updates; native7/8/44 and corrected normal2x pixels independently091 verified, integrated rerun next. Android unsupported-only raw4 files rehashed/expectedexit4, source/JAR unchanged; sourcefloor inference withdrawn. Windows realtwo-window proof stillfails prefixcleanup. Audio originalASan actual2259999/start46648907 holds sole qinda package lane. Viewer milestone identifier is ED10; prior849/091 ED06 labels are incorrect and no milestone completion was claimed.
 
 - 2026-10-08T10:33:41+00:00 — Integrated Viewer0fcc strict7 exit0/0.225s and owning8/44Qt exit0/11.570s, docs533/strict9.047s pass. Integrated proof16members/15payloads copied to qinda and all rehashed; module/test/wiki bytes match accepted559. Fresh originalASan2259999 settled1/350.815s after compile, upstream51=45pass5leak1timeout; protectedfinalinputs/worldprofileverified unchanged, no cohort/image/oldHUA. Media/Astra exact read-onlyRCA/admission review routed; no retry, package/native leases released. Main source promotion follows currentdocs gates.
+
+- 2026-10-08T10:52:00+00:00 — Owner confirms Audio device inventory but rejects remaining wasted space. Local installed Claude2.1.289/publisher/statusline configuration observed; allowlisted report metadata shows two quota windows and context/session token/cost fields, approximately13010s old. No fresh publication or authenticity claim. Current source already projects documented quota/reset/context fields. Root claims isolated Audio density follow-up at exact40d7, presentation only; no installed/physical or backend completion claim. First orchestration interpolation error occurred before tool execution or filesystem changes.
