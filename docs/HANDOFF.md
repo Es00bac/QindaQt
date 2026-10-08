@@ -1,3 +1,41 @@
+## Installed R18 delivery checkpoint — 2026-10-08T08:22:04+00:00
+
+Laptop Portage has now installed the independently accepted signed R18 package
+cd9e36329c5f13c97d510d71aec1f6ebd991c77cca79b90eafe354dfb24f6c2d.
+Actual binary-only single-package transaction exits0/20.36s. All2321 regular
+files and four symlinks match the signed image and VDB; world/world_sets and
+the saved macOS profile are byte-unchanged. Full required gpkg signature,
+actual direct GPG VALIDSIG and exact repaired ea14088 recipe are root-verified.
+Root's first image checker mismatch was only its extra symlink mode field;
+author-ledger schema correction and all four actual0777 modes are preserved.
+Unprivileged protected-overlay fetch failed before update; sudo fast-forward
+succeeds with no source or profile loss.
+
+Installed evidence110,125bytes/22members/SHA256
+e95ffcaf11f00daed647283e0b56394984f34a687832e3f21d5f06b19ca8d8d8
+is preserved on both hosts; all21 indexed payloads are rehashed on qinda.
+R18 contains the compact popup and denser Settings plus integrated core fixes.
+The current shell was not restarted: next login loads the new shell binary.
+Ordinary startup, effective helper sandbox, radio/volume keys and actual owner
+usability remain unqualified. User space complaint stays open until installed
+use confirms the result; this package checkpoint does not close it.
+
+Exact251 Viewer strict native seven-target build now passes0/7.875s, while the
+actual eight owning CTests exit8/3.237s with3pass/5fail. Text cap fixture extracts
+50002 chars rather than its expected262144. UI/CLI fail before QML because
+edit.text has an empty shortcut rejected by public AppShell action policy.
+Focused button keys are therefore still unexecuted. Raw first-native proof
+5226bytes/11members/SHA256
+e30009a0e01cfe489b9df992c8482a7ca2496122877099c5b5d8c9b972914ebb
+is preserved on both hosts/all10 indexed payloads verified. Media source-only
+causal diagnosis is next; public AppShell validation must not be weakened.
+
+Full remaining manager estimate stays50workingdays, plausible30–80. Immediate
+core usability1–3workingdays; Media estimates full mixer3–6weeks and Astra
+supported foreign workflows15–30workingdays with overlapping implementation
+lanes and review/native availability. These scope estimates credit existing
+unmarked source/test progress, not completed journeys or a percentage.
+
 ## Installed R17 and verified core repairs — 2026-10-08
 
 R17 remains installed through Portage on the laptop. Its independently verified
