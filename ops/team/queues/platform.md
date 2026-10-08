@@ -1,3 +1,14 @@
+## Manager current routing — 2026-10-08T13:49:37+00:00
+
+| Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
+| --- | --- | --- | --- |
+| Compact Audio delivery | Root integrated7993df5f, exact72bf/9c5feb accepted; Platform corrected R20 helper source-only | Audio reviewer; integrated proof, then frozen helper/source/recipe/archive and signed package gates | Root strict7/Qt28/probes30 pass; native lease released; R19 immutable rejected, R18 installed |
+| Audio gain admission | Media accepted45db/e7a9/57786; actual36 independently acceptede85 | Astra; fresh old-only diagnostic package plan, then separate root lease | Preparation only; no old package/image/Core/UAF/PCM/production gain dispatch |
+| Windows owned lifecycle | Platform635; synthetic80 and fresh preflight2d4 accepted | Astra; next source/payload-bound native attempt after explicit root grant | Native remains ungranted; no production authority or complete compatibility claim |
+
+All provider, mixer, physical and remaining ED/foreign journeys stay open.
+Historical sections below preserve their original evidence boundaries.
+
 ## Manager current routing — 2026-10-08T13:06:49+00:00
 
 | Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
