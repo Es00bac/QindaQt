@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Repair the PDF Viewer text/search candidate in an isolated worktree while Platform qualifies R18.
+- Status: working — Deliver independently accepted R18 through Portage and qualify the isolated Viewer successor while maintaining full-plan priorities.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -90,3 +90,5 @@
 - 2026-10-08T07:14:46+00:00 — Read exact independent superseding R18 review7c2f2e99, verified repaired ea14088/a829 mirrorSHAa1b82d26, actual private pretend0/onlyr18 logSHAa60210 and product equality5858. Integrating source-only repair, preserving failure4fe and original aca receipt; signed build/artifact gates next. No installed change, native UI proof37/273 remains applicable because runtime unchanged. Full goal/ETA unchanged.
 
 - 2026-10-08T07:22:44+00:00 — Previous goal turn made integrated source progress: dependency repair59a1/overlaya829, exact same-reviewer7c2 acceptance and genuine private resolver0. Verified R18 retry parentPID2150183/start45565990 live with no terminal status. Root now claims Viewer text/search repair from exactbase59a1 in worker/everyday-viewer-text-r18-20261008; old15e candidate preserved clean. Owned Viewer src/tests/primary wiki/ADR0218 and minimal testing-harness docs, own records only; qinda compiler/private fixtures remain Platform, root source-only now.
+
+- 2026-10-08T08:10:21+00:00 — Exact R18 artifact850/fd93 accepted; root113-payload laptop rehash passes, R17 remains installed. Imported immutable artifact and native-lock d9 authority receipts without changing peer boards. Actual Viewer f971 full native strict build fails on two test-loop copies; own251 tests-only repair pushed, Media same-reviewer check and eight native CTests next. Full remaining estimate50workingdays/range30–80 incorporates existing source/tests, no ED completion percentage from seven unrelated ledger rows. Root laptop compiler/private offscreen and future Portage adoption lanes serialized; agents read-only estimation/source review, no host actions.
