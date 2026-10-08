@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — preparing authorized guest-only missing-parent repair and exact one-object diagnostic archive successor; no execution lease.
+- Status: available — exact guest parent/diagnostic archive successor frozen for root review; no archive or VM process/resource held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -241,3 +241,5 @@
 - 2026-10-08T21:44:21.589972+00:00: Froze exact one-object diagnostic archive plan c8338 and driver756e; original7208 metadata/bytes fenced, no archive or second VM execution.
 
 - 2026-10-08T21:47:27.167358+00:00: Root authorized generated guest /var/lib creation based on stock nonrecursive mkdir trace; diagnostics preserved, no second boot.
+
+- 2026-10-08T21:48:10.208803+00:00: Frozen beb2 guest source and4140 diagnostic archive plan; missing-parent inference labeled, first failed VM immutable, requested one archive then separately admitted VM.
