@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — one root-granted private Windows typing/save/resize/close native attempt; held initiating process2633563, no retry.
+- Status: available — first Windows staging failure retained; exact mode-only successor and fresh preflight handed off for root recheck, resources released.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -325,3 +325,4 @@
 - 2026-10-08T20:27:47.809724+00:00 — Actual39 tiny controls/docs pass; private save/readback and strict capture witnesses frozen for root review. Windows native ungranted; switching to narrow Android source review.
 - 2026-10-08T20:32:55.258455+00:00 — Independently accepted Android f1c/546 source with43 tiny controls and17/18 input proof; no stage. Root accepted Windows219 and fresh preflight; one bounded native journey grant received, preserved source unchanged.
 - 2026-10-08T20:33:58.847758+00:00 — Fresh preflight0 accepted; exact219 native once started under reviewed half-resource unit, awaiting actual outcome. Androidf1c/546 source accepted separately, no stage.
+- 2026-10-08T20:38:14.139895+00:00 — Native firstfailure1/135.974s retained; copied executable mode omission repaired only in new stage with early12-control check. Fresh source-bound preflight0; no app retry until root grant, all resources released.
