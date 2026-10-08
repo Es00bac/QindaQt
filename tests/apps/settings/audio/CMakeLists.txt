@@ -418,3 +418,27 @@ foreach(scale IN ITEMS 1 2)
         LABELS "offscreen;settings;audio;presentation;accessibility"
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=${scale}")
 endforeach()
+
+# Relocated consumer: Audio QML itself is never linked or read from source.
+qt_add_executable(qindaqt_audio_installed_qml_probe
+    installed_qml_probe.cpp stub_audio_settings_model.h stub_audio_fixture.h)
+target_include_directories(qindaqt_audio_installed_qml_probe
+    PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_audio_installed_qml_probe PRIVATE
+    qindaqt_settings_audio qindaqt_settings_appearance QindaQt::TokensQml
+    qindaqt_themes QindaQt::ShellIcons qindaqt_shell_iconsplugin
+    Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+qindaqt_enable_warnings(qindaqt_audio_installed_qml_probe)
+add_dependencies(qindaqt_audio_installed_qml_probe
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+    qindaqt_settings_audio_qmlplugin qindaqt_shell_iconsplugin)
+add_test(NAME qindaqt.settings-audio-installed-qml
+    COMMAND "${CMAKE_COMMAND}"
+        -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+        -DINSTALL_QMLDIR=${QT6_INSTALL_QML}
+        -DSYSTEM_QMLDIR=${QT6_INSTALL_PREFIX}/${QT6_INSTALL_QML}
+        -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
+        -DPROBE=$<TARGET_FILE:qindaqt_audio_installed_qml_probe>
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_qml.cmake")
+set_tests_properties(qindaqt.settings-audio-installed-qml PROPERTIES
+    LABELS "offscreen;settings;audio;package;poison" TIMEOUT 180)

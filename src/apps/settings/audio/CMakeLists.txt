@@ -103,20 +103,22 @@ install(
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"
     COMPONENT SettingsAppearanceRuntime
 )
-install(
-    FILES
-        qml/AudioChannelStrip.qml
-        qml/AudioDeviceSection.qml
-        qml/AudioIconButton.qml
-        qml/AudioLatencyControl.qml
-        qml/AudioLevelRow.qml
-        qml/AudioPage.qml
-        qml/AudioPeerConnectionCard.qml
-        qml/AudioPeerSection.qml
-        qml/AudioStreamSection.qml
-        qml/AudioStatusHeader.qml
-        qml/AudioStreamTargetPicker.qml
-        qml/AudioVirtualDeviceSection.qml
-    DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"
-    COMPONENT SettingsAppearanceRuntime
+# AGENT-GUARD: qmldir names include each Qt deployment path (currently qml/).
+# Install the queried complete module, including console inputs, at exactly
+# those paths. A flattened or separately maintained list breaks disk fallback.
+qt_query_qml_module(
+    qindaqt_settings_audio_qml
+    QML_FILES audio_qml_files
+    QML_FILES_DEPLOY_PATHS audio_deploy_paths
 )
+foreach(qml_file deploy_path IN ZIP_LISTS audio_qml_files audio_deploy_paths)
+    cmake_path(GET deploy_path PARENT_PATH deploy_directory)
+    cmake_path(GET deploy_path FILENAME deploy_name)
+    install(
+        FILES "${qml_file}"
+        DESTINATION
+            "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio/${deploy_directory}"
+        RENAME "${deploy_name}"
+        COMPONENT SettingsAppearanceRuntime
+    )
+endforeach()

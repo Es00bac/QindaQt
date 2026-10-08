@@ -442,3 +442,48 @@ zero-size layout cannot satisfy the compactness assertion.
 Device volume sliders keep their compact visual track inside a minimum
 22-logical-pixel interaction height. Layout retains larger implicit/theme
 Touch targets; this local page floor does not alter the shared toolkit density.
+
+## Complete installed QML module
+
+The Audio module installs every file reported by Qt's
+`qt_query_qml_module(QML_FILES/QML_FILES_DEPLOY_PATHS)` at its declared
+relative deployment path. Generated `qmldir` entries currently retain the
+`qml/` directory. The install rule preserves it and includes all console
+inputs; a separate flattened file list cannot describe this module.
+
+The immutable R19 package exposed the predecessor defect: compiled module
+construction succeeded, but forced disk loading requested
+`qml/AudioDeviceSection.qml`, which was absent. Twelve QML files were
+flattened into the module root and eleven console files were omitted.
+That package and its first failure remain preserved; this source repair
+does not qualify or change that artifact.
+
+The focused `qindaqt.settings-audio-installed-qml` fixture stages the real
+Audio install rules and the owning public Tokens/Controls dependencies.
+It excludes installed QindaQt and source/build Audio import roots. It checks
+all 23 generated declarations against the staged paths and source hashes,
+loads each component through compiled and disk paths, refuses a missing
+module and each individually withheld disk file, and checks restoration.
+
+Representative construction uses the full Audio page with metadata-only
+test rows, not a standalone section forced to fill the window. It mirrors
+Settings Center's public token/theme/icon bootstrap
+(`ensureTokenFacade`, `ThemeLoader`, and `IconRuntime`) before page creation;
+the page's `QindaQtTheme` bridge supplies its QindaTK console theme.
+The supplied shipped theme/icon data are presentation fixture inputs;
+QML itself must come from the staged module. At normal and 2× scale it captures
+the Devices and Mixer tabs and requires visible common faders. Undefined
+token assignments or script errors fail positive probes. No Audio1 transport,
+host bus, device command or gain/persistence policy participates. The missing-module case is a qmldir presence precheck before an engine
+import; the individual disk omissions exercise actual QML loading.
+
+Exact source72bf0c28 has independent source63b274 and private-native9c5feb
+acceptance. The original-source/new-test control passes compiled normal/2×
+construction, then fails causally on a missing declared fallback path.
+The repaired strict owning cohort passes7/7 CTests,28 Qt checks and30
+installed-module probes, including23 causal file omissions and disk/compiled
+restoration. All23 installed QML inputs (11 console) equal source; full-page
+normal/2× Devices/Mixer captures have no undefined-token/script diagnostics.
+These are metadata-row offscreen staging results. Manager integrated reruns,
+a new immutable signed package and installed/physical qualification remain
+separate gates; R19 is still rejected and uninstalled.
