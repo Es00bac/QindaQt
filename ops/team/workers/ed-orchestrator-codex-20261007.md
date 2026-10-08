@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Review actual Audio install-path 7/7 and gain-receipt 36-check evidence; integrate accepted compact delivery, rerun manager gates and prepare corrected Portage release. R19 stays rejected and R18 installed.
+- Status: working — Integrate independently accepted complete Audio QML installation, run owning manager gates and prepare a corrected signed Portage release; preserve R19 failure and all remaining full-plan boundaries.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -138,3 +138,5 @@
 - 2026-10-08T13:06:49+00:00 — Read fulla4b3 ARTIFACT NEEDS_FIX and actual1ee9 raw: R19 compiled1x/2x passes but all23 disk QML paths absent,12flattened/11console omissions, forced-disk2pass1fail/exit1. Original package unchanged/uninstalled; root local fullcrypto/recipe/image proof768000bytes/SHA49955ef5 copiedqinda/all12members/11payloads verified. Platform72bf source/old a8ff controls await same reviewer. Root read fullcdd harness admission, rehashed27pins/current24/24 and grants one four-source QtCore/Test fixture; no Core/Portage/native-old/Windows native grant. Copied immutable replies byte-for-byte; queues/plan/handoff now reflect actual gates, no ED weighting advance.
 
 - 2026-10-08T13:33:47+00:00 — Actual Platform old-control configure/build and compiled normal/2x pass before causal declared fallback failure; fixed exact72 native registry7/CTest7/7 pass, 30 installed-module probes observed. Compiler/private-QML lease released; same Audio reviewer independently reads raw/captures. Media exact strict Qt-only receipt fixture observes36/0/0/0, now under same-Astra evidence review; no old/Core/Portage image grant. Root source-of-truth fetch and laptop FF preserve showcase/untracked work; corrected immutable successor and integrated gates remain next. R19 remains uninstalled, Windows native ungranted and all whole ED/foreign/hardware journeys open.
+
+- 2026-10-08T13:44:10+00:00 — Read full9c5feb and e85 independent acceptance, all99 Audio raw hashes/fullLastTest and100 safe proof members. Integrating only five accepted Audio product/test/wiki paths plus immutable replies; peer live records are preserved. Root reserves compiler/private-QML lane for strict owning integrated7/28/30 rerun. Corrected R20 and live adoption remain next; Media fresh old-only diagnostic preparation stays source-only, Windows native ungranted.

@@ -1,3 +1,11 @@
+## Current Audio delivery gate — 2026-10-08T13:44:10+00:00
+
+Reviewed source72bf0c28 fixes complete Audio QML installation; author native
+7/7,Qt28/0/0/0 and30 probes are accepted9c5feb. Manager reruns and corrected
+immutable package remain next. R19 is rejected/uninstalled; R18 is installed.
+Astra actual36 Qt-only receipt acceptancee85 closes a bounded parser gate;
+no old/Core/image/production gain or full ED milestone is complete.
+
 ## Prepared R19 source and recipe — 2026-10-08T11:54:06+00:00
 
 New additive desktop/overlay recipe pins qualified runtime e884c310d. The

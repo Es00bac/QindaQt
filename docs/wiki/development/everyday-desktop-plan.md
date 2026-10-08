@@ -1,3 +1,21 @@
+## Reviewed complete Audio installation repair — 2026-10-08T13:44:10+00:00
+
+Exact72bf0c28 is independently accepted by source63b274 and native9c5feb.
+The paired old install passes compiled normal/2× construction then fails on
+the missing declared disk path. Fixed owning checks pass7/7 CTests,28 Qt
+cases and30 probes; all23 QML files/11 console inputs install at Qt-declared
+paths and disk/compiled restoration succeeds. Root rehashed all99 indexed
+payloads/100 archive members and inspected the full raw logs and four unique
+Devices/Mixer captures. Manager integrated reruns are next. R19ef002 stays
+immutable NeedsFix/uninstalled; R18 remains installed. A corrected release
+still requires fresh source/recipe/archive/package and installed qualification.
+
+Astra independently accepts Media strict Qt-only actual36/0/0/0 (e85d435e),
+closing its synthetic parser prerequisite. Original old51 remains failed and
+unadmitted; fresh package/image/Core/UAF/PCM and production gain gates remain
+open. Windows native is ungranted and no whole ED/foreign/hardware milestone
+or feature weight advances.
+
 # Everyday desktop delivery plan
 
 > Implementation was separately authorized on October 7 after this audit.
