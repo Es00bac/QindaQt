@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Route independently accepted R19 through private signed Portage build and artifact/installation gates; qualify Windows preflight and same-pair audio diagnostic tests, with full ED outcomes still open.
+- Status: working — Finish exact R19 package checks and independent artifact acceptance before Portage installation; route accepted Windows preflight and Audio receipt fixtures into their next bounded gates.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -132,3 +132,5 @@
 - 2026-10-08T12:14:03+00:00 — Exactdesktop53dd/overlay62e/sourcee884/39521461bytesa715 recipearchiveAccepted d9d868 afterindependentall9803blob/mode/reproduction/history checks. Rootreadfullreceipt and grantsPlatform serialfreshWindows preflight thenprivateR19 settings/pretend/buildonly underconfiguredlimits; nohostmerge/session/world/profile/binhost. ActualWindows fresh635 preflightreports0/namespacecontainment/no-uncertainty withouter093a; pendingrawreview, noEXEgrant. Astra b86 accepts45db diagnosticSOURCE withfull-suiteC++fixturegap before native; Media test-only successor authorized, nocompilerlease. Copiedreviewerreceipts/boardbyte-for-byte.
 
 - 2026-10-08T12:18:00+00:00 — Import of exactpeer310 receiptfailedstageddiff2 onone terminalspace beforecommit/refpromotion. Sameownerfixedonlythatbyte in5aad, preservedoriginalhistory pluscorrectionreply/board; rootreimportsownpeerpaths unchanged andrerunswhole stagedgate beforepromotion. ActualPlatform R19held2305090/start47347925/buildactive since12:13:32, configured24/24+gpkg/signing/isolation andprivateexact-onlypretend0 observed; noinstalledR19 claim.
+
+- 2026-10-08T12:44:42+00:00 — Actual R19 private source build0/829.92s,61542400-byte signed packageSHAef002 and unchanged runtimee884 are preserved. Viewer original verifier StopIteration was a false direct-library expectation; exact successor dc782/command0660 SOURCE ACCEPT6998 read in full and rehashed, one corrected attempt separately granted, AudioDetails still source-admission pending. Astra fresh Windows preflight2d4 and Audio29-fixture sourcea413 receipts read in full; no Windows native or Audio compiler/old-image grant. Laptop mirrors exact qinda refs fetched with empty refmap; container main ancestry-checked65c→86ee. Same Media prepares a four-source QtCore/Test-only harness while R19 owns the lease. Full ED/hardware/provider/guest outcomes and weighted ledger remain open.
