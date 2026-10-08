@@ -1,3 +1,16 @@
+## Reviewed compact Audio Settings integration — 2026-10-08T11:42:35+00:00
+
+Exact d050c1f3d3ee017db9e535be642c121131e45ba5 is integrated after
+independent source/private-native acceptance 1a75d62. Common device controls
+use two lines; Details reveals latency and channels. The unchanged-source
+control measures 74 logical pixels and fails the new 64-pixel gate; candidate
+seven strict targets, nine CTests and full Qt summaries 57/0/0/0 pass. Four
+wide/compact normal/2× captures show readable controls without overlap.
+ADR-0362 is Accepted and supersedes only ADR-0288 device presentation.
+Manager integrated reruns and a new Portage release remain next; this change
+is not yet installed. R18 remains current. Whole ED outcomes, live device
+usability, the full mixer and multi-provider feeds remain open.
+
 ## Current integration and verification boundary — 2026-10-08T10:23:03+00:00
 
 R18 remains the last installed and byte-verified desktop; owner device inventory

@@ -4,7 +4,7 @@
 // the production AudioPage.qml against the duck-typed stub: the field names
 // its device for assistive technology, dispatches whole milliseconds, keeps an
 // unknown offset absent and a read-only one unclamped, sits in the keyboard
-// traversal after mute, and the compact rows stay dense.
+// traversal after mute and Details, and the compact rows stay dense.
 
 #include "audio_page_test_support.h"
 
@@ -20,6 +20,18 @@ using QindaQt::Apps::SettingsAudio::TestSupport::StubAudioSettingsModel;
 using QindaQt::Apps::SettingsAudio::TestSupport::createAudioPage;
 using QindaQt::Apps::SettingsAudio::TestSupport::findItem;
 using QindaQt::Apps::SettingsAudio::TestSupport::prepareAudioPageEngine;
+
+namespace {
+bool openDetails(QQuickView &view, QQuickItem *page, const QString &name) {
+  auto *details = findItem(page, name);
+  if (details == nullptr || !details->isVisible() || !details->isEnabled())
+    return false;
+  details->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(&view, Qt::Key_Space);
+  QCoreApplication::processEvents();
+  return details->property("checked").toBool();
+}
+}
 
 class AudioLatencyPageTest final : public QObject {
   Q_OBJECT
@@ -45,6 +57,7 @@ void AudioLatencyPageTest::fieldIsAccessibleBoundedAndDispatches() {
   StubAudioSettingsModel model;
   auto [guard, page] = createAudioPage(*m_view, model, QSize(900, 760));
   QVERIFY(page != nullptr);
+  QVERIFY(openDetails(*m_view, page, QStringLiteral("audioOutputDetails_10")));
   auto *field = findItem(page, QStringLiteral("audioOutputLatency_10"));
   auto *reset = findItem(page, QStringLiteral("audioOutputLatencyReset_10"));
   QVERIFY(field != nullptr);
@@ -82,6 +95,7 @@ void AudioLatencyPageTest::fieldIsAccessibleBoundedAndDispatches() {
 
   // The signed (Bluetooth-like) device admits negative offsets; its reset is
   // unavailable because it already reads 0 ms.
+  QVERIFY(openDetails(*m_view, page, QStringLiteral("audioOutputDetails_12")));
   auto *signedField = findItem(page, QStringLiteral("audioOutputLatency_12"));
   QVERIFY(signedField != nullptr);
   QCOMPARE(signedField->property("from").toInt(), -2'000);
@@ -93,6 +107,7 @@ void AudioLatencyPageTest::unknownIsAbsentAndReadOnlyIsNotClamped() {
   StubAudioSettingsModel model;
   auto [guard, page] = createAudioPage(*m_view, model, QSize(900, 760));
   QVERIFY(page != nullptr);
+  QVERIFY(openDetails(*m_view, page, QStringLiteral("audioInputDetails_20")));
   // Known but not settable: shown, disabled, and never clamped into a
   // number the device did not report.
   auto *readOnly = findItem(page, QStringLiteral("audioInputLatency_20"));
@@ -112,10 +127,13 @@ void AudioLatencyPageTest::latencyFollowsMuteInKeyboardTraversal() {
   StubAudioSettingsModel model;
   auto [guard, page] = createAudioPage(*m_view, model, QSize(420, 320));
   QVERIFY(page != nullptr);
+  QVERIFY(openDetails(*m_view, page, QStringLiteral("audioOutputDetails_10")));
   auto *mute = findItem(page, QStringLiteral("audioOutputMute_10"));
+  auto *details = findItem(page, QStringLiteral("audioOutputDetails_10"));
   auto *field = findItem(page, QStringLiteral("audioOutputLatency_10"));
   auto *reset = findItem(page, QStringLiteral("audioOutputLatencyReset_10"));
   QVERIFY(mute != nullptr);
+  QVERIFY(details != nullptr);
   QVERIFY(field != nullptr);
   QVERIFY(reset != nullptr);
   auto *input = field->property("inputItem").value<QQuickItem *>();
@@ -123,6 +141,8 @@ void AudioLatencyPageTest::latencyFollowsMuteInKeyboardTraversal() {
 
   mute->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), mute);
+  QTest::keyClick(m_view.get(), Qt::Key_Tab);
+  QTRY_COMPARE(m_view->activeFocusItem(), details);
   QTest::keyClick(m_view.get(), Qt::Key_Tab);
   QTRY_COMPARE(m_view->activeFocusItem(), input);
   // Arrow keys step the focused field, Shift for ten steps.
@@ -132,6 +152,12 @@ void AudioLatencyPageTest::latencyFollowsMuteInKeyboardTraversal() {
   QCOMPARE(model.latencyMs, 90);
   QTest::keyClick(m_view.get(), Qt::Key_Tab);
   QTRY_COMPARE(m_view->activeFocusItem(), reset);
+  const auto writes = model.latencyCount;
+  details->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTRY_VERIFY(!field->isVisible());
+  QTRY_COMPARE(m_view->activeFocusItem(), details);
+  QCOMPARE(model.latencyCount, writes);
 }
 
 void AudioLatencyPageTest::compactRowsStayDense() {
@@ -142,11 +168,11 @@ void AudioLatencyPageTest::compactRowsStayDense() {
   auto *second = findItem(page, QStringLiteral("audioOutputVolume_12"));
   QVERIFY(first != nullptr);
   QVERIFY(second != nullptr);
-  // One device row - name, level and offset lines - is the pitch between two
-  // volume sliders. The pre-compact page spent about 150 px per row.
+  // Common device controls occupy two lines. Advanced latency/channel
+  // controls remain available through Details without reserving row space.
   const qreal pitch = second->mapToScene(QPointF()).y()
                       - first->mapToScene(QPointF()).y();
-  QVERIFY2(pitch > 0.0 && pitch <= 100.0, qPrintable(QString::number(pitch)));
+  QVERIFY2(pitch > 0.0 && pitch <= 64.0, qPrintable(QString::number(pitch)));
   // Both outputs are on screen at the compact size without scrolling.
   auto *viewport = findItem(page, QStringLiteral("audioFormViewport"));
   QVERIFY(viewport != nullptr);
