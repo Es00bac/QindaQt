@@ -9,6 +9,8 @@ import socket
 import stat
 import struct
 import subprocess
+import sys
+import termios
 import time
 
 ROOT = Path("/run/android-proof")
@@ -97,6 +99,38 @@ def bus_config(path):
             + '</listen><auth>EXTERNAL</auth><policy context="default">'
               '<allow user="*"/><allow own="*"/><allow send_destination="*"/>'
               '<allow receive_sender="*"/></policy></busconfig>')
+
+def quarantine_terminal_failure():
+    # AGENT-GUARD: A success line may already be queued. Exiting PID1 here can
+    # give QEMU exit0 and falsely admit it. The unchanged host300s deadline
+    # must terminate its owned QEMU and reject this run; never retry emission.
+    while True:
+        try:
+            signal.pause()
+        except BaseException:
+            pass
+
+
+def emit_terminal(result):
+    fd = sys.stdout.fileno()
+    if fd != 1 or not os.isatty(fd) or os.ttyname(fd) not in ("/dev/console", "/dev/ttyS0"):
+        raise RuntimeError("terminal-not-guest-console")
+    termios.tcgetattr(fd)  # Refuse an unsupported terminal before publication.
+    os.sync()
+    try:
+        print("QINDA_ANDROID_RESULT=" + json.dumps(result, sort_keys=True), flush=True)
+        # flush only drains Python. Wait for the guest serial driver before
+        # returning from PID1, whose kernel panic otherwise interleaves bytes.
+        termios.tcdrain(fd)
+    except BaseException as error:
+        try:
+            print("QINDA_ANDROID_TERMINAL_ERROR=" + type(error).__name__[:64],
+                  file=sys.stderr, flush=True)
+        except BaseException:
+            pass
+        quarantine_terminal_failure()
+        raise  # Injected test quarantine may return; production never does.
+
 
 def main():
     if os.getpid() != 1 or Path("/proc/1/comm").read_text().strip() != "python3":
@@ -241,8 +275,7 @@ def main():
             try: os.close(handle)
             except OSError: result["cleanupQualified"] = False
         result["success"] = result["success"] and result["cleanupQualified"]
-        print("QINDA_ANDROID_RESULT=" + json.dumps(result, sort_keys=True), flush=True)
-        os.sync()
+        emit_terminal(result)
     return 0 if result["success"] else 1
 
 if __name__ == "__main__":
