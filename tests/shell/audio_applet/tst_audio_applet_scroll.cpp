@@ -91,9 +91,11 @@ void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
     transport.reply(transport.fetches.constLast(), manyRows());
     QCOMPARE(client.state(), Audio::ClientState::Ready);
     QCOMPARE(countPendingRows(controller), 0);
+    const auto freshCapturePath = qEnvironmentVariable("QINDAQT_AUDIO_FRESH_CAPTURE_PATH");
     // A local refused request exposes the actual focusable footer Dismiss;
     // no service operation is issued and no host volume changes.
-    QVERIFY(!controller.requestVolume(999, false, 0.5));
+    if (freshCapturePath.isEmpty())
+        QVERIFY(!controller.requestVolume(999, false, 0.5));
 
     AppletHarness harness;
     QString error;
@@ -135,6 +137,26 @@ void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
         viewport = content->property("contentItem").value<QQuickItem *>();
     QVERIFY(viewport);
     QTRY_VERIFY(viewport->property("contentHeight").toDouble() > viewport->height());
+    // Capture-only mode observes the freshly opened real popup, before a
+    // refusal, scroll, focus traversal or screen migration. The normal31-row
+    // regression path (environment absent) retains every original assertion.
+    if (!freshCapturePath.isEmpty()) {
+        QCOMPARE(available.size(), QSize(1536, 864));
+        QCOMPARE(popupWindow->devicePixelRatio(), 1.25);
+        QCOMPARE(popupWindow->size(), QSize(360, 480));
+        QCOMPARE(viewport->property("contentY").toDouble(), 0.0);
+        QVERIFY(!controller.feedbackPresent());
+        QCOMPARE(transport.operations.size(), 0);
+        const auto image = popupWindow->grabWindow();
+        QVERIFY(!image.isNull());
+        QCOMPARE(image.size(), QSize(450, 600));
+        qInfo() << "fresh-popup" << "logical-screen" << available.size()
+                << "window" << popupWindow->size()
+                << "dpr" << popupWindow->devicePixelRatio()
+                << "physical-image" << image.size();
+        QVERIFY(image.save(freshCapturePath));
+        return;
+    }
     const auto footers = visualItemsNamed(viewport, QStringLiteral("audioAppletFooter"));
     QCOMPARE(footers.size(), 1);
     auto *footer = footers.constFirst();

@@ -328,3 +328,9 @@ projection policy. Normal, 2×, fractional, unnamed and duplicate-name selected-
 isolated from host buses, routes and settings. Existing drag, volume-wheel,
 grant/owner-loss and static boundary gates remain required. Actual installed
 popup adoption is a separate manager gate.
+
+For a fresh-opening owner-geometry review, the capture-only fixture uses a
+1920×1080 physical offscreen screen and QT_SCALE_FACTOR=1.25, then asserts
+the actual1536×864 logical available size and450×600 popup image. The
+QINDAQT_AUDIO_FRESH_CAPTURE_PATH mode captures before synthetic refusal or
+scrolling; absent that variable, the31-row regression path remains unchanged.

@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — reviewed Audio915 native31/31 and captures5/5 handed off; all resources released, independent visual/evidence review next.
+- Status: waiting — test-only fresh-opening owner-geometry capture frozen for review; accepted915 native31/171 preserved.
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -185,3 +185,5 @@
 - 2026-10-08T05:33:14+00:00: Root exact-reviewed915 sole production minimum22 and byte-identical tests; granted same23-target/31-row strict laptop qualification, captures only after31pass. All bb4 density failures preserved; no added targets or old rerun.
 
 - 2026-10-08T05:37:37+00:00: Exact915 strict23 target build0; owning31/31 exit0,171Qtpass0fail0skip; five captures5/5 exit0,24Qtpass0fail0skip. Product/test source equality0,39 raw artifacts indexed. Actual screens normal1280x720,2x640x360,fractional1229x691 (not user1536logical); all prior failures preserved. Compiler/private/offscreen resources RELEASED; no install/host action. Requested exact visual/evidence review then manager integration.
+
+- 2026-10-08T05:45:15+00:00: Root requested fresh-opening actual1536logical at1.25 capture because prior image was post-refusal/scrolled. Capture-only environment branch preserves normal31-row assertions;1920physical config plus actualgeometry/DPR/image checks. Whole production equals915 exit0, docs531/strict/diff0. No render/native continuation before exact review.
