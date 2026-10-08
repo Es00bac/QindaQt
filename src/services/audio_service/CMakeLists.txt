@@ -41,6 +41,8 @@ target_sources(
         src/preset_store.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
+        src/wireplumber_volume.cpp
+        src/wireplumber_volume_p.h
         src/wireplumber_meters.cpp
         src/wireplumber_meters_p.h
         src/wireplumber_processing.cpp

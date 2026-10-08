@@ -20,6 +20,7 @@ class ChannelProjectionTests final : public QObject {
 private Q_SLOTS:
     void preservesValidatedGraph_data();
     void preservesValidatedGraph();
+    void ambiguousChannelsPreserveAggregateButRefusePartialWrite();
 };
 
 void ChannelProjectionTests::preservesValidatedGraph_data()
@@ -39,7 +40,7 @@ void ChannelProjectionTests::preservesValidatedGraph_data()
                 << stream << known << indices << levels << map << expected;
         };
         const QStringList stereo{"FL", "FR"};
-        row("contracts-old-layout", true, {0, 1, 2}, {0.1, 0.2, 0.3}, stereo, {0.1, 0.2});
+        row("contracts-old-layout", true, {0, 1, 2}, {0.1, 0.2, 0.3}, stereo, {});
         row("partial-unknown", false, {0}, {0.1}, stereo, {});
         row("equal", true, {0, 1}, {0.1, 0.2}, stereo, {0.1, 0.2});
         row("expands-known", true, {0}, {0.1}, stereo, {0.1, 0.5});
@@ -103,6 +104,34 @@ void ChannelProjectionTests::preservesValidatedGraph()
     QCOMPARE(current.outputs[1], snapshot.outputs[1]);
     if (stream) QCOMPARE(current.streams[0].channelVolumes, expected);
     else QCOMPARE(current.outputs[0].channelVolumes, expected);
+    coordinator.stop();
+}
+void ChannelProjectionTests::ambiguousChannelsPreserveAggregateButRefusePartialWrite()
+{
+    VolumeState volume;
+    volume.volume = 0.5; volume.volumeKnown = true;
+    volume.channelVolumes = {0.1, 0.2, 0.3, 0.4};
+    Snapshot snapshot = audioSnapshot();
+    snapshot.outputs[0].channelMap = {"MONO"};
+    snapshot.outputs[0].channelVolumes = projectedChannelVolumes(volume, {"MONO"});
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    coordinator.start(); backend.publish(snapshot);
+    QVERIFY(validateSnapshot(coordinator.snapshot()).accepted);
+    QCOMPARE(coordinator.snapshot().availability, Availability::Ready);
+    QCOMPARE(coordinator.snapshot().outputs.size(), snapshot.outputs.size());
+    QVERIFY(coordinator.snapshot().outputs[0].channelVolumes.isEmpty());
+    const auto channels = coordinator.submit({.kind = OperationKind::SetChannelVolumes,
+        .primary = snapshot.outputs[0].handle, .secondary = {}, .volume = 0.0,
+        .muted = false, .channelVolumes = {0.25}});
+    QVERIFY(!channels.pending);
+    QCOMPARE(channels.immediateResult.reasonCode, QStringLiteral("invalid-target"));
+    QVERIFY(backend.operations.isEmpty());
+    const auto aggregate = coordinator.submit({.kind = OperationKind::SetVolume,
+        .primary = snapshot.outputs[0].handle, .secondary = {}, .volume = 0.25});
+    QVERIFY(aggregate.pending);
+    QCOMPARE(backend.operations.size(), 1);
+    QCOMPARE(backend.operations[0].request.kind, OperationKind::SetVolume);
     coordinator.stop();
 }
 QTEST_GUILESS_MAIN(ChannelProjectionTests)

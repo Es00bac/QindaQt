@@ -8,6 +8,7 @@
 // user's session bus and audio graph are never contacted.
 
 #include <qindaqt/services/audio_protocol/audio_dbus.h>
+#include <qindaqt/services/audio_protocol/audio_validation.h>
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_service/wireplumber_audio_backend.h>
 
@@ -199,6 +200,14 @@ void WirePlumberLatencyRuntimeTests::appliesDeclaredOffsetsToAPrivateGraph()
                               30 * kMs, 5000);
     QTest::qWait(500);
     QCOMPARE(newestDevice(snapshots, kAlsaSink)->latencyOffsetNs, 30 * kMs);
+
+    // A raw adapter fixture must meet the real coordinator's admission gate;
+    // row presence alone previously hid whole-graph invalid-device rejection.
+    for (const auto &emission : snapshots) {
+        const Snapshot observed = emission.at(1).value<Snapshot>();
+        const auto validation = validateSnapshot(observed);
+        QVERIFY2(validation.accepted, qPrintable(validation.reasonCode));
+    }
 
     backend.stop();
     wireplumber.stop();
