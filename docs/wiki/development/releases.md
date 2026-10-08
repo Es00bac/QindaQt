@@ -83,6 +83,47 @@ or speaker controls. Unaccepted Clipboard/Bluetooth/Power work is deferred
 to a later revision. Immutable r16 recipe/archive/artifact stays unchanged;
 it remains the rollback package boundary.
 
+### October 8 prepared core usability delivery: r18
+
+Desktop revision 0.1.0_pre20261002-r18 pins candidate runtime
+5858bccdf82808a74a6bab358d8e6f08c7ac256a. It packages the reviewed compact,
+screen-bounded Audio popup and denser Settings presentation, the public
+Bluetooth radio helper and sender-preserving SDK, authenticated Clipboard
+startup and replaced-Power-owner retirement fixes already in that source.
+The manager qualified this exact runtime with strict28-target build0,
+33 owning CTests/185 Qt cases and four profile/resolution CTests/88 Qt cases:
+37/37 checks and273 Qt passes, zero failure/skip/blacklist. Raw manager proof
+is retained in ignored .cache/manager-compact-audio-integrated-20261008.
+These are source gates; signed package/image and installed adoption remain open.
+
+The helper and its static public client directly consume libdbus. This recipe
+declares dev-libs/dbus explicitly in both DEPEND and RDEPEND, alongside the
+existing sys-apps/dbus broker dependency. It preserves all other r17 dependency
+declarations, exact fork r6 ABI6.6.6.1, lock-PAM>=1, native power exclusivity OFF,
+whole-tree install and the compiled AgentUsage publisher/SDK/all eleven profiles.
+Historical r16/r17 recipes, distfiles and rollback artifacts stay immutable.
+
+The reproducible Git archive plus gzip-n contains 9,747 tracked blobs,
+39,433,447 bytes, SHA256
+620ad2fcfb7c006b55fa42b0f5e54a856ab888f29fa199b0c7072e8a0962f323.
+Independent cuts and every Git blob, executable mode and symbolic-link target
+are checked. Each Manifest retains its old rows and appends only the matching
+r18 DIST row; the new recipe and DIST row mirror exactly.
+
+After independent source/recipe review and a separate compiler lease, build
+only through Portage into a private signed gpkg/image using the configured
+MAKEOPTS. Inspect source identity, actual signer and full image closure:
+Audio public headers/archive and installed-only consumer with named-header
+poison/restoration; Bluetooth radio client headers/archive and libdbus-linked
+consumer with both required-header poisons; helper executable, systemd unit and
+D-Bus activation descriptor, including their reviewed namespace/device fences
+and no direct-activation fallback. Preserve the existing compiled AgentUsage
+SDK/publisher/manifest/profile/QML checks, seven-component Network compiled/disk
+fallback checks, and exact compositor/plugin ABI. Do not activate a real helper,
+write rfkill, contact host buses or infer hardware success from image presence.
+Actual artifact review and later authorized Portage installation/session
+adoption remain separate gates; no source preparation restarts the desktop.
+
 ## Build and qualify
 
 Use the exact qindaqt-kwin development package the manifest pins. A fresh build root
