@@ -3,6 +3,9 @@
   "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node name="/org/qindaqt/Power1">
   <interface name="org.qindaqt.Power1">
+    <method name="RequestPeripheralSnapshotWithReceipt"><arg name="nonce" type="s" direction="in"/><arg name="dispatched" type="b" direction="out"/></method>
+    <signal name="PeripheralSnapshotReceipt"><arg name="nonce" type="s"/><arg name="payload" type="ay"/></signal>
+    <signal name="PeripheralsChanged"><arg name="epoch" type="t"/><arg name="revision" type="t"/></signal>
     <method name="GetSnapshot">
       <arg name="snapshot" type="(uttuuss(bbbbbbb)(bubduubdbxbxu)a((ts)ussbbduubddbdbxbxu)(sa(ss)a((ts)sss)s)a(ssss)a((ts)sbuuub)a((ts)sbuubuuus)(bsut))" direction="out"/>
     </method>

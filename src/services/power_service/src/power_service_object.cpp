@@ -33,6 +33,8 @@ PowerServiceObject::PowerServiceObject(PowerServiceCoordinator *coordinator,
                     static_cast<quint32>(m_idleInhibitors.consumedScopes().toInt()),
                     activeIdleInhibitorScopes());
             });
+    connect(m_coordinator, &PowerServiceCoordinator::peripheralsInvalidated, this,
+            &PowerServiceObject::PeripheralsChanged);
     connect(m_coordinator, &PowerServiceCoordinator::invalidated, this,
             &PowerServiceObject::Changed);
     connect(m_coordinator, &PowerServiceCoordinator::invalidated, this,

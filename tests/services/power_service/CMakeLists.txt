@@ -421,3 +421,9 @@ add_test(NAME qindaqt.power-idle-consumer-registration
     COMMAND qindaqt_idle_consumer_registration_tests)
 set_tests_properties(qindaqt.power-idle-consumer-registration PROPERTIES
     TIMEOUT 30 LABELS "power;idle;dbus;private-fixture")
+
+qt_add_executable(qindaqt_peripheral_service_tests tst_peripheral_service.cpp)
+target_link_libraries(qindaqt_peripheral_service_tests PRIVATE QindaQt::PowerService Qt6::Test)
+target_include_directories(qindaqt_peripheral_service_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/services/power_service/src/adapters")
+add_test(NAME qindaqt.peripheral-service COMMAND qindaqt_peripheral_service_tests)
+set_tests_properties(qindaqt.peripheral-service PROPERTIES LABELS "power;peripheral" TIMEOUT 30)

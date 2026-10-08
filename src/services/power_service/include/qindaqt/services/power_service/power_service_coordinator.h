@@ -62,6 +62,7 @@ public:
                           SessionCollaborator *session, QObject *parent = nullptr);
 
   [[nodiscard]] const Snapshot &snapshot() const noexcept;
+  [[nodiscard]] PeripheralSnapshot peripheralSnapshot() const;
   [[nodiscard]] OperationSubmission submit(const PowerServiceRequest &request);
   void start();
   void stop();
@@ -69,6 +70,7 @@ public:
 Q_SIGNALS:
   void snapshotChanged(const QindaQt::Power::Snapshot &snapshot);
   void invalidated(quint64 epoch, quint64 revision);
+  void peripheralsInvalidated(quint64 epoch, quint64 revision);
   // Same-thread current published handle; provider manual cancellation only.
   void profileHoldCancelled(const QindaQt::Power::Handle &handle);
   void operationCompleted(quint64 operationId,
@@ -119,6 +121,10 @@ private:
     DomainState state;
   };
 
+  void connectPeripherals();
+  void acceptPeripheralFacts(quint64 generation, const PeripheralFacts &facts);
+  void publishPeripherals(PeripheralSnapshot value);
+  void clearPeripherals(Availability availability, const QString &reason);
   void connectBattery(BatteryCollaborator *battery);
   void connectProfile(ProfileCollaborator *profiles);
   void connectSession(SessionCollaborator *session);
@@ -144,6 +150,7 @@ private:
   ProfileCollaborator *m_profiles = nullptr;
   SessionCollaborator *m_session = nullptr;
   Snapshot m_snapshot;
+  PeripheralSnapshot m_peripheralSnapshot;
   BatteryDomain m_batteryDomain;
   ProfileDomain m_profileDomain;
   SessionDomain m_sessionDomain;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/services/power_protocol/power_types.h>
+#include <qindaqt/services/power_protocol/peripheral_types.h>
 
 #include <QtCore/QObject>
 
@@ -33,6 +34,12 @@ struct CollaboratorOutcome {
 // authority (UPower) gates the whole battery domain: when it is unavailable
 // the backlight rows are dropped with it rather than published without
 // AC/on-battery truth. See docs/wiki/architecture/power-service.md.
+struct PeripheralFacts {
+  QList<PeripheralBattery> devices;
+  quint32 omittedCount = 0;
+  bool truncated = false;
+};
+
 struct BatteryFacts {
   bool acPresent = false;
   bool onBattery = false;
@@ -93,6 +100,7 @@ public:
                                            quint32 value) = 0;
 
 Q_SIGNALS:
+  void peripheralFactsChanged(quint64 generation, const QindaQt::Power::PeripheralFacts &facts);
   void factsChanged(quint64 generation,
                     const QindaQt::Power::BatteryFacts &facts);
   void statusUnavailable(quint64 generation, const QString &reasonCode);
@@ -155,5 +163,6 @@ Q_SIGNALS:
 
 Q_DECLARE_METATYPE(QindaQt::Power::CollaboratorOutcome)
 Q_DECLARE_METATYPE(QindaQt::Power::BatteryFacts)
+Q_DECLARE_METATYPE(QindaQt::Power::PeripheralFacts)
 Q_DECLARE_METATYPE(QindaQt::Power::ProfileFacts)
 Q_DECLARE_METATYPE(QindaQt::Power::SessionFacts)

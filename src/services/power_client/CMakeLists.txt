@@ -8,6 +8,8 @@ add_library(QindaQt::PowerClient ALIAS qindaqt_power_client)
 target_sources(
     qindaqt_power_client
     PRIVATE
+        src/peripheral_client.cpp
+        src/qt_peripheral_transport.cpp
         src/idle_consumer_registrar.cpp
         src/power_client.cpp
         src/power_client_completion.cpp
@@ -17,6 +19,9 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/power_client/peripheral_client.h
+            include/qindaqt/services/power_client/peripheral_transport.h
+            include/qindaqt/services/power_client/qt_peripheral_transport.h
             include/qindaqt/services/power_client/idle_consumer_registrar.h
             include/qindaqt/services/power_client/power_client.h
             include/qindaqt/services/power_client/power_transport.h

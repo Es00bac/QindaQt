@@ -10,6 +10,8 @@
 #include "qindaqt/applets/manifest_catalog.h"
 #include "qindaqt/services/power_client/power_client.h"
 #include "qindaqt/services/power_client/qt_power_transport.h"
+#include <qindaqt/services/power_client/qt_peripheral_transport.h>
+#include <qindaqt/services/power_client/peripheral_client.h>
 #include "qindaqt/services/session_actions/session_actions_client.h"
 
 #include <QDBusConnection>
@@ -66,13 +68,17 @@ PowerAppletComposition::PowerAppletComposition(
     m_transport = std::make_unique<Power::QtPowerTransport>(
         QDBusConnection::sessionBus());
     m_client = std::make_unique<Power::PowerClient>(m_transport.get());
+    m_peripheralTransport = std::make_unique<Power::QtPeripheralTransport>(QDBusConnection::sessionBus());
+    m_peripheralClient = std::make_unique<Power::PeripheralClient>(m_client.get(),m_peripheralTransport.get());
     m_sessionActions = std::make_unique<
         Services::SessionActions::SessionActionsClient>(
             QDBusConnection::sessionBus(), QDBusConnection::systemBus());
     m_access = std::make_unique<PowerApplet::PowerAppletController>(
         m_client.get(), grants.read, grants.control, m_sessionActions.get());
+    m_access->setPeripheralClient(m_peripheralClient.get());
     m_sessionActions->start();
     if (grants.read) {
+        m_peripheralClient->start();
         m_client->start();
     }
 }
@@ -80,6 +86,7 @@ PowerAppletComposition::PowerAppletComposition(
 PowerAppletComposition::~PowerAppletComposition()
 {
     m_sessionActions->stop();
+    m_peripheralClient->stop();
     m_client->stop();
 }
 

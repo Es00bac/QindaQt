@@ -198,3 +198,20 @@ The details and session-confirmation surfaces use `Popup.Window`, so each extend
 panel and receives keyboard focus independently of the panel. Escape and
 outside presses dismiss it. Compiled tests traverse the independent content
 window for the existing operation and accessibility checks.
+
+## Peripheral battery rows
+
+The optional public `PeripheralClient` supplies a separate read-only device
+inventory ([ADR-0365](../adr/0365-publish-peripheral-batteries-through-power1-receipts.md)).
+The facade presents model/vendor identity, device kind for accessibility,
+reported percentage or coarse level, charge state and reported time estimates.
+Unknown values remain explicit. Laptop summary and mutation controls continue
+through the original PowerClient. No shell platform lookup is added.
+
+The popup is capped at 600 pixels and the available output height; its content
+scrolls vertically. It admits up to 64 peripheral rows and shows omitted or
+truncated inventory explicitly. Owner/epoch loss clears device rows. A service
+without the additive receipt API affects only this optional section. The
+compiled QML test covers 64 rows, scrolling, accessible battery text, unchanged
+laptop summary and owner-loss clearing; installed hardware qualification is a
+separate manager gate.

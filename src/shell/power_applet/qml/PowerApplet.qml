@@ -101,6 +101,7 @@ Item {
         objectName: "powerAppletPopup"
         width: 300
         padding: 12
+        height: Math.min(powerContents.implicitHeight + 24, 600, Math.max(1, outputHeight() - 48))
 
         background: Rectangle {
             radius: root.theme.cornerRadius ?? 10
@@ -108,7 +109,15 @@ Item {
             border.color: root.colors.border ?? "#3c433f"
         }
 
-        contentItem: ColumnLayout {
+        contentItem: ScrollView {
+            id: powerScroll
+            objectName: "powerAppletScroll"
+            clip: true
+            contentWidth: availableWidth
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ColumnLayout {
+            id: powerContents
+            width: powerScroll.availableWidth
             spacing: 8
 
             Label {
@@ -216,6 +225,49 @@ Item {
                                      Math.round(value))
                     }
                 }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                visible: root.access !== null && (root.access.peripheralRows ?? []).length > 0
+                text: qsTr("Device batteries")
+                color: root.colors.text ?? "white"
+                font.bold: true
+                Accessible.role: Accessible.Heading
+            }
+            Repeater {
+                model: root.access !== null ? (root.access.peripheralRows ?? []) : []
+                ColumnLayout {
+                    required property var modelData
+                    objectName: "powerAppletPeripheralRow"
+                    Layout.fillWidth: true
+                    spacing: 2
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: modelData.accessibleName
+                    Label {
+                        Layout.fillWidth: true
+                        text: parent.modelData.name
+                        textFormat: Text.PlainText
+                        color: root.colors.text ?? "white"
+                        elide: Text.ElideRight
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: parent.modelData.detail
+                        textFormat: Text.PlainText
+                        color: root.colors.textMuted ?? "#a9afa9"
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+            Label {
+                objectName: "powerAppletPeripheralDiagnostic"
+                Layout.fillWidth: true
+                text: root.access !== null ? (root.access.peripheralDiagnostic ?? "") : ""
+                visible: text !== ""
+                textFormat: Text.PlainText
+                color: root.colors.textMuted ?? "#a9afa9"
+                wrapMode: Text.Wrap
             }
 
             Label {
@@ -330,6 +382,7 @@ Item {
                 wrapMode: Text.Wrap
                 Accessible.role: Accessible.AlertMessage
             }
+        }
         }
     }
 

@@ -37,6 +37,7 @@ target_sources(
     qindaqt_shell_power_applet_runtime
     PRIVATE
         src/power_applet_controller.cpp
+        src/peripheral_presentation.cpp
         src/power_applet_controller.h
 )
 qt_add_qml_module(

@@ -15,6 +15,8 @@ class ManifestCatalog;
 namespace QindaQt::Power {
 class PowerClient;
 class QtPowerTransport;
+class QtPeripheralTransport;
+class PeripheralClient;
 }
 
 namespace QindaQt::Services::SessionActions {
@@ -51,6 +53,8 @@ private:
     // before releasing any owner.
     std::unique_ptr<Power::QtPowerTransport> m_transport;
     std::unique_ptr<Power::PowerClient> m_client;
+    std::unique_ptr<Power::QtPeripheralTransport> m_peripheralTransport;
+    std::unique_ptr<Power::PeripheralClient> m_peripheralClient;
     std::unique_ptr<Services::SessionActions::SessionActionsClient>
         m_sessionActions;
     std::unique_ptr<PowerApplet::PowerAppletController> m_access;
