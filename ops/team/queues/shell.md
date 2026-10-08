@@ -8,6 +8,9 @@ andDPI2. New Clipboard startup is integrated22/172 and awaits signed delivery.
 Remaining scoped-agent, accessibility, newcomer and foreign-origin presentation
 work is required. See [Handoff](../../../docs/HANDOFF.md).
 
+
+Exact compact Audio candidate f3c656f2 has independent manager source acceptance and the sole laptop native lease for old1ae/fixed geometry, scrolling, focus, slider and Settings density qualification. No installed UI acceptance yet. Shared generic Settings facade is connected in source; existing mutation/grant/owner-loss gates remain required.
+
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
 The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.

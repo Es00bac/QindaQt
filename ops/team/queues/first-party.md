@@ -8,6 +8,9 @@ Viewer15eec still needs strict/keyboard repairs; Android/Windows have no complet
 real-app pass. All remaining ED/agent/backup/admin/accessibility work stays open.
 See [Handoff](../../../docs/HANDOFF.md).
 
+
+Owner confirms installed R17 device inventory but reports wasted Audio Settings space. Exact f3 compact Settings/popup source is accepted for native qualification, not installed usability. Media gain/quiet-start/admission and all full-mixer audit gaps remain required; candidate/compiler activity adds no product completion.
+
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
 The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.

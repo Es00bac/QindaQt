@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: available — clipboard native handoff preserved; independent integration and installed-login gates pending
-- Branch: worker/everyday-clipboard-startup-20261008
-- Worktree: everyday-clipboard-startup-20261008
-- Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
-- Ownership: clipboard service Host/Resident public overloads and private privacy-state/app observer, owning CMake/focused tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: Astra exact final native-evidence review, then manager integration/rerun and ordinary installed fresh-login acceptance; no resources held
+- Status: working — implementing guarded console strip/send/bus gain and reviewable real-loopback experiment
+- Branch: worker/everyday-audio-gain-20261008
+- Worktree: everyday-audio-gain-20261008
+- Outcome: independent strip/send/bus gain on actual owned sends, valid public graph and quiet creation/rebuild
+- Ownership: assigned AudioService model/backend/private gain/send/Core/graph collaborators, owner tests/CMake/Audio docs and ADR0361; own records
+- Next gate: freeze prospective lifetime/admission and actual private loopback/PCM experiment for independent source review; no compiler/native lease
 
 ## Updates
 
@@ -97,3 +97,19 @@
 - 2026-10-08T02:52:10+00:00: Exact0bd strict repaired build116actions exit0; focused22/22 CTest64.35s, actual19Qt suites172passed0fail/skip/blacklist. New privacy20/20 and native17/17 include delayed first owner, real timeout and late-after-timeout denial. Staged public constructor consumer passes; withheld absolute staged header compile1 with actual missing-path marker, exact restoration rebuild0/run0. Immutable controls retained4pass16fail and2pass2fail. Explicitly released all compiler/private-bus/runtime/staging resources to root before parsing direct XML/counts/hashes. No host content, install or whole-plan completion claim; final evidence preserved for independent review.
 
 - 2026-10-08T02:56:45+00:00: Final handoff preserves exact 0bd source, 22/22 CTest rows and 172/0/0/0 Qt totals, immutable old failures, staged missing-header failure and byte-exact restoration. All compiler/private-bus/runtime/staging resources remain released. Offering bounded read-only integration-evidence or next exact different-author review help; no new product packet or host clipboard actions claimed.
+
+- 2026-10-08T03:02:59+00:00: Root assigns source-only full Audio capability audit at exact 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Read original audit/delivery and Audio service/console/client/Settings/applet/media-key owners, compare official VB-Audio manuals, distinguish configured console buses/app routes from default sink. Hub main observed d9643acb7b0221739c3504412b43ba4e4ca8deaf; compare relevant product trees before final claims. R17 holds native lease; no compile, playback/capture, host bus, route/radio/mixer writes. Clipboard final afa source/native evidence independently accepted 95dba; integration/ordinary installed login remain separate.
+
+- 2026-10-08T03:15:06+00:00: Source-traced priority gap: strip/bus faders and Mono/trim echo/store fields but only independent send gain reaches routing/backend. Existing model tests assert storage rather than actual amplitude; ordinary device/stream volume has a separate implemented backend path. Unpinned physical buses are rebound default-first on every snapshot while explicit persisted pins remain exact. Full capability matrix still in progress; root requests audit freeze followed by focused gain-only design/new assigned worktree. Product/Audio tests unchanged between tested 5b7 and observed hub d964. Official manual actual URL now SEP2026 v3.1.3.0, SHA256 dddca1a3ddfe21ddc48908afde16e9e5fe54b17ae6b438fe5065adbbc98d8f10; no compiler/live graph actions.
+
+- 2026-10-08T03:31:36+00:00: Full Audio source audit frozen for handoff at tested5b7 cohort; actual Audio product/test diff to hubfa2 empty. Independently inspected/retained integrated24/24 CTest and SDK nine positive/one required negative raw logs;221Qt is attributed to manager receipt because shared detail may be overwritten. Astra confirms absent strip/bus gain and cubic send/pan mismatch. Full capability/default-vs-pins/UX/DSP/runtime/installed/physical matrix and precise doc repairs preserved; no compile/host action. Preparing gain-only design with independent bottom-stop stages, correct mixer units, pan/rack and quiet startup; Mono/trim remain explicit later gaps.
+
+- 2026-10-08T03:38:48+00:00: Full audit exactab855 preserved/hub verified; authored focused gain-only proposal with explicit independent stage values, amplitude multiplication, console-only cubic conversion, bounded owned-send headroom, current linear bus-rack ordering and real quiet startup/refusal qualification. Proposed JSON/binding extraction keeps edited production files below500. Requested new manager exact base/worktree/path ownership and ADR reservation. No production/test edit, compiler/native/host action. Status available for that compatible implementation; prior full-plan gaps remain queued.
+
+- 2026-10-08T03:45:03+00:00: Root rejected graph-wide degradation for legitimate console gain. Refining exact owned internal send-node admission, bounded headroom and real quiet-start acceptance while preserving public endpoint visibility and normalized external validation. Qinda installed public metadata PipeWire1.6.8/WirePlumber0.5.15; no host graph, compile or source edits.
+
+- 2026-10-08T03:52:55+00:00: Completed bounded refinement: current loopback connection cannot be assumed to match WpCore; proposed explicit borrowed private Core registration plus own daemon client/module-token/role/global-serial admission. Only pinned send stream halves leave public normalized projection; endpoints/external validation stay strict. Derived ~63.0957 headroom requires actual Props and PCM/quiet startup gate, not argument assertions. Preserved root current R17 scalar0.346456697; no product/native/host edits. Transitioning to available for fresh assigned repair.
+
+- 2026-10-08T04:03:26+00:00: Fresh isolated gain worktree created at exact assigned hub f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42 after fetching actual qinda hub main. Audio product/test paths are unchanged from audited5b7 cohort. Reserve ADR0361; source-only while Astra owns Bluetooth native. First packet is concrete guarded producer/lifetime admission and real-loopback first-PCM/Props/headroom/negative fixture, with actual0.5.15 headers/source decisive. No host graph/content or native resource claim.
+
+- 2026-10-08T04:21:12+00:00: Authored private independent gain, scoped borrowed Core, exact bounded producer/module/role/object admission and optional private graph exclusion; graph name lookup extracted below500. Owning pure failure fixtures are source-only. Implementing real private loopback/PCM support next; no compile/runtime claim or lease. Scoped registration is guarded against occupancy/nesting and removes only its own entry; actual raw-destruction/quiet/headroom experiments remain required.
