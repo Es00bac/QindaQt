@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — verify fresh installed r16 session, repair Viewer strict/keyboard gates, review ED05 and route one bounded Windows application attempt
+- Status: working — recover installed Audio/Bluetooth and verify core service readiness; coordinate exact Audio/SDK review and Portage repair
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -57,3 +57,5 @@
 - 2026-10-08T00:28:43+00:00: Owner explicitly pauses full-plan work for fresh login. Source551 Printing independently accepted with author18/18/87Qt and SDK1/1/11Qt; integration/docs530/strict pass, integrated native rerun pending. Installed laptopr16 verified; old running shell remains. Platforma8cf, Astrac398 WIP and Media3a4 partial review exact self-authored pause records imported. No new Windows app/compiler/Portage/session action. Viewer failed strict proof preserved on qinda; all ED outcomes remain incomplete. Resume only on owner instruction.
 
 - 2026-10-08T01:13:44+00:00: User returned and goal resumed. Actual running laptop shell209845 matches installedr16 SHA2564881f914; no desktop interruption. Corrected source-of-truth hubmain fromd728 to preserveddd631 via explicit hub push (origin is GitHub). Platform granted one exactv6 app fixture only after direct archive8/source7/payload12 rehash0issues; no retry/toolkit grant. Astra resumes manifest/source and Media exact411 read-only review. Root Viewer strict aggregate repair and old/fixed keyboard tests remain isolated.
+
+- 2026-10-08T01:41:00+00:00 — Owner confirms fresh r16 AI popup and reports Audio/Bluetooth failure. Actual Audio1 Degraded/backend-malformed with zero rows, upstream devices present; same normal user bus, no startup absence. Bluetooth2 raw Ready adapter off, typed/control gates open. Installed public SDK compile fails missing exported audio_console.h. Astra Audio sole qinda native lease; Media exact2a361 source review; Platform isolated SDK repair source-only; root laptop read-only health probes. Windows v6 failed pre-Wine X11 directory; v7 ungranted. No entire ED completion or host mutation.
