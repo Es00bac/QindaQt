@@ -7,7 +7,7 @@ has run during source authoring.
 
 The manager selected a minimal KVM fixture on October8. Qinda's installed
 Portage kernel6.18.48 has Binder IPC/binderfs built in, virtio block support and
-matching modules. QEMU, KVM access, dracut and cpio exist. Stock Waydroid/LXC
+matching modules. QEMU, KVM access, cpio and gzip exist. Stock Waydroid/LXC
 are not installed there. Platform owns the separate package closure and fixed
 image qualification, with the current resolver refusing LXC's missing
 libcap[static-libs] dependency. A data-package success does not close this.
@@ -33,13 +33,12 @@ in a manifest does not approve them. Input inode/version readbacks are retained.
 Trusted root can still modify files; no adversarial-root immutability claim.
 
 A disposable fixture initramfs contains a selected, signature-qualified
-Portage userspace closure and generated fixture config. boot_plan.py emits the
-dracut argv only. The stage must include the exact runtime closure, kernel
+Portage userspace closure and generated fixture config. boot_plan.py emits the cpio/gzip argv and bounded archive path list only. The stage must include the exact runtime closure, kernel
 modules, Python stdlib/site-packages/GI typelibs, Qt plugins/data/font/NSS
-dependencies and dracut itself. No package downloading, dependency solving or
+dependencies . No package downloading, dependency solving or
 host /etc copying is delegated to the boot builder.
 
-prepare_overlay.py generates only a fresh retained fixture directory, with no package or runtime action. The fixture overlay supplies /init from guest-init.sh and /proof containing
+prepare_overlay.py generates only a fresh retained fixture root under the manager private0700 run directory, with no package or runtime action. The fixture overlay supplies /init from guest-init.sh and /proof containing
 guest.py, windows.py and scenario.json. It supplies empty proc/sys/dev/run/tmp/
 var directories, merged-/usr symlinks, and generated /etc/passwd + group for
 root0/proof1000, hostslocalhost, nsswitch files/dns, and selected public font
@@ -96,3 +95,5 @@ is inferred from QEMU termination. Failed guest/cleanup/readback stays failed.
    refusal before a source repair or retry.
 
 Pure source tests and syntax checks are separate from all five gates.
+
+The boot plan uses cpio/gzip rather than dracut sysroot includes: installed dracut prepends its sysroot to external include paths. The frozen unfinished183b draft preserved that unqualified approach; no boot asset was generated from it. Cpio receives only a separately frozen prepared root, NUL-delimited paths and no symlink traversal. Stage package closure/signatures and every archived byte remain independent admission gates; shape checks alone do not authenticate them.

@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — image repair486 source frozen for Platform review; continuing minimal stock Android KVM boot/input source.
+- Status: available — image repair486 awaits same-pair source review; minimal KVM source candidate frozen for independent review and exact boot/package-input preparation.
 - Outcome: reviewable package-to-two-window feasibility fixture; ordinary windows first, app identity authority remains separate.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated qinda worktree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T17:03:52Z — Froze source-only KVM candidate after9/9 tiny pure controls, AST8, shell0, docs534/strict8.19/diff0. No generated initramfs, VM, mount, guest, package or host action. Concrete cpio/gzip root plan avoids dracut sysroot/include ambiguity preserved in183b. Runtime closure/package hashes and boot artifact admission remain prerequisites; first two-window observation does not claim render/input/resize-close or app identity. Available for exact source review repair and qualified input binding.
 
 - 2026-10-08T16:57:39Z — Froze/pushed overlay486feb2 original-DISTDIR repair after actual29cbc ELOOP. Verifier/Manifest/provenance and original12 tests unchanged;15 tiny synthetic cases pass, bash/diff0. No real unpack/package/VM. Direct Platform message hit thread-limit, manager has exact routing packet. Resume preserved183b KVM draft, no runtime lease.
 
