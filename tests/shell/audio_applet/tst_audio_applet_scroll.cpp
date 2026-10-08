@@ -90,6 +90,7 @@ void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
     transport.announceOwner(kOwner);
     transport.reply(transport.fetches.constLast(), manyRows());
     QCOMPARE(client.state(), Audio::ClientState::Ready);
+    QCOMPARE(countPendingRows(controller), 0);
     // A local refused request exposes the actual focusable footer Dismiss;
     // no service operation is issued and no host volume changes.
     QVERIFY(!controller.requestVolume(999, false, 0.5));
