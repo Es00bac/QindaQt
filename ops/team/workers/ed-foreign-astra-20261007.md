@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — authorized sole Bluetooth native/SDK batch on exact8c02; private fixtures only.
-- Outcome: review synchronous privacy, native proof lifetime/reentrancy and startup ordering; preserve actual Bluetooth partial counterfactual and queued ED05.
+- Status: working — Bluetooth focused native batch; repairing exact strict helper compilation failures for peer recheck.
+- Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
-- Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
+- Resources: manager-authorized sole qinda focused compiler/private-fixture lease; compiler settled pending exact repair review. No host bus/device/radio/services or installed actions.
 ## Updates
+
+- 2026-10-08T03:46:48Z — Strict4649 retry exit1 exposes XML raw-string delimiter collision and missing QDBusConnection include in helper service object. Preserve exact failed log/argv; freeze minimal syntax/include repair for Platform recheck. No tests yet.
 
 - 2026-10-08T03:41:56Z — Actual strict8c02 build failed on reply-local variable shadow after1743/2150 actions; original log retained. Frozen one-variable rename for Platform exact recheck; no tests or radio actions, no warning relaxation.
 

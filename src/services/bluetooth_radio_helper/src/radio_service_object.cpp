@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "radio_service_object_p.h"
 #include <QtCore/QScopedValueRollback>
+#include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 
 namespace QindaQt::BluetoothRadio {
 RadioServiceObject::RadioServiceObject(RadioOperation &operation) : m_operation(operation) {}
 QString RadioServiceObject::introspect(const QString &) const {
-    return QStringLiteral(R"(<interface name="org.qindaqt.BluetoothRadio1">
+    return QStringLiteral(R"xml(<interface name="org.qindaqt.BluetoothRadio1">
 <method name="ObserveAndUnblock"><arg type="(ssssst)" direction="in"/>
-<arg type="(sus)" direction="out"/></method></interface>)");
+<arg type="(sus)" direction="out"/></method></interface>)xml");
 }
 bool RadioServiceObject::handleMessage(const QDBusMessage &message,
     const QDBusConnection &connection) {
