@@ -17,6 +17,7 @@ namespace QindaQt::Shell::AudioApplet {
 // (128 devices / 256 streams). The panel applet is a quick surface, not the
 // complete Settings route; anything beyond these rows is summarized as an
 // overflow count instead of scrolling forever.
+// Per direction, at most16 combined; each current default is retained.
 inline constexpr int kMaxDeviceRows = 8;
 inline constexpr int kMaxStreamRows = 8;
 

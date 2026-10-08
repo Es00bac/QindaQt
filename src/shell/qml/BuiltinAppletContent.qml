@@ -250,6 +250,7 @@ Item {
             anchors.fill: parent
             visible: root.audioReady
             controller: root.audioAppletAccess
+            desktopControls: root.desktopControlsAccess?.systemMenu ?? null
             vertical: root.vertical
         }
     }

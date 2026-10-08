@@ -39,6 +39,9 @@ RowLayout {
                   ?? root.targetRow.volumePercent) / 100.0 : 0.0
 
         Layout.fillWidth: true
+        // Keep the compact visual track, with a usable local interaction floor.
+        // Layout may retain a larger theme/Touch implicit target.
+        Layout.minimumHeight: 22
         small: true
         from: 0.0
         to: 1.0

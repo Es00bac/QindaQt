@@ -100,7 +100,7 @@ ColumnLayout {
             // sizing, so this never leaves a gap.
             visible: modelData !== null
             Layout.fillWidth: true
-            padding: Tokens.space["2"]
+            padding: Tokens.space["1"]
             // Per-row disclosure state, never projected truth.
             property bool channelsExpanded: false
             Accessible.name: qsTr("%1 %2, %3")

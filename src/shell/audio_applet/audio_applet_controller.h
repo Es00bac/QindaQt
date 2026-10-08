@@ -9,7 +9,11 @@
 #include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QSize>
+
 #include <QtCore/QVariantList>
+
+#include <QtQuick/QQuickItem>
 
 namespace QindaQt::Shell::AudioApplet {
 
@@ -36,6 +40,7 @@ namespace QindaQt::Shell::AudioApplet {
 // the deliberate bounded stale-cleanup path, not an operation replay.
 class AudioAppletController final : public QObject {
     Q_OBJECT
+    Q_PROPERTY(int popupGeometryRevision READ popupGeometryRevision NOTIFY popupGeometryChanged)
     Q_PROPERTY(QString phaseText READ phaseText NOTIFY stateReprojected)
     Q_PROPERTY(bool controlGranted READ isControlGranted NOTIFY
                    stateReprojected)
@@ -68,6 +73,7 @@ public:
                                    bool audioControlGranted,
                                    QObject *parent = nullptr);
 
+    [[nodiscard]] int popupGeometryRevision() const noexcept { return m_popupGeometryRevision; }
     [[nodiscard]] QString phaseText() const;
     [[nodiscard]] QString phaseReasonText() const;
     [[nodiscard]] bool isControlGranted() const noexcept
@@ -129,12 +135,22 @@ public:
     [[nodiscard]] QVariantMap consoleLevels() const;
     Q_INVOKABLE void clearFeedback();
 
+    // Presentation-only, same-thread synchronous borrowed anchor. Resolves
+    // its current window-selected screen, never primary/virtual desktop. Empty
+    // or duplicate names are valid; a nonempty hint must match. Missing or
+    // retired screen/window and nonpositive geometry return an empty size.
+    Q_INVOKABLE QSize popupAvailableSize(QQuickItem *anchor,
+                                         const QString &screenName) const;
+
 Q_SIGNALS:
+    void popupGeometryChanged();
     void consoleLevelsChanged();
     void stateReprojected();
     void feedbackChanged();
 
 private:
+    void initializePopupGeometry();
+    int m_popupGeometryRevision = 0;
     enum class RequestKind { Volume, Mute, Default };
 
     struct PendingRequest {
