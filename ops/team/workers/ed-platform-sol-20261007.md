@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — Audio stream overlap repair frozen for exact source review; no native/compiler/package work.
+- Status: working — qualifying reviewed Audio stream layout old-first and fixed33 on isolated laptop native lane
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -190,6 +190,6 @@
 
 - 2026-10-08T05:48:22+00:00: Single reviewed435 fresh capture build0/render0,Qt3pass0fail0skip; actual1536x864 logical/1.25DPR/360x480 popup/450x600 image,contentY0/no feedback/zero operations. Production equals915; prior91531/171 proof unchanged, no full31 rerun. Native lane RELEASED; image/log/argv/digests frozen. Await root visual review/source-only R18 pin.
 
-- 2026-10-08T05:58:50+00:00: Root fresh-image review found application wrap and fader/readout overlap. Frozen unchanged-production c75 stream-layout regression at constrained/owner scale; authored two-line header/control layout with explicit independent bounds, preserved action/wheel/held-value code. Source-only verification active; no package/native action.
+- 2026-10-08T06:12:03.403827+00:00 — Root granted old c75 first and fixed65 strict24 targets/33 rows plus one fresh owner capture; no host audio or package actions.
 
-- 2026-10-08T06:00:40+00:00: Frozen old production/new layout regression c75dea4e7 (src equals9150). Row-only two-line repair plus meaningful text/accessibility/nonoverlap/unknown-volume tests at constrained/owner scales; wheel/held-value/mute body equality confirmed modulo indentation. Static boundaries/poisons/icon/docs531/strict/diff0. Await exact source review/old-first native grant; existing31/171 and fresh proof preserved.
+- 2026-10-08T06:15:11.107303+00:00 — Old c75 strict configure/build0; registered2/2 CTest fails8:10Qt pass4fail. Valid known header actual lineCount5 reproduces wrap; unknown fixture rejected because inherited canSetVolume=true with volumeKnown=false. Fixed phase stopped; proposed canSetVolume=known test-only correction awaiting review. No native job remains.
