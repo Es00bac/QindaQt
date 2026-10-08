@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Repair actual Viewer focused-key failures and qualify all eight owning rows; maintain installed R18/full-plan evidence.
+- Status: working — Reproduce Viewer stale displayed page with public pixel grabs, repair publication, and qualify exact owning rows.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-viewer-text-r18-20261008
 - Branch: worker/everyday-viewer-text-r18-20261008
 - Integration: integrate/everyday-manager-20261007; manager checkout remains separate.
@@ -107,3 +107,5 @@
 - 2026-10-08T08:53:54+00:00 — Actual5ef strict7build0/49.974s, owning8CTest4pass4fail. RealPoppler262144/+1 preconditions and renderer/controller/text/textcontroller nowpass; UI/CLI reachQML and failpublicFlexwrap bool/unknownenumeration. Installedpublic flex.h confirms WrapMode enum; repairusesTk.Flex.Wrap only. Fixtureassert nowexplicitlypermitsonlythreeactualcases0/cap/+1, closing unused1026 contract caveat withoutchangingbytes/assertions. Same Media source recheck/native8 next; no installed Viewer claim.
 
 - 2026-10-08T09:06:29+00:00 — Actual d1 strict7 targets0/11.158s; eight owning CTests6pass2fail/exit8/40.602s. Both textUI scales reach real focused Previous Return and receive no search state; parent subsequently fails Escape. Added Viewer-private public Tk.Button key adapter, all assertions unchanged. Exact source/native/independent recheck pending; no package or whole milestone claim.
+
+- 2026-10-08T09:33:39+00:00 — Actual a892 eight owning tests pass but DPI2 text screenshot visibly shows page1 raster with page2 label/text. Existing UI only asserts controller blue pixels. Add actual public Image-item red/blue/previous-red grabs using the existing genuine PDF, unchanged production. Original strict/native failure or valid red control remains to be observed; do not accept pixel correctness from prior8pass.
