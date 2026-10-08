@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — repairing Audio popup selected-screen geometry and density readiness; source-only, native lane released.
+- Status: waiting — Audio selected-screen repair c98ca4c05 frozen for exact review; no native/compiler lease or active tests.
 - Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
 - Branch: worker/everyday-core-release-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -165,3 +165,5 @@
 - 2026-10-08T04:31:14.329537+00:00 — Freeze staticpure4poisons/runtimepoison/icon/diff0, docs531strict0. Fullshape1 baselineerrors plus approvedhost352→353onebinding; nofalsepass. Oldregression1ae preserved, fixeddefaultmic/viewport/facade/density matrixUNRUN. No compiler/native/installedusabilityclaim.
 
 - 2026-10-08T04:57:38+00:00: Root routed actual23/29 native failures to anchor-window selected-screen repair. Frozen old-production regression d4fb740cb includes unnamed/duplicate popup rows and actual outputSpace diagnostics. Production repair now resolves current screen membership/positive geometry and observes Window.screen identity; density thresholds unchanged. No new native run.
+
+- 2026-10-08T04:58:37+00:00: Frozen repair c98ca4c05 and production-unchanged unnamed/duplicate regression d4fb740cb pushed to explicit qinda hub. Static boundary/poison/icon/docs531/strict MkDocs/diff all0. Requested exact source review and fresh laptop old-first qualification grant; all original six failures retained, no native rerun.
