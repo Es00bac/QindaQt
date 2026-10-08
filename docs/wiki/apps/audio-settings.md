@@ -98,9 +98,10 @@ format and its validation are recorded in
 
 The Devices tab uses QindaTK's small controls (`Tk.Button`, `Tk.Switch`,
 `Tk.Slider`, `Tk.NumberField`, `Tk.SectionHeader`) under the page's
-`QindaQtTheme` bridge. A device row is three short lines: name, state and
-**Set default**; the volume slider and **Mute**; the latency offset, its
-**Reset** and **Channels**. A stream row keeps its name, direction and target on
+`QindaQtTheme` bridge. Common device controls occupy two short lines: name,
+state and **Set default**; then the volume slider, **Mute** and **Details**.
+**Details** reveals the reported latency offset, **Reset** and **Channels**;
+**Channels** opens the individual channel faders. A stream row keeps its name, direction and target on
 one line with **Mute**, and its device chooser beside its caption. Section
 descriptions stay as accessible descriptions of the section headers. A healthy
 service shows only **Ready** beside the heading; the state card appears for
@@ -244,13 +245,17 @@ the sole platform adapter and policy authority.
 
 ## Responsive interaction and accessibility
 
-The page uses only QST-1 semantic roles and QindaQt.Controls. At compact
+The page uses QST-1 semantic roles through QindaQt.Controls and QindaTK's small
+controls. At compact
 sizes the same ordered content remains vertically scrollable. Page Up/Page
 Down and Ctrl+Home/Ctrl+End move through it, and changing keyboard focus
 reveals the focused control. The page nominates the first enabled, admitted
-control in traversal order — set-default, volume, then mute within each row;
+control in traversal order — set-default, volume, mute, then Details and its
+expanded latency/channel controls within each row;
 output rows before input rows before stream rows — as the Settings host entry
-target, recomputed whenever the projection changes, so a control the
+target, recomputed whenever the projection changes. Details only becomes the
+host's action target when it reveals an admitted edit; read-only device
+details remain reachable through ordinary Tab traversal. A control the
 snapshot disabled (for example a default output with `canSetVolume == false`)
 is never targeted while another admitted action exists. When no admitted
 control exists the page falls back to Retry, then the route surface itself.
@@ -405,20 +410,29 @@ Failure text explains refreshing devices rather than exposing raw reason codes.
 
 ## Compact device layout
 
-The Audio route reduces the outer page and nested device-card padding while
-retaining device names, default selection, level/mute, latency offset and
-channel disclosure controls. It does not collapse or hide controls to fit.
-The existing clipped viewport, scrollbar, keyboard paging and focus reveal
-remain responsible for reaching all rows. Consecutive collapsed device cards
-have a focused layout-density fixture; normal/2× captures and the existing
-page/console/wheel/stream-routing tests qualify readability and traversal.
+The Audio route keeps names, default selection and volume/mute controls visible
+in two compact lines. A device-local **Details** action reveals latency offset
+and channel controls when the public snapshot reports them. Opening or closing
+details changes presentation only. Known read-only offsets remain inspectable;
+unknown offsets never acquire a zero value or an editable field.
+
+Details stays open through an ordinary snapshot update for the same device.
+A replacement device at the same list index starts collapsed. Closing Details
+also closes its individual channel editor and returns focus to Details.
+Collapsed channel editors remain uninstantiated. The clipped viewport,
+scrollbar, keyboard paging and focus reveal retain access to expanded rows.
+The density fixture requires both output faders and the first input fader to
+fit together at 420×320 logical pixels, with usable slider heights and positive
+device spacing, and repeats at normal and 2× scale. Keyboard tests exercise
+Details, latency edits/reset, channel expansion and collapse without inventing
+backend writes; existing page/console/wheel/stream-routing regressions remain.
 This is presentation only: backend availability, gain law, routing,
 persistence and public Audio1 validation are unchanged. Source-only authoring
 does not prove the installed Settings surface or hardware controls.
 
-The focused density fixture measures both always-visible, enabled device volume controls and waits for their
-minimum laid-out height before measuring card spacing, so an unpolished zero-size
-layout cannot satisfy the compactness assertion.
+The focused density fixture measures always-visible, enabled controls and waits
+for their minimum laid-out height and positive spacing, so an unpolished
+zero-size layout cannot satisfy the compactness assertion.
 
 Device volume sliders keep their compact visual track inside a minimum
 22-logical-pixel interaction height. Layout retains larger implicit/theme
