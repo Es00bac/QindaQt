@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Windows985 dispatch failed before harness due unit cwd; lease released, corrected grant pending.
+- Status: available — Windows98521 synthetic methods passed; heavy lease released, Media source-only repair next.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -315,3 +315,5 @@
 - 2026-10-08T18:29:43+00:00 — Root-granted exact985 source revalidation passed; four-module single attempt begins, no native/Wine.
 
 - 2026-10-08T18:30:26+00:00 — Preserved first wrapper exit2/no module invocation; no retry.
+
+- 2026-10-08T18:31:46+00:00 — Actual four Windows985 modules21 methods allOK; raw indexed, source rehash0; resources released, no native grant.
