@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — authoring authenticated native clipboard privacy composition and synchronous revocation guards
+- Status: working — validating frozen clipboard source and preparing bounded native gates during independent trust review
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
@@ -85,3 +85,5 @@
 - 2026-10-08T02:10:19+00:00: Manager approved bounded Host/Resident public admission overload and private cohesive privacy state plus native attachment observer. Authoring production code and failure-mode fixtures now; no compiler/native/host clipboard capture or install action. Existing explicit consent and strict lock/attachment authority remain independent.
 
 - 2026-10-08T02:20:23+00:00: Complete bounded clipboard production source and ADR0358 authored with strict new public constructor symbols, pinned native attachment/receipt composition, synchronous descriptor/capture/Copy guards, purge-before-cancel and reentrant completion checks. Two real failure-mode fixtures and installed-only symbol consumer authored; native unexecuted. Clipboard persistence/logging boundary and diff checks exit0. Ordinary installed fresh-login owner/socket ordering remains required before repair claim. Root holds integrated Printing/Copier lease; freezing source for independent Astra trust review now.
+
+- 2026-10-08T02:22:13+00:00: Exact clipboard06463d7 source preserved on hub for Astra/root review. Actual documentation links531 exit0, strict MkDocs exit0, production shape14/test shape15 both zero issues, boundary/diff0; source maximum Host173/privacy99/main97/native96 nonblank. Log hashes/evidence saved in ignored .cache/clipboard-static. No compile/CTest/native/installed/content capture; preparing immutable-old source harness while root holds native lease.
