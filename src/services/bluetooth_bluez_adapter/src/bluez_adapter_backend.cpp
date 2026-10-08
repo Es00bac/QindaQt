@@ -20,9 +20,21 @@ using Bluez::BluezManagedObjects;
 
 BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
                                          const int promptTimeoutMs, QObject *parent)
+    : BluezAdapterBackend(connection, nullptr, promptTimeoutMs, parent)
+{
+}
+
+BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
+    QindaQt::BluetoothRadio::RadioPowerPort *radio, const int promptTimeoutMs, QObject *parent)
     : AdapterBackend(parent)
     , d(std::make_unique<State>(connection, this, promptTimeoutMs))
 {
+    d->radio = radio;
+    if (radio) {
+        connect(radio, &QindaQt::BluetoothRadio::RadioPowerPort::finished,
+                this, &BluezAdapterBackend::handleRadioFinished);
+        connect(radio, &QObject::destroyed, this, [this] { retirePower(); });
+    }
     connect(&d->transport, &Bluez::BluezTransport::ownerChanged, this,
             [this](const QString &owner) {
                 d->pairingAgent.setAdapterAvailable(false);
@@ -42,6 +54,7 @@ BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
                 if (!d->running) {
                     return;
                 }
+                retirePower();
                 d->store.replaceFrom(objects);
                 publish();
             });
@@ -50,6 +63,8 @@ BluezAdapterBackend::BluezAdapterBackend(const QDBusConnection &connection,
                 if (!d->running) {
                     return;
                 }
+                if (interfaces.contains(QStringLiteral("org.bluez.Adapter1")))
+                    retirePower(path);
                 d->store.upsertInterfaces(path, interfaces);
                 publish();
             });
@@ -108,6 +123,7 @@ void BluezAdapterBackend::stop()
     if (!d->running) {
         return;
     }
+    retirePower({}, {}, false);
     d->running = false;
     ++d->generation;
     d->transport.stop();
@@ -128,6 +144,12 @@ void BluezAdapterBackend::submit(const quint64 operationId,
                                  const BackendRequest &request)
 {
     const quint64 generation = d->generation;
+    if (request.kind == OperationKind::SetAdapterPower && d->running
+        && !d->queuedPowers.contains(operationId) && d->queuedPowers.size() < 32) {
+        const auto *adapter = d->store.adapterByAddress(request.adapterAddress);
+        d->queuedPowers.insert(operationId, {request, adapter ? adapter->path : QString{},
+            d->transport.owner(), generation});
+    }
     QMetaObject::invokeMethod(
         this,
         [this, operationId, request, generation] {
@@ -137,6 +159,19 @@ void BluezAdapterBackend::submit(const quint64 operationId,
             // and the captured generation drops work superseded by stop().
             if (!d->running || generation != d->generation) {
                 return;
+            }
+            if (request.kind == OperationKind::SetAdapterPower) {
+                const auto it = d->queuedPowers.find(operationId);
+                if (it == d->queuedPowers.end()) return;
+                const auto queued = it.value();
+                d->queuedPowers.erase(it);
+                const auto *adapter = d->store.adapter(queued.path);
+                if (!adapter || adapter->address != request.adapterAddress
+                    || queued.owner != d->transport.owner()) {
+                    finishOperation(operationId, BackendOperationStatus::Rejected,
+                                    QStringLiteral("stale-handle"));
+                    return;
+                }
             }
             applySubmit(operationId, request);
         },
@@ -148,6 +183,7 @@ void BluezAdapterBackend::releaseOwner(const QString &callerId)
     if (!d->running) {
         return;
     }
+    retirePower({}, callerId);
     for (auto it = d->leases.begin(); it != d->leases.end();) {
         if (it.key().callerId != callerId) {
             ++it;
@@ -209,32 +245,6 @@ void BluezAdapterBackend::applySubmit(const quint64 operationId,
         finishOperation(operationId, BackendOperationStatus::Failed,
                         QStringLiteral("malformed-request"));
     }
-}
-
-void BluezAdapterBackend::submitSetPower(const quint64 operationId,
-                                         const BackendRequest &request)
-{
-    const BluezAdapterState *adapter =
-        d->store.adapterByAddress(request.adapterAddress);
-    if (adapter == nullptr) {
-        finishOperation(operationId, BackendOperationStatus::Rejected,
-                        QStringLiteral("stale-handle"));
-        return;
-    }
-    const quint64 callId =
-        d->transport.setAdapterPowered(adapter->path, request.powered);
-    if (callId == 0) {
-        finishOperation(operationId, BackendOperationStatus::Uncertain,
-                        QStringLiteral("bluez-transport"));
-        return;
-    }
-    d->outstanding.insert(callId,
-                          {.operationId = operationId,
-                           .kind = request.kind,
-                           .callerId = request.callerId,
-                           .adapterAddress = request.adapterAddress,
-                           .deviceAddress = {},
-                           .powered = request.powered});
 }
 
 void BluezAdapterBackend::submitAcquire(const quint64 operationId,

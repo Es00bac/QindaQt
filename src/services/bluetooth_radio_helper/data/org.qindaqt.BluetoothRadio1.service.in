@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.qindaqt.BluetoothRadio1
+# No unsandboxed direct-activation fallback.
+Exec=/usr/bin/false
+SystemdService=qindaqt-bluetooth-radio-helper.service

@@ -1,0 +1,32 @@
+[Unit]
+Description=QindaQt selected Bluetooth radio power helper
+Documentation=https://qindaqt.org
+# Optional explicit-power helper: never pulled into session startup.
+
+[Service]
+Type=dbus
+BusName=org.qindaqt.BluetoothRadio1
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-bluetooth-radio-helper
+Restart=no
+TimeoutStartSec=5
+TimeoutStopSec=2
+NoNewPrivileges=yes
+PrivateUsers=yes
+PrivateDevices=yes
+# Existing active-user ACL remains the only write authority. This bind adds
+# visibility to the narrow namespace; it grants no DAC/ACL bypass.
+BindPaths=/dev/rfkill
+DevicePolicy=closed
+DeviceAllow=/dev/rfkill rw
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX
+UMask=0077
+TasksMax=16

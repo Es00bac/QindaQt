@@ -75,6 +75,7 @@ private Q_SLOTS:
     void fencesCompletionByKindAndLineage();
     void classifiesFailureAndUncertaintyWithoutReplay();
     void ownerOrEpochReplacementEndsPending();
+    void powerFeedbackUsesFixedReasonAndKeepsState();
 };
 
 void BluetoothRequestStateTests::admitsOnlyCurrentCapableOperations()
@@ -267,6 +268,24 @@ void BluetoothRequestStateTests::ownerOrEpochReplacementEndsPending()
     QVERIFY(noOwner.feedback.contains(QStringLiteral("authority changed")));
     QCOMPARE(observeBluetoothAuthority(request, true, 72).phase,
              RequestPhase::Uncertain);
+}
+
+void BluetoothRequestStateTests::powerFeedbackUsesFixedReasonAndKeepsState()
+{
+    const auto snapshot = readySnapshot();
+    const auto pending = beginBluetoothRequest(snapshot,
+        {.kind = Bluetooth::OperationKind::SetAdapterPower,
+         .target = snapshot.adapters.constFirst().handle, .powered = false}, true);
+    QVERIFY(pending.pending());
+    const auto failed = applyBluetoothResult(pending, resultFor(pending,
+        Bluetooth::OperationStatus::Rejected, QStringLiteral("radio-hardware-blocked")));
+    QVERIFY(failed.feedback.contains(QStringLiteral("hardware switch")));
+    QVERIFY(!failed.feedback.contains(QStringLiteral("radio-hardware-blocked")));
+    QVERIFY(snapshot.adapters.constFirst().powered);
+    const auto uncertain = applyBluetoothResult(pending, resultFor(pending,
+        Bluetooth::OperationStatus::Uncertain, QStringLiteral("bluez-power-uncertain")));
+    QCOMPARE(uncertain.phase, RequestPhase::Uncertain);
+    QVERIFY(uncertain.feedback.contains(QStringLiteral("current power state")));
 }
 
 QTEST_GUILESS_MAIN(BluetoothRequestStateTests)

@@ -45,23 +45,9 @@ void BluezAdapterBackend::handleCallFinished(const quint64 callId,
     const State::Outstanding call = it.value();
     d->outstanding.erase(it);
     switch (call.kind) {
-    case OperationKind::SetAdapterPower: {
-        if (!succeeded) {
-            const MappedReply mapped = mapErrorReply(errorName);
-            finishOperation(call.operationId, mapped.status, mapped.reasonCode);
-            return;
-        }
-        if (const BluezAdapterState *adapter =
-                d->store.adapterByAddress(call.adapterAddress);
-            adapter != nullptr) {
-            d->store.applyPowered(adapter->path, call.powered);
-            if (!call.powered) d->dropAdapterLeases(call.adapterAddress);
-        }
-        publish();
-        finishOperation(call.operationId, BackendOperationStatus::Succeeded,
-                        QStringLiteral("adapter-power-set"));
+    case OperationKind::SetAdapterPower:
+        finishPowerCall(call.operationId, succeeded, errorName);
         return;
-    }
     case OperationKind::AcquireDiscovery: {
         const QList<State::Outstanding> queued =
             d->queuedAcquires.take(call.adapterAddress);

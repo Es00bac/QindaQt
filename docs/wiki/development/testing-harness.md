@@ -4932,3 +4932,47 @@ service. The staged consumer must link the new strict Host/Resident constructors
 from installed-only archives and deny empty admission. Withheld installed
 public-header compile failure and restoration qualify the SDK boundary separately.
 Source-authored tests do not count as executed gates or installed login recovery.
+
+## Selected Bluetooth radio recovery proof
+
+The source draft in [ADR-0359](../adr/0359-recover-only-the-selected-bluetooth-radio.md)
+adds owning radio policy, complete-intent and current-owner/caller private-bus
+fixtures, plus a real private BlueZ delayed-power/replacement fixture. Radio
+policy uses injected platform values; it does not qualify a kernel rfkill write.
+Private-bus tests use a local daemon and synthetic addresses, never host buses.
+The backend fixture verifies one selected helper-to-BlueZ sequence, refusal and
+no-write compatibility, caller/object retirement, late Failed/property truth,
+and no optimistic snapshot change from an empty reply. Settings/applet fixtures
+assert fixed typed feedback through their public boundaries.
+
+Build the radio helper/client, radio operation/intent/authority/reply/session/native_service tests, BlueZ
+power recovery and existing Bluetooth service/adapter/model/client/protocol
+targets with strict warnings and the manager's configured native build options.
+Nested staged-consumer builds use ordinary cmake build defaults. Run the owning radio,
+BlueZ, service, Settings and applet rows under private XDG roots with both host
+bus addresses invalid. The radio staged-install row installs the B1 component
+inside the build cache, compiles an installed-only Core/DBus/libdbus public
+session/port consumer, independently withholds each exact staged public
+header, requires the expected compile failure and restores exact bytes/build/run. It never launches the radio helper.
+
+The original native batch retained three failures, including the production
+reply identity defect. New sender-preserving rows exercise actual native helper
+dispatch over an in-memory radio platform, correct-serial/nonce foreign replies,
+error/malformed/late replies, lost owners, cancellation/deletion during the
+borrowed callback, and GUID/address refusal. Both helper and port must complete
+the positive path. A forged reply may consume the pending call and cause
+uncertainty; it must never cause success. A separate native pending-call witness
+requires the actual returned frame to carry the foreign connection's real sender
+and the held serial/nonce before asserting rejection, paired with legitimate
+success. Callback cancellation is positively observed before the no-completion
+assertion. The session broker uses its ordinary
+permissive policy. New source execution remains pending.
+
+Separately record the effective installed helper namespace and RW-open
+admission before any authorized selected-radio write/readback. A successful
+synthetic suite or zero-byte transient namespace open does not close installed
+control, hardware effects or whole-desktop acceptance.
+
+The radio ledger fixtures retain A's unexpired nonce across actual A→B→A
+well-known alias ownership and refuse a full global ledger without eviction.
+These exercise injected platform writes only, not physical radio access.

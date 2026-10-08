@@ -80,3 +80,11 @@ This amendment preserves the earlier Bluetooth1 v1 statement and adds the new
 surface under a new object path and interface name. It does not supersede the
 decision against QindaQt-local pairing/trust authority. Direct QtDBus remains the
 transport choice established by [ADR-0057](0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md).
+
+## Proposed narrow extension — 2026-10-08
+
+[ADR-0359](0359-recover-only-the-selected-bluetooth-radio.md) proposes an optional
+selected-radio helper for explicit power enable under existing user ACLs. Only
+the blanket rfkill exclusion changes; pairing/trust/record authority and main
+daemon sandbox remain unchanged. Native/installed qualification is pending;
+the historical decision above is preserved.

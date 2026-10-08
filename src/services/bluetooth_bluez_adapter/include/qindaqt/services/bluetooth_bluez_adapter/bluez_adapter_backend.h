@@ -8,6 +8,8 @@
 
 #include <memory>
 
+namespace QindaQt::BluetoothRadio { class RadioPowerPort; struct Result; }
+
 namespace QindaQt::Bluetooth
 {
 
@@ -31,6 +33,12 @@ public:
     explicit BluezAdapterBackend(const QDBusConnection &connection,
                                  int promptTimeoutMs = 60'000,
                                  QObject *parent = nullptr);
+    // Additive production composition: radio is borrowed, same-thread and must
+    // outlive this backend. Only explicit enabling delegates selected recovery;
+    // the legacy constructor preserves direct BlueZ behavior for existing users.
+    BluezAdapterBackend(const QDBusConnection &connection,
+                        QindaQt::BluetoothRadio::RadioPowerPort *radio,
+                        int promptTimeoutMs = 60'000, QObject *parent = nullptr);
     ~BluezAdapterBackend() override;
 
     BluezAdapterBackend(const BluezAdapterBackend &) = delete;
@@ -47,6 +55,11 @@ private:
 
     void applySubmit(quint64 operationId, const BackendRequest &request);
     void submitSetPower(quint64 operationId, const BackendRequest &request);
+    [[nodiscard]] bool powerCurrent(quint64 operationId) const;
+    void dispatchPower(quint64 operationId);
+    void handleRadioFinished(quint64 radioId, const QindaQt::BluetoothRadio::Result &result);
+    void finishPowerCall(quint64 operationId, bool succeeded, const QString &errorName);
+    void retirePower(const QString &path = {}, const QString &caller = {}, bool notify = true);
     void submitAcquire(quint64 operationId, const BackendRequest &request);
     void submitRelease(quint64 operationId, const BackendRequest &request);
     void submitConnect(quint64 operationId, const BackendRequest &request);

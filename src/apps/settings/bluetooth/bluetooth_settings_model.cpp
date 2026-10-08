@@ -533,22 +533,5 @@ void BluetoothSettingsModel::reject(const QString &reason) {
   Q_EMIT viewChanged();
 }
 
-QString BluetoothSettingsModel::failureText(const OperationResult &result) const {
-  switch (result.status) {
-  case OperationStatus::Rejected:
-    return tr("That Bluetooth change is unavailable. Check the device and try again.");
-  case OperationStatus::Unsupported:
-    return tr("That Bluetooth operation is not supported.");
-  case OperationStatus::Busy:
-    return tr("Bluetooth is busy; wait for the current operation to finish.");
-  case OperationStatus::Failed:
-    return tr("The Bluetooth change failed. Make sure the device is nearby and try again.");
-  case OperationStatus::Uncertain:
-    return tr("The Bluetooth operation result is uncertain.");
-  case OperationStatus::Succeeded:
-    return {};
-  }
-  return tr("The Bluetooth result could not be understood.");
-}
 
 } // namespace QindaQt::Apps::SettingsBluetooth
