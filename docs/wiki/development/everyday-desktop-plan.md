@@ -31,40 +31,57 @@ documentation-only and earlier model-escalation defaults.
 
 ## October 8 installed core progress and remaining scope
 
-R17 is installed through Portage with independently verified artifact and image
-identity. Public Audio inventory/control works; the owner confirms devices in
-Settings and the installed AI popup opens. Compact b021/00c is independently
-source-accepted and root visually accepted at owner scale. Integration5858bcc
-passes strict28 targets,33/185 owning and4/88 profile/resolution gates.
-The Settings page is denser; the popup is bounded and scrollable with separate
-stream controls. Initial R18 source14e4406/overlay af4e8ed passed exact source
-review; actual Portage resolution then rejected the nonexistent dev-libs/dbus
-atom before compilation. Exact repaired recipe ea14088c/overlay a829b04f
-uses sys-apps/dbus, passes actual private pretend resolution and has
-independent superseding acceptance 7c2f2e99. Signed build/artifact gates follow.
-The failed build is preserved at 4fe2a58ac; no R18 artifact or installation
-exists. The compact presentation is not installed.
+R18 is installed through Portage on the laptop. The independently reviewed
+signed package and all2321 regular files/four symlinks match the installed VDB;
+world intent and the saved profile are unchanged. It includes the compact
+scrollable Audio popup, denser Settings, and integrated Clipboard/Power/
+Bluetooth repairs. The running shell was preserved, so installed layout use
+after the next login and the owner's space complaint remain open. Device
+inventory and an actual Bluetooth-speaker volume change/restoration are proven;
+physical keys, acoustic output and the full mixer are separate gates.
 
-Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 checks pass.
-Bluetooth 3040022/7686226 is integrated at 3b4275ace with independently verified
-native/SDK evidence. Accepted ADR0359 does not close signed delivery, installed
-helper/radio or ordinary control. These remain explicit next gates.
+The AI usage popup is installed and owner-confirmed. Real Codex remaining/reset
+and token data exist; useful real Claude reporting and other provider feeds
+remain unfinished. Source adapters or normalized fixtures alone do not establish
+live usage for those providers.
 
-Full mixer gain/quiet-start requires the source-accepted Portage loopback
-cleanup b489a5f8, exact pre-load image admission and lifecycle/ASan/runtime
-qualification. Source c17fd9/de491fa is progress without working production
-gain. Image/lifecycle diagnostic ec1cef36 has source-only acceptance after
-the992 newline repair; actual qualification remains open. Android has no initialized/trusted app-window journey; Windows has no
-complete real-app pass. USB/File Manager, safe Move/Trash, network expansion,
-Viewer, administration/recovery, accessibility, scoped agents and newcomer
-acceptance remain required.
+Viewer candidatea8927f432 passes the strict seven-target build and all eight
+owning native rows (44Qt checks, zero failure/skip/blacklist), including actual
+focused Return/keypad Enter, clipboard and relocated CLI/install paths. Earlier
+parser/QML/keyboard failures are preserved. Separate normal and2x captures
+pass; final exact source/pixel acceptance and integration are still required.
+Printing/copier integrated26 rows pass; physical printing/scanning and Viewer
+printing remain open. Safe cross-volume Move/Trash/recovery is unfinished.
 
-The manager's educated planning estimate credits these partial slices: best
-10 working weeks, plausible 6–16 weeks for the full owner scope including mixer
-and Android/Windows; immediate core/presentation work 1–3 working days.
-This is an estimate with runtime/hardware uncertainty, not a percentage or
-acceptance evidence. Exact current candidate, reviewer and next gates remain
-in the task list, handoff and delivery queues.
+Full mixer gain/quiet-start remains source-only pending exact package-image
+admission, lifecycle and production wiring. The first real private unpatched
+ASan Portage attempt reaches Meson and fails because the sanitizer runtime does
+not precede the sandbox preload. This is a cohort setup failure, not the required
+loopback lifetime reproducer. Narrow private ASan/cache source repair is active;
+no lifecycle, fixed-image or working production-gain claim follows.
+
+Android read-only inputs/public signature-verifier package candidatesc05d9c16/
+23ab470 have independent source acceptanced97ea819 and15 passing pure tests.
+Actual Java/package/signatures, resolved whole-image source/license coverage,
+guest initialization and authenticated app-window producer remain required.
+Windows v7 actual private native attempt fails Xwayland XKB readiness before any
+app launch. V8 candidate03af625 has independent source acceptancef98936ec; a
+fresh preflight and separately granted single bounded app attempt are next.
+Neither platform has passed a complete ordinary app journey.
+
+USB/File Manager integration, safe file mutations, enterprise/VPN networking,
+dock/sleep/headset/call/capture trials, administration/recovery, accessibility/
+IME/locale/accounts, scoped agent journeys and newcomer acceptance remain
+required. Existing source/test slices count as progress without completing these
+advertised journeys.
+
+Best remaining planning estimate is50workingdays (10workingweeks), plausible
+30–80workingdays (6–16weeks), with the current parallel team and access to
+required hardware/application trials. Immediate core/presentation work is1–3
+workingdays; the full mixer is3–6weeks and supported foreign workflows15–30
+workingdays, with overlapping lanes. These are uncertain estimates that credit
+existing unmarked work, not a completion percentage. Exact current candidate,
+reviewer and next gates remain in the task list, handoff and delivery queues.
 
 ## October 7 copier source acceptance and foreign-runtime queue — 2026-10-07T23:52:31+00:00
 
@@ -166,7 +183,7 @@ a WIP target, not a claim that processes are running or capacity is unlimited.
 
 ## Proposed work packets
 
-All packets are **unclaimed**, candidates/reviewers **none**. The audit base is
+At the original audit, all packets were **unclaimed**, with candidates/reviewers **none**. The audit base is
 `f298b680375fd6d759b877803e8a88d71346d5d8`; it is evidence provenance, not a
 license to start future code from stale source. At dispatch the manager records
 the exact current hub base, isolated worktree/branch, owned paths, reviewer,
