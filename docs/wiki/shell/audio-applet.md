@@ -151,7 +151,7 @@ title, chevron and hairline:
 | --- | --- |
 | Output | A picker naming the device this band rides, a full-width fader, a monospace percent readout, and mute. |
 | Input | The same, for capture devices. |
-| Apps | One compact row per application stream: name over direction, fader, readout, mute. |
+| Apps | Two-line application stream: one elided name/direction header above separate fader, readout and mute bounds. |
 | Console | One row per console strip (ADR-0181): label, fader, a segmented LED meter, and a mute lamp. |
 
 Below them, one status line carries every condition that used to own a card of
@@ -334,3 +334,11 @@ For a fresh-opening owner-geometry review, the capture-only fixture uses a
 the actual1536×864 logical available size and450×600 popup image. The
 QINDAQT_AUDIO_FRESH_CAPTURE_PATH mode captures before synthetic refusal or
 scrolling; absent that variable, the31-row regression path remains unchanged.
+
+Application-stream rows reserve a single plain-text, elided header for the name
+and direction, retaining their full accessible text. The second line gives the
+fader, fixed-width percent readout and mute control independent non-overlapping
+bounds. Unknown volume keeps its explicit label and hides fader/readout; larger
+Touch targets and all typed actions, wheel/held-value/pending fences remain.
+Fresh compiled-popup stream-layout tests observe actual text line count, full
+accessible name and control rectangles at constrained and owner fractional scale.

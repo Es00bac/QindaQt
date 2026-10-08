@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — fresh owner-geometry Audio capture passed; all native resources released, immutable R18 packaging waits manager freeze.
+- Status: waiting — Audio stream overlap repair frozen for exact source review; no native/compiler/package work.
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -189,3 +189,7 @@
 - 2026-10-08T05:46:59+00:00: Root exact-reviewed435 capture-only fixture and granted existing scroll target strict32/16 rebuild plus one named fresh render. No full31 repeat/addedtarget; production equal915, private buses invalid and host actions excluded.
 
 - 2026-10-08T05:48:22+00:00: Single reviewed435 fresh capture build0/render0,Qt3pass0fail0skip; actual1536x864 logical/1.25DPR/360x480 popup/450x600 image,contentY0/no feedback/zero operations. Production equals915; prior91531/171 proof unchanged, no full31 rerun. Native lane RELEASED; image/log/argv/digests frozen. Await root visual review/source-only R18 pin.
+
+- 2026-10-08T05:58:50+00:00: Root fresh-image review found application wrap and fader/readout overlap. Frozen unchanged-production c75 stream-layout regression at constrained/owner scale; authored two-line header/control layout with explicit independent bounds, preserved action/wheel/held-value code. Source-only verification active; no package/native action.
+
+- 2026-10-08T06:00:40+00:00: Frozen old production/new layout regression c75dea4e7 (src equals9150). Row-only two-line repair plus meaningful text/accessibility/nonoverlap/unknown-volume tests at constrained/owner scales; wheel/held-value/mute body equality confirmed modulo indentation. Static boundaries/poisons/icon/docs531/strict/diff0. Await exact source review/old-first native grant; existing31/171 and fresh proof preserved.
