@@ -73,7 +73,9 @@ retires pending search results. Return and keypad Enter keep the pane open;
 Escape or the keyboard-accessible **Close** button closes it. The pane gates
 QindaTK Dialog's public primary action and supplies its explicit footer action;
 it does not depend on toolkit-private items. Button capabilities bind through
-the public `available` property so toolkit busy state still disables them.
+the public `available` property so toolkit busy state still disables them. Focused
+text-pane buttons consume Return/keypad Enter through the public button click
+method only when enabled; Space and accessible press retain toolkit behavior.
 PDF page/zoom shortcuts are suspended while the pane owns keyboard focus so
 Ctrl+Home and page scrolling keep their ordinary text-selection meaning.
 
