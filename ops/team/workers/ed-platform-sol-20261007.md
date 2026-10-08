@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — exact paired unknown-volume fixture recheck before original native continuation
+- Status: working — executing accepted old168/fixedb021 Audio stream layout native qualification
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -194,4 +194,6 @@
 
 - 2026-10-08T06:15:11.107303+00:00 — Old c75 strict configure/build0; registered2/2 CTest fails8:10Qt pass4fail. Valid known header actual lineCount5 reproduces wrap; unknown fixture rejected because inherited canSetVolume=true with volumeKnown=false. Fixed phase stopped; proposed canSetVolume=known test-only correction awaiting review. No native job remains.
 
-- 2026-10-08T06:16:30.231386+00:00 — Paired old168bca/fixedb0210 sole canSetVolume=known correction frozen; old src=915, fixed src=65 and whole tests equality all0. Original old2-row failure retained10pass4fail; no native job running, no fixed build yet.
+- 2026-10-08T06:18:14.250640+00:00 — Root exact paired fixture correction accepted; resuming old2 first then fixed24 targets/33 rows plus one fresh owner capture, no host actions.
+
+- 2026-10-08T06:21:01.144445+00:00 — Old168 strict build0, registered2 expected red8:12Qt pass2fail only header lineCount5. Corrected unknown admission and known bounds pass. Fixedb021 strict24-target configure/build0; actual33-row serial owning cohort running under private laptop environment.
