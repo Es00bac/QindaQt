@@ -2,12 +2,13 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Qualify the signed R23 image and paired laptop adoption while Android and Windows application tests continue.
+- Status: working — Verify the installed R23/R6 login boundary, integrate accepted foreign-app contracts, and orchestrate Android, Windows, and full Audio1 delivery.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
 ## Updates
 
+- 2026-10-08T23:49:33+00:00 — Independent R23 eight-gate image, Voice five-header/private-bus image and laptop full signature/2622-image replay passed; paired R23/R6 Portage adoption settled0 in35.78s with actual2CPU/5GiB guard, exact installed ledgers, world/profile unchanged and no shell restart. qlist confirms R23/R6 installed; core Audio1/PipeWire/WirePlumber/Bluetooth1/Network1/Power1/keyring running. Current portal D-Bus owner is session PID2412418, while disabled systemd activation unit retained a pre-install start-limit failure from duplicate native composition; source/lifecycle fix remains. Android actual stock two-window proof passed without rendered input/Audio1; Windows ordinary typing and Global Menu not qualified. Mixer old-only diagnostic, Windows bounded native and Android private input follow in isolated lanes. Full ED scope open, no feature weight advanced.
 - 2026-10-07T17:15:48+00:00 — Owner explicitly authorized implementation and designated this session orchestrator. Hub source f152d6c9e and overlay e62153b inspected. Two implementation packets created, independent review capacity reserved; existing dirty qinda/laptop checkouts preserved. qinda has one observed unrelated game Codex process and 20 GiB available memory; no compiler/private-runtime occupant observed.
 - 2026-10-07T17:21:19+00:00 — Platform identified r14 missing PAM dependency and stale release-checker exclusive-power policy; Files reproduced source install/qmldir mismatch. Files holds sole compiler/private-fixture lease; Platform checker and recipe static work proceeds, compiler queued. Ownership expanded narrowly for current fork delivery receipts in compositor-session and ADR-0291.
 - 2026-10-07T17:23:56+00:00 — Independent Everyday Review Sol dispatched against exact Platform source e3a1396a06869242e375fedba909fee206c0fc35; Python/static/documentation gates only while Files owns compiler. Manager plan annotations pass validate-docs (514) and strict MkDocs; no new product result counted.

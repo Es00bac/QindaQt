@@ -229,6 +229,66 @@ independent ED-24 integrations. No ambient home mount, Wine Z: exposure or
 Android shared directory is assumed safe; supported recipes specify exposure
 and the GUI communicates it. No semantic provider is inferred from a window.
 
+## Windows application Global Menu capability
+
+Ordinary managed Windows applications should participate in the public
+[Global Menu](../shell/global-menu.md) when their runtime can export a complete,
+authenticated menu. This is a separate capability from launch, input, document
+preservation, Applications identity and Audio1; none implies menu support.
+It remains an unimplemented acceptance gate, not a capability of the private
+Notepad/WordPad fixture.
+
+The current Global Menu boundary joins a compositor-authenticated focused
+window to a standard AppMenu/dbusmenu endpoint. Its D-Bus unique owner's PID
+must equal the focused window's PID, with unchanged focus generation across
+credential lookup. An out-of-process Wine companion cannot satisfy this by
+registering an XID or claiming the application's PID. Keep this check intact.
+A same-process, package-owned Wine adapter is a feasibility candidate; any
+separate-process delegation requires a separately reviewed authority contract
+and ADR before implementation. The adapter must use the public registrar,
+dbusmenu and canonical menu boundaries, not shell/KWin private objects.
+
+Standard Win32 menus provide a bounded starting point:
+[GetMenu](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmenu)
+returns a window's assigned HMENU,
+[GetMenuItemInfoW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmenuiteminfow)
+provides item data, and
+[WM_INITMENUPOPUP](https://learn.microsoft.com/en-us/windows/win32/menurc/wm-initmenupopup)
+allows the application to update a submenu before display. The reviewed
+[Valve Proton 11 user32 menu source](https://github.com/ValveSoftware/wine/blob/proton_11.0/dlls/user32/menu.c)
+and [win32u menu source](https://github.com/ValveSoftware/wine/blob/proton_11.0/dlls/win32u/menu.c)
+retain these Win32 semantics. These moving upstream sources explain feasibility,
+not the immutable identity of an installed runtime. The installed
+wine-proton-11.0.2 user32 payload exposes the named menu APIs, but no native
+AppMenu/dbusmenu exporter has been demonstrated for the owned fixture.
+Custom toolbars, ribbons and owner-drawn items cannot be assumed to expose
+complete semantic menus; GetMenu explicitly excludes floating custom menu bars.
+
+The bounded acceptance sequence is:
+
+1. After the ordinary two-application journey qualifies, inspect only each
+   recipe-owned Notepad/WordPad HWND and its current standard menu. Bind HWND,
+   XWayland client, kernel PID/start and recipe incarnation; reject replacement,
+   unrelated windows, incomplete or oversized trees and unsupported item kinds.
+2. Prove the proposed exporter shares the authenticated window process and
+   emits the standard bounded dbusmenu endpoint. Preserve labels, Unicode,
+   mnemonics, shortcuts, enabled/checked state and submenu preparation. Refresh
+   dynamic state before admitting an action; stale IDs or replaced menus never
+   become a command, and uncertain delivery is never retried.
+3. Show the focused application's own menu, switch between both applications,
+   invoke a harmless observable action exactly once, then prove disabled,
+   stale-focus, wrong-owner, malformed-tree, owner-loss and close/relaunch
+   refusal. A successful fixture command is not general custom-menu coverage.
+4. Keep the local menu usable unless the exact current export receives the
+   [hosted acknowledgement](../adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md).
+   Applet absence, bus loss, malformed export or unsupported menus must retain
+   or restore local presentation. Never hide it merely because a registrar
+   name exists; no global-menu success badge may precede these gates.
+
+This capability adds no game/store or Origin dependency. Runtime integration,
+its Portage delivery and any new process boundary require their own reviewed
+slice; the current launcher and private fixture are not modified by this plan.
+
 ## October 7 feasibility receipt and next executable gates
 
 Read-only checks used desktop base

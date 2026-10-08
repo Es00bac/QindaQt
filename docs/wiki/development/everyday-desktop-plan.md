@@ -1,3 +1,25 @@
+## Installed R23/R6 checkpoint — October 8, 17:50 MDT
+
+Desktop R23 and Gabbee R6 passed independent signed-package and image
+review and were installed together through Portage. The existing login
+processes were not restarted; fresh-login Voice, peripheral Power, Files
+and hardware acceptance still require direct observation. Audio1,
+PipeWire/WirePlumber, Bluetooth1, Network1, Power1 and the keyring run.
+The session-owned portal is active on D-Bus, while a duplicate systemd
+activation unit failed on duplicate composition. Reload/reset cleared
+the stale failure; lifecycle repair remains.
+Service presence is not an end-to-end usability result.
+
+An isolated stock Android guest has demonstrated two simultaneous
+Calculator/Clock windows and strict cleanup, but not rendered input,
+resize/close/relaunch, normal Applications registration or Audio1.
+Windows has demonstrated two Wine windows but guarded typing stopped
+on peer-focus loss; ordinary lifecycle, public runner and Global Menu
+remain unqualified. The full Audio1 mixer and all original ED-01–24
+journeys remain required. Keep the per-host half-system resource caps
+below. This checkpoint supersedes older paused/R20 state descriptions;
+those older sections preserve their contemporary evidence and scope.
+
 ## R23 combined source package candidate — October 8
 
 Immutable runtime1a5359e4894700a00b545e80e624e3b3a12952be combines accepted Voice credentials, Files recovery/Trash and peripheral Power inventory. R23 changes only the reviewed R22 recipe source pin/comment; all dependencies, install phases and runtime policy stay intact. Paired adoption requires the independently signed Gabbee-r6 artifact. R21/R22 archives remain immutable and unbuilt. The new archive has complete Git blob and mode parity; signed build, full shell composition, package-image probes and installed laptop journeys remain separate gates. No product source is changed by this release recipe.
@@ -78,7 +100,7 @@ weights advance from this checkpoint.
 
 ## Reassessed delivery order — October 8, 13:06 MDT
 
-This is the current execution order, replacing the earlier routing below.
+This was the execution order at the October 8, 13:06 checkpoint. The installed R23 boundary above supersedes its paused state while retaining every task.
 The original audit remains the requirements baseline: complete ordinary
 graphical journeys with keyboard access, understandable failures and recovery,
 using the existing owners. Terminal and scoped-agent access remain first-class.
