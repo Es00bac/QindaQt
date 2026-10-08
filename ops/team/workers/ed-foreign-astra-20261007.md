@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — Resumed Android runtime-input comparison and exact private-directory access repair only; package/guest phases ungranted.
+- Status: available — Android exact mode/access qualified; no reusable signed runtime closure established; awaits root first-two-phase grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -203,3 +203,5 @@
 - 2026-10-08T19:12:34.380503+00:00 — Read only0c9e→a895 desktop/foreign plan and queue-top delta; no material omission, completion overclaim or scope reduction. Verified src/tests/CMake parity0. Preserved exact docs ACCEPT; no automatic resume or resources.
 
 - 2026-10-08T19:47:43.007215+00:00 — Root resumed a20-minute read-only comparison of existing Portage-owned runtime closure versus accepted8 prerequisites. Authorized mode/access repair only inside exact preserved private root; no global/account/library/package/guest action.
+
+- 2026-10-08T19:51:06.898941+00:00 — Completed bounded existing-runtime comparison and authorized private-root mode repair. Actual Portage250 read/hash151 plus5workspace sentinels0, private denial verified. Both binpkg indexes advertise0 selected runtime rows; laptop installednative mostlyznver3 not qualified qinda closure. Four source archives still absent. Zero package/guest phases; resources released.
