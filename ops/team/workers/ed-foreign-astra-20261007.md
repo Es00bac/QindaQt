@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — observing the granted single laptop diagnostic archive2150; exact guestf946/driver3e9f, 4CPU/5GiB/120s; no VM.
+- Status: available — diagnostic archive2150 qualified and laptop heavy released; exact second VM plan frozen awaiting root grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -245,3 +245,5 @@
 - 2026-10-08T21:48:10.208803+00:00: Frozen beb2 guest source and4140 diagnostic archive plan; missing-parent inference labeled, first failed VM immutable, requested one archive then separately admitted VM.
 
 - 2026-10-08T21:49:48.334497+00:00: Root accepted e762/4140 and granted one archive2150; protected two inputs root0400 checked, actual held observer running.
+
+- 2026-10-08T21:51:29.032702+00:00: Actual archive0/21.772s and all7208/oneguest parity qualified; fourthinput105945, secondplan dcd4 pending separate boot grant.
