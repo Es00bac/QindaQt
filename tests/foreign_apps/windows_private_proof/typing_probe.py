@@ -6,7 +6,7 @@ probe. Only fixed synthetic ASCII enters the two trusted fixture apps.
 Clipboard readback and changed pixels are separate witnesses, not OCR,
 physical keyboard evidence or authority for a platform badge.
 """
-import ctypes as C,hashlib,time
+import ctypes as C,hashlib,time,re
 from pathlib import Path
 U=C.c_ulong
 
@@ -25,9 +25,14 @@ class Image(C.Structure):
               ("blue_mask",U)]
 
 def admit_typing(value,marker):
+    hashes=[value.get("beforeSHA256"),value.get("afterSHA256")]
+    captures=value.get("captures")
     if (value.get("clipboardText")!=marker or value.get("focusWithinClient") is not True
-            or value.get("beforeSHA256")==value.get("afterSHA256")
-            or value.get("pixelBytes",0)<=0):
+            or any(not isinstance(v,str) or re.fullmatch("[0-9a-f]{64}",v) is None for v in hashes)
+            or hashes[0]==hashes[1] or value.get("pixelBytes")!=69120
+            or not isinstance(captures,list) or len(captures)!=2
+            or any(not isinstance(v,dict) or v.get("sha256")!=h or v.get("pixelBytes")!=69120
+                   or v.get("bytes")!=69134 for v,h in zip(captures,hashes))):
         raise RuntimeError("actual typing/readback/pixel witnesses absent")
     return value
 
@@ -153,6 +158,7 @@ class TypingIO:
                 for x in range(240):
                     value=self.x.XGetPixel(image,x,y);pixels.extend(((value>>16)&255,(value>>8)&255,value&255))
             path.parent.mkdir(exist_ok=True)
-            path.write_bytes(b"P6\n240 96\n255\n"+pixels)
-            return {"path":str(path),"sha256":hashlib.sha256(path.read_bytes()).hexdigest(),"pixelBytes":len(pixels)}
+            raw=b"P6\n240 96\n255\n"+pixels
+            path.write_bytes(raw)
+            return {"path":str(path),"sha256":hashlib.sha256(path.read_bytes()).hexdigest(),"pixelBytes":len(pixels),"bytes":len(raw)}
         finally:self.x.XDestroyImage(image)

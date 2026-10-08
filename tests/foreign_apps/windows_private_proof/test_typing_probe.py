@@ -12,12 +12,13 @@ class Fake:
     def flush(self):pass
     def capture(self,w,p):
         self.count+=1
-        return {"sha256":str(self.count)*64,"pixelBytes":69120,"path":str(p)}
+        return {"sha256":str(self.count)*64,"pixelBytes":69120,"bytes":69134,"path":str(p)}
     def clipboard(self,d,g):g();return "qinda a 3108"
 class TypingControls(unittest.TestCase):
     def value(self):
         return {"clipboardText":"qinda a 3108","focusWithinClient":True,
-                "beforeSHA256":"a"*64,"afterSHA256":"b"*64,"pixelBytes":69120}
+                "beforeSHA256":"a"*64,"afterSHA256":"b"*64,"pixelBytes":69120,
+                "captures":[{"sha256":v*64,"pixelBytes":69120,"bytes":69134} for v in ["a","b"]]}
     def test_actual_sequence_preserves_scoped_witnesses(self):
         io=Fake();guards=[]
         v=probe(io,10,"qinda a 3108",lambda:guards.append(True),time.monotonic()+2,Path("/unused"))
@@ -30,6 +31,14 @@ class TypingControls(unittest.TestCase):
         v=self.value();v["clipboardText"]="other";self.assertRaises(RuntimeError,admit_typing,v,"qinda a 3108")
     def test_unchanged_pixels_refuse(self):
         v=self.value();v["afterSHA256"]=v["beforeSHA256"];self.assertRaises(RuntimeError,admit_typing,v,"qinda a 3108")
+    def test_malformed_capture_witnesses_refuse(self):
+        for field,bad in [("beforeSHA256",None),("beforeSHA256","z"*64),("afterSHA256","b"),
+                          ("pixelBytes",1),("captures",[])]:
+            v=self.value();v[field]=bad
+            with self.subTest(field=field,bad=bad):self.assertRaises(RuntimeError,admit_typing,v,"qinda a 3108")
+        for field in ["bytes","pixelBytes","sha256"]:
+            v=self.value();v["captures"][0][field]=0
+            self.assertRaises(RuntimeError,admit_typing,v,"qinda a 3108")
     def test_focus_loss_refuses(self):
         v=self.value();v["focusWithinClient"]=False;self.assertRaises(RuntimeError,admit_typing,v,"qinda a 3108")
     def test_incarnation_guard_failure_stops_before_input(self):

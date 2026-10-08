@@ -79,7 +79,8 @@ def main():
         ready=server.start(monitor=checkpoint)
         parent_current()
         applog=(ROOT/(name+".log")).open("xb");logs.append(applog)
-        app=OwnedChild([LOADER,PE+fixture],env,applog)
+        from private_document import windows_document
+        app=OwnedChild([LOADER,PE+fixture,windows_document(name)],env,applog)
         ledger.register(app,"app")
         checkpoint()
         payload={"subreaperChecked":True,"serverReadiness":{**ready,
