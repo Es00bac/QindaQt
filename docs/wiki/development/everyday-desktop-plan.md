@@ -1,3 +1,7 @@
+## Current per-host resource reserve — 2026-10-08T21:50:16+00:00
+
+Allow one heavy cohort per physical host: qinda eight build jobs/load eight, eight-CPU quota, 12GiB memory, no swap, affinity0-5,12-17 and nice10; laptop four jobs/load four, four-CPU quota, 5GiB, no swap, affinity0-7 and nice10. At most one small companion is allowed per host (qinda2CPU/2GiB; laptop1CPU/1GiB), with no second heavy cohort on that host. Root measured qinda24logical CPUs/33,552,027,648bytes and laptop16logical CPUs/14,464,454,656bytes on October8; these caps retain more than half CPU and memory on each host for other work. Global build settings are unchanged. This supersedes the earlier unnecessarily global single-cohort scheduling restriction.
+
 ## R22 Voice and Files source package candidate — October 8
 
 Immutable runtime source b5221845aa795db99c1b544b8ba21890e8061951 contains independently accepted secure Voice configuration and Files recovery/Trash. The new R22 recipe changes the source pin and explanatory comments; released dependencies, Audio, Viewer, Network and compositor policies remain. VoiceConfiguration1 is additive and explicitly tolerates older Voice1 providers. This delivery must adopt independently qualified Gabbee-r6 alongside the desktop to enable secure key Save/reload. Source archive and Manifest are prepared for review; no signed desktop build, installation, real-account authentication or physical Files journey is claimed. R20 remains installed. Peripheral Power and the original remaining ED-01–24 outcomes remain active.
