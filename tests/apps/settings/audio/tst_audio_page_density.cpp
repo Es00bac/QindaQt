@@ -16,12 +16,18 @@ private Q_SLOTS:
     StubAudioSettingsModel model;
     auto [guard, page] = createAudioPage(view, model, QSize(900, 720));
     QVERIFY(page != nullptr);
-    auto *first = findItem(page, QStringLiteral("audioOutputDefault_10"));
-    auto *second = findItem(page, QStringLiteral("audioOutputDefault_12"));
+    auto *first = findItem(page, QStringLiteral("audioOutputVolume_10"));
+    auto *second = findItem(page, QStringLiteral("audioOutputVolume_12"));
     auto *viewport = findItem(page, QStringLiteral("audioFormViewport"));
     QVERIFY(first != nullptr);
     QVERIFY(second != nullptr);
     QVERIFY(viewport != nullptr);
+    // The already-default device intentionally hides its set-default action.
+    // Measure always-visible volume controls rather than that hidden action.
+    QTRY_VERIFY(first->isVisible());
+    QTRY_VERIFY(second->isVisible());
+    QVERIFY(first->isEnabled());
+    QVERIFY(second->isEnabled());
     // Wait for both laid-out controls before comparing their spacing.
     QTRY_VERIFY(first->height() >= 22);
     QTRY_VERIFY(second->height() >= 22);
