@@ -1,0 +1,9 @@
+# Windows f1 source blockers repaired: safety recheck requested
+
+- Preserves original f1b241ca07852caf179ea6d22da13cacb091ac56 and Astra17d NeedsFix; no child/native generation rerun.
+- domain_ledger checkpoint retains each enumerated parent incarnation and child PID, validates current child parent and current parent lifetime before acquiring membership pidfd, rechecks after acquisition and before traversal. Mid-census adoption/change refuses; a later direct-supervisor edge can represent genuine adoption. Injected actual-checkpoint foreign reused-PID negative asserts no pidfd acquisition, latched failure and no admitted observations; parent replacement and positive current adopted-edge controls authored. Existing real immediate double-fork/thread adoption controls retained unrun.
+- Embedded synthetic supervisor now imports signal, records each signal/wait/close error independently while continuing other held owners and bounded adopted waiting; partial pidfd acquisition retains owner slots. Initiating failure is preserved. Added self-expiring cleanup-error control with expected original failure and exact cleanup-error evidence. No adopted signals or arbitrary PID authority.
+- Verification: AST all source and embedded child/supervisor strings; git diff --check0. All tests authored, not executed. Runtime policy/mounts/source payload plan unchanged.
+- Static raw source index: .cache/windows-domain-source-repair/source-index.json SHA256 10313890b8d07bb620715db16876bf824fec316f2eb65577785a1506442ce6b9.
+- Runtime bundle: .cache/windows-domain-source-repair/windows-domain-repaired-source.tar SHA256 9421807906e9493090f59a1278cb8c6a603e4dd3aa13c4660a8935701282cf4d.
+- Next: same Astra exact source safety review before any synthetic generation grant; no native/preflight/Wine/compiler/Portage/guest action granted.

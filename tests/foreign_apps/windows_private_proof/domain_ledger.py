@@ -47,10 +47,13 @@ class DomainLedger:
         if child.initial["parent"]!=os.getpid():raise RuntimeError("not direct domain owner")
         self.direct[label]=child
     def checkpoint(self):
-        self.ordinal+=1;todo=list(task_children(os.getpid()));seen=set();census=[]
+        self.ordinal+=1;seen=set();census=[]
+        supervisor=census_identity(os.getpid())
+        if supervisor is None:raise RuntimeError("domain supervisor identity absent")
+        todo=[(supervisor,pid) for pid in task_children(os.getpid())]
         try:
             while todo:
-                pid=todo.pop()
+                parent,pid=todo.pop()
                 if pid in seen:continue
                 seen.add(pid)
                 if len(seen)>512:raise RuntimeError("domain census bound")
@@ -58,6 +61,7 @@ class DomainLedger:
                 if now is None:
                     # A disappearing/zombie process is not evidence of emptiness.
                     continue
+                self.check_edge(parent,now)
                 census.append(now)
                 direct=next((c for c in self.direct.values() if c.process.pid==pid),None)
                 if direct:
@@ -71,19 +75,36 @@ class DomainLedger:
                         again=census_identity(pid)
                         if not again or again["starttime"]!=now["starttime"]:
                             os.close(fd);raise RuntimeError("domain observation changed")
-                        # This domain starts childless and launches only its fixed
-                        # server/app. Subreaper adoption supplies causal membership,
-                        # including a double-fork before any ancestry checkpoint.
+                        try:self.check_edge(parent,again)
+                        except Exception:
+                            os.close(fd);raise
+                        # A pidfd binds this incarnation only after the enumerated
+                        # parent edge is revalidated. Numeric child lists alone
+                        # cannot authorize membership after PID reuse.
                         self.observed[pid]={"fd":fd,"identity":again}
                     elif now["starttime"]!=item["identity"]["starttime"]:
                         raise RuntimeError("observed domain incarnation replaced")
-                try:todo.extend(task_children(pid))
+                after=census_identity(pid)
+                if not after or after["starttime"]!=now["starttime"]:
+                    raise RuntimeError("domain traversal incarnation changed")
+                self.check_edge(parent,after)
+                try:todo.extend((after,child) for child in task_children(pid))
                 except FileNotFoundError:pass
             self.lastCensus=census
             return {v["pid"]:{k:v[k] for k in ["pid","parent","starttime"]}
                     for v in census if v["state"]!="Z"}
         except Exception:
             self.lastCensus=census;self.failed=True;raise
+    @staticmethod
+    def check_edge(parent,child):
+        # AGENT-GUARD: retain the enumerated parent's incarnation. A reused
+        # numeric child PID belonging to a foreign parent must never enter
+        # current window membership. Reparenting mid-census is refused; a later
+        # checkpoint can observe genuine adoption as a direct supervisor edge.
+        current=census_identity(parent["pid"])
+        if (not current or current["starttime"]!=parent["starttime"]
+                or child["parent"]!=parent["pid"]):
+            raise RuntimeError("domain causal parent edge changed")
     def final(self,deadline):
         if self.failed or set(self.direct)!={"server","app"} or any(
                 not c.reaped for c in self.direct.values()):

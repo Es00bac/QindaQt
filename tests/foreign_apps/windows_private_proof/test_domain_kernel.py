@@ -20,7 +20,7 @@ else:spawn()
 time.sleep(.2)
 """
 SUPERVISOR=r"""
-import os,json,time,sys,subprocess
+import os,json,time,sys,subprocess,signal
 from types import SimpleNamespace
 from domain_ledger import DomainLedger
 from processes import identity
@@ -31,13 +31,14 @@ try:
  for label in ['server','app']:
   child=subprocess.Popen([sys.executable,'-c',program,mode],stdin=subprocess.DEVNULL,
       stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,close_fds=True)
-  owners.append(child);fd=os.pidfd_open(child.pid);fds.append(fd)
+  owners.append(child);fds.append(None)
+  fd=os.pidfd_open(child.pid);fds[-1]=fd
   first=identity(child.pid)
   if first is None:raise RuntimeError('synthetic owner acquisition')
   wrapper=SimpleNamespace(process=child,initial=first,reaped=False,
                           check_identity=lambda:True)
   ledger.register(wrapper,label)
- if mode=='failure':raise RuntimeError('injected checkpoint failure')
+ if mode in ['failure','cleanup-error']:raise RuntimeError('injected checkpoint failure')
  # Both direct owners exit before the first census; their double-forked
  # descendants have already become children of this causal subreaper.
  for label,child in zip(['server','app'],owners):
@@ -51,22 +52,38 @@ except Exception as error:
 finally:
  # No adopted signals. On any failure all independently bounded generations
  # expire naturally; only exact direct unreaped Popen/pidfds can be contained.
+ cleanupErrors=[];injectCleanup=(mode=='cleanup-error')
  for child,fd in zip(owners,fds):
-  if child.poll() is None:
-   signal.pidfd_send_signal(fd,signal.SIGKILL)
-  child.wait(timeout=2)
+  # A signal/wait error for one held owner cannot skip the other owner or
+  # bounded adopted waiting. Preserve the initiating failure separately.
+  try:
+   if child.poll() is None and fd is not None:
+    if injectCleanup:
+     injectCleanup=False;raise RuntimeError('injected owned signal failure')
+    signal.pidfd_send_signal(fd,signal.SIGKILL)
+  except Exception as error:cleanupErrors.append('signal:'+type(error).__name__)
+  try:child.wait(timeout=2)
+  except Exception as error:cleanupErrors.append('wait:'+type(error).__name__)
  end=time.monotonic()+2;terminal=False;statuses=[]
  while time.monotonic()<end:
   try:pid,status=os.waitpid(-1,os.WNOHANG)
   except ChildProcessError:terminal=True;break
+  except Exception as error:
+   cleanupErrors.append('adopted-wait:'+type(error).__name__);break
   if pid:statuses.append([pid,status])
   else:time.sleep(.01)
  result['terminalECHILD']=terminal;result['failureWaitStatuses']=statuses
  result['adoptedSignals']=0
- if ledger:ledger.close()
- for fd in fds:os.close(fd)
+ if ledger:
+  try:ledger.close()
+  except Exception as error:cleanupErrors.append('ledger-close:'+type(error).__name__)
+ for fd in fds:
+  if fd is not None:
+   try:os.close(fd)
+   except Exception as error:cleanupErrors.append('fd-close:'+type(error).__name__)
+ result['cleanupErrors']=cleanupErrors
  print(json.dumps(result),flush=True)
-sys.exit(7 if failure else (0 if terminal else 8))
+sys.exit(7 if failure else (0 if terminal and not cleanupErrors else 8))
 """
 SCRIPT=SUPERVISOR.replace('__PROGRAM__',repr(CHILD))
 class KernelDomains(unittest.TestCase):
@@ -118,4 +135,9 @@ class KernelDomains(unittest.TestCase):
     def test_injected_failure_self_expiring_children(self):
         v=self.settle(self.launch("failure"),7)
         self.assertEqual(v["failure"],"RuntimeError")
+    def test_cleanup_error_preserves_primary_and_settles_remaining(self):
+        v=self.settle(self.launch("cleanup-error"),7)
+        self.assertEqual(v["failure"],"RuntimeError")
+        self.assertEqual(v["cleanupErrors"],["signal:RuntimeError"])
+        self.assertTrue(v["terminalECHILD"])
 if __name__=="__main__":unittest.main()
