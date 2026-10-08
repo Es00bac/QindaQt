@@ -9,12 +9,14 @@ import json
 import os
 import stat
 import sys
+from stage_inventory import admit
 
 KERNEL = "6.18.48-gentoo-dist-bin"
 TOP = {"usr", "bin", "sbin", "lib", "lib64", "etc", "init", "proof",
        "proc", "sys", "dev", "run", "tmp", "var", "root", "home"}
 REQUIRED = ("init", "proof/guest.py", "proof/windows.py", "proof/scenario.json",
-            "usr/bin/python3", "usr/bin/bash", "usr/bin/mount", "usr/bin/modprobe",
+            "usr/bin/python3", "usr/bin/bash", "usr/bin/sh", "usr/bin/cat",
+            "usr/bin/mkdir", "usr/bin/ln", "usr/bin/mount", "usr/bin/modprobe",
             "usr/bin/dbus-daemon", "usr/bin/waydroid", "usr/bin/lxc-start",
             "usr/bin/lxc-stop", "usr/bin/lxc-info", "usr/bin/qindaqt-wm",
             "usr/bin/qindaqt-kwin", "usr/lib/waydroid",
@@ -48,8 +50,10 @@ def archive_paths(root):
                 raise ValueError("stage-bound")
     return sorted(result)
 
-def plan(root):
+def plan(root, inventory):
     paths = archive_paths(root)
+    required = admit(Path(root), paths, inventory, REQUIRED,
+                     {"usr/lib/waydroid", "usr/lib/modules/" + KERNEL})
     # Parent must freeze/recheck every staged byte before/after this separately
     # granted build. This inventory is shape validation, not package authority.
     return {"schema":1, "kind":"fixture-initramfs-build-plan", "cwd":str(Path(root).absolute()),
@@ -58,8 +62,8 @@ def plan(root):
             "stdinPaths":paths, "stdinEncoding":"UTF-8 paths separated by NUL",
             "gzipArgv":["/usr/bin/gzip", "-n", "-1"],
             "outputPolicy":"fresh exclusive raw then gzip files, retain failures",
-            "runtimeAuthorized":False}
+            "requiredEntries":required, "runtimeAuthorized":False}
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2: raise SystemExit("prepared-reviewed-fixture-root")
-    print(json.dumps(plan(Path(sys.argv[1])), indent=2))
+    if len(sys.argv) != 3: raise SystemExit("prepared-root qualified-inventory.json")
+    print(json.dumps(plan(Path(sys.argv[1]), json.loads(Path(sys.argv[2]).read_text())), indent=2))
