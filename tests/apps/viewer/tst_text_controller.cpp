@@ -54,6 +54,22 @@ private slots:
         QCOMPARE(controller.page(), 1);
         QVERIFY(!controller.matchReady() && controller.searchMessage().isEmpty());
     }
+    void cancelThenZoomCannotRestoreSearch() {
+        QTemporaryDir temp; ViewerController controller;
+        controller.open(QUrl::fromLocalFile(ViewerFixtures::textPdf(temp.path())));
+        QTRY_VERIFY(controller.ready() && !controller.busy());
+        controller.find(QStringLiteral("BETA"), false, true);
+        QVERIFY(controller.searchBusy());
+        controller.cancelSearch();
+        controller.renderAt(2.0, 1.0);
+        QTRY_VERIFY(!controller.busy() && !controller.searchBusy());
+        QCOMPARE(controller.page(), 0);
+        QVERIFY(!controller.matchReady() && controller.searchMessage().isEmpty());
+        controller.renderAt(0.75, 2.0);
+        QTRY_VERIFY(!controller.busy() && !controller.searchBusy());
+        QCOMPARE(controller.page(), 0);
+        QVERIFY(!controller.matchReady() && controller.searchMessage().isEmpty());
+    }
     void singleflightAndInvalidQuery() {
         QTemporaryDir temp; ViewerController controller;
         controller.open(QUrl::fromLocalFile(ViewerFixtures::textPdf(temp.path())));

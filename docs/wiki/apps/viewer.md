@@ -138,7 +138,8 @@ Text gates use real Poppler Unicode/markup-like text, copy-restricted and passwo
 fixtures, forward/backward/case/wrap and real page/query/text bounds. Controller
 gates check close/replacement/navigation retirement and single-flight admission.
 The text UI gates exercise actual keyboard focus, native clipboard selection,
-search selection, Return/keypad Enter, explicit Close, busy-state capability and compact/normal/2x layout; they save private screenshots.
+search selection, Return/keypad Enter in the query and focused Previous/Next/Copy
+buttons, explicit Close, busy-state capability and compact/normal/2x layout; they save private screenshots.
 All run with isolated home/runtime roots and offscreen Qt. `--screenshot PATH`
 is the verification seam: capture a settled window and exit, nonzero on an
 open/capture error or a 30-second verification deadline. Host desktop settings
