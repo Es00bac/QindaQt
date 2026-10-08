@@ -97,8 +97,10 @@ is retained in ignored .cache/manager-compact-audio-integrated-20261008.
 These are source gates; signed package/image and installed adoption remain open.
 
 The helper and its static public client directly consume libdbus. This recipe
-declares dev-libs/dbus explicitly in both DEPEND and RDEPEND, alongside the
-existing sys-apps/dbus broker dependency. It preserves all other r17 dependency
+declares sys-apps/dbus explicitly in both DEPEND and RDEPEND. Gentoo packages
+libdbus headers, dbus-1.pc and the shared library with the broker in this atom;
+dev-libs/dbus does not exist. The original r18 resolver failure is retained
+as evidence, and the repaired recipe requires actual pretend resolution. It preserves all other r17 dependency
 declarations, exact fork r6 ABI6.6.6.1, lock-PAM>=1, native power exclusivity OFF,
 whole-tree install and the compiled AgentUsage publisher/SDK/all eleven profiles.
 Historical r16/r17 recipes, distfiles and rollback artifacts stay immutable.
