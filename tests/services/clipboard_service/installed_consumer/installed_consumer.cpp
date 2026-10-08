@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
+// The staged header is explicit so a withheld SDK cannot silently fall back to
+// an ambient installed QindaQt header with the same new constructor API.
+#ifndef QINDAQT_STAGED_CLIPBOARD_HOST_HEADER
+#error "The installed-only fixture requires its injected staged Host header"
+#endif
+#include QINDAQT_STAGED_CLIPBOARD_HOST_HEADER
 #include <qindaqt/services/clipboard_client/clipboard_client.h>
 #include <qindaqt/services/clipboard_protocol/clipboard_dbus.h>
 #include <qindaqt/services/clipboard_protocol/clipboard_validation.h>

@@ -22,5 +22,7 @@ target_link_libraries(QindaQtInstalledClipboard INTERFACE
                       "${QINDAQT_CLIPBOARD_MODEL_LIBRARY}" Qt6::Core Qt6::DBus)
 add_executable(qindaqt_installed_clipboard_consumer "${QINDAQT_CONSUMER_SOURCE}")
 target_compile_features(qindaqt_installed_clipboard_consumer PRIVATE cxx_std_20)
+target_compile_definitions(qindaqt_installed_clipboard_consumer PRIVATE
+    QINDAQT_STAGED_CLIPBOARD_HOST_HEADER="${QINDAQT_STAGE_INCLUDE_DIR}/qindaqt/services/clipboard_service/clipboard_host.h")
 set_target_properties(qindaqt_installed_clipboard_consumer PROPERTIES CXX_EXTENSIONS OFF)
 target_link_libraries(qindaqt_installed_clipboard_consumer PRIVATE QindaQtInstalledClipboard)
