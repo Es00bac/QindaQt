@@ -41,6 +41,23 @@ RequestState rejected(const Bluetooth::OperationRequest &operation,
 
 QString failureFeedback(const Bluetooth::OperationResult &result)
 {
+    // Fixed public reason codes only; never render upstream error/device text.
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-hardware-blocked"))
+        return QStringLiteral("Bluetooth is blocked by a hardware switch. Turn the switch on and try again.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-software-blocked"))
+        return QStringLiteral("Bluetooth is software-blocked and could not be enabled.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-blocked"))
+        return QStringLiteral("The Bluetooth adapter is blocked. Check its hardware and software radio controls.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-not-authorized"))
+        return QStringLiteral("Bluetooth radio control is not allowed in this session.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-stale-target"))
+        return QStringLiteral("The Bluetooth adapter changed. Refresh its current state before trying again.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-busy"))
+        return QStringLiteral("Bluetooth is busy. Wait for its current power request to finish.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("radio-change-uncertain"))
+        return QStringLiteral("Bluetooth radio recovery could not be confirmed. Check the current power state before retrying.");
+    if (result.kind == Bluetooth::OperationKind::SetAdapterPower && result.reasonCode == QLatin1String("bluez-power-uncertain"))
+        return QStringLiteral("The Bluetooth controller did not confirm the power change. Check the current power state before retrying.");
     switch (result.status) {
     case Bluetooth::OperationStatus::Rejected:
         return QStringLiteral("The Bluetooth request was rejected: %1.")

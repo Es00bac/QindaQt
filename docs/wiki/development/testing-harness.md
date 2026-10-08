@@ -4906,3 +4906,29 @@ clicks only real visible offered checkbox choices and the actual Grant button;
 a no-choice lock question still requires that button. No sanitizer, production
 consent, privilege or peer assertion is weakened. The native driver launches
 directly; the failed pre-exec environment experiment is preserved separately.
+
+## Selected Bluetooth radio recovery proof
+
+The source draft in [ADR-0359](../adr/0359-recover-only-the-selected-bluetooth-radio.md)
+adds owning radio policy, complete-intent and current-owner/caller private-bus
+fixtures, plus a real private BlueZ delayed-power/replacement fixture. Radio
+policy uses injected platform values; it does not qualify a kernel rfkill write.
+Private-bus tests use a local daemon and synthetic addresses, never host buses.
+The backend fixture verifies one selected helper-to-BlueZ sequence, refusal and
+no-write compatibility, caller/object retirement, late Failed/property truth,
+and no optimistic snapshot change from an empty reply. Settings/applet fixtures
+assert fixed typed feedback through their public boundaries.
+
+Build the radio helper/client, radio operation/intent/authority tests, BlueZ
+power recovery and existing Bluetooth service/adapter/model/client/protocol
+targets with strict warnings and unchanged -j24 -l24. Run the owning radio,
+BlueZ, service, Settings and applet rows under private XDG roots with both host
+bus addresses invalid. The radio staged-install row installs the B1 component
+inside the build cache, compiles an installed-only Core/DBus public-port consumer,
+withholds its exact staged header, requires the expected compile failure and
+restores exact bytes/build/run. It never launches the radio helper.
+
+Native execution remains pending for this draft. Separately record effective
+helper namespace and RW-open admission before any authorized selected-radio
+write/readback. A successful synthetic suite or read-only namespace probe does
+not close installed control, hardware effects or whole-desktop acceptance.

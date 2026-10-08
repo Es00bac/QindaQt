@@ -92,3 +92,11 @@ The composition root selects the adapter through the explicit
   fencing code wholesale.
 - A future Agent1 extension needs richer capability or policy observation than
   the bounded `KeyboardDisplay` prompt contract provides.
+
+## Proposed narrow extension — 2026-10-08
+
+[ADR-0359](0359-recover-only-the-selected-bluetooth-radio.md) proposes an optional
+selected-radio helper for explicit power enable under existing user ACLs. Only
+the blanket rfkill exclusion changes; pairing/trust/record authority and main
+daemon sandbox remain unchanged. Native/installed qualification is pending;
+the historical decision above is preserved.

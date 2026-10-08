@@ -42,6 +42,7 @@ target_link_libraries(
         QindaQt::BluetoothService
         QindaQt::BluetoothModel
         QindaQt::BluezAdapter
+        QindaQt::BluetoothRadioClient
         Qt6::Core
         Qt6::DBus
 )

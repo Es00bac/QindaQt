@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.25)
+project(InstalledRadioPort LANGUAGES CXX)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus)
+add_executable(installed_radio_port main.cpp)
+target_compile_features(installed_radio_port PRIVATE cxx_std_20)
+target_compile_options(installed_radio_port PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_definitions(installed_radio_port PRIVATE
+    QINDAQT_STAGED_RADIO_HEADER="${STAGE_INCLUDE}/qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h")
+target_include_directories(installed_radio_port BEFORE PRIVATE "${STAGE_INCLUDE}")
+target_link_libraries(installed_radio_port PRIVATE "${RADIO_ARCHIVE}" Qt6::Core Qt6::DBus)

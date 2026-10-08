@@ -172,13 +172,26 @@ void FakeBluez::adapterRemoveDevice(const QString &path,
     sendReply(request);
 }
 
+void FakeBluez::replyDeferredPower(const QString &errorName)
+{
+    const auto pending = deferredPowerRequests;
+    deferredPowerRequests.clear();
+    for (const auto &request : pending) {
+        if (errorName.isEmpty()) sendReply(request);
+        else sendError(request, errorName, QStringLiteral("fixture"));
+    }
+}
+
 void FakeBluez::propertySet(const QString &path, const QString &interfaceName,
                             const QString &name, const QVariant &value,
                             const QDBusMessage &request)
 {
     if (interfaceName == QLatin1String("org.bluez.Adapter1")
         && name == QLatin1String("Powered") && value.canConvert<bool>()) {
-        setAdapterPowered(path, value.toBool());
+        ++powerCalls;
+        if (deferPower) { deferredPowerRequests.append(request); return; }
+        if (!powerError.isEmpty()) { sendError(request, powerError, QStringLiteral("fixture")); return; }
+        if (!powerReplyOnly) setAdapterPowered(path, value.toBool());
         sendReply(request);
         return;
     }

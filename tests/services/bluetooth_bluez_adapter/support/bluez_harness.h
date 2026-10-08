@@ -25,7 +25,8 @@ class BluezHarness final
 {
 public:
     explicit BluezHarness(const quint64 epochSeed,
-                          const int pairingPromptTimeoutMs = 60'000)
+                          const int pairingPromptTimeoutMs = 60'000,
+                          BluetoothRadio::RadioPowerPort *radio = nullptr)
     {
         m_ready = bus.start();
         if (!m_ready) {
@@ -40,7 +41,7 @@ public:
             return;
         }
         backend = std::make_unique<Bluetooth::BluezAdapterBackend>(
-            client, pairingPromptTimeoutMs);
+            client, radio, pairingPromptTimeoutMs);
         model = std::make_unique<Bluetooth::BluetoothModel>(backend.get(), epochSeed);
     }
 
