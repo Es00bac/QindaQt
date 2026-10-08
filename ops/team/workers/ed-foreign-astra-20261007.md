@@ -1,11 +1,19 @@
 # ED foreign application architecture
-- Status: available — image repair486 awaits same-pair source review; minimal KVM source candidate frozen for independent review and exact boot/package-input preparation.
-- Outcome: reviewable package-to-two-window feasibility fixture; ordinary windows first, app identity authority remains separate.
+- Status: available — completed installed Waydroid source-provenance help; awaiting exact Android KVM source review and separate package inputs.
+- Outcome: stock Android KVM fixture source review support; no runtime admission.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
-- Branch: worker/everyday-android-stock-runtime-20261008; isolated qinda worktree.
+- Branch: worker/everyday-android-stock-runtime-20261008; isolated source worktree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T17:25:46Z — Read-only reviewer help completed: six installed Waydroid1.6.3 source files match VDB CONTENTS; direct container bus publication and block-device initializer traced. No cached official archive/Makefile claim. No runtime or resource lease.
+
+- 2026-10-08T17:20:05Z — Claimed/completed exact d6daa command-only recheck: installed help supports expansion=no; all10 normalized phases and shared witness match old plan, six source hashes and src/tests9bec unchanged, raw450-byte first failure preserved. No unit/native/resource action. SOURCE/argv ACCEPT for manager separate renewal; Audio5eb review184d remains accepted.
+
+- 2026-10-08T17:16:29Z — Exact5eb source/resource ACCEPT. Independently114 current pins/13 payloads and accepted driver hashes match; only3 resource literals plus docs. Author62 controls inspected, no native rerun. Effective unit/worker/cgroup/settlement remains root gate; originalfailed51/native/gain untouched. Next narrow Files --expand-environment=no recheck queued.
+
+- 2026-10-08T17:14:37Z — Claimed exact5eb/60c resource successor. Full owning delta is three24/24→8/8 literals plus docs; read complete exact prospective unit argv. Verifying all114 current pins and accepted dispatcher equality. No unit, build, ASan, Core or real subject process/signal execution.
 
 - 2026-10-08T17:03:52Z — Froze source-only KVM candidate after9/9 tiny pure controls, AST8, shell0, docs534/strict8.19/diff0. No generated initramfs, VM, mount, guest, package or host action. Concrete cpio/gzip root plan avoids dracut sysroot/include ambiguity preserved in183b. Runtime closure/package hashes and boot artifact admission remain prerequisites; first two-window observation does not claim render/input/resize-close or app identity. Available for exact source review repair and qualified input binding.
 
