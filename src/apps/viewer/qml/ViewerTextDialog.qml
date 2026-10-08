@@ -7,6 +7,18 @@ Tk.Dialog {
     id: dialog
     objectName: "viewerTextDialog"
     required property var viewerModel
+    // AGENT-CONTRACT: Tk.Button's public click preserves availability/busy.
+    // Consume both Enter keys locally so Dialog cannot accept the text pane.
+    component TextActionButton: Tk.Button {
+        id: actionButton
+        function activateKey(event) {
+            if (actionButton.enabled) actionButton.click()
+            event.accepted = true
+        }
+        Keys.priority: Keys.BeforeItem
+        Keys.onReturnPressed: event => actionButton.activateKey(event)
+        Keys.onEnterPressed: event => actionButton.activateKey(event)
+    }
     title: qsTr("PDF text")
     subtitle: qsTr("Page %1 of %2 · Select text and use Ctrl+C to copy.")
         .arg(viewerModel.page + 1).arg(viewerModel.pageCount)
@@ -25,7 +37,7 @@ Tk.Dialog {
         Tk.Flex {
             direction: Tk.Flex.Row
             justify: Tk.Flex.End
-            Tk.Button {
+            TextActionButton {
                 objectName: "viewerTextClose"
                 text: qsTr("Close")
                 onClicked: dialog.close()
@@ -96,21 +108,21 @@ Tk.Dialog {
                 text: qsTr("Match case")
                 onToggled: dialog.viewerModel.cancelSearch()
             }
-            Tk.Button {
+            TextActionButton {
                 objectName: "viewerFindPrevious"
                 text: qsTr("Previous")
                 available: query.text.length > 0 && !dialog.viewerModel.busy
                     && !dialog.viewerModel.searchBusy
                 onClicked: dialog.viewerModel.find(query.text, true, matchCase.checked)
             }
-            Tk.Button {
+            TextActionButton {
                 objectName: "viewerFindNext"
                 text: qsTr("Next")
                 available: query.text.length > 0 && !dialog.viewerModel.busy
                     && !dialog.viewerModel.searchBusy
                 onClicked: dialog.viewerModel.find(query.text, false, matchCase.checked)
             }
-            Tk.Button {
+            TextActionButton {
                 objectName: "viewerFindCancel"
                 text: qsTr("Stop search")
                 visible: dialog.viewerModel.searchBusy
@@ -158,7 +170,7 @@ Tk.Dialog {
                 }
             }
         }
-        Tk.Button {
+        TextActionButton {
             objectName: "viewerCopyText"
             text: qsTr("Copy selection")
             available: pageText.selectedText.length > 0
