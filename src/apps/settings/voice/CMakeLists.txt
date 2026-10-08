@@ -4,6 +4,8 @@ qt_add_library(qindaqt_settings_voice STATIC)
 target_sources(
     qindaqt_settings_voice
     PRIVATE
+        voice_credentials_model.cpp
+        include/qindaqt/apps/settings_voice/voice_credentials_model.h
         voice_settings_model.cpp
         voice_settings_provider.cpp
     PUBLIC
@@ -11,10 +13,11 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/apps/settings_voice/voice_settings_model.h
+            include/qindaqt/apps/settings_voice/voice_credentials_model.h
 )
 target_link_libraries(
     qindaqt_settings_voice
-    PUBLIC QindaQt::VoiceClient QindaQt::SettingsClient Qt6::Core
+    PUBLIC QindaQt::VoiceConfiguration QindaQt::VoiceClient QindaQt::SettingsClient Qt6::Core
 )
 target_compile_features(qindaqt_settings_voice PUBLIC cxx_std_20)
 set_target_properties(
@@ -36,7 +39,7 @@ qt_add_qml_module(
     SOURCES
         voice_route_composition.h
         voice_route_composition.cpp
-    QML_FILES qml/VoicePage.qml
+    QML_FILES qml/VoicePage.qml qml/VoiceCredentialSection.qml
 )
 target_link_libraries(
     qindaqt_settings_voice_qml
@@ -66,6 +69,7 @@ install(
         "${QINDAQT_VOICE_SETTINGS_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_VOICE_SETTINGS_QML_OUTPUT_DIRECTORY}/qindaqt_settings_voice.qmltypes"
         qml/VoicePage.qml
+        qml/VoiceCredentialSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Voice"
     COMPONENT SettingsAppearanceRuntime
 )

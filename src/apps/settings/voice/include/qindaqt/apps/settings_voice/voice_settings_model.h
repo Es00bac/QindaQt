@@ -37,6 +37,7 @@ inline constexpr const char *VoicePanelTranscriptSettingsKey =
 class VoiceSettingsModel final : public QObject {
     Q_OBJECT
 
+    Q_PROPERTY(QObject *configuration READ configuration CONSTANT)
     Q_PROPERTY(bool preferenceLoading READ preferenceLoading NOTIFY viewChanged)
     Q_PROPERTY(bool preferenceReady READ preferenceReady NOTIFY viewChanged)
     Q_PROPERTY(bool preferenceSaving READ preferenceSaving NOTIFY viewChanged)
@@ -80,8 +81,9 @@ public:
 
     VoiceSettingsModel(Services::SettingsClient::SettingsClient &settingsClient,
                        Services::Voice::VoiceClient &voiceClient,
-                       QObject *parent = nullptr);
+                       QObject *parent = nullptr, QObject *configuration = nullptr);
 
+    [[nodiscard]] QObject *configuration() const { return m_configuration; }
     [[nodiscard]] bool preferenceLoading() const noexcept;
     [[nodiscard]] bool preferenceReady() const noexcept;
     [[nodiscard]] bool preferenceSaving() const noexcept;
@@ -162,6 +164,7 @@ private:
     Services::SettingsClient::SettingsClient &m_settingsClient;
     Services::Voice::VoiceClient &m_voiceClient;
 
+    QObject *m_configuration = nullptr; // Borrowed route projection; composition outlives model.
     PreferenceState m_preferenceState = PreferenceState::Loading;
     QString m_preferenceError;
     QString m_settingsOwner;

@@ -526,3 +526,15 @@ is a transport-free Qt Core/Hybrid boundary below the compositor executor. It
 selects one ownership mutation and includes moved-tab activation in its candidate;
 consumers do not edit Core pages or activate again after scene publication.
 It remains internal to the product build because Hybrid has no installed export.
+
+
+### Voice credential configuration
+
+`QindaQt::VoiceConfiguration` is the optional public VoiceConfiguration1 values,
+strict codec, owner/revision client and passive Qt transport boundary. Settings
+borrows it through a small credential model; its composition owns transport
+lifetime and confirmed Voice admission. No desktop module reads a keyring or
+constructs a transcription engine. The headless provider owns native secure
+storage and asynchronous credential reload, separately from unchanged Voice1.
+See [Voice input](voice-input.md#secure-provider-credential-configuration) and
+[ADR-0364](../adr/0364-configure-voice-credentials-through-provider-owned-secure-storage.md).

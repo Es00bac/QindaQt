@@ -244,6 +244,12 @@ T.Page {
                         }
                     }
 
+                    VoiceCredentialSection {
+                        Layout.fillWidth: true
+                        configuration: root.voiceSettings.configuration !== undefined
+                                       ? root.voiceSettings.configuration : null
+                    }
+
                     SectionHeader {
                         Layout.fillWidth: true
                         visible: root.voiceSettings.serviceAvailable

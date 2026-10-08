@@ -250,3 +250,42 @@ private native checks at normal and actual 150% scale. Gabbee candidate
 and 20 subtests, including late-reply and owner-replacement retirement. Grouping,
 correlated app launch and installed-session qualification remain open. This extension does not dispatch dictation or modify Voice1 capture
 methods, and unsupported/refused management is not typed as fallback text.
+
+## Secure provider credential configuration
+
+[ADR-0364](../adr/0364-configure-voice-credentials-through-provider-owned-secure-storage.md)
+defines optional `org.qindaqt.VoiceConfiguration1` on the current unique Voice1
+owner, at `/org/qindaqt/VoiceConfiguration1`. `QindaQt::VoiceConfiguration`
+owns strict secret-free values, codec, one-operation client and passive Qt
+transport. The Settings Voice route owns a separate credential model and
+masked editor. Gabbee owns secure persistence and engine replacement; Settings1
+never carries keys. Voice1 schema and capability bits remain unchanged.
+
+With confirmed Voice On, Settings discovers the extension without activating
+it. Off or withdrawn admission clears the editor and stops this client.
+An older provider remains usable and explains that secure settings are
+unsupported. Settings distinguishes configured provider from the actual engine
+or last fallback; availability alone does not establish authentication.
+
+**Save key securely** accepts 1–512 printable non-whitespace ASCII characters,
+clears the editor immediately, persists through native Secret Service and
+explicitly reloads the saved credential. **Reload saved key** supports existing
+credentials after keyring unlock without reentry. Startup never unlocks the
+keyring; either explicit operation may invoke its native prompt. Existing
+process/environment overrides remain visible and retain precedence. The route
+never writes a plaintext fallback or exposes credential readback.
+
+Save and reload share a 15-second secure-storage deadline, including initial
+connection, method replies and native prompt completion. Provider reservation
+blocks capture and retry until the actual worker settles even if the UI times
+out or its owner disappears. Completion rechecks idle state and generation
+before changing an engine. Failures preserve the prior engine; save followed by
+failed reload is a distinct partial outcome. An unconfirmed result is never
+replayed automatically. A new deliberate reload is the recovery action.
+
+Focused gates are `qindaqt.voice-configuration` (codec, owner/revision fencing,
+single flight and no replay), `qindaqt.settings-voice-credentials` (real masked
+QML entry, clearing and effective/failure text), and Gabbee's injected
+`test_qindaqt_voice_configuration_*` suites. These fixtures use dummy keys and
+no live keyring, microphone or upstream API. Installed end-to-end secure prompt
+and speech qualification remain separate manager gates.
