@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — terminalarchive2315 passed0/oneguestobject; ninth115a/9350 proposal awaits rootgrant; laptopheavyreleased.
+- Status: available — ninthconsolepathrefusal preserved; e87f deviceguard/8fakecontrols pass, archive2325/7791 proposal awaits rootreview; no heavy.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -311,3 +311,7 @@
 - 2026-10-08T23:06:50.072090+00:00 — Archive2315 exact3bca/52ec admitted, actualmain2664180/invocation337b9fdfd4ff4e49b8aa30164bf60746 under4CPU5GiB; no retry.
 
 - 2026-10-08T23:08:06.463806+00:00 — Actual terminalarchive all3phases0/31.959s,7295otherobjects unchanged, heldretirement qualified. Ninthplanfrozenonly.
+
+- 2026-10-08T23:09:04.039122+00:00 — Ninth115a/9350 exactsource/input pins pass; unit2320 invocation4048f02034a94facad87d0c0c4ebd575 active4CPU5GiB, no retry.
+
+- 2026-10-08T23:12:26.278936+00:00 — Ninthagainactualtwowindows butterminalttynameENOTTYrefused. Frozeroot-approvedfstatguard/eightfakecontrols and existingoneobjectarchiveproposal; no retry.
