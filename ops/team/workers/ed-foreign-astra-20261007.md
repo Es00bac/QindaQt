@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — Android archive/VM input plan frozen after qualified protected stage; exact Voice source repair recheck available. No native lease held.
+- Status: working — Android archive qualified; exact signed public-image transfer under separately authorized1CPU/768MiB in progress, no VM. Voice final e86/b446 accepted.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -231,3 +231,5 @@
 - 2026-10-08T20:57:51.897204+00:00 — Actual86b/665b stage0/5.270s,7208objects/allREQUIRED/653MB,22protected172VDB andlivecaps verified. Evidence33/32 preserved; originalfailure retained. No archive/VM.
 
 - 2026-10-08T21:07:46.724693+00:00 — Qualified stage d45 preserved; prepared concrete existing cpio/gzip sequence and four-input VM follow-on, no archive/guest execution. Voice964 original four blockers close; post-signal lifetime repair remains with author.
+
+- 2026-10-08T21:20:42.619253+00:00 — Archive once0/34.474s, full source/inventory stable, exact initramfs3542cc frozen; heavy released. Preserving input transfer and constructing actual four-input manifest next; no guest grant yet.
