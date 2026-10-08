@@ -9,7 +9,7 @@ Remaining scoped-agent, accessibility, newcomer and foreign-origin presentation
 work is required. See [Handoff](../../../docs/HANDOFF.md).
 
 
-Exact compact Audio candidate f3c656f2 has independent manager source acceptance and the sole laptop native lease for old1ae/fixed geometry, scrolling, focus, slider and Settings density qualification. No installed UI acceptance yet. Shared generic Settings facade is connected in source; existing mutation/grant/owner-loss gates remain required.
+Exact compact Audio candidate c98ca4c0 has manager source acceptance and the sole laptop32/16 native lease for31 actual owning rows, after preserved old/fixed failures drove the attached-screen repair. No installed UI acceptance yet. Shared generic Settings facade is connected in source; existing mutation/grant/owner-loss gates remain required.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

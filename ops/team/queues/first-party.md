@@ -9,7 +9,7 @@ real-app pass. All remaining ED/agent/backup/admin/accessibility work stays open
 See [Handoff](../../../docs/HANDOFF.md).
 
 
-Owner confirms installed R17 device inventory but reports wasted Audio Settings space. Exact f3 compact Settings/popup source is accepted for native qualification, not installed usability. Media gain/quiet-start/admission and all full-mixer audit gaps remain required; candidate/compiler activity adds no product completion.
+Owner confirms installed R17 device inventory but reports wasted Audio Settings space. Exact c98 compact Settings/popup attached-screen source is accepted for native qualification, not installed usability. Media gain/quiet-start/admission and all full-mixer audit gaps remain required; candidate/compiler activity adds no product completion.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

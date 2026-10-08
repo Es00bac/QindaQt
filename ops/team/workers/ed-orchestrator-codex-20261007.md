@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Qualify compact Audio surfaces, preserve observed core-service defects, and route full mixer/Bluetooth repairs before signed delivery.
+- Status: working — Qualify compact Audio surfaces, review the native Bluetooth teardown repair, and route the Portage-owned mixer dependency repair before signed delivery.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -70,3 +70,5 @@
 - 2026-10-08T04:15:05+00:00 — Root independently accepted exactPowerc7e2/full11hashes, preserved14-member13,885,440-byte proof8f2feef4 on qinda, merged source and ran actual strict integrated6/6/56Qt0fail/skip/blacklist. Qinda native lease released. Current status docs now record installedR17/owner-confirmed Settings inventory, compact/no-scroll UI defect, Clipboard22/172 integrationpass and fullplanremaining. Astra stronger BT88 contract accepted348 but product/native stillNeedsFix; Platform reused for urgentUI due four-thread limit, Media gain sourceactive. Full ETA given as planning10weeks/range6–16, not completioncredit.
 
 - 2026-10-08T04:41:55+00:00 — Exact Audio popup/Settings f3c656f2 source independently reviewed and accepted for bounded laptop native qualification only. Old1ae first; no scroll/visual/installed completion claim. New core observation archive d6674c65 independently verifies10,240bytes/4members/all3 indexed payload digests on both hosts. Potential Display Preview legacy lock-quorum defect queued for private native-positive reproduction. Gain board import deferred until author publishes actual hub ref; two staging/fetch driver failures occurred before edits and are retained, not product failures.
+
+- 2026-10-08T05:11:43+00:00 — Root directly parses preserved old/fixed Audio JUnit: old764 2/2 fail, fixed4cf 23/29 pass with22 Qt Totals161/4/0/0, selected-old d4 2/2 fail on unnamed/duplicate outputs. Exact c98 attached-screen repair holds the sole laptop32/16 native lease; actual31-row/22-target closure active. Bluetooth40d qinda strict build0, author-preserved main31/32 with radio-session teardown crash; exact304 registration-owned filter repair frozen for root review before continuation, applet unrun. Media froze PipeWire overlay b489 at authoritative master b128, source-only; gain fixture c17 and dependency patch await Astra independent source recheck. No new installed UI, radio recovery, gain, foreign-app, or product milestone claim.

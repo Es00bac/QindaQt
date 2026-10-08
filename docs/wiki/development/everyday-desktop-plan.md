@@ -29,6 +29,32 @@ authentication and destructive-storage decisions; ordinary implementation
 retains the default tier. This current instruction supersedes the audit's
 documentation-only and earlier model-escalation defaults.
 
+## October 8 installed core progress and remaining scope
+
+R17 is installed through Portage with independently verified artifact and image
+identity. Public Audio inventory/control now works; the owner confirms devices
+in Settings and the installed AI popup opens. Oversized Audio controls remain
+an active defect: exact compact c98 source is being qualified against31 owning
+rows after preserved old/fixed tests exposed selected-screen geometry issues.
+Integrated Clipboard22/172 and Power6/56 checks pass but await signed delivery
+and ordinary-session qualification. Bluetooth304 teardown repair is in its
+bounded native acceptance loop; there is no installed permanent recovery claim.
+
+Full mixer gain/quiet-start work requires an independently reviewed,
+Portage-owned PipeWire loopback listener cleanup before borrowed-Core module
+qualification. Source and dependency proposals are progress, not working audio
+behavior. Android has no initialized/trusted app-window journey; Windows has
+no complete real-app pass. USB/File Manager, safe Move/Trash, network expansion,
+Viewer, administration/recovery, accessibility, scoped agents and newcomer
+acceptance remain required.
+
+The manager's educated planning estimate credits these partial slices: best
+10 working weeks, plausible6–16 weeks for the full owner scope including mixer
+and Android/Windows; immediate core/presentation repairs1–3 working days.
+This is an estimate with runtime/hardware uncertainty, not a percentage or
+acceptance evidence. Exact current candidate, reviewer and next gates remain
+in the task list, handoff and delivery queues.
+
 ## October 7 copier source acceptance and foreign-runtime queue — 2026-10-07T23:52:31+00:00
 
 Independently reviewed copier223c8a7ae preserves output after failed exclusive creation, cancellation and source/destination replacement. Exact author gates pass: focused7/7 (73Qt), actual project8/8 (70Qt), normal/2x banner, real File Manager UI and boundary poison/restoration. ADR0357 is Accepted; explicit Delete/Trash policy is unchanged. Manager integrated native rerun and future installed/physical qualification remain open.

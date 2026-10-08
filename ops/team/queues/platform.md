@@ -5,12 +5,13 @@ startup6/56 and Clipboard22/172 pass; signed delivery/ordinary startup is next.
 Astra owns BT native sender repair after exact design88c3/review348041.
 Platform owns compact Audio popup/Settings source atf2bb; Media owns real console
 gain/admission/quiet-start source. Root alone touches live services/devices and
-installs. Qinda native batch released after Power; laptop native lane unleased.
+installs. Astra holds sole qinda24/24 native lease for exact304 Bluetooth repair;
+Platform holds sole laptop32/16 lease for exactc98 compact Audio qualification.
 All physical, foreign-runtime and remaining ED gates stay open. Exact evidence
 and full scope: [Handoff](../../../docs/HANDOFF.md).
 
 
-New read-only laptop owner equality confirms Compositor and ScreenSaver owners differ. Display runtime still uses legacy same-owner SessionLockStateMonitor; Preview safety may remain Unknown despite ready inventory. Next gate: focused native-positive private reproduction and repair through the public native attachment boundary, preserving locked/unknown/loss guards. No display transaction, lock or sleep was attempted. Astra Bluetooth owned-wire source remains uncompiled pending exact review.
+New read-only laptop owner equality confirms Compositor and ScreenSaver owners differ. Display runtime still uses legacy same-owner SessionLockStateMonitor; Preview safety may remain Unknown despite ready inventory. Next gate: focused native-positive private reproduction and repair through the public native attachment boundary, preserving locked/unknown/loss guards. No display transaction, lock or sleep was attempted. Astra Bluetooth304 acquired-filter cleanup is root source-accepted; the author reports main32/32, with applet and root evidence review still pending. Media PipeWire overlay b489 at authoritative master b128 is source-only, awaiting Astra review and Portage/private lifecycle gates.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

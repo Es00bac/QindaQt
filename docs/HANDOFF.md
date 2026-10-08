@@ -20,15 +20,18 @@ installed startup; neither source gate proves the full physical journey.
 Power raw14-member proof8f2feef4dd5e25a02ecf93d91ac4d0bcb21b5b5c0bc1d5812e90fdff7c9927df
 is preserved on qinda; all11 indexed digests match. Earlier failures are retained.
 
-Bluetooth helper native testing remains NeedsFix: impossible Qt reply.service
-checks and permissive actual session-bus reply policy require the independently
-reviewed88c3 native sender/GUID/issued-caller contract. No installed permanent
-Bluetooth recovery or new radio action is claimed. Media implements bounded
-Audio gain/admission/quiet-start repair under Proposed ADR0361; the full audit
-also leaves Mono/trim, processing truth, UI, multi-device and other normative
-Voicemeeter-class capabilities required. Platform owns the compact Audio popup
-and Settings layout on isolated f2bb source, after its same-reviewer BT contract
-acceptance348041. Root owns live devices, services, installation and integration.
+Bluetooth40d strict build passed, but its main native cohort failed31/32 with
+a failed-open filter teardown crash. Root independently accepts exact3040022
+registration-owned filter cleanup; all regression tests remain byte-identical.
+The author reports repaired main32/32; final applet and root raw-evidence review
+remain open. No installed permanent Bluetooth recovery or radio write is claimed.
+Media gain/admission/quiet-start remains source-only under Proposed ADR0361.
+Independent review found an upstream PipeWire loopback listener lifetime defect;
+exact overlay b489a5f8 at authoritative master b128 is frozen for independent
+source review, followed by Portage/private lifecycle qualification. The exact
+patched-package and loaded-module guard is still a proposal, not implemented.
+Full Mono/trim, processing truth, routing UI and other normative Voicemeeter-class
+capabilities remain required. Root owns live devices, services and installation.
 
 All ED01–24, Android/Windows, scoped agent, actual provider usage and newcomer
 journeys remain active. Reviewed source/test slices count as progress, not whole
@@ -36,7 +39,7 @@ end-to-end completion. Planning estimate: best10workingweeks, range6–16weeks f
 the complete requested scope; immediate core/UI work1–3workingdays. These are
 estimates with hardware/runtime uncertainty, not acceptance evidence.
 
-Exact Audio popup/Settings f3c656f2f10f20d3e5da9eec0f8d024f7f492af0 has manager source acceptance only. Platform holds one laptop native lease: old1ae first, then strict owning normal/2×/fractional rows with actual captures. No installed compact UI claim. Root preserved new Display geometry/owner equality and rfkill open-only evidence on qinda:10,240bytes/4members/SHA256d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32; all3 indexed payload digests match. Display legacy same-owner safety requires a focused native-positive reproduction; O_RDWR access is not a helper/kernel write qualification.
+Exact Audio popup/Settings c98ca4c0 has manager source acceptance for attached-screen geometry. Root verifies13 preserved raw digests: old764 fails2/2, fixed4cf passes23/29 with22 Qt Totals161/4/0/0; old d4 fails both unnamed/duplicate-output regressions with popup height1. Platform holds one laptop native lease for repaired31-row/22-target strict owning closure and actual captures. No installed compact UI claim. Root preserved new Display geometry/owner equality and rfkill open-only evidence on qinda:10,240bytes/4members/SHA256d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32; all3 indexed payload digests match. Display legacy same-owner safety requires a focused native-positive reproduction; O_RDWR access is not a helper/kernel write qualification.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
