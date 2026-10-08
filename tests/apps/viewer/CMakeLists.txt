@@ -15,7 +15,11 @@ foreach(part IN ITEMS renderer controller text text_controller)
     set_tests_properties(apps.viewer.${part} PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 45)
 endforeach()
 # The bound fixture checks real Poppler extraction before invoking the renderer.
-target_link_libraries(qindaqt_viewer_text_test PRIVATE PkgConfig::POPPLER_QT6)
+# Imported targets belong to their directory subtree; keep this test dependency
+# local instead of reaching into the sibling production directory's target.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(VIEWER_TEXT_TEST_POPPLER REQUIRED IMPORTED_TARGET poppler-qt6>=26.01.0)
+target_link_libraries(qindaqt_viewer_text_test PRIVATE PkgConfig::VIEWER_TEXT_TEST_POPPLER)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/artifacts")
 qt_add_executable(qindaqt_viewer_ui_test tst_ui.cpp
