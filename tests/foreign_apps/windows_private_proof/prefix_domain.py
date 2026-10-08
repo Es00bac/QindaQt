@@ -1,10 +1,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Driver-owned private domain worker lifetime; never infer ownership from UID."""
-import os,secrets,socket,time
+import os,secrets,socket,time,sys,stat
 from pathlib import Path
 from owned_child import OwnedChild
 from domain_protocol import send,receive,receipt,require_time
 from processes import identity
+
+def supervisor_interpreter():
+    # AGENT-GUARD: Gentoo python3 is a dispatcher that execs another ELF.
+    # Pin our actual packaged interpreter before Popen; OwnedChild must still
+    # reject every later executable/lifetime replacement (ED-22 private proof).
+    path=Path("/proc/self/exe").resolve(strict=True)
+    expected=Path(f"/usr/bin/python{sys.version_info.major}.{sys.version_info.minor}")
+    info=path.stat()
+    if path!=expected or not stat.S_ISREG(info.st_mode) or info.st_uid!=0 or info.st_mode & 0o022:
+        raise RuntimeError("private supervisor interpreter provenance mismatch")
+    return str(path)
 
 class PrefixDomain:
     def __init__(self,name,deadline):
@@ -15,7 +26,7 @@ class PrefixDomain:
         self.log=(Path("/fixture")/(name+"-supervisor.log")).open("xb")
         try:
             require_time(deadline)
-            self.child=OwnedChild(["/usr/bin/python3",str(Path(__file__).with_name("prefix_worker.py")),str(remote.fileno())],
+            self.child=OwnedChild([supervisor_interpreter(),str(Path(__file__).with_name("prefix_worker.py")),str(remote.fileno())],
                 dict(os.environ),self.log,pass_fds=(remote.fileno(),))
             remote.close()
             send(self.sock,{"domain":name,"nonce":self.nonce,"deadline":deadline,

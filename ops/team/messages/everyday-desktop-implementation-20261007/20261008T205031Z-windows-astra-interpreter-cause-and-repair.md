@@ -1,0 +1,9 @@
+# Windows interpreter causal repair freeze
+
+Prior exact95b native attempt: actual exit1 in3.450026746s, held initiating2637757/start50421109 reaped. Native root `.cache/windows-proof-runs/private-sn4liul4`; raw initiating/cgroup receipts `.cache/windows-astra-native-20261008T204544Z`. Driver reports `child identity mismatch` before any typing/resize/close steps. Outer namespace settled, uncertainty false. Kernel caps800000/100000, memory12GiB, swap0,pids256, main nice10/affinity0-5,12-17. Heavy lease released to root immediately; no retry. Prefixes retained. First-failure archive SHA256a21e6c59996f306bcb10bc0bdb62f887b364efca32c8692c5a6335b268d5a3e3,10723bytes.
+
+Causal read-only/finite-Python proof: Gentoo `/usr/bin/python3` resolves `/usr/bin/python-exec2c` and actually execs `/usr/bin/python3.14`. PrefixDomain used the former then OwnedChild correctly rejected the later identity. Repair dispatches the actual current root-owned versioned ELF from `/proc/self/exe`; preflight adds exact21st payload and checks namespace interpreter against the outer inventory. Existing OwnedChild and Wine ownership/input/save/cleanup logic remain byte-unchanged.
+
+Actual small control envelope CPU100%,768MiB,swap0,task32,30s,nice10,CPU0: unittest20/20 (8 focused interpreter plus12 prerequisites), unit exit0/runtime0.618s. Direct actual interpreter lifetime passes; changed-executable fence rejects; installed dispatcher transition reproduced. VDB `/var/db/pkg/dev-lang/python-3.14.6_p1/CONTENTS` matches actual interpreter MD5; SHA256/mode/root ownership retained in `.cache/windows-astra-interpreter-repair/interpreter-vdb.json`.
+
+Requested next action: exact source review then one separately granted preflight; native retry requires fresh accepted preflight and global heavy lease. This is private fixture infrastructure, not delivered application compatibility or blue identity.

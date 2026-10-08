@@ -4,6 +4,7 @@
 import json,os,stat,subprocess,sys
 from pathlib import Path
 from processes import settle,wait,admit_driver
+from prefix_domain import supervisor_interpreter
 ROOT=Path("/fixture")
 def validate_public_runtime(root=Path("/")):
     # AGENT-GUARD: synthetic merged-/usr alias only; no host /bin or /etc bind.
@@ -24,6 +25,8 @@ def validate_public_runtime(root=Path("/")):
     return {"mergedUsrShell":True,"xkbCompilerAndData":True,"fontConfig":True}
 
 def preflight():
+    if supervisor_interpreter()!=os.environ.get("FIXTURE_PYTHON"):
+        raise RuntimeError("private interpreter differs from inventoried payload")
     net=os.stat("/proc/self/ns/net").st_ino
     pid=os.stat("/proc/self/ns/pid").st_ino
     if net==int(os.environ["HOST_NET_NS"]) or pid==int(os.environ["HOST_PID_NS"]):
@@ -35,12 +38,12 @@ def preflight():
     assert os.environ["HOME"]=="/fixture/home"
     assert os.environ.get("PWD")=="/fixture"
     assert Path.cwd()==ROOT
-    allowed_keys={"PWD","PATH","LANG","LC_ALL","HOME","USER","LOGNAME","XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME","XDG_RUNTIME_DIR","TMPDIR","KWIN_COMPOSE","QT_QPA_PLATFORM","QT_QUICK_BACKEND","LIBGL_ALWAYS_SOFTWARE","QT_NO_XDG_DESKTOP_PORTAL","GTK_USE_PORTAL","HOST_NET_NS","HOST_PID_NS","QT_IM_MODULE","GTK_IM_MODULE","XMODIFIERS"}
+    allowed_keys={"PWD","PATH","LANG","LC_ALL","HOME","USER","LOGNAME","XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME","XDG_RUNTIME_DIR","TMPDIR","KWIN_COMPOSE","QT_QPA_PLATFORM","QT_QUICK_BACKEND","LIBGL_ALWAYS_SOFTWARE","QT_NO_XDG_DESKTOP_PORTAL","GTK_USE_PORTAL","HOST_NET_NS","HOST_PID_NS","QT_IM_MODULE","GTK_IM_MODULE","XMODIFIERS","FIXTURE_PYTHON"}
     diagnostic={"unexpectedKeyNames":sorted(set(os.environ)-allowed_keys),"fixedValueMatches":{"PWD_is_fixture":os.environ.get("PWD")=="/fixture","LC_CTYPE_is_C_UTF8":os.environ.get("LC_CTYPE")=="C.UTF-8"}}
     (ROOT/"preflight-diagnostic.json").write_text(json.dumps(diagnostic,indent=2))
     assert set(os.environ).issubset(allowed_keys)
     public_data=validate_public_runtime()
-    value={"publicRuntime":public_data,"netNamespace":net,"pidNamespace":pid,"networkRouteAbsent":True,"hostHomeAudioGraphicsAbsent":True,"environmentAllowlist":sorted(os.environ),"prefixInitialized":False}
+    value={"publicRuntime":public_data,"netNamespace":net,"pidNamespace":pid,"networkRouteAbsent":True,"hostHomeAudioGraphicsAbsent":True,"environmentAllowlist":sorted(os.environ),"prefixInitialized":False,"supervisorInterpreter":supervisor_interpreter()}
     (ROOT/"preflight.json").write_text(json.dumps(value,indent=2))
     return value
 

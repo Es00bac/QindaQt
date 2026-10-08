@@ -242,3 +242,15 @@ foreign content, replaced file or missed close refuses the journey; containment
 cannot qualify close. Pixel witnesses require distinct valid SHA256 values and
 the actual fixed PPM byte counts. Clipboard readback plus changed client pixels
 does not claim OCR or physical-keyboard input.
+
+The corrected-executable-mode native attempt reached the private supervisor
+but stopped at its executable identity fence before any typing steps. On the
+qualified Gentoo host `/usr/bin/python3` dispatches through `python-exec2c`
+then execs the versioned interpreter, so the dispatcher's initial executable
+cannot remain the supervisor identity. The fixture now resolves its own actual
+root-owned, non-writable versioned interpreter from `/proc/self/exe`, includes
+that exact ELF in preflight payload hashes, checks the namespace interpreter
+against that inventory, and launches the supervisor directly through it.
+`OwnedChild` lifetime/executable mismatch rejection is unchanged. This narrow
+source repair requires reviewed preflight and a separately granted native retry;
+none of the failed run's namespace cleanup qualifies app input or retirement.

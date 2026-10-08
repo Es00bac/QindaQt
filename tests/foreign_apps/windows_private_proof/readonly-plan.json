@@ -9,6 +9,10 @@
       "bytes": 18640,
       "sha256": "4aa761d8794e35bd64deef99e98acd0812883a5dd6d3f14a5bdd769b2aaf671d"
     },
+    "/usr/bin/python3.14": {
+      "bytes": 14360,
+      "sha256": "07080f01ff9495ab7341fdf46ea4cba406d8ee5fdd38e86b35ea9a9cab85ec60"
+    },
     "/usr/bin/qindaqt-wm": {
       "bytes": 96464,
       "sha256": "d7d7fae41b530c5c0f3ce518ac1867dea2194b8abd51cbc376f8b0b639a035dd"
@@ -37,18 +41,6 @@
       "bytes": 577393,
       "sha256": "a355f232ff23bfe3a5eda140daad34140e76678e6c0cda801ce98f6f62b324f9"
     },
-    "/usr/lib64/libX11.so.6": {
-      "bytes": 1362264,
-      "sha256": "e88f4d012fb2066f9f5913bb678effa3545bfd4c2079ac4337632513220e656d"
-    },
-    "/usr/lib64/libXRes.so.1": {
-      "bytes": 18592,
-      "sha256": "3b64a6a7ca75ef1476d85fe5a8ce2e8f4972501042444ade56a93980142cb84d"
-    },
-    "/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": {
-      "bytes": 5158664,
-      "sha256": "5174baa029270c94b41fea5f3a86d10c432f910e0c2a3d0cea9c71f86b8f3c16"
-    },
     "/usr/bin/sh": {
       "bytes": 937200,
       "sha256": "df33c0a06a02007fe003f623c11727f64a946d3ee3cb3248a308c56d5e53b97a"
@@ -76,6 +68,22 @@
     "/etc/fonts/fonts.conf": {
       "bytes": 2700,
       "sha256": "65768ac37ea9ac185535d7b2080fa8503cef3a7464a935f570cbd2bb867ecdca"
+    },
+    "/usr/lib64/libX11.so.6": {
+      "bytes": 1362264,
+      "sha256": "e88f4d012fb2066f9f5913bb678effa3545bfd4c2079ac4337632513220e656d"
+    },
+    "/usr/lib64/libXRes.so.1": {
+      "bytes": 18592,
+      "sha256": "3b64a6a7ca75ef1476d85fe5a8ce2e8f4972501042444ade56a93980142cb84d"
+    },
+    "/usr/lib64/libXtst.so.6": {
+      "bytes": 30800,
+      "sha256": "db182e2229c1bc228579408cdbf7ecdb8643c3c6723fe05d45c9b584677fdb93"
+    },
+    "/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": {
+      "bytes": 5158664,
+      "sha256": "5174baa029270c94b41fea5f3a86d10c432f910e0c2a3d0cea9c71f86b8f3c16"
     }
   },
   "environmentAllowlist": {

@@ -66,7 +66,8 @@ class PublicRuntimeTests(unittest.TestCase):
         with patch.object(outer,"HERE",staged):
             with self.assertRaisesRegex(RuntimeError,"executable mode absent"):outer.source_identity()
     def test_public_payloads_bound(self):
-        self.assertEqual(len(outer.REQUIRED),20)
+        self.assertEqual(len(outer.REQUIRED),21)
+        self.assertIn(outer.supervisor_interpreter(),outer.REQUIRED)
         self.assertIn("/usr/lib64/libXtst.so.6",outer.REQUIRED)
         self.assertIn("/usr/bin/sh",outer.REQUIRED)
         self.assertIn("/etc/fonts/fonts.conf",outer.REQUIRED)
