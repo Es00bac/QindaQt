@@ -214,6 +214,14 @@ def main():
         home = Path("/home/proof")
         home.mkdir(parents=True, mode=0o700); home.chmod(0o700)
         home.parent.chmod(0o755); os.chown(home, 1000, 1000)
+        # Ordinary private fixture mouse binding, not a Shell1 authority bypass.
+        config_dir = home / ".config/qindaqt"
+        config_dir.mkdir(parents=True, mode=0o700)
+        for directory in (home / ".config", config_dir):
+            os.chown(directory, 1000, 1000)
+        mouse_config = config_dir / "kwinrc"
+        mouse_config.write_text("[MouseBindings]\nCommandAllKey=Alt\nCommandAll3=Operations menu\n")
+        mouse_config.chmod(0o600); os.chown(mouse_config, 1000, 1000)
         runtime = Path("/run/user/1000")
         runtime.mkdir(parents=True, mode=0o700); runtime.parent.chmod(0o755); os.chown(runtime, 1000, 1000)
         userenv = dict(env, HOME=str(home), USER="proof", LOGNAME="proof",

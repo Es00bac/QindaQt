@@ -232,3 +232,26 @@ The guest terminal result is emitted only on its inherited serial console after 
 Console admission uses the inherited character-device identity (Linux console5:1 or ttyS0 4:64), plus isatty and termios capability. A pathname lookup is unsuitable for the kernel-opened console after devtmpfs replaces the initramfs device view.
 
 The tenth guest produced one intact final result with QEMU exit0, qualified cleanup and stable inputs. Boot completion and Calculator were observed; Clock launch timed out under the old ten-second cap. That run remains FAILED. Earlier two-window observations do not supply the missing tenth observation, and no render/input/lifecycle/app-identity/Audio1 acceptance follows.
+
+### Next guest interaction fixture (source only)
+
+The eleventh actual stock run passed the full two-window and cleanup contract.
+The next source candidate adds exact-owner/PID/incarnation-bound private KWin
+framebuffer capture, then admitted private-seat pointer resize and Tab input for both apps,
+ordinary window-menu close, survivor checks and independent relaunch. A fresh
+guest-only qindaqt/kwinrc maps Alt+right to KWin's existing operations menu;
+Meta+right keeps the compositor's normal independent-window resize. The source
+does not call Shell1 Activate/Close: those require a genuine live dock owner,
+which this proof process is not. No host settings, portal or capture is used.
+
+Two new Python fixture collaborators join the protected source inventory.
+No package inputs change. Capture admits only one distinct stable 1280x800
+private compositor shm buffer, at most eight PNGs of512KiB each on existing
+bounded serial, with owner/start/executable checks before and after. Unknown or
+ambiguous buffers refuse; no most-convenient frame selection. Partial frames
+and action steps remain in failure evidence. Pointer/keyboard response is
+recorded alongside pixels for visual review; a changed framebuffer does not
+prove semantic calculator output, so renderedInputQualified remains false.
+Resize/close completion requires real geometry/UUID observations and preserves
+the other app through each close. Sequential app association and Audio1 remain
+unqualified. This candidate has not been staged, archived or booted.

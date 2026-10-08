@@ -102,6 +102,33 @@ def main():
                                       "association": "sequential-fixture-observation-only"})
             previous = current
         evidence["twoWindowsObserved"] = len(set(observed)) == 2
+        phase = "interaction-proof"
+        from interaction import run as interact
+        daemon = dbus.Interface(bus.get_object("org.freedesktop.DBus", "/org/freedesktop/DBus"),
+                                "org.freedesktop.DBus")
+        compositor_pid = int(daemon.GetConnectionUnixProcessID(owner, timeout=min(2, remaining())))
+        def guard():
+            remaining()
+            if str(bus.get_name_owner("org.qindaqt.Compositor")) != owner:
+                raise RuntimeError("interaction-compositor-owner-changed")
+        caps = json.loads(bytes(interface.Capabilities(byte_arrays=True, timeout=min(2, remaining()))))
+        development = caps.get("developmentInput", {})
+        if caps.get("controlMode") != "development-test" or not development.get("available") or not development.get("enabled"):
+            raise RuntimeError("interaction-input-not-admitted")
+        def inject(events):
+            payload = json.dumps({"schemaVersion": 1, "events": events}).encode()
+            reply = json.loads(bytes(interface.InjectTestInput(dbus.ByteArray(payload),
+                                      byte_arrays=True, timeout=min(2, remaining()))))
+            if reply.get("status") != "injected":
+                raise RuntimeError("interaction-input-refused")
+        evidence["interaction"] = {}
+        interact(snapshot, inject, guard,
+            lambda index: command("app", "launch", APPS[index]), compositor_pid,
+            observed, remaining, evidence["interaction"])
+        # Captures/actions are actual observations; visual/app-semantic review
+        # remains separate from a changed framebuffer or dispatch acknowledgement.
+        evidence["interactionCompleted"] = True
+        evidence["resizeCloseQualified"] = True
         evidence["final"] = list(snapshot().values())
     except BaseException as error:
         evidence["error"] = {"stage": phase, "type": type(error).__name__,

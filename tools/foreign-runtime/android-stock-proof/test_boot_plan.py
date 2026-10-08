@@ -9,11 +9,13 @@ class BootInputs(unittest.TestCase):
     def test_overlay_contains_only_generated_config_and_exact_sources(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); source = root/"source"; source.mkdir()
-            for name in ("guest-init.sh", "guest.py", "windows.py", "scenario.json"):
+            for name in ("guest-init.sh", "guest.py", "windows.py", "frame_capture.py", "interaction.py", "scenario.json"):
                 (source/name).write_text("fixed synthetic source")
             output = prepare(root/"overlay", source)
             paths = archive_paths(output)
             self.assertIn("./proof/windows.py", paths)
+            self.assertIn("./proof/frame_capture.py", paths)
+            self.assertIn("./proof/interaction.py", paths)
             self.assertFalse((output/"etc/shadow").exists())
             self.assertFalse((output/"etc/machine-id").exists())
             self.assertEqual((output/"bin").readlink(), Path("usr/bin"))
@@ -24,7 +26,7 @@ class BootInputs(unittest.TestCase):
     def test_guest_only_nobody_without_host_account_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); source = root/"source"; source.mkdir()
-            for name in ("guest-init.sh", "guest.py", "windows.py", "scenario.json"):
+            for name in ("guest-init.sh", "guest.py", "windows.py", "frame_capture.py", "interaction.py", "scenario.json"):
                 (source/name).write_text("fixed synthetic source")
             output = prepare(root/"overlay", source)
             passwd = (output/"etc/passwd").read_text().splitlines()
