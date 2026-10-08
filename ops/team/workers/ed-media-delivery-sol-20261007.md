@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — source-first isolated clipboard unlocked-login privacy observer composition repair
+- Status: working — priority different-author exact e053e1f8 Audio repair/source evidence review; clipboard source investigation preserved
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
 - Ownership: clipboard service app/private observer, owning CMake/startup privacy tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: report source RCA and smallest composition before implementing; source-only during Astra Audio native lease, Audio repair review priority
+- Next gate: exact Audio e053e1f8 source/raw proof review without compiler, then clipboard source RCA/proposed composition
 
 ## Updates
 
@@ -77,3 +77,5 @@
 - 2026-10-08T01:41:34+00:00: Independent exact2a361 helper/standalone source ACCEPT with SHA256s matched and original producer/protocol bytes unchanged. Read-only call surface, callback drain/settle cleanup and fixed-token/count/flag output traced. Parent project imported-target scope defect separately NEEDS_FIX; author configure failure attributed and standalone unaffected. No reviewer compile/host/native actions. Root may perform authorized bounded read-only observation; live attribution and controls recovery not inferred. Ready for exact CMake/mapper fix review.
 
 - 2026-10-08T01:45:22+00:00: Claimed clipboard enabled-history/unlocked-login recovery at exact manager a6f0953d5acd87cdb9451c03aa596d629b9fa9a9 (hub main matched), new isolated worktree/branch. Read instructions/wiki/native observer inventory; no product edits or compiler/host clipboard capture. Current highest ADR0357; requesting0358 reservation. Source RCA/proposed smallest safe composition precedes implementation, public attachment/native receipt boundary only.
+
+- 2026-10-08T01:47:01+00:00: Manager reserved clipboard ADR0358 and prioritized newly frozen Audio e053e1f85310ea921fed6f48d470e04f460fade7 review. Clipboard source unchanged; legacy all-three-owner quorum and PID admission conflict with split native compositor/session facade source-traced. Reviewing exact Audio fix and author raw80Qt/old8failure evidence now, no independent compiler/host actions while Platform owns native lease.
