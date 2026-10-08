@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Preserve verified installed R20 and supervise the sole capped Android image package while routing runtime, Files and Audio gain gates.
+- Status: working — Supervise sole capped Files native recovery cohort; preserve installed R20 and route source-reviewed Android package and Audio gain gates.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -166,3 +166,5 @@
 - 2026-10-08T16:43:05+00:00 — R20 final ARTIFACT ACCEPT8557 fully read; laptop Portage actual0/24.1387s, full2332file+4link and embedded-recipe checks pass, world/savedprofile unchanged, outer unit0/34.902s/833Mpeak. Seven observed desktop core units active/running; no manager Shell restart or hardware claim. Correct authoritative source drift: qinda bare main was6a while manager/public origin37f; direct ancestry-checked explicit hub push now37f and laptopbaremirrorFF37f, overlay322 unchanged. Android corrected965a exactsource/dispatcher fully read and all4pins/sevenactualGitfiles/twoZIPs rehashed,70GB available, firstattemptabsent; grant one sole8/8/12G signedprivatedata build with exact held/cgroup boundaries. Files9bec exactsameAstra ACCEPT18d read, ten-native+onepure actualcohort needs frozenoutercommands then laterlease; Media resourceonlyrefreeze active. Astra authors minimum KVMfixture using existingkernel/publicPortageuserspace/read-only disks, no guestboot yet. Fullscope/TODAY and otherprojectresource reserve remain; no ED completionweights advanced.
 
 - 2026-10-08T16:49:17+00:00 — Fully read actual Android firstunit cwd failure8444b525; initiating2495915/48974573 settled1/0.113917s before anyPortage phase, controls equal. Rehash acceptedplan/dispatcher and assertactualphaseoutputs absent. Grant one exactunit-only WorkingDirectory correction/freshname, preserving allsource/policy/raw firstfailure and soleheavy8/8/12G envelope. No actualAndroidpackage or runtime claimed.
+
+- 2026-10-08T17:12:51+00:00 — Current Files source/argv admission verified directly: six pins/source+tests match9bec, fresh output absent, all ten exact terminal argv and witness syntax read. Grant one capped serial native cohort under frozen57da, expected wrapper0/7/124 and Debug/Release11rows each. Android486 independently source-accepted with15tiny controls and fresh package planfbcca; Audio resource8candidate5eb frozen but not native. R20 installed proof preserved on qinda, actual Audio Ready/Bluetooth default10outputs7inputs32streams. Hub main7da clean at grant.
