@@ -1,15 +1,21 @@
 ## Current Shell gates — 2026-10-08
 
-The installed AI usage popup works; informative Claude/provider feeds remain.
-User-confirmed Audio popup overflow/no scroll and sparse Settings layout are an
-active Platform presentation packet atf2bb. Backend recovery is installed,
-not proof of usable controls. Keep layout/scroll/focus tests at constrained sizes
-andDPI2. New Clipboard startup is integrated22/172 and awaits signed delivery.
-Remaining scoped-agent, accessibility, newcomer and foreign-origin presentation
-work is required. See [Handoff](../../../docs/HANDOFF.md).
+The installed AI usage icon opens; informative Claude and other provider feeds
+remain required. Installed R17 restores Audio inventory/control. Compact
+91530dc passes 31/31 and 171 Qt checks, but a fresh owner-scale image exposes
+application-row overlap. Exact repair 65f8826/control c75dea4 have independent
+source acceptance d7e22764; old/fixed execution and root image acceptance
+remain before packaging.
+The Settings page is visibly denser; no compact presentation is installed.
 
+Clipboard 22/172, Power 6/56 and Bluetooth 40/282 integrated gates pass. Signed
+delivery and ordinary installed startup remain open. The generic Settings
+facade is connected in source without an Audio-route claim. Existing mutation,
+grant, identity, owner-loss and accessibility contracts must remain intact.
+Platform holds the bounded laptop native lease; the qinda lane is released.
 
-Exact compact Audio candidate c98ca4c0 has manager source acceptance and the sole laptop32/16 native lease for31 actual owning rows, after preserved old/fixed failures drove the attached-screen repair. No installed UI acceptance yet. Shared generic Settings facade is connected in source; existing mutation/grant/owner-loss gates remain required.
+Scoped agents, actual usage feeds, accessibility, newcomer and foreign-origin
+presentation remain required. See [Handoff](../../../docs/HANDOFF.md).
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

@@ -1,11 +1,23 @@
 # ED foreign application architecture
-- Status: working — Bluetooth304 private qualification handed off/resources released; beginning assigned source-only c17 Audio fixture and b489 Portage hook-lifetime review.
+- Status: available — exact compact Audio65f SOURCE ACCEPT; no resources held, reserved for Media module-provenance and ASan/Portage recipe review.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T06:07:06Z — Exact65f source ACCEPT: whole production controlc75 equals915, whole tests equals65f. Layout-only production change preserves wheel/held/grant/known/identity paths; actual rectangle/accessibility regression meaningful. Docs/strict/diff0. No native or image acceptance; root retains those gates. Available for Media hard trust/recipe review.
+
+- 2026-10-08T06:05:31Z — Claimed exact65f8826 compact Audio review in fresh isolated tree after hub fetch. Verified whole src915=c75 and all tests c75=65f. Reading actual rectangle/accessibility tests and normalized QML input/held/grant/unknown behavior; manager owns image acceptance. No compiler/runtime/host action.
+
+- 2026-10-08T05:25:51Z — Exactde491 source ACCEPT: unity-default stages and static SDK rebuild boundary explicit; protocol/bounds/document schema preserved. Independently23 moved bodies identical, reconnect adapter separately read. Docs532/strict/diff0; old/new and owning native/SDK gates remain unrun, full gain absent. Available same reviewer for module-provenance guard and ASan/Portage recipe before execution.
+
+- 2026-10-08T05:23:04Z — Claimed root-assigned exactde491fa0 in fresh isolated review tree after explicit hub fetch. Scope appended unity stages/SDK rebuild, bounds/persistence, moved bodies and reconnect adapter. No native/compiler/host graph/package resources.
+
+- 2026-10-08T05:20:50Z — Exactc17/b489 source review ACCEPT for bounded qualification preparation only. Original two fixture flaws fixed; minimal upstream hook cleanup and recipe/support/selectedManifest identities checked, patchfuzz0/shell/docs532/strict/diff0. Actual ASan/normal package/producer/gain/installed gates remain open; no native lease held. Available for exact next recipe/recheck; program remains active.
+
+- 2026-10-08T05:18:09Z — Fresh explicit-hub isolated review checkouts pin c17fd9b1a and b489a5f8 (overlay master baseb128). Review initialization failure, owned/borrowed Core lifetime, hook second-removal, recipe/image authority and private fixture environment. No native lease or host graph action.
 
 - 2026-10-08T05:16:32Z — RELEASED all native resources. Exact304 strict main build0/main32of32, applet strict build0/7of7; main240Qt and applet42Qt, zero failures/skips/blacklisted. Both staged header poisons/restores verified. Original failures preserved; final exact evidence handoff for root review, installed radio open. Continuing assigned Audio/overlay source recheck only.
 

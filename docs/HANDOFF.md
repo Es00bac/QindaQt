@@ -1,45 +1,69 @@
 ## Installed R17 and verified core repairs — 2026-10-08
 
-R17 is installed through Portage on the laptop. Root independently verified its
-signed61,296,640-byte artifact82aac2e81f8683fe9dc25bb645c91fd6405ce5c02ed40bff601c91d7e25c1f49
-and all2313 installed objects plus4symlinks. World intent and the saved profile
-are preserved. Restarting only Audio1 produced Ready schema14 with8outputs,
-5inputs,24streams and8console strips/buses. Both a real Bluetooth volume change
-and guarded restoration passed with requested readback. The owner now confirms
-devices appear in Audio Settings, but reports oversized/non-scrolling Audio
-popup controls and wasted Settings space. GUI volume usability is still open.
-Sanitized installed proof:81,920bytes/25members/SHA2562862f5bdcdbb29ede9f13607ac7e2efa13926d67aa6450b30c8602e65586f3d0,
-preserved on qinda. R17 runtime source remains5b7f5b5910; later repairs are outside
-that immutable image.
+R17 remains installed through Portage on the laptop. Its independently verified
+signed artifact is 61,296,640 bytes, SHA256
+82aac2e81f8683fe9dc25bb645c91fd6405ce5c02ed40bff601c91d7e25c1f49.
+All 2313 installed objects and four symlinks match; world intent and the saved
+profile are preserved. Restarting only Audio1 produced Ready schema 14 with
+eight outputs, five inputs, 24 streams, eight strips and eight buses at probe
+time. A real Bluetooth volume change and guarded restoration both succeeded
+with matching readback. The owner confirms devices appear in Audio Settings
+and the AI usage icon opens. Acoustic output, physical volume keys and a full
+mixer journey remain separate gates. Installed proof: 81,920 bytes, 25 members,
+SHA256 2862f5bdcdbb29ede9f13607ac7e2efa13926d67aa6450b30c8602e65586f3d0.
+R17 runtime source remains 5b7f5b5910; later source is outside that image.
 
-Clipboard afa345/ADR0358 is integrated and manager strict owning22/22 CTests,
-172Qt checks passed with zero fail/skip/blacklist. Power c7e2/ADR0360 has exact
-independent source/raw-evidence acceptance and manager strict six-target build,
-6/6 CTests and56Qt checks passed. Their next gate is signed delivery and ordinary
-installed startup; neither source gate proves the full physical journey.
-Power raw14-member proof8f2feef4dd5e25a02ecf93d91ac4d0bcb21b5b5c0bc1d5812e90fdff7c9927df
-is preserved on qinda; all11 indexed digests match. Earlier failures are retained.
+Clipboard afa345/Accepted ADR0358 passes the integrated strict 22/22 CTests and
+172 Qt checks. Power c7e2/Accepted ADR0360 passes the integrated strict 6/6
+CTests and 56 Qt checks. Bluetooth 3040022/7686226 is integrated at
+3b4275aced8be71b5d24db77ed9766ad3188b494 after independent source and raw-evidence
+acceptance. The manager's strict 33-target build exits zero and all 40 owning
+CTests pass, including the staged production applet; 28 Qt Totals report
+282/0/0/0. Both actual missing-public-header poisons and restored SDK consumers
+were independently checked. Accepted ADR0359 records the selected-radio,
+sender-preserving transport and partial-initialization contracts. Private
+fixtures do not qualify the installed helper sandbox or physical radio.
+These three repairs still require signed delivery and ordinary installed use.
 
-Bluetooth40d strict build passed, but its main native cohort failed31/32 with
-a failed-open filter teardown crash. Root independently accepts exact3040022
-registration-owned filter cleanup; all regression tests remain byte-identical.
-The author reports repaired main32/32; final applet and root raw-evidence review
-remain open. No installed permanent Bluetooth recovery or radio write is claimed.
-Media gain/admission/quiet-start remains source-only under Proposed ADR0361.
-Independent review found an upstream PipeWire loopback listener lifetime defect;
-exact overlay b489a5f8 at authoritative master b128 is frozen for independent
-source review, followed by Portage/private lifecycle qualification. The exact
-patched-package and loaded-module guard is still a proposal, not implemented.
-Full Mono/trim, processing truth, routing UI and other normative Voicemeeter-class
-capabilities remain required. Root owns live devices, services and installation.
+The owner reports oversized, non-scrolling Audio controls and wasted Settings
+space. Compact candidate 91530dc passes its strict 23-target build, 31/31
+owning CTests and 171 Qt checks. Root verifies all 39 indexed proof payloads.
+The Settings page is visibly denser. A fresh 1536×864 logical owner screen at
+1.25 scale produced a 360×480 popup; root verifies all eight indexed capture
+payloads but rejects the application row's wrapped names and overlapping
+percentage/slider. Exact source repair 65f8826 and old-production/new-regression
+control c75dea4 have independent source acceptance d7e22764; the bounded
+old/fixed laptop gate and root image decision remain open.
+No compact UI is installed. The generic Settings action does not claim an
+Audio-specific route.
 
-All ED01–24, Android/Windows, scoped agent, actual provider usage and newcomer
-journeys remain active. Reviewed source/test slices count as progress, not whole
-end-to-end completion. Planning estimate: best10workingweeks, range6–16weeks for
-the complete requested scope; immediate core/UI work1–3workingdays. These are
-estimates with hardware/runtime uncertainty, not acceptance evidence.
+Media's c17fd9 fixture repair, de491fa stage/decomposition declaration and
+Portage overlay b489a5f8 loopback cleanup have independent source acceptance.
+The pre-load package/image guard, private lifecycle/ASan qualification,
+Portage build and actual loaded-module identity remain open. Production
+borrowed-Core gain is disabled. Full strip/send/bus gain, Mono/trim, processing
+truth, routing UI and the other normative Voicemeeter-class capabilities remain
+required; a declared stage does not implement processing.
 
-Exact Audio popup/Settings c98ca4c0 has manager source acceptance for attached-screen geometry. Root verifies13 preserved raw digests: old764 fails2/2, fixed4cf passes23/29 with22 Qt Totals161/4/0/0; old d4 fails both unnamed/duplicate-output regressions with popup height1. Platform holds one laptop native lease for repaired31-row/22-target strict owning closure and actual captures. No installed compact UI claim. Root preserved new Display geometry/owner equality and rfkill open-only evidence on qinda:10,240bytes/4members/SHA256d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32; all3 indexed payload digests match. Display legacy same-owner safety requires a focused native-positive reproduction; O_RDWR access is not a helper/kernel write qualification.
+Bluetooth raw proof is preserved on both hosts: 604,160 bytes, 42 members,
+SHA256 a600daac5012f63a2a08f42ed5e3442c45e8973d27f711d42f5e4b933d40cd30;
+all 41 payload byte counts/digests match. Manager execution lives under ignored
+.cache/manager-bluetooth-integrated-20261008. Earlier failed candidates and
+driver failures remain preserved. Root owns live devices, services and adoption.
+
+All ED01–24, Android/Windows, actual provider feeds, scoped agents and newcomer
+journeys remain required. Neither Android nor Windows has a complete real-app
+journey. Planning estimate: best 10 working weeks, range 6–16 weeks for the full
+requested scope; immediate core/presentation work 1–3 working days. These are
+manager estimates with runtime/hardware uncertainty, not acceptance evidence
+or a percentage. Candidate activity adds no feature-ledger credit.
+
+The read-only Display observation shows split Compositor/ScreenSaver owners
+while a legacy Preview monitor expects one owner. A private native-positive
+reproduction remains required; no display transaction, lock or sleep was
+attempted. The zero-byte rfkill RW-open probe proves transient access only.
+Observation proof: 10,240 bytes, four members, SHA256
+d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

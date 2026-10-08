@@ -279,8 +279,10 @@ defect. Revised exact candidate 3040022a03 passed the strict build, 32 main
 private-fixture gates, seven standalone applet gates and staged public SDK
 header poison/restoration checks. Failed-open teardown removes a filter only
 when its registration succeeded; the unchanged wrong-GUID regression verifies
-that refusal remains safe. Independent final native-evidence review, full
-effective helper-unit qualification, Portage installation and ordinary selected
-control remain open. A separate
+that refusal remains safe. Root independently accepts the exact raw evidence
+and SDK poisons; integration at 3b4275ace passes the strict 33-target build,
+40 owning CTests and 282 Qt checks. Full effective installed helper-unit
+qualification, Portage delivery and ordinary selected-radio control remain
+open. The next immutable recipe must declare dev-libs/dbus directly. A separate
 transient O_RDWR open/fstat/close with zero bytes transferred proves access
 only, not radio mutation or helper behavior.

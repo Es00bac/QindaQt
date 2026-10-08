@@ -32,25 +32,30 @@ documentation-only and earlier model-escalation defaults.
 ## October 8 installed core progress and remaining scope
 
 R17 is installed through Portage with independently verified artifact and image
-identity. Public Audio inventory/control now works; the owner confirms devices
-in Settings and the installed AI popup opens. Oversized Audio controls remain
-an active defect: exact compact c98 source is being qualified against31 owning
-rows after preserved old/fixed tests exposed selected-screen geometry issues.
-Integrated Clipboard22/172 and Power6/56 checks pass but await signed delivery
-and ordinary-session qualification. Bluetooth304 teardown repair is in its
-bounded native acceptance loop; there is no installed permanent recovery claim.
+identity. Public Audio inventory/control works; the owner confirms devices in
+Settings and the installed AI popup opens. Compact 91530dc passes 31/31 owning
+CTests and 171 Qt checks, but a fresh owner-scale image reveals overlapping
+application controls. Exact 65f8826 repair and c75dea4 regression control have
+independent source acceptance d7e22764; old/fixed native proof and root image
+acceptance remain. The compact presentation is not
+installed.
 
-Full mixer gain/quiet-start work requires an independently reviewed,
-Portage-owned PipeWire loopback listener cleanup before borrowed-Core module
-qualification. Source and dependency proposals are progress, not working audio
-behavior. Android has no initialized/trusted app-window journey; Windows has
-no complete real-app pass. USB/File Manager, safe Move/Trash, network expansion,
+Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 checks pass.
+Bluetooth 3040022/7686226 is integrated at 3b4275ace with independently verified
+native/SDK evidence. Accepted ADR0359 does not close signed delivery, installed
+helper/radio or ordinary control. These remain explicit next gates.
+
+Full mixer gain/quiet-start requires the source-accepted Portage loopback
+cleanup b489a5f8, exact pre-load image admission and lifecycle/ASan/runtime
+qualification. Source c17fd9/de491fa is progress without working production
+gain. Android has no initialized/trusted app-window journey; Windows has no
+complete real-app pass. USB/File Manager, safe Move/Trash, network expansion,
 Viewer, administration/recovery, accessibility, scoped agents and newcomer
 acceptance remain required.
 
 The manager's educated planning estimate credits these partial slices: best
-10 working weeks, plausible6–16 weeks for the full owner scope including mixer
-and Android/Windows; immediate core/presentation repairs1–3 working days.
+10 working weeks, plausible 6–16 weeks for the full owner scope including mixer
+and Android/Windows; immediate core/presentation work 1–3 working days.
 This is an estimate with runtime/hardware uncertainty, not a percentage or
 acceptance evidence. Exact current candidate, reviewer and next gates remain
 in the task list, handoff and delivery queues.
@@ -340,11 +345,12 @@ behavior and evidence; this audit and its assignments add none.
 
 ## Installed core recovery and current acceptance — 2026-10-08
 
-InstalledR17 restores Audio inventory and a real default-volume roundtrip;
-the owner confirms device discovery in Settings and reports popup overflow/no
-scroll plus excessive Settings spacing. Compact presentation and full real
-console processing remain active required repairs. Integrated Clipboard22/172
-and Power6/56 focused native gates pass; their installed startup checks remain.
-Neither Android nor Windows has passed a complete app journey. The
-current source record in `docs/HANDOFF.md` separates exact current evidence, active owners and
-remaining full-plan gates. No whole ED outcome is closed by these bounded slices.
+Installed R17 restores Audio inventory and a real default-volume roundtrip.
+The owner confirms Settings discovery and reports popup overflow/no scroll and
+excessive spacing. Compact 91530dc passes 31/31, but root's owner-scale image
+requires application-row repair before packaging. Integrated Clipboard 22/172,
+Power 6/56 and Bluetooth 40/282 checks pass; installed startup and physical
+control remain separate gates. Full mixer processing remains unfinished.
+Neither Android nor Windows has passed a complete app journey. The current
+source record in `docs/HANDOFF.md` separates evidence and remaining gates.
+No whole ED outcome is closed by these bounded slices.

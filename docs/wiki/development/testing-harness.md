@@ -4966,7 +4966,12 @@ requires the actual returned frame to carry the foreign connection's real sender
 and the held serial/nonce before asserting rejection, paired with legitimate
 success. Callback cancellation is positively observed before the no-completion
 assertion. The session broker uses its ordinary
-permissive policy. New source execution remains pending.
+permissive policy. Exact 3040022/7686226 passes 32 main private-fixture and
+seven standalone applet gates. Independent manager integration at 3b4275ace
+passes a strict 33-target build and 40 owning CTests, including the staged
+production applet, with 282 Qt checks and zero failure/skip/blacklist.
+The effective installed helper unit and physical selected-radio action remain
+separate gates.
 
 Separately record the effective installed helper namespace and RW-open
 admission before any authorized selected-radio write/readback. A successful

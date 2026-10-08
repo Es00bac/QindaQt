@@ -1,17 +1,25 @@
 ## Current Platform gates — 2026-10-08
 
-InstalledR17 Audio1 Ready and Settings inventory are verified. Integrated Power
-startup6/56 and Clipboard22/172 pass; signed delivery/ordinary startup is next.
-Astra owns BT native sender repair after exact design88c3/review348041.
-Platform owns compact Audio popup/Settings source atf2bb; Media owns real console
-gain/admission/quiet-start source. Root alone touches live services/devices and
-installs. Astra holds sole qinda24/24 native lease for exact304 Bluetooth repair;
-Platform holds sole laptop32/16 lease for exactc98 compact Audio qualification.
-All physical, foreign-runtime and remaining ED gates stay open. Exact evidence
-and full scope: [Handoff](../../../docs/HANDOFF.md).
+Installed R17 Audio1 Ready and Settings inventory are verified. Clipboard
+22/172, Power 6/56 and Bluetooth 40/282 integrated checks pass. Bluetooth
+3040022/7686226 is accepted and integrated at 3b4275ace; installed helper/radio
+and signed core delivery remain open. The qinda native lane is released.
 
+Compact Audio 91530dc passed 31/31 and 171 Qt checks. Root's fresh owner-scale
+image rejected application-row overlap. Platform source 65f8826/control c75dea4
+have Astra source acceptance d7e22764 and a bounded old/fixed laptop native
+lease at -j32 -l16; root image review remains. No packaging grant is active.
 
-New read-only laptop owner equality confirms Compositor and ScreenSaver owners differ. Display runtime still uses legacy same-owner SessionLockStateMonitor; Preview safety may remain Unknown despite ready inventory. Next gate: focused native-positive private reproduction and repair through the public native attachment boundary, preserving locked/unknown/loss guards. No display transaction, lock or sleep was attempted. Astra Bluetooth304 acquired-filter cleanup is root source-accepted; the author reports main32/32, with applet and root evidence review still pending. Media PipeWire overlay b489 at authoritative master b128 is source-only, awaiting Astra review and Portage/private lifecycle gates.
+Media authors package-image admission and the lifecycle/ASan/Portage recipe
+without a native lease. Its c17fd9/de491fa and overlay b489a5f8 have source
+acceptance only. Root alone controls live devices/services and installs.
+Foreign-runtime, physical and remaining ED gates stay open; see
+[Handoff](../../../docs/HANDOFF.md).
+
+Display Preview's legacy same-owner monitor conflicts with observed split
+Compositor/ScreenSaver owners. Next: private native-positive reproduction
+through the public native attachment boundary, preserving locked/unknown/loss
+guards. No host display transaction, lock or sleep was attempted.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 
