@@ -129,3 +129,22 @@ A tested stock runtime provides authenticated per-app surface mapping; a
 shared-prefix application can demonstrate safe independent stop; an app
 requires self-updating executable content; or new privilege/data-sharing
 needs exceed the recipe materializer and existing portals.
+
+## 2026-10-08 clarification: qualify stock windows before a guest fork
+
+The original feasibility ordering remains: qualify stock Waydroid multiwindow
+before deciding that a custom guest producer is necessary. Renderer-platform
+origin and registered application association are distinct. An authenticated,
+lifetime-pinned Waydroid renderer connection can support an Android platform
+decoration without claiming which guest package owns a surface; it grants no
+app authority. Per-app catalog/grant/context/force-stop association still needs
+the full trusted package/task/surface and launch evidence. HWC-parsed layer text,
+app_id and titles remain display-only. See the
+[stock experiment and package gates](../architecture/foreign-applications.md#stock-android-first-platform-origin-and-application-identity).
+
+A fixed private-feasibility Portage image recipe may use the stock preinstalled
+image path with OTA disabled, exact archive/member/image digests and preserved
+composite notices. It does not constitute permission to redistribute the images,
+a complete source-correspondence audit, initialization, guest execution or
+installed acceptance. No custom Android build is required merely to test stock
+ordinary windows. This Proposed ADR does not claim either origin path landed.

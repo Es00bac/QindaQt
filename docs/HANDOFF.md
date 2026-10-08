@@ -1,3 +1,41 @@
+## Installed R20 and current delivery gates — 2026-10-08T17:19:42+00:00
+
+R20 is installed on the laptop through Portage. Independent final artifact
+acceptance8557ae and root installed verification match all2332 regular files and
+four symlinks to signed package75e37f24. The installed proof archive is preserved
+on qinda (SHA2566dc1d7f1f5e6ee2567526772f7ff871cc9fd59a1417aabaf8bdd9bf9955983bc).
+No desktop restart was performed; the next login loads the new shell. After
+installation all seven inspected core services are active. A read-only public
+Audio1 observation has a Ready snapshot, Bluetooth default output, ten outputs,
+seven inputs and32 streams with volume control. This is inventory/control
+availability evidence; current UI, keys, audible output and the complete mixer
+remain separate acceptance gates.
+
+Android stock-first architecture da559 is integrated from independently
+accepted99b92233. Image recipe486 fixes Portage's generated-DISTDIR symlink
+boundary without changing the final no-follow/full-hash verifier. Its15 synthetic
+controls pass independent reviewfbcca. Fresh exact package inputs were rehashed
+by root; a real package remains pending. Both prior launcher/unpack failures
+are retained. Astra's minimal KVM candidatef676 is under separate independent
+source review; guest boot and two ordinary app windows remain unrun. Windows
+635's first attempt stopped before its window steps on adopted-child accounting;
+server retirement alone passed. The bounded ownership repair remains next.
+
+Files source9bec is independently accepted18d0ae. First native preparation
+failed before compilation because systemd-run expanded the shell PID argument.
+The smallest corrected launcher plan d6daa disables that expansion and awaits
+renewed exact admission. Audio gain resource8 source5eb is independently
+accepted184d13; fresh old-ASan package, loaded-module/lifetime/PCM and production
+gain remain open. Claude and other-provider fresh usage feeds, the full audio
+mixer and remaining ED/foreign/hardware/newcomer journeys remain required.
+
+Only one heavy cohort runs at a time: qinda8jobs/load8, CPUquota8,12GiB/no swap,
+half physical cores0-5,12-17 and nice10; laptop4jobs/load4 with half-core affinity.
+Other projects and global build settings are untouched. Today's deadline and
+full scope remain. No whole ED milestone or feature weight advances from these
+bounded source, package or installed checks. Historical entries below retain
+the state and limitations observed at their timestamps.
+
 ## Current package/source gates — 2026-10-08T16:19:23+00:00
 
 R20 signed package75e37f24 and all seven bounded package-image gates pass;
