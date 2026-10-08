@@ -204,3 +204,23 @@ stock creates shared runtime/configuration; explicit private HOME and runtime
 remain0700. The private guest bus parent is0755. Host stage protections remain
 unchanged. Fixed operation-stage, errno and bounded256-character exception
 diagnostics distinguish later failures. No app success is claimed.
+
+
+### Private stock Pulse prerequisite (source candidate, not Audio1)
+
+The sixth guest reached LXC mount setup but refused the stock mandatory
+`/run/user/1000/pulse/native` bind. The guest now starts the installed
+PipeWire and pipewire-pulse foreground binaries as UID1000 before the
+Waydroid session. Their private native sockets must report the exact held
+child PID/UID/GID, unchanged process start and installed executable inode.
+Two pidfds remain held through bounded child cleanup. No WirePlumber, host
+socket, host sound device or host daemon is used. The additional77
+Portage-owned public module/config/binary inputs total5,948,275 bytes;
+all original6730 input records remain byte-identical. Actual new stage,
+archive and guest qualification are pending.
+
+This endpoint is only a stock-container prerequisite. It does not qualify
+Android audio integration: real app streams must later enter QindaQt's
+Audio1 graph, retain trustworthy app association, support per-app gain/mute
+and configured bus/output routing alongside native playback. The guest
+receipt explicitly keeps audioIntegrationQualified false.
