@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: waiting — Core SDK actual old/fixed closure gates qualified and lease released; exact candidate awaits manager independent review/integration
-- Base: a462c415a3678dc8dc96f15bd996abdceea20189
-- Branch: worker/everyday-core-sdk-20261008
+- Status: waiting — urgent r17 exact source/recipe candidate ready for manager review; signed build-only lease pending, no compiler/runtime process
+- Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
+- Branch: worker/everyday-core-release-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -153,3 +153,7 @@
 - 2026-10-08T01:45:55+00:00: Manager granted sole focused compiler lease after Astra release. Observed native MAKEOPTS -j24 -l24; exact a462 Audio modules git-archived to isolated old source, first baseline gate executing. Fixture Wall/Wextra/Werror only, no stronger warning claim; private nonexistent bus addresses, no host install.
 
 - 2026-10-08T01:47:46+00:00: Direct Core SDK olda462 stage8headers fails isolated consumer1 at missing audio_console poison; corrected realFILE_SET stage9headers passes full driver0,10 child steps with only required negative exit1, restored build/run0. Consumer actual C++20 Wall/Wextra/Werror stage+poison includes, no source fallback. Native MAKEOPTS24/24 observed; all compiler/private fixture resources released. Exact source b6 native-tested, pending manager review; no install/liveAudio claim.
+
+- 2026-10-08T02:33:48+00:00: Created fresh desktop5b7f/overlay24b R17 worktrees; copied immutableR16 recipe additively and selected accepted Audio+SDK sourcecandidate only. Reproducible archive allGitblobs/linkbytes/defaulttar modesverified. Initial verifier wrongly expected0644 instead of gitarchive0664; exactfailure preserved and corrected mode rule, no archive content failure. Root integratednative stillpending, no Portage/compiler/install action; Powerbbe805 preservedseparately.
+
+- 2026-10-08T02:38:55+00:00: R17 runtime5b7f freeze confirmed by manager integrated Audio24/221Qt+SDK and Printing/Copier26/157Qt. Exact overlayb128176 preserved; source archive39,276,265bytes SHA256bbb3bc47..., 9626Gitblobs/defaulttar modes verified, two recuts equal. Metadata declarations matchr16, release7/7/fork/tree/bash/530docs strict/whitespace0. Newrecipe/newDIST mirror exact; inherited historical Manifest differences preserved. No artifact/install; signed private Portage build awaits exact recipe review and lease after Media.
