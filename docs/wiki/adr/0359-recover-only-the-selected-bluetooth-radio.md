@@ -241,5 +241,9 @@ The native source cache records archive/file hashes. The current source uses
 separate private wire, codec, authority and service collaborators; its public
 factory and port expose no native transport objects. The 25 ms bounded pump
 also drains queued output and buffered messages when socket readability alone
-would not progress them. New source and fixtures remain uncompiled until exact
-independent review; this is not native or installed acceptance.
+would not progress them. Independently source-reviewed candidate 3040022a03
+passed its strict build, 32 main private-fixture gates and seven standalone
+applet gates; both staged public-header poisons failed as expected and restored
+consumers passed. The unchanged wrong-GUID fixture exposed and then verified
+failed-open filter-registration ownership. Native evidence still requires
+independent handoff review; this is not installed/radio acceptance.
