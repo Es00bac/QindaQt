@@ -354,8 +354,8 @@ behavior and evidence; this audit and its assignments add none.
 Installed R17 restores Audio inventory and a real default-volume roundtrip.
 The owner confirms Settings discovery and reports popup overflow/no scroll and
 excessive spacing. Compact b021/00c is source and root visually accepted;
-integration5858bcc passes37 CTests and273 Qt checks. R18 signed package and independent artifact review now pass;
-Portage adoption and installed compact startup remain. Integrated Clipboard22/172,
+integration5858bcc passes37 CTests and273 Qt checks. R18 signed package, independent review and laptop Portage adoption pass;
+next-login compact startup and actual owner usability remain. Integrated Clipboard22/172,
 Power6/56 and Bluetooth40/282 checks pass; ordinary startup and physical
 control remain separate gates. Full mixer processing is unfinished.
 Neither Android nor Windows has passed a complete app journey. The current

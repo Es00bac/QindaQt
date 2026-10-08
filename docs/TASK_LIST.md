@@ -1,3 +1,13 @@
+## Installed R18 and actual Viewer gates — 2026-10-08T08:22:04+00:00
+
+Portage-only R18 binary adoption passes0/20.36s and2321files+4links match image/
+VDB; world and saved profile unchanged. Current shell remains running; compact
+UI next-login/physical usability remains open. Indexed installed proofe95ffcaf
+is verified on both hosts. Exact251 Viewer strict build passes, actual eight
+owning tests3/8: long-text fixture bound and empty edit.text shortcut block
+the other five rows. Actual failuree30009a0 is preserved; no keyboard pass.
+All full-plan, mixer, foreign, provider and required newcomer outcomes continue.
+
 ## Current exact artifact and native continuation — 2026-10-08
 
 R17 remains installed. Runtime5858 compact Audio and newer Clipboard/Power/
