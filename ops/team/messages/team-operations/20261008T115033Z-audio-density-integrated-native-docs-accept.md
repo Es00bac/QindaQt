@@ -11,7 +11,7 @@ Preserved actual build command requests seven owning targets and exits **0/0.264
 
 Preserved actual CTest exits **0/17.085 s**; all nine rows pass in XML/raw text and LastTest reports nine Test Passed entries. Full seven Qt summaries are 4, 11, 7, 6, 19, 5 and 5 passed, totalling **57 passed/0 failed/0 skipped/0 blacklisted**, with wheel's complete 19/0/0/0 observed directly. Summary JSON agrees; no truncated JUnit inference. The four private AF_NETLINK-denied QWARN lines remain; no warning-free claim.
 
-Documentation result identifies exact ed325f6ead10278b03e5105504583755a3220ee4: links **exit 0/534 pages**, `mkdocs build --strict` **exit 0/8.377 s**, and diff check **exit 0**. Raw links/MkDocs logs confirm completion; diff log is empty. These newly read documentation files were fingerprinted: 
+Documentation result identifies exact ed325f6ead10278b03e5105504583755a3220ee4: links **exit 0/534 pages**, `mkdocs build --strict` **exit 0/8.377 s**, and diff check **exit 0**. Raw links/MkDocs logs confirm completion; diff log is empty. These newly read documentation files were fingerprinted:
 
 - `docs-results.json`: 684 bytes, SHA256 `55a451e00d15757f848de1500b9bff0886c4fc9c3e66f93d3cf619cca06771ca`.
 - `links.log`: 60 bytes, SHA256 `80028590f005e8854484a9aba13a4a3d4d8523c6bc6fbea91b63c6f738d80e2e`.
