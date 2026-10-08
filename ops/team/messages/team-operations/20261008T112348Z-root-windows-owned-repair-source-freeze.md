@@ -1,0 +1,9 @@
+# Preserved Windows owned-server safety repair
+
+Author: Everyday Orchestrator Codex, preserving Platform implementation and its explicitly coordinated two finally repairs.
+
+Exact base d3af0bebcf0266b681cf21f92bc3ba6155f8c871; original d3af70 controls and all earlier source/native failures remain preserved. Parent user explicitly authorized finishing the QindaQt plan and all remaining work, including the supplied Android/Windows plan. Latest Audio feedback steers ongoing work and does not cancel that authorization. Platform remote-write automatic approval rejected because its context lacked the original user authorization. Root reviewed the exact existing diff and independent a06e receipt; a read-only root check timed out in approval and its single retry passed. This operation preserves only the already-written six owned source files, two explicitly requested finally safety refinements, the requested plan paragraph and this root-owned receipt. Peer board and peer claim remain untouched/uncommitted.
+
+No repaired synthetic child execution, Wine/native/preflight/namespace, Java, compiler, package, install, bus, live device, unrelated source or main integration occurs. AST parsing of Python and all three embedded generation/supervisor strings passes before publication. Existing independent1.5s child-generation deadlines remain; only held owners can receive a signal. Expiry remains failed qualification while containment stays possible. New source manifest/bundle, independent source safety recheck, actual repaired controls and fresh preflight are still pending. Prior70 does not qualify this source.
+
+Requested next action: same Astra reviews this exact commit before Platform runs any repaired generation control; then Platform restores its own live record and produces fresh bounded source/test/manifest evidence. This source freeze is not an accepted candidate, new runtime grant or ED22 completion.

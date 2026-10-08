@@ -11,16 +11,21 @@ class OwnedServer:
         self.deadline=deadline
         try:self.child=child_type([program,"-f","-p"],env,log)
         except Exception:self.failed=True;self.files.close();raise
+    def require_time(self):
+        remaining=self.deadline-time.monotonic()
+        if self.failed or remaining<=0:
+            self.failed=True;raise RuntimeError("owned server deadline expired")
+        return remaining
     def start(self,seconds=5,monitor=lambda:None):
         if self.failed or self.ready:raise RuntimeError("initial startup cannot be re-admitted")
-        end=min(self.deadline,time.monotonic()+seconds)
+        self.require_time();end=min(self.deadline,time.monotonic()+seconds)
         while time.monotonic()<end:
             try:
-                monitor();self.child.check_identity();self.files.current_prefix()
+                self.require_time();monitor();self.child.check_identity();self.files.current_prefix();self.require_time()
             except Exception:self.failed=True;raise
             try:
                 self.files.acquire();value=self.files.listening(self.child.process.pid)
-                self.child.check_identity();self.ready=True
+                self.child.check_identity();self.require_time();self.ready=True
                 self.initial=value;return value
             except OSError as error:
                 if error.errno not in {errno.ENOENT,errno.ECONNREFUSED}:self.failed=True;raise
@@ -30,16 +35,18 @@ class OwnedServer:
     def guard(self):
         if self.failed or not self.ready:raise RuntimeError("initial server admission lost")
         try:
-            self.child.check_identity()
+            self.require_time();self.child.check_identity()
             value=self.files.listening(self.child.process.pid)
             self.child.check_identity()
+            self.require_time()
             if value!=self.initial:raise RuntimeError("initial server evidence changed")
         except Exception:self.failed=True;raise
     def retire(self):
         self.guard()
         try:
-            result=self.child.retire(min(5,max(.01,self.deadline-time.monotonic())))
-            result.update(self.files.released());result["prefix"]=str(self.files.prefix)
+            result=self.child.retire(min(5,self.require_time()))
+            self.require_time()
+            result.update(self.files.released());self.require_time();result["prefix"]=str(self.files.prefix)
             result["qualified"]=True;return result
         except Exception:self.failed=True;raise
     def contain(self):
