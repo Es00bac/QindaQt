@@ -100,8 +100,10 @@ or decoded image on a serialized worker thread. `ViewerController` owns that
 thread and joins it during teardown. Only value requests/results cross the
 thread boundary; Poppler objects never enter QML or the scene graph. Each
 request has a revision, and close/open/navigation/zoom invalidate old results.
-The engine-owned image provider stages a copied frame before publishing its own
-GUI-thread revision to QML. Image URL updates consume that revision; a controller
+A private GUI-thread publication object stages the engine-owned provider's
+copied frame before publishing its revision to QML. Its constructor takes that
+provider and composition parents it to the engine, without relying on provider
+QObject inheritance across Qt versions. Image URL updates consume that revision; a controller
 notification alone cannot promise that a separate image-staging slot ran first.
 Provider requests hold only a short mutex while copying the image.
 Obsolete queued work is skipped, and Poppler's cancellation callback stops an

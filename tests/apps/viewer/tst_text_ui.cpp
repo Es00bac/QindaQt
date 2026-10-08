@@ -61,9 +61,10 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     QQmlApplicationEngine engine; QSignalSpy warnings(&engine, &QQmlEngine::warnings);
     auto *provider = new QindaQt::Viewer::FrameProvider;
     engine.addImageProvider(QStringLiteral("document"), provider);
-    connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged, provider,
-            [&] { provider->setFrame(viewer.frame()); });
-    engine.rootContext()->setContextProperty(QStringLiteral("frameProvider"), provider);
+    auto *publication = new QindaQt::Viewer::FramePublication(*provider, &engine);
+    connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged, publication,
+            [&] { publication->setFrame(viewer.frame()); });
+    engine.rootContext()->setContextProperty(QStringLiteral("framePublication"), publication);
     engine.rootContext()->setContextProperty(QStringLiteral("viewer"), &viewer);
     engine.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
     engine.load(QUrl::fromLocalFile(QStringLiteral(VIEWER_MAIN_QML)));
