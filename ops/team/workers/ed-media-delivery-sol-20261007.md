@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — priority different-author exact e053e1f8 Audio repair/source evidence review; clipboard source investigation preserved
+- Status: working — clipboard source RCA and smallest native privacy composition proposal; exact Audio e053 review accepted
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
 - Ownership: clipboard service app/private observer, owning CMake/startup privacy tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: exact Audio e053e1f8 source/raw proof review without compiler, then clipboard source RCA/proposed composition
+- Next gate: report clipboard public-native composition to root before implementation; source-only until native lease assigned
 
 ## Updates
 
@@ -79,3 +79,5 @@
 - 2026-10-08T01:45:22+00:00: Claimed clipboard enabled-history/unlocked-login recovery at exact manager a6f0953d5acd87cdb9451c03aa596d629b9fa9a9 (hub main matched), new isolated worktree/branch. Read instructions/wiki/native observer inventory; no product edits or compiler/host clipboard capture. Current highest ADR0357; requesting0358 reservation. Source RCA/proposed smallest safe composition precedes implementation, public attachment/native receipt boundary only.
 
 - 2026-10-08T01:47:01+00:00: Manager reserved clipboard ADR0358 and prioritized newly frozen Audio e053e1f85310ea921fed6f48d470e04f460fade7 review. Clipboard source unchanged; legacy all-three-owner quorum and PID admission conflict with split native compositor/session facade source-traced. Reviewing exact Audio fix and author raw80Qt/old8failure evidence now, no independent compiler/host actions while Platform owns native lease.
+
+- 2026-10-08T01:50:29+00:00: Exact Audio e053 source ACCEPT0/0/0/0; all8 author log hashes independently matched, LastTest actual8passed/80Qt0fail0skip, original12pass8fail records inspected. Conservative empty channel truth blocks partial writes without weakening validation; helper unchanged and parent CMake scope repaired. Reviewer compiler/host/native idle. Preserved exact acceptance receipt and resumed clipboard source proposal in isolated a6 tree; ADR0358 reserved.
