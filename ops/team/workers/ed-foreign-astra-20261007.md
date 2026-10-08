@@ -1,11 +1,17 @@
 # ED foreign application architecture
-- Status: available — Android9d0f source/input proposal frozen; ready for independent review repair and Files native failure recheck.
-- Outcome: concrete stock runtime prerequisite plan and enforced boot-stage input admission; runtime remains unqualified.
+- Status: available — exact Android eight-prerequisite transaction proposal frozen for independent review; no install/build/stage/boot grant.
+- Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
-- Branch: worker/everyday-android-stock-runtime-20261008; isolated own source tree.
+- Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T18:07:09Z — Frozen exact three-phase prerequisite proposal: preserve oldlibcap/pretend/ordinary eight-atom oneshot buildpkg merge, each separately admitted. Read hooks/default features; both proposed names/IDs absent in local account files, NSS recheck required. No command executed beyond earlier pretend/read-only metadata; no resource lease. Files5bfd native ACCEPTcc44 preserved.
+
+- 2026-10-08T18:02:41Z — Independently rehashed43 readonly proof files and prior229archive; source parity2a708, Release11/11/183Qt+12pure and warmDebug1/1/32Qt confirmed, originalDebug10/11 retained. All6 caps/waits/settlement read, no descendant-empty inference or replay. Files5bfd SOURCE/native ACCEPT; move to Android source-only transaction plan, no heavy lease.
+
+- 2026-10-08T17:48:39Z — Claimed/completed2a708/c407 source/raw/argv recheck: productdelta0, fixture captured before replacement;8source/4warm/3archive pins verified. ActualDebug182pass1fail and12pure,30barrier/fourrestart rows read; not a fresh fullDebugpass. SOURCE/argv ACCEPT, no native/compiler resource held.
 
 - 2026-10-08T17:43:50Z — Frozen9d0f:18 tiny controls/AST10/docs534/strict8.19/diff0. Normal pretend13 and prerequisite pretend8 pass; explicit all13 build-only refuses unmerged deps, preserved. Exact eight-package transaction proposed, no merge/build/stage/VM. Package artifacts/full ELF+Python+GI+Qt+module closure remain required. No resources held.
 
