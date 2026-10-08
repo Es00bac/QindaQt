@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — repairing root review negative-fixture gaps on immutable Bluetooth04a6; source-only, no native lease.
+- Status: available — Bluetooth58af test-only repair frozen for root recheck; Audiofc378 NeedsFix03c7 complete; ready for exact repair or upstream lifetime proposal review.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: explicitly RELEASED all qinda compiler/private-runtime resources to root; source only. No host bus/device/radio/services or installed actions.
 ## Updates
+
+- 2026-10-08T04:55:34Z — Handoff: Bluetooth58af9d542 exact test-only descendant pushed, production remains04a6; no new native execution. Root recheck/grant pending. Audiofc378 NeedsFix03c7 delivered with direct source/package evidence. Resources none; available for same-reviewer repairs or separate proposed Portage lifetime patch review, not claiming program completion.
 
 - 2026-10-08T04:53:09Z — Audio exactfc378 independent NEEDS_FIX preserved03c7ac3 with three confirmed source blockers and Portage archive provenance; no native. Root Bluetooth04a6 review requested non-vacuous native foreign-reply delivery witness and observed cancellation. Added test-only repair plus owning harness prose; production bytes unchanged, source review before native.
 
