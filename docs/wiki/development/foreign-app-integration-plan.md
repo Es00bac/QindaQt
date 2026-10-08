@@ -12,17 +12,24 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
-## Latest stock-runtime and package boundary — 2026-10-08T17:19:42+00:00
+## Current stock-runtime boundary — 2026-10-08T18:39:21.869979+00:00
 
-The stock-first architecture is now integrated from accepted da559/99b92233.
-Recipe486 resolves the actual Portage-generated distfile link failure while
-preserving the original verifier. Independent15 synthetic controls pass; root
-fresh archive/source pins match. A real signed data package is still pending.
-Both first launcher and unpack failures remain preserved. Astra's minimal KVM
-sourcef676 is under independent review; no guest initialization, boot or two-app
-window success is claimed. Windows635 reached both owned server retirements,
-but refused unknown adopted children before window steps. Its ownership repair,
-rendered input/resize/independent close and production identity remain open.
+The stock-first architectureda559 is integrated. Repaired image recipe486 now
+has a real signed909588480-byte data package02f97185; root independently
+verified all41 proof payloads/42tar members, current complete package and all11
+image entries, including exact stock system/vendor bytes. New postpackage
+15 owning controls pass; the original src_test summary remains unobserved.
+No init/OTA/mount/guest or public whole-image correspondence claim follows.
+
+KVM sourcef676/d174 and enforced runtime-input9d/b39 are independently source
+accepted. Exact eight ordinary library/account prerequisites8601/02ce await
+root protected-input preparation and ordinary Portage transaction. Account
+creation and libcap ABI32/PAM effects are explicit; no daemon atoms/starts.
+Guest closure/boot/two app windows remain unrun. Windows985 causal-domain
+source046 is accepted, and21 bounded controls pass after the retained initial
+cwd launchfailure. The rapid unit has configured rather than live-observed
+resource/outer-start evidence; full Wine preflight/windows/cleanup, rendered
+input/resize/independent close and trusted identity are still open.
 
 ## October 8 implementation progress
 

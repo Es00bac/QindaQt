@@ -31,6 +31,8 @@ enum class MutationKind {
   Delete,
   Compress,
   Extract,
+  InspectRecovery,
+  RestoreRecovery,
 };
 
 enum class MutationError {
@@ -65,6 +67,8 @@ struct MutationRequest final {
   QString sourcePath;
   QString destinationPath;
   QString trashToken;
+  // Recovery actions accept a catalog operation UUID, never a QML path grant.
+  QString recoveryOperationId = {};
   QStringList declaredRoots;
   std::optional<FileIdentity> expectedSource;
   std::optional<FileIdentity> expectedParent;
@@ -107,12 +111,33 @@ struct MutationOutputObservation final {
   std::optional<FileIdentity> parentIdentity;
 };
 
+// Immutable observations; never filesystem capabilities. Persisted evidence is
+// freshly admitted by the backend on every deliberate inspect/restore request.
+enum class MutationRecoveryDisposition {
+  None, SourceAtOriginal, PartialStage, DestinationPublished, SourceRetained,
+  CompletedWithRetention, Restored, UnexpectedEntryRetained, UnknownPlacement
+};
+struct MutationRecoveryReceipt final {
+  QString operationId;
+  QString phase;
+  MutationRecoveryDisposition disposition = MutationRecoveryDisposition::None;
+  QString sourcePath;
+  QString destinationPath;
+  QString stageDirectory;
+  QString recoveryDirectory;
+  quint64 retainedBytesEstimate = 0;
+  bool uncertain = false;
+  bool observedEffects = false;
+  bool restoreAvailable = false;
+};
+
 struct MutationItemOutcome final {
   bool attempted = false;
   QString sourcePath;
   QString destinationPath;
   MutationError error = MutationError::None;
   MutationOutputObservation output;
+  MutationRecoveryReceipt recovery = {};
 };
 
 struct MutationResult final {
@@ -126,6 +151,8 @@ struct MutationResult final {
   MutationOutputObservation outputObservation;
   // Controller value copies in request order, including unattempted suffix.
   QVector<MutationItemOutcome> itemOutcomes;
+  MutationRecoveryReceipt recovery = {};
+  QVector<MutationRecoveryReceipt> recoveryReceipts = {};
 
   [[nodiscard]] bool ok() const { return error == MutationError::None; }
 };

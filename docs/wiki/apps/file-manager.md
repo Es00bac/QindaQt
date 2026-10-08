@@ -574,8 +574,10 @@ modification time where the platform permits. Failed copies preserve output as
 described below. Rename and move
 commit with Linux `renameat2(RENAME_NOREPLACE)`, so a destination created by
 another writer after preflight is preserved and returns `already-exists`
-atomically. They preserve the filesystem's existing metadata; cross-device move
-is refused rather than silently degrading to copy-and-delete.
+atomically. Same-device relocation preserves existing metadata. Cross-device Move now
+publishes a verified destination and retains the original tree for recovery.
+Independent and manager native qualification passes; installed graphical and
+physical journeys remain pending.
 
 ### Failed-copy output observations
 
@@ -611,10 +613,10 @@ values. Dismissal clears the notice; it does not mutate any output.
 
 Retained output consumes space and survives cancellation; there is no automatic
 cleanup, persistent recovery record, restart deletion or new undo/restore
-operation. Full cross-device Move still returns a refusal. This initial safety
+operation. The failed-copy repair alone supplies no cross-device dispatch. This initial safety
 repair does not deliver the separate cross-device recovery design.
 
-### Proposed cross-volume Move recovery
+### Cross-volume Move recovery
 
 [ADR-0355](../adr/0355-preserve-source-bytes-during-cross-device-moves.md) and
 [File mutation recovery](../architecture/file-mutation-recovery.md) propose
@@ -623,9 +625,15 @@ private recovery storage on the source volume. Retained source bytes consume
 space until a separately authorized recovery lifecycle resolves them; no
 automatic deletion or restart replay is proposed. Typed receipts distinguish
 partial publication, retained source, cancellation, conflict and uncertainty,
-and restore refuses an occupied original path. This is a proposed contract:
-production cross-device Move still refuses, and home/per-volume Trash remains
-a separate boundary.
+and restore refuses an occupied original path. The integrated ED05 backend
+wires verified publication and whole-source retention through the existing
+serialized coordinator. Independent and manager native qualification passes;
+installed graphical and physical qualification is pending.
+Home/per-volume Trash remains a separate boundary. Graphical recovery discloses
+retained space, inspects private discovery without replay, shows literal paths
+and confirms fresh conflict-safe restore by operation UUID. Corrupt/partial
+records refuse automatic restore and remain inspection-only. No automatic
+expiry, cleanup or permanent release is exposed.
 
 ### Home Trash contract
 
@@ -1520,6 +1528,35 @@ identity change, nested and root symlink poison, cancellation cleanup, Trash
 round trips, an in-flight nested-directory swap, unique names, restore
 collision, orphan-payload allocation, vanished restore parents, empty Trash,
 an injected cross-device refusal, and a racing destination writer.
+The ED05 source candidate additionally supplies five focused native recovery rows
+and a standalone harness using the actual production boundary registry, plus
+fake-only graphical recovery controls. Author native qualification covers
+actual distinct-device transfer, strict metadata and disk-full
+faults, journal writer-version/readback barriers, bounded growing/truncated-source reads,
+cancellation, parent/entry replacement, child-exit
+restart inspection and explicit restore. Pure model and fake QML results do not
+qualify those production storage paths. Unexpected captures receive a durable Required record before a best-effort
+no-replace return. Fresh captured-tree, current parent/private-directory and
+vacant-name checks admit it; collision, cancellation, disconnect, changed capture
+or journal failure retains all candidates. Return never claims the selected
+original source restored. Owning strict compiler/native evidence is below;
+installed graphical and physical journeys remain open.
+
+Author native qualification on October8 uses actual distinct-device disposable
+storage, strict Debug/Release and poisoned subject buses/private XDG. Original
+full Debug CTest was10/11 with182Qtpassed/1failed; its only failed record fixture
+was repaired without changing production, then warm record-only Debug passed1/1
+and32Qtchecks. Other original Debug passes remain retained rather than rerun.
+Fresh full Release passes11/11 with183Qtchecks and12 pure runner controls,
+zero failures/skips/blacklists. All30 phase/barrier rows and four actual owned
+child-exit/wait/restart cases pass in original Debug and fresh Release. Current
+journal/catalog version guards, growing/truncated source bounds, replacement,
+cancellation and current retained-byte restore controls pass. Actual wrapper
+normal0/early-error7/timeout124 controls were qualified separately and retained.
+This is author evidence awaiting exact independent native review/integration;
+prior-version old/fixed comparison, installed graphical journeys and physical
+disconnect/power-loss remain separate. No full ED05 completion is claimed.
+
 Both offscreen rows run under `QT_FATAL_WARNINGS=1` with
 host display and session-bus variables removed. The
 boundary checker rejects dependencies on shell/services, D-Bus, KWin,
@@ -1844,3 +1881,21 @@ owner/attachment/root loss and reused paths are direct negative cases.
 Exact source/fixture, native, installed-package and physical insertion/eject
 qualification each require separate evidence. Source delivery and a passing
 private fixture cannot establish installed or physical-device completion.
+
+## Manager integration qualification — October 8
+
+The preceding author snapshots preserve their original handoff state. Exact
+5bfd source and native evidence received independent acceptancecc44; the manager
+applied only45 product/test/owning-doc paths and retained all prior failures.
+Strict integrated Release configuration/build exits0 (0.833/24.064seconds).
+The actual registry has11 rows and full serial CTest passes11/11 in4.187seconds:
+183Qtchecks plus12pure controls, zero failures/skips/blacklists. The actual
+recovery QML component fixture passes4/4 with fatal warnings and offscreen
+software rendering (fake controller; no installed journey is inferred).
+The capped owning unit exits0/29.295seconds; five direct parent witnesses verify
+eight-CPU quota,12GiB/no swap/tasks256,half physical affinity and nice10. Its
+post-exit default properties are not substituted for those live witnesses.
+Accepted ADR0355 governs the integrated storage contract. No startup replay,
+automatic cleanup/release or physical power-loss guarantee is introduced.
+Full ED05 remains open for installed GUI and physical journeys; prior-version
+comparison is separately recorded as unrun.

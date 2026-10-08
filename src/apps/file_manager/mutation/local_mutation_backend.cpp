@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QStandardPaths>
 
 #include <cerrno>
 #include <sys/stat.h>
@@ -137,10 +138,14 @@ namespace {
 
 LocalMutationBackend::LocalMutationBackend(QString homeTrashRoot,
                                            DeviceResolverPtr deviceResolver,
-                                           ArchiveCodecPtr archives)
+                                           ArchiveCodecPtr archives, QString recoveryCatalogPath)
     : m_deviceResolver(deviceResolver),
       m_homeTrash(std::move(homeTrashRoot), std::move(deviceResolver)),
-      m_archives(std::move(archives)) {}
+      m_archives(std::move(archives)),
+      m_crossVolume(recoveryCatalogPath.isEmpty()
+          ? QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation))
+                .filePath(QStringLiteral("file-manager/move-recovery"))
+          : std::move(recoveryCatalogPath)) {}
 
 std::optional<FileIdentity>
 LocalMutationBackend::identityForPath(const QString &path) {
@@ -170,9 +175,9 @@ MutationResult LocalMutationBackend::execute(
   case MutationKind::CreateFolder:
     return createFolder(request);
   case MutationKind::Rename:
-    return relocate(request, true);
+    return relocate(request, true, cancellation, progress);
   case MutationKind::Move:
-    return relocate(request, false);
+    return relocate(request, false, cancellation, progress);
   case MutationKind::Copy:
     return copy(request, cancellation, progress);
   case MutationKind::Trash:
@@ -191,6 +196,10 @@ MutationResult LocalMutationBackend::execute(
     return compress(request, cancellation, progress);
   case MutationKind::Extract:
     return extract(request, cancellation, progress);
+  case MutationKind::InspectRecovery:
+    return m_crossVolume.inspect(request.recoveryOperationId, cancellation);
+  case MutationKind::RestoreRecovery:
+    return m_crossVolume.restore(request.recoveryOperationId, cancellation);
   }
   return failure(MutationError::Unsupported, QStringLiteral("Unsupported operation"));
 }
@@ -215,7 +224,8 @@ MutationResult LocalMutationBackend::createFolder(const MutationRequest &request
 }
 
 MutationResult LocalMutationBackend::relocate(const MutationRequest &request,
-                                              bool renameOnly) {
+                                              bool renameOnly, const MutationCancellation &cancellation,
+                                              const MutationProgressCallback &progress) {
   if (const auto valid = validatePath(request.sourcePath, request.declaredRoots, false);
       !valid.ok()) {
     return valid;
@@ -247,8 +257,9 @@ MutationResult LocalMutationBackend::relocate(const MutationRequest &request,
     return failure(MutationError::Vanished, QStringLiteral("A source or destination vanished"));
   }
   if (*sourceDevice != *destinationDevice) {
-    return failure(MutationError::CrossDevice,
-                   QStringLiteral("Moving across filesystems is not supported"));
+    if (renameOnly)
+      return failure(MutationError::CrossDevice, QStringLiteral("Rename cannot cross filesystems"));
+    return m_crossVolume.move(request, cancellation, progress);
   }
   MutationResult result = relocateLocalNoFollow(
       request.sourcePath, request.destinationPath, *request.expectedSource,

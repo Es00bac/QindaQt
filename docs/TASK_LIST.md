@@ -1,4 +1,37 @@
-## Installed R20 and current delivery gates — 2026-10-08T17:19:42+00:00
+## Current implementation boundary — 2026-10-08T18:39:21.869979+00:00
+
+Files cross-volume recovery5bfd is integrated after independentcc44 acceptance.
+Manager strict Release11/11,183Qt plus12pure and fake recovery QML4/4 pass;
+retained source, journal barriers and explicit conflict-safe restore are wired.
+Installed GUI/physical ED05 journeys remain open. ED06 per-volume Trash is now
+being implemented in an isolated dependent worktree; no completion claim.
+
+R20 remains the latest installed laptop package. Public installed SDK observation
+confirms fresh ClaudeReady with two quota/reset windows, context token metrics
+and session cost, plus CodexReady quota/reset and lifetime tokens. Other feeds
+are unavailable. Its new13-member/12-payload evidence archive is preserved on
+qinda, SHA2565e65d5dd235e8a7d4b5ba2115ce37e6b949df5ba627b9c7630fb1854cf4f5366.
+Audio inventory/default Bluetooth/control availability remains qualified; full
+mixer, keys and audible/physical routing journeys remain separate.
+
+Android signed stock data02f97185 and complete two-image ledger8c9b9f85 pass
+root review. New postpackage owning15/15 tests pass0; the original Portage
+src_test count remains unobserved. Runtime input9d/b39 and permission-corrected
+eight-prerequisite proposal8601/02ce are source accepted; no merge/boot/app
+window success yet. Windows985 source046 is accepted; its corrected bounded
+controls now pass21 methods after a retained pre-module cwd launchfailure.
+Live resource/outer-start observation missed that rapid unit; configured caps
+are disclosed. Wine app windows/cleanup/identity remain next.
+
+Fresh Audio diagnostic rootunit settles1/409.745seconds after compile0/test1;
+all51 rows are retained45OK/5FAIL/1TIMEOUT but session-bus isolation evidence
+refuses, so no image/package/lifecycle follows. Exact Portage incremental
+ENV_UNSET mechanism7135 is diagnosed; narrow source repaire000 is under review.
+All historical failed labs remain unchanged. Full ED/foreign/hardware/newcomer
+scope stays open. EOD today (October8,America/Denver) remains the deadline, with
+one heavy8jobs/load8/12GiB/half-core/nice10 cohort and global settings unchanged.
+
+## Earlier installed R20 delivery boundary — 2026-10-08T17:19:42+00:00
 
 R20 is installed on the laptop through Portage. Independent final artifact
 acceptance8557ae and root installed verification match all2332 regular files and

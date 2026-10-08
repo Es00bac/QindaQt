@@ -5,6 +5,7 @@
 #include "device_resolver.h"
 #include "home_trash.h"
 #include "mutation_backend.h"
+#include "cross_volume_move.h"
 
 namespace QindaQt::Apps::FileManager {
 
@@ -18,7 +19,7 @@ public:
   explicit LocalMutationBackend(
       QString homeTrashRoot,
       DeviceResolverPtr deviceResolver = std::make_shared<LocalDeviceResolver>(),
-      ArchiveCodecPtr archives = nullptr);
+      ArchiveCodecPtr archives = nullptr, QString recoveryCatalogPath = {});
 
   [[nodiscard]] MutationResult
   execute(const MutationRequest &request,
@@ -31,7 +32,8 @@ public:
 private:
   [[nodiscard]] MutationResult createFolder(const MutationRequest &request);
   [[nodiscard]] MutationResult relocate(const MutationRequest &request,
-                                        bool renameOnly);
+                                        bool renameOnly, const MutationCancellation &cancellation,
+                                        const MutationProgressCallback &progress);
   [[nodiscard]] MutationResult copy(const MutationRequest &request,
                                     const MutationCancellation &cancellation,
                                     const MutationProgressCallback &progress);
@@ -50,6 +52,7 @@ private:
   DeviceResolverPtr m_deviceResolver;
   HomeTrash m_homeTrash;
   ArchiveCodecPtr m_archives;
+  CrossVolumeMove m_crossVolume;
 };
 
 } // namespace QindaQt::Apps::FileManager

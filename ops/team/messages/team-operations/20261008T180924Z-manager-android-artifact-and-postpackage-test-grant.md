@@ -1,0 +1,6 @@
+# Root Android signed-data review and new owning test grant
+
+- Root independently verified all41 indexed disk/tar payloads and all42 regular members, read actual signature/full-verification/image/settlement logs, and streamed current complete909588480-byte package plus all11 image entries. Exact02f97185 package and8c9b9f85 ledger match; no identity-changing observation.
+- Actual signeddata build0/54.079s and outer0/65.514s, resource/control receipts are accepted for private stock feasibility. Original src_test count remains unobserved; configured FEATURES/test and package success do not supply it. Conservative license/restrictions and full source correspondence/runtime remain open.
+- Grant exactly one fresh postpackage owning regression invocation from reviewed proposal SHA1b922091457e2e54cacdd5c6a194ea16fdbec53cf5e589fbcf6bbdb4a051b695, unchanged486 test/verifier copied exclusively/hashchecked into private mode700 source/home/tmp, readonly inputs, onePython CPU/half-affinity/nice10,20s/1MiB. No real image input, rebuild, marker change, init/guest/service. Exact argv and source pins retained with actual result.
+- This NEW15-control result is separate from original missing Portage phase summary.

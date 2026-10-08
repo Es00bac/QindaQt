@@ -17,6 +17,17 @@ target_sources(
         mutation/safe_tree_operations.cpp
         mutation/safe_tree_copy.cpp
         mutation/safe_tree_access_p.h
+        mutation/cross_volume_move.cpp
+        mutation/cross_volume_recovery.cpp
+        mutation/mutation_controller_recovery.cpp
+        mutation/recovery_catalog.cpp
+        mutation/recovery_manifest.cpp
+        mutation/recovery_manifest_hash.cpp
+        mutation/recovery_mount_admission.cpp
+        mutation/recovery_record_codec.cpp
+        mutation/recovery_record_store.cpp
+        mutation/recovery_types.cpp
+
         model/clipboard_controller.cpp
         model/launch_intent.cpp
         model/local_directory_lister.cpp
@@ -338,6 +349,8 @@ qt_add_qml_module(
         ui/ApplicationsPlaceActions.qml
         ui/MutationDialogs.qml
         ui/StatusBanners.qml
+        ui/MoveRecoveryPanel.qml
+        ui/MoveRecoveryRestoreDialog.qml
         ui/ExportedMenuBar.qml
         ui/WindowServices.qml
         ui/NetworkHub.qml

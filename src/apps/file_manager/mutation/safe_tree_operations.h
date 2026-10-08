@@ -15,6 +15,13 @@ namespace QindaQt::Apps::FileManager {
     const MutationCancellation &cancellation,
     const MutationProgressCallback &progress, int maximumItems);
 
+// Borrowed pinned descriptors, synchronous worker thread. Recovery caller owns
+// admission/name fences and full readback manifest. Metadata errors refuse.
+[[nodiscard]] MutationResult copyRecoveryTreeAt(
+    int sourceParent, const QByteArray &sourceName, int destinationParent,
+    const QByteArray &destinationName, const MutationCancellation &cancellation,
+    const MutationProgressCallback &progress, int maximumItems);
+
 // Worker-thread-only, synchronous no-follow readback of a written copy root.
 // Carries no mutation authority; missing/replaced ancestry is Unconfirmed.
 // Identity/content can change immediately after observation. Never use this
