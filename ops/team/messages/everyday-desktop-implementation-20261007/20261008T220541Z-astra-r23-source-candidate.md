@@ -1,0 +1,7 @@
+# R23 combined desktop source candidate
+
+Runtime freeze1a5359e4894700a00b545e80e624e3b3a12952be combines independently accepted Voice/Files/Power. Assigned overlaybase80049dee. Recipe and mirror6edd28f825e36b3d41e350147b3369b2c92af5554e01303389ed85a87fc658f9 differ from R22 only by source pin and explanatory comment. All prior recipes/Manifest rows remain. New archive39771828 bytes SHA256ded4ffbe1fd743f8fd1baedede22b87a5eb86aea4c8a2b6e723f1471c7f3e837 was produced with git archive/gzip-n and all9975 Git blob identities, modes and symlinks verified. Matching BLAKE2B/SHA512 Manifest rows added to overlay and mirror.
+
+Source-only bounded1CPU/2GiB cohort exited0/13.522s (peak262.2MiB, no swap). Bash syntax, release contract,7 contract tests,537 documentation/navigation links, strict MkDocs and diff checks all exit0. Logs/identity/blob ledger live in ignored .cache/r23-release. R21/R22 archives remain immutable and unbuilt. Full signed build, owning shell composition, required artifact/image gates and paired Gabbee-r6 adoption remain unrun. No installation/publication/service restart or account/mic/API action.
+
+Requested next action: independent exact source/recipe plus adapted bounded private Portage helper review; then separate manager build grant. Paired provider artifact SHA25fc928ae5643cefb5c6adfd42feab4cc6492e4ff272650a3351b79d4633967f remains required at adoption, with old Voice1 dependency compatibility intact.
