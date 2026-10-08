@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — exact Bluetooth owner/nonce repair frozen for same-reviewer recheck; native lease pending.
+- Status: working — authorized sole Bluetooth native/SDK batch on exact8c02; private fixtures only.
 - Outcome: review synchronous privacy, native proof lifetime/reentrancy and startup ordering; preserve actual Bluetooth partial counterfactual and queued ED05.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
 ## Updates
+
+- 2026-10-08T03:41:56Z — Actual strict8c02 build failed on reply-local variable shadow after1743/2150 actions; original log retained. Frozen one-variable rename for Platform exact recheck; no tests or radio actions, no warning relaxation.
+
+- 2026-10-08T03:33:15Z — Claimed manager's sole qinda Bluetooth compiler/private fixture lease after Platform source acceptance b86b5bc8. Production8c02 exact, strict warnings, -j24 -l24 and serial CTests. No host bus/radio/device/service/display action; effective RW unit/installed controls remain root-owned.
 
 - 2026-10-08T03:25:03Z — Verified/frozen source repair: globally bounded owner/nonce retention and A/B/A policy/private-bus fixtures; portable staged builds restored. Docs531/strict16.38s/radio boundary/diff pass, all new native tests unrun. Available for Platform exact recheck; no resources held.
 
