@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — Root-granted Android protected preparation, signed old-libcap preservation and exact8 pretend only; no merge.
+- Status: available — User stop requested; private Android preparation preserved, zero package phases; all resources released.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -195,3 +195,5 @@
 - 2026-10-08T18:16:09.795774+00:00 — Preserved narrow1f3 permission-domain repair: root-only backups/pins separate from traversable nonsecret Portage config/workspace; exact paths/static delta checked, no privileged prep or process/package action. Windows17d source findings handed back independently.
 
 - 2026-10-08T18:45:26.694595+00:00 — Claimed explicit root first-two-phase grant for accepted8601/02ce. Sole8CPU12GiB resource lease; prepare root-owned protected inputs and actual Portage access checks, then signed preservation and exact pretend. No merge/runtime/stage/VM authority.
+
+- 2026-10-08T18:49:11.485395+00:00 — User stop received after in-flight protected preparation completed. Private root/config/backups exist;103 config pins/48 recipe pins and4 missing archives recorded. No quickpkg/pretend/fetch/merge/guest phase started. No new dependent checks or mutations after stop. Effective modes/Portage access not qualified, own calls settled, sole-heavy lease released.
