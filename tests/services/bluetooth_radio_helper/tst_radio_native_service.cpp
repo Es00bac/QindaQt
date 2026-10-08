@@ -4,6 +4,7 @@
 #include "../../../src/services/bluetooth_radio_helper/src/native_radio_service_p.h"
 #include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
 #include <qindaqt/services/bluetooth_radio_helper/radio_service_session.h>
+#include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusVariant>
 #include <QtDBus/QDBusVirtualObject>
 #include <QtTest/QTest>

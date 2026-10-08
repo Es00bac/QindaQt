@@ -7,6 +7,8 @@
 - Resources: sole qinda compiler/private-fixture lease granted by root; strict Debug -j24 -l24, serial CTests; no host bus/radio/device/installed actions.
 ## Updates
 
+- 2026-10-08T05:02:51Z — Old762 actual strict build0 and immutable regression2pass3fail reproduced. Revised58af configure0/actual32rows25targets; strict build1 missing QDBusMessage definition in only new native-service fixture. All running jobs settled; production helper linked but no revised tests. Frozen explicit test include repair for root recheck; no warning/authority relaxation.
+
 - 2026-10-08T04:59:48Z — Root58af SOURCE ACCEPT; native lease claimed. Exact six old762/original8c02 source files verified against committed provenance, current product/test bytes58af match, strict Debug cache/private700 XDG verified. A transcribed hash preflight failed and non-fail-fast orchestration still configured old harness0; preserved, no target build/test then. Corrected to committed full-hash manifest before build, fail-fast restored.
 
 - 2026-10-08T04:55:34Z — Handoff: Bluetooth58af9d542 exact test-only descendant pushed, production remains04a6; no new native execution. Root recheck/grant pending. Audiofc378 NeedsFix03c7 delivered with direct source/package evidence. Resources none; available for same-reviewer repairs or separate proposed Portage lifetime patch review, not claiming program completion.
