@@ -1,0 +1,7 @@
+# Exact next native gate and preserved Viewer proof
+
+Root independently rehashes actual v8 preflight outer225aaf970942f99914933f52a5dfdefc5db5c5576f5ad909fddf746795345226 and preflight1b50debc725e261fad1af5c5812a7112775972284a0699900fe42d06c144aafd at author private-etqzbcs5. Exit0/wrapper0, distinct namespaces, no route/home/audio/GPU, public shell/XKB/fonts true and prefixes false. Wrapper2233503/start46285185 is absent. All7 source bytes equal reviewed03af625; all19 current payload hashes/sizes and bundle51200/SHA9b4c3e match. App/prefix/driver absent.
+
+After exact Astra source acceptancef98936ec, root grants Platform exactly one fresh150-second private v8 execute attempt. Frozen parser binds accepted-preflight to outer-evidence.json225a, not the preflight JSON. Qinda private compositor/bus/Wine fixture lane exclusively held until settlement; no retries, source repair, host session/audio/GPU/home or package/guest action. Actual invocation/PID/start/driver/native/outer/cleanup evidence is required before claiming any two-app result.
+
+Viewer a892 actual strict7/all8/44Qt and separate normal/2x raw proof is now preserved on qinda and laptop. Archive258097bytes/46members/SHAcd7719ed95737d3e37d608c195da08733d6f67c06d2961a02dbc9fad0d45f9b5 matches; all45 indexed payloads directly rehashed on qinda after transfer. Exact final source/pixel review and integration remain; no feature milestone advances.
