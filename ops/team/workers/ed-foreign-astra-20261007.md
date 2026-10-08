@@ -1,11 +1,13 @@
 # ED foreign application architecture
 - Status: working — critical Audio mapper observer, strict producer regressions and bounded rejection diagnostic.
-- Outcome: diagnose critical installed R16 Bluetooth UI/session admission from exact source; preserve unfinished ED05 recovery collaborators for later qualified continuation.
-- Base: read-only Bluetooth review a462c415a3678dc8dc96f15bd996abdceea20189 versus installed2188d8e0e339ce4b56acb841a4b570f58a3002cc; ED05 implementation3859cc785fa5dfba7f994a4231d6a8a9842a52c1.
+- Outcome: restore usable Audio aggregate controls through strict channel projection; exact e053e1f85 awaits independent review and manager installed/live gates. ED05 remains preserved/open.
+- Base: a462c415a3678dc8dc96f15bd996abdceea20189; final Audio source e053e1f85310ea921fed6f48d470e04f460fade7.
 - Branch: worker/everyday-audio-recovery-20261008 at a462c415a3678dc8dc96f15bd996abdceea20189.
-- Ownership: Bluetooth/session read-only diagnosis and own records; production edit requires narrow manager approval. ED05 mutation/recovery collaborators remain reserved but paused for critical desktop repair.
-- Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
+- Ownership: Audio service mapper/coordinator diagnostic, owning focused tests/observer and audio-service wiki sections; no protocol/SDK/unit/UI edits. Platform owns SDK closure paragraph.
+- Resources: focused qinda compiler/private-runtime lease released after8/8 owning gates; no host graph/bus/device/installed actions.
 ## Updates
+
+- 2026-10-08T01:47:26Z — Froze Audio e053e1f85 after actual immutable-old12pass8fail and final8/8 CTest80Qt0fail0skip, docs530/strict/boundary/diff0. Root live readonly observer confirmed two dimension mismatches; conservative unknown per-channel truth preserves aggregate controls and refuses partial writes. Media exact review and root readonly fixed observation requested; no installed usability claim. Native lease RELEASED.
 
 - 2026-10-08T01:35:13Z — Claimed root-created Audio repair worktree at a462. Own mapper/coordinator diagnostic, focused service tests and owning wiki; no SDK/protocol/unit/UI edits. Read-only graph observer first for manager laptop execution; focused qinda native lease only, no host graph action.
 
