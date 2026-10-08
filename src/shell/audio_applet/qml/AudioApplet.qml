@@ -146,15 +146,17 @@ Item {
         // must scroll inside the output, including a scaled/small output;
         // neither its content nor a physical-pixel export sizes the window.
         // Bind the selected item's screen facts and each-open revision, so
-        // migration/removal recomputes without retaining a borrowed QScreen.
+        // Window.screen identity is also a dependency: equal-size/name output
+        // migration must recompute without retaining a borrowed QScreen.
         readonly property size outputSpace: {
             const revision = placementRevision + (root.controller?.popupGeometryRevision ?? 0)
-            const width = summary.Screen.width
-            const height = summary.Screen.height
+            const screen = summary.Window.window?.screen
+            const width = screen?.width ?? 0
+            const height = screen?.height ?? 0
             if (revision < 0 || width <= 0 || height <= 0)
                 return Qt.size(0, 0)
             return root.controller
-                ? root.controller.popupAvailableSize(summary, summary.Screen.name)
+                ? root.controller.popupAvailableSize(summary, screen?.name ?? "")
                 : Qt.size(0, 0)
         }
         readonly property real widthLimit: Math.max(1,

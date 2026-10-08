@@ -124,9 +124,12 @@ label.
 The details popup is at most 360 logical px wide and 480 logical px tall.
 Its actual attached output's QScreen.availableGeometry bounds both sizes,
 reserving its anchor height and edge padding. The small presentation geometry
-collaborator resolves the attached screen name without primary-screen or
-virtual-desktop inference; missing or ambiguous names fail closed. Screen
-geometry/add/remove notifications and each-open binding refresh this value,
+collaborator resolves the anchor window’s actual current screen without
+primary-screen or virtual-desktop inference. Empty or duplicated names are
+valid selected-output evidence; an explicitly supplied nonempty hint must match.
+Missing/retired window or screen and nonpositive geometry fail closed. The QML
+binding observes window-screen identity even across equal-size/name migration.
+Screen geometry/add/remove notifications and each-open binding refresh this value,
 without retaining a screen pointer across hotplug.
 
 An explicit clipped vertical Flickable owns the content height and visible
@@ -319,7 +322,7 @@ against a fake public AudioClient transport, with 8 outputs, 5 inputs,
 requires footer reach without audio mutation, verifies default-device budget
 retention, and checks optional generic Settings facade invocation. The old
 production+new fixture boundary is preserved separately before changing
-projection policy. Normal, 2×, fractional and ambiguous-output rows are
+projection policy. Normal, 2×, fractional, unnamed and duplicate-name selected-output rows are
 isolated from host buses, routes and settings. Existing drag, volume-wheel,
 grant/owner-loss and static boundary gates remain required. Actual installed
 popup adoption is a separate manager gate.

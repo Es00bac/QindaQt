@@ -77,7 +77,7 @@ class AudioAppletScrollTests final : public QObject
 private Q_SLOTS:
     void constrainedPopupReachesFooterWithoutChangingAudio();
     void manyOutputsKeepTheDefaultInputAndOutput();
-    void selectedOutputGeometryRejectsUnknownAndAmbiguousNames();
+    void selectedOutputGeometryUsesCurrentWindowScreen();
     void composedSettingsFacadeIsOptionalAndInvoked();
 };
 
@@ -172,6 +172,17 @@ void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
         QVERIFY(!capture.isNull());
         QVERIFY(capture.save(capturePath));
     }
+    // Re-resolve the actual window selection, including equal-size/name peers.
+    for (auto *screen : QGuiApplication::screens()) {
+        if (screen == window.screen())
+            continue;
+        window.setScreen(screen);
+        QCOMPARE(window.screen(), screen);
+        QTRY_COMPARE(popup->property("outputSpace").toSize(),
+                     screen->availableGeometry().size());
+        break;
+    }
+
 }
 void AudioAppletScrollTests::manyOutputsKeepTheDefaultInputAndOutput()
 {
@@ -206,7 +217,7 @@ void AudioAppletScrollTests::manyOutputsKeepTheDefaultInputAndOutput()
     QVERIFY(hasInput);
     QVERIFY(hasOutput);
 }
-void AudioAppletScrollTests::selectedOutputGeometryRejectsUnknownAndAmbiguousNames()
+void AudioAppletScrollTests::selectedOutputGeometryUsesCurrentWindowScreen()
 {
     FakeAudioTransport transport;
     Audio::AudioClient client(&transport);
@@ -214,19 +225,15 @@ void AudioAppletScrollTests::selectedOutputGeometryRejectsUnknownAndAmbiguousNam
     QQuickWindow window;
     QQuickItem anchor(window.contentItem());
     QVERIFY(controller.popupAvailableSize(nullptr, window.screen()->name()).isEmpty());
-    QVERIFY(controller.popupAvailableSize(&anchor, QString{}).isEmpty());
+    QCOMPARE(controller.popupAvailableSize(&anchor, QString{}),
+             window.screen()->availableGeometry().size());
+    QQuickItem detachedAnchor;
+    QVERIFY(controller.popupAvailableSize(&detachedAnchor, QString{}).isEmpty());
     QVERIFY(controller.popupAvailableSize(&anchor, QStringLiteral("missing-output")).isEmpty());
-    int matches = 0;
-    for (auto *screen : QGuiApplication::screens())
-        if (screen->name() == window.screen()->name())
-            ++matches;
-    const auto size = controller.popupAvailableSize(&anchor, window.screen()->name());
-    if (matches > 1)
-        QVERIFY(size.isEmpty());
-    else
-        QCOMPARE(size, window.screen()->availableGeometry().size());
+    QCOMPARE(controller.popupAvailableSize(&anchor, window.screen()->name()),
+             window.screen()->availableGeometry().size());
     for (auto *screen : QGuiApplication::screens()) {
-        if (screen->name() != QStringLiteral("z-audio-secondary"))
+        if (screen == window.screen())
             continue;
         window.setScreen(screen);
         window.setGeometry(screen->availableGeometry());
