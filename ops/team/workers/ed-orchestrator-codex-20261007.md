@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Qualify compact Audio surfaces, review the native Bluetooth teardown repair, and route the Portage-owned mixer dependency repair before signed delivery.
+- Status: working — Preserve verified Bluetooth integration, review compact Audio repair, and prepare the next core delivery while full-plan work continues.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -72,3 +72,11 @@
 - 2026-10-08T04:41:55+00:00 — Exact Audio popup/Settings f3c656f2 source independently reviewed and accepted for bounded laptop native qualification only. Old1ae first; no scroll/visual/installed completion claim. New core observation archive d6674c65 independently verifies10,240bytes/4members/all3 indexed payload digests on both hosts. Potential Display Preview legacy lock-quorum defect queued for private native-positive reproduction. Gain board import deferred until author publishes actual hub ref; two staging/fetch driver failures occurred before edits and are retained, not product failures.
 
 - 2026-10-08T05:11:43+00:00 — Root directly parses preserved old/fixed Audio JUnit: old764 2/2 fail, fixed4cf 23/29 pass with22 Qt Totals161/4/0/0, selected-old d4 2/2 fail on unnamed/duplicate outputs. Exact c98 attached-screen repair holds the sole laptop32/16 native lease; actual31-row/22-target closure active. Bluetooth40d qinda strict build0, author-preserved main31/32 with radio-session teardown crash; exact304 registration-owned filter repair frozen for root review before continuation, applet unrun. Media froze PipeWire overlay b489 at authoritative master b128, source-only; gain fixture c17 and dependency patch await Astra independent source recheck. No new installed UI, radio recovery, gain, foreign-app, or product milestone claim.
+
+- 2026-10-08T05:32:24+00:00 — Root independently verifies304 main32/32 plus7/7 applet and282Qt checks, all33 raw digests and2 actual missing-header/restored-source SDK identities; proof604160bytes/42members/SHAa600daac retained. Exact768 integrated at3b4275aced8be71b5d24db77ed9766ad3188b494 after preserving both sibling documentation insertions. Root reserves sole qinda24/24 strict integrated owning gate; no worker overlap. Platform owns laptop minimal device-slider floor source915 after bb4 actual29/31; root recheck pending. No installed/new milestone claim.
+
+- 2026-10-08T05:58:49+00:00 — Integrated3b4275 strict33-target build0; actual40/40 Bluetooth owning rows including installed-applet closure pass,28 Qt Totals282/0/0/0. qinda native lease released. Audio915 actual31/31+171Qt passes and owner-sized fresh435 render matches1536x864@1.25, but root visual review finds app-row name/readout/slider overlap; source-only row repair assigned to Platform before package acceptance. Settings device page visibly denser. Media prepares exact pre-load image/provenance guard plus ASan/Portage build-only recipe; Astra is reserved for exact review. InstalledR17 unchanged; full scope/ETA10workingweeks unchanged, no whole-feature credit.
+
+- 2026-10-08T06:08:09+00:00 — Current checkpoint records integrated strict Bluetooth 40/40 and 282 Qt checks, Accepted ADR0359 and pending installed helper/radio gates. Compact915 passes31/171 but root owner image rejects application overlap; exact65f/c75 awaits independent review and old/fixed proof. Gain c17/de491/b489 source acceptance is separate from pending image/lifecycle/Portage and production gain. No native resource held, R17 unchanged, full scope/ETA remains.
+
+- 2026-10-08T06:09:33+00:00 — Astra source ACCEPT d7e22764 for exact65f received and read; root inspects actual mapped-bounds/accessibility regression. Grant sole laptop bounded old c75 focused2 then fixed65f owning33 and fresh owner capture at32/16; no package/session grant. qinda native lane remains released.

@@ -1,16 +1,28 @@
 ## Active everyday delivery — 2026-10-08
 
-InstalledR17 restores public Audio inventory/control; the owner confirms Settings
-device discovery and reports unusably large/non-scrolling Audio popup and sparse
-Settings layout. The compact UI is an active Platform packet. Integrated
-Clipboard22/172 and Power6/56 native checks pass; package/startup journeys remain.
-Bluetooth native sender recovery and real console gain/quiet startup are active
-bounded implementation packets. See [current exact evidence](HANDOFF.md).
-The full ED01–24/Android/Windows/AI/mixer scope below remains required; no whole
-milestone is completed by these slices.
+Installed R17 restores public Audio inventory/control; the owner confirms
+Settings device discovery and the AI popup opening. Compact Audio candidate
+91530dc passes 31/31 owning CTests and 171 Qt checks, but root's fresh owner-scale
+image exposes application-row overlap. Exact repair 65f8826 and regression
+control c75dea4 have independent source acceptance d7e22764; old/fixed native
+qualification and root image acceptance remain;
+the compact popup and Settings page are not installed.
 
+Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 gates pass.
+Bluetooth source 3040022/7686226 is integrated at 3b4275ace with independently
+verified raw evidence and public SDK header poisons. Accepted ADR0359 does not
+close installed helper, physical radio or ordinary startup acceptance.
+Signed delivery remains the next core gate.
 
-Current core qualification: R17 Audio inventory/control recovery is verified; owner confirms Settings inventory but compact scrolling/UI remains open. Exact c98 attached-screen source is accepted for native qualification after preserved old764/d4 and fixed4cf failures; current31-row closure and installed compact UI remain open. Display Preview legacy lock-quorum mismatch is queued for private native-positive reproduction, not a proven transaction failure. All ED01–24, foreign-app integration and full mixer requirements remain required.
+Media's c17fd9/de491fa and overlay b489a5f8 have source acceptance. Package-image
+admission, lifecycle/ASan, Portage qualification and working mixer processing
+remain required. Display Preview's possible lock-quorum mismatch awaits a
+private native-positive reproduction. See [current exact evidence](HANDOFF.md).
+
+The full ED01–24, Android/Windows, actual AI provider feeds, mixer and newcomer
+scope remains required. Neither foreign runtime has a complete app journey.
+Best planning estimate remains 10 working weeks, plausible 6–16; core/UI work
+1–3 working days. These slices do not complete a whole milestone.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

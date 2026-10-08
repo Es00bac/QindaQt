@@ -1,6 +1,6 @@
 # ADR-0359: Recover only the selected Bluetooth radio
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-08
 - Scope: explicit selected-adapter power enable and bounded diagnostics
 - Partially supersedes: [ADR-0037](0037-keep-pairing-and-trust-authority-in-bluez.md) and [ADR-0057](0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md), only their blanket exclusion of an owning rfkill helper
@@ -112,8 +112,9 @@ Required gates include policy/replay/deadline negatives, private-bus
 caller/current-owner/full-intent binding, real private BlueZ replacement and
 late-reply cases, no-write fallback, fixed UI feedback, strict builds, staged SDK
 closure and package/unit checks. Linux radio writes and ordinary installed
-control remain separately authorized manager tests. This source draft is
-uncompiled, not an installed repair or whole ED outcome claim.
+control remain separately authorized manager tests. Source and private native
+qualification are accepted below; installed repair and whole ED outcomes
+remain open.
 
 ## Sources and consequences
 
@@ -143,7 +144,7 @@ uses ordinary configured/default cmake build behavior, with no portable source
 hard-coding of the manager's native parallelism settings.
 
 
-## Sender-preserving source repair — native qualification pending
+## Sender-preserving repair and private native qualification
 
 The first native authority positive exposed a production transport defect:
 Qt 6.11.1 QDBusMessage::service() always returns an empty string for reply and
@@ -245,5 +246,10 @@ would not progress them. Independently source-reviewed candidate 3040022a03
 passed its strict build, 32 main private-fixture gates and seven standalone
 applet gates; both staged public-header poisons failed as expected and restored
 consumers passed. The unchanged wrong-GUID fixture exposed and then verified
-failed-open filter-registration ownership. Native evidence still requires
-independent handoff review; this is not installed/radio acceptance.
+failed-open filter-registration ownership. Root independently accepted the exact source, all 33 original raw evidence
+digests and both actual staged-header poison/restoration identities. Exact
+7686226 is integrated at 3b4275ace. The manager's strict 33-target build and all
+40 owning CTests pass, including the staged production applet; 28 Qt Totals
+report 282/0/0/0. This is private/offscreen/package evidence, not installed-radio
+acceptance. The next immutable desktop recipe must explicitly declare
+dev-libs/dbus as a direct build/runtime dependency.
