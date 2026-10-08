@@ -1,5 +1,15 @@
 ## Reviewed Audio recovery and core audit — 2026-10-08
 
+## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
+
+The exact tested runtime freeze remains5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac. Integrated strict Printing18/18 and copier8/8 CTests now pass; direct raw LastTest has157Qt passed and zero fail/skip/blacklist across18 Totals rows. Scale2 copied-output banner and real File Manager UI contract/actions each exit0. Evidence: ignored .cache/printing-copy-integrated. These close the pending integrated gates, not full physical printing or all ED05.
+
+Root independently accepts additive R17 desktop98f34df7690f937610cc7b3754ee703d941727bc / overlayb128176c5e2771be7719e9f72cd4a1f270bc4b7b source/recipe. Rechecked39,276,265 bytes/SHA256bbb3bc4715d2dd4ac5df5f47648f8d6ab2a60d79dae0b1b558f7be3a379e2709,9626Git blobs/modes, exact new recipe/DIST mirror and historical Manifest prefix preservation, unchanged r16 build body/deps, release contract and7/7 tests. First root archive verifier rejected the valid prefix root directory without slash; corrected reviewer rule and failed driver receipt are preserved, with no artifact discrepancy. The signed private Portage build started at02:53:03Z with reported owned PID1949773/starttime43985052; signature, image, SDK, artifact review and laptop installation remain required. R16 remains installed and immutable.
+
+Bluetooth's selected software unblock was followed by a failed native power reply, then later Powered=true. The user confirms the popup on and connected a speaker. Root selected the sole Bluetooth AAC sink as default and verified native defaultID156, retaining volume0.44/unmuted. No sound rendering or working volume-key claim: installed R16 Audio1 still rejects the real graph. The fixed read-only observer accepts the current10outputs/7inputs/8streams graph. Root restarted only proven stale Power via installed user unit; newPID248093 matches installed bytes/no deleted marker, with no brightness/profile/preferences write. Permanent conditional upgrade retirement and selected Bluetooth recovery are separate unintegrated reviewed/test queues.
+
+Sanitized follow-up proof archives are preserved on qinda: core-health-followup30720bytes/SHA25619d331da103865a11d11b548df8406ab65b9c954aa651d8c459b1c6112550b6a, speaker-audio20480bytes/SHA256ddff8fb150e2a8ab99661a38e4fdeace5605654833502c4c8257bb5372ea4fa4. No device names/addresses, clipboard contents or audio content are collected. Clipboard history remains closed in the installed login; repaired source and22 focused native rows await exact final evidence review and integration. Goal ED01–24/foreign integration/usage remains active and incomplete.
+
 Fresh r16 AI popup opening is owner-confirmed; Claude actual metrics remain
 required. Audio mapper source e053 is independently accepted by Media cc318.
 Root exact old/fixed read-only observers reproduce invalid-device then accepted

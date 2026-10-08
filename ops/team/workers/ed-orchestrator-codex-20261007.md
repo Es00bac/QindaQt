@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — deliver accepted Audio repair, diagnose remaining Bluetooth power failure, verify core-service lifetime and coordinate clipboard privacy recovery
+- Status: working — review signed Portage Audio repair and speaker controls; integrate accepted core-service fixes and continue the full plan
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -61,3 +61,4 @@
 - 2026-10-08T01:41:00+00:00 — Owner confirms fresh r16 AI popup and reports Audio/Bluetooth failure. Actual Audio1 Degraded/backend-malformed with zero rows, upstream devices present; same normal user bus, no startup absence. Bluetooth2 raw Ready adapter off, typed/control gates open. Installed public SDK compile fails missing exported audio_console.h. Astra Audio sole qinda native lease; Media exact2a361 source review; Platform isolated SDK repair source-only; root laptop read-only health probes. Windows v6 failed pre-Wine X11 directory; v7 ungranted. No entire ED completion or host mutation.
 
 - 2026-10-08T02:14:14+00:00 — Integrated independent Audio e053/d8 and SDK022; own strict owning24/24/221Qt plus real stage/poison/restoration passed, docs530/strict0. Exactold/fixed laptop mapper rejected/accepted; sanitized21-member81920-byte proofSHA246346 preserved qinda. Native Bluetooth power stillFails after selectedrfkill unblock; upstreamFailed notBlocked, no recovery claim. ActualPower runningSHA differs installed, Network/BT match. Media clipboard source/Astra trust review, Platform next lifecycle/Portage source packet. Root native Audio resources released; Printing/copy integrated gates and signed R17 remain next.
+- 2026-10-08T02:56:58+00:00 — Integrated Printing18/Copier8 strict native gates passed26/26 and157Qt0fail/skip/blacklist; separate scale2 banner and real app contract/actions0. Root independently accepted R17 source/recipe98f34df/b128 after9626 exact Gitblob/mode/hash verification. Actual private signed Portage build reported PID1949773/start43985052 at02:53:03Z, -j24 -l24; no artifact/signature/install acceptance yet. Bluetooth user confirms on, sole speaker default156 confirmed44% preserved; current Power resident restarted to installed bytes. Clipboard repaired source+native22 pass awaits exact evidence review/integration. All remaining plan outcomes stay active.
