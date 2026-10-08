@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: paused — user requested safe logout/login checkpoint; incomplete read-only ED05 review preserved and all resources released
-- Branch: worker/everyday-printing-settings-20261007
-- Worktree: everyday-printing-settings-20261007
-- Outcome: different-author exact ED05 recovery codec/store/mount collaborator source review; Viewer repair pending and ED11 preserved
-- Ownership: own board and timestamped review records only; Astra owns ED05 product/docs/tests and root owns Viewer
-- Next gate: user resume and root exact packet; incomplete ED05 source review and Viewer repair recheck remain pending
+- Status: working — source-first isolated clipboard unlocked-login privacy observer composition repair
+- Branch: worker/everyday-clipboard-startup-20261008
+- Worktree: everyday-clipboard-startup-20261008
+- Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
+- Ownership: clipboard service app/private observer, owning CMake/startup privacy tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
+- Next gate: report source RCA and smallest composition before implementing; source-only during Astra Audio native lease, Audio repair review priority
 
 ## Updates
 
@@ -63,3 +63,17 @@
 - 2026-10-08T00:25:44+00:00: Root reactivated independent read-only ED05 first collaborator review at exact41165258389ad58922b2ea4f73514317f9cf07af/base3859cc785. Confirmed clean source, read owning ADR0355/0357 and recovery/wiki contract. Inspecting strict codec/append-only durability/exclusive no-follow filesystem/statx descriptor lifetimes and real authored fault fixtures. Only own board/review records edited; no Astra source, compiler/native lease, whole Move or durability execution claim.
 
 - 2026-10-08T00:27:00+00:00: User requested safe stopping point through root; paused review/refill immediately. Preserved incomplete exact41165258 review after codec/types/store/admission inspection; actual fault fixtures and native/static review gates remain pending. One same-inode post-file-fsync/pre-readback durability concern is recorded as unexecuted, not a reproduced blocker. No product edits/compiler/native lease. Viewer807 NeedsFix and Printing551 qualified source handoff remain unchanged.
+
+- 2026-10-08T01:13:58+00:00: User returned and root reactivated exact411 review from3a4b checkpoint. Fetched hub main, confirmed own clean preserved branch; Astra live sourcec398 is newer, so immutable411 fixtures read from hub. Actual record/mount fixtures now inspected, completing codec/store/statx/lifetime review. Astra acknowledges absent pre-fsync same-inode version baseline and will author old-source rewrite regression/repair. No native test, lease or source edit; Printing551 integrateddd631 with manager/adoption gates separate.
+
+- 2026-10-08T01:22:50+00:00: Completed immutable411 source review NEEDS_FIX_SOURCE P0/P1/P2/P3=0/1/0/0, same-inode post-fsync and identical-byte replacement-inode readback branches. Exacta2b625cf baseline-bound repair is source-satisfactory within four-collaborator scope; native acceptance pending. Actual fixtures inspected; original/regression function unchanged. Independent both snapshots docs528/strict/boundary+negative matcher/diff0, original max191/repaired store211. Manifest WIP excluded. Root reprioritized user-critical R16 fresh-login Audio/Bluetooth/core startup; preserved review checkpoint and offered different-author core candidate capacity. All resources released; no whole ED05 completion claim.
+
+- 2026-10-08T01:27:13+00:00: Activated read-only different-author Audio RCA from exact a462c415a3678dc8dc96f15bd996abdceea20189. Root reports running native Audio service with backend-malformed empty graph while raw PipeWire has devices; tracing strict protocol validation and WirePlumber mapping only. No live state or compiler actions. ED05 repaired source checkpoint and Viewer NeedsFix remain preserved/native pending.
+
+- 2026-10-08T01:30:50+00:00: Exact a462 read-only Audio RCA complete: manager public backend-malformed/1984 matches whole graph rejection; production channel projection does not contract longer arrays or reconcile partial nonempty unknown-aggregate state, while strict validator rejects mismatched counts. Existing PipeWire runtime test lacks strict snapshot validation. Precise rejection-field map, privacy-safe manager probes and actual-helper/coordinator regression recommendations preserved. No product edits/compiler/native/live actions. Offered different-author exact core repair recheck; ED05/Viewer pending.
+
+- 2026-10-08T01:37:30+00:00: Claimed different-author read-only observer2a3613664586d947742dce6e729abe049b38b048. Inspect helper/portable recipe against actual producer and validator, read-only graph/lifetime/settle and output privacy contract. Author compile17-action evidence is not reviewer execution; no compiler or host probe by this worker.
+
+- 2026-10-08T01:41:34+00:00: Independent exact2a361 helper/standalone source ACCEPT with SHA256s matched and original producer/protocol bytes unchanged. Read-only call surface, callback drain/settle cleanup and fixed-token/count/flag output traced. Parent project imported-target scope defect separately NEEDS_FIX; author configure failure attributed and standalone unaffected. No reviewer compile/host/native actions. Root may perform authorized bounded read-only observation; live attribution and controls recovery not inferred. Ready for exact CMake/mapper fix review.
+
+- 2026-10-08T01:45:22+00:00: Claimed clipboard enabled-history/unlocked-login recovery at exact manager a6f0953d5acd87cdb9451c03aa596d629b9fa9a9 (hub main matched), new isolated worktree/branch. Read instructions/wiki/native observer inventory; no product edits or compiler/host clipboard capture. Current highest ADR0357; requesting0358 reservation. Source RCA/proposed smallest safe composition precedes implementation, public attachment/native receipt boundary only.
