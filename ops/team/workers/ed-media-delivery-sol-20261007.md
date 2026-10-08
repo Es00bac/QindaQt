@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — independently reviewing exact root Viewer15eec7ec source read-only; no compiler or native runtime resource use
+- Status: available — exact Viewer source-only NEEDS_FIX review preserved; awaiting repaired commit and actual old/fixed gates; all resources released
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
 - Outcome: different-author exact Viewer PDF text/find source review; ED11 source unchanged and prior handoff preserved
 - Ownership: own board and timestamped review records only; root owns all Viewer source/docs/tests
-- Next gate: source-only review findings at exact15eec7ec, then inspect actual root native gates when supplied; no runtime acceptance inferred
+- Next gate: exact repaired Viewer recheck with real focused-button Return/Enter and cancel→zoom gates; no native/installed acceptance inferred
 
 ## Updates
 
@@ -57,3 +57,5 @@
 - 2026-10-08T00:09:16+00:00: Root reactivated me as different-author read-only reviewer of exact15eec7ec915d9388f5c0128f58438e3359ebceeb at base1a205444c. Confirmed clean exact Viewer worktree and source freeze; read repository instructions and owning wiki. Inspecting permission-aware extraction, UTF-16/query/page bounds, search semantics, serialized worker and GUI/lifetime fences, PlainText/dialog/clipboard/keyboard behavior and real tests. Native source is uncompiled; Platform alone owns qinda Windows diagnostic lease. No Viewer production edits or ED11 source changes.
 
 - 2026-10-08T00:14:25+00:00: Exact15eec source review NEEDS_FIX_SOURCE, P0/P1/P2/P3=0/0/1/1. Direct installed toolkit and Qt6.11.1 source trace Enter bubbling from focused Previous/Next/Copy actions to dialog acceptance; new capabilities also override public available contract. Root will add real old-source keyboard negatives and cancel→zoom coverage, then freeze repair. Permissions/search limits/worker/revision fences show no other source blocker. Independent docs524/strict/Viewer shape/diff0 and actual fixture hash pass; no native/compiler/installed/AT claim.
+
+- 2026-10-08T00:16:18+00:00: Source-only review completed and canonical807891f19 receipt delivered to root; offered immediate exact repaired-candidate and old/fixed gate recheck. Transitioning to available while implementer authors/runs the agreed regressions, preserving genuine liveness. No source changes or compiler/native lease claim.
