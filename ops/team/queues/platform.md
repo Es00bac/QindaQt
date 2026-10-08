@@ -1,3 +1,9 @@
+## Current Voice and peripheral Power routing — 2026-10-08T21:27:35+00:00
+
+Accepted Voice desktop e86b77f667a1beb8a9f4f116e246fda92c2d1d38 and Gabbee b4462610de605490336b0c1e702f15b7a45f4b4b are integrated in source. Independent final review c819cd6e3 accepted the exact pair. Manager source/test parity28/28, strict Release build0 and owning4/4 CTest (39Qt, zero failure/skip/blacklist) pass; provider manager98pytest plus2subtests pass1.47s. Root inspected compact normal/2x masked-entry and truthful fallback captures. Gabbee hub and clean normal checkout are fast-forwarded. Signed Gabbee-r6 and desktopR22 package/image/installed credential recovery remain next; R20 is still installed. No real ElevenLabs account authentication or dictation is claimed.
+
+Voice Astra owns new Gabbee-r6 signed package preparation; root owns desktopR22 and adoption. Windows Astra transitioned to peripheral Power source/ADR0365 after745 focus failure. Foreign Astra owns Android qualified-archive/four-input first-boot plan and critical reviews. One heavy cohort globally, unchanged half-system caps.
+
 ## Current routing — 2026-10-08T20:53:31+00:00
 
 Voice is owned by everyday_voice_astra, Windows by everyday_windows_astra, and Android by everyday_foreign_architecture. Prior Files/Platform processes ended; ownership was explicitly transferred, not duplicated. R21 Files-only source ffc164253/overlay2ef819a2 is independently accepted4a52741, preserved and unbuilt; next combined release may include reviewed Voice without recutting R21. Windows actual95b attempt failed child interpreter identity, then bb37 preflight exposed namespace UID remapping; narrow repair continues. Android first stage copied653337381bytes then refused missing intermediate links; corrected86b7 input closure independently reviewed by root. No ordinary foreign-app journey or Voice install has passed.

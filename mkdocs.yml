@@ -560,3 +560,4 @@ nav:
       - '0360: Retire replaced Power1 at session entry': adr/0360-retire-replaced-power-owner-at-session-entry.md
       - '0362: Compact Audio device details': adr/0362-present-audio-devices-with-two-lines-and-disclosed-details.md
       - '0363: Per-volume Trash admission': adr/0363-admit-per-volume-trash-without-following-payload-links.md
+      - "0364: Provider-owned secure Voice credentials": adr/0364-configure-voice-credentials-through-provider-owned-secure-storage.md

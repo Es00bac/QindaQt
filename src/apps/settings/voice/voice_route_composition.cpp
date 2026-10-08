@@ -2,6 +2,8 @@
 #include "voice_route_composition.h"
 
 #include <qindaqt/apps/settings_voice/voice_settings_model.h>
+#include <qindaqt/apps/settings_voice/voice_credentials_model.h>
+#include <qindaqt/services/voice_configuration/qt_voice_configuration_transport.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/voice_client/qt_voice_transport.h>
@@ -22,7 +24,10 @@ public:
         , inputGate(settingsClient)
         , voiceTransport(QDBusConnection::sessionBus())
         , voiceClient(&voiceTransport)
-        , model(settingsClient, voiceClient)
+        , configurationTransport(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"))
+        , configurationClient(configurationTransport)
+        , credentials(configurationClient)
+        , model(settingsClient, voiceClient, nullptr, &credentials)
     {
         // AGENT-NOTE: like ClipboardRouteComposition, this QML singleton is the
         // route-local composition root. Both public clients keep their own
@@ -51,7 +56,9 @@ public:
         // readback, even when Settings1 rejects or loses the write reply.
         if (inputGate.allowed() && !model.voiceUseWithdrawn()) {
             voiceClient.start();
+            configurationClient.start();
         } else {
+            configurationClient.stop();
             voiceClient.stop();
         }
     }
@@ -61,6 +68,9 @@ public:
     Services::VoicePreferences::VoiceInputPreferenceGate inputGate;
     Services::Voice::QtVoiceTransport voiceTransport;
     Services::Voice::VoiceClient voiceClient;
+    Services::VoiceConfiguration::QtTransport configurationTransport;
+    Services::VoiceConfiguration::Client configurationClient;
+    VoiceCredentialsModel credentials;
     VoiceSettingsModel model;
 };
 

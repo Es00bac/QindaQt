@@ -139,7 +139,11 @@ T.Page {
                                        : qsTr("No voice provider")
                             message: root.voiceSettings.serviceAvailable
                                      ? qsTr("%1 · %2")
-                                        .arg(root.voiceSettings.providerLabel)
+                                        .arg(root.voiceSettings.configuration !== undefined
+                                             && root.voiceSettings.configuration
+                                             && root.voiceSettings.configuration.ready
+                                             ? root.voiceSettings.configuration.effectiveText
+                                             : root.voiceSettings.providerLabel)
                                         .arg(root.voiceSettings.sessionStateText)
                                      : root.voiceSettings.serviceStatusText
                             actionText: root.voiceSettings.canRetryProvider
@@ -242,6 +246,12 @@ T.Page {
                                 })
                             }
                         }
+                    }
+
+                    VoiceCredentialSection {
+                        Layout.fillWidth: true
+                        configuration: root.voiceSettings.configuration !== undefined
+                                       ? root.voiceSettings.configuration : null
                     }
 
                     SectionHeader {
