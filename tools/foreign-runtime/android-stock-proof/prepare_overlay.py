@@ -12,11 +12,14 @@ def prepare(destination, source):
         (destination/name).mkdir(parents=True, exist_ok=True)
         (destination/name).chmod(0o755)
     for name, target in (("bin", "usr/bin"), ("sbin", "usr/sbin"),
-                         ("lib", "usr/lib"), ("lib64", "usr/lib64")):
+                         ("lib", "usr/lib"), ("lib64", "usr/lib64"), ("usr/sbin", "bin")):
         (destination/name).symlink_to(target)
+    (destination/"usr/bin").mkdir()
+    for name, target in (("python3", "python3.14"), ("sh", "bash"), ("awk", "gawk")):
+        (destination/"usr/bin"/name).symlink_to(target)
     generated = {
-        "etc/passwd": "root:x:0:0:root:/root:/bin/sh\nproof:x:1000:1000:proof:/home/proof:/bin/sh\n",
-        "etc/group": "root:x:0:\nproof:x:1000:\n",
+        "etc/passwd": "root:x:0:0:root:/root:/bin/sh\nproof:x:1000:1000:proof:/home/proof:/bin/sh\nnobody:x:65534:65534:guest network helper:/nonexistent:/usr/sbin/nologin\n",
+        "etc/group": "root:x:0:\nproof:x:1000:\nnobody:x:65534:\n",
         "etc/nsswitch.conf": "passwd: files\ngroup: files\nhosts: files\n",
         "etc/hosts": "127.0.0.1 localhost\n::1 localhost\n",
         "etc/fonts/fonts.conf": '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd"><fontconfig><dir>/usr/share/fonts</dir><cachedir>/var/cache/fontconfig</cachedir></fontconfig>\n',

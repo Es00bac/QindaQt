@@ -10,7 +10,7 @@ import stat
 import subprocess
 import sys
 import time
-from vm_plan import argv, admit_envelope, minimal_environment, IMAGE_HASHES
+from vm_plan import argv, admit_envelope, minimal_environment, IMAGE_HASHES, manifest_profile
 
 cancelled = False
 def cancel(*_):
@@ -48,7 +48,7 @@ def inputs(manifest):
         for fd in fds.values(): os.close(fd)
         raise
 
-def envelope():
+def envelope(resource_profile="qinda"):
     rows = [x[3:] for x in Path("/proc/self/cgroup").read_text().splitlines()
             if x.startswith("0::")]
     if len(rows) != 1 or ".." in Path(rows[0]).parts: raise ValueError("cgroup-path")
@@ -56,22 +56,25 @@ def envelope():
     values = {key:(root/key).read_text().strip()
               for key in ("memory.max", "memory.swap.max", "pids.max", "cpu.max")}
     values["nice"] = os.getpriority(os.PRIO_PROCESS, 0)
-    admit_envelope(values, os.sched_getaffinity(0))
+    admit_envelope(values, os.sched_getaffinity(0), resource_profile)
     return values
 
 def run(manifest_path, output):
     output.mkdir(mode=0o700)  # retain all partial evidence; never reuse a run
-    limits = envelope()
-    fds, versions = inputs(json.loads(manifest_path.read_text()))
+    manifest = json.loads(manifest_path.read_text())
+    resource_profile = manifest_profile(manifest)
+    limits = envelope(resource_profile)
+    fds, versions = inputs(manifest)
     process = None; pidfd = None; primary = None; cleanup = None
     result = {"schema":1, "success":False, "qemuRetired":False,
-              "innerCleanupQualified":False, "envelope":limits, "argv":argv(fds)}
+              "innerCleanupQualified":False, "envelope":limits, "resourceProfile":resource_profile,
+              "argv":argv(fds, resource_profile)}
     signal.signal(signal.SIGTERM, cancel); signal.signal(signal.SIGINT, cancel)
     start = time.monotonic()
     try:
         with (output/"serial.log").open("xb") as log:
             if cancelled: raise RuntimeError("cancelled-before-acquisition")
-            process = subprocess.Popen(argv(fds), stdin=subprocess.DEVNULL,
+            process = subprocess.Popen(argv(fds, resource_profile), stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True,
                 pass_fds=tuple(fds.values()), env=minimal_environment(), cwd=output)
             # The nonraising handler cannot interrupt acquisition. Until reaped,

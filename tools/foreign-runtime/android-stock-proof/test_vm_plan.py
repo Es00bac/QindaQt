@@ -1,5 +1,5 @@
 import unittest
-from vm_plan import argv, admit_envelope, minimal_environment, AFFINITY
+from vm_plan import argv, admit_envelope, minimal_environment, AFFINITY, manifest_profile
 
 class PlanTests(unittest.TestCase):
     def values(self):
@@ -29,5 +29,46 @@ class PlanTests(unittest.TestCase):
         for fds in (dict(kernel=3, initramfs=4, system=5, vendor=5),
                     dict(kernel=3, initramfs=4, system=5, vendor=6, extra=7)):
             with self.assertRaises(ValueError): argv(fds)
+
+    def test_qinda_default_argv_is_unchanged(self):
+        fds = dict(kernel=3, initramfs=4, system=5, vendor=6)
+        self.assertEqual(argv(fds), argv(fds, "qinda"))
+        self.assertEqual(manifest_profile({"schema": 1}), "qinda")
+        command = argv(fds)
+        self.assertEqual(command[command.index("-m")+1], "8192")
+        self.assertEqual(command[command.index("-smp")+1], "8")
+    def test_laptop_fixed_guest_and_shared_isolation(self):
+        fds = dict(kernel=3, initramfs=4, system=5, vendor=6)
+        laptop, qinda = argv(fds, "laptop"), argv(fds)
+        for option, expected in (("-m", "4096"), ("-smp", "4")):
+            index = laptop.index(option)+1
+            self.assertEqual(laptop[index], expected)
+            laptop[index] = qinda[index]
+        self.assertEqual(laptop, qinda)
+        self.assertEqual(manifest_profile({"resourceProfile": "laptop"}), "laptop")
+    def test_laptop_live_caps(self):
+        values = self.values()
+        values.update({"memory.max": str(5*1024**3), "cpu.max": "400000 100000"})
+        admit_envelope(values, set(range(8)), "laptop")
+        for key, value in (("memory.max", str(5*1024**3+1)),
+                           ("cpu.max", "400001 100000"),
+                           ("memory.swap.max", "1"), ("pids.max", "257"),
+                           ("nice", 9)):
+            altered = dict(values); altered[key] = value
+            with self.subTest(key=key):
+                with self.assertRaises(ValueError):
+                    admit_envelope(altered, set(range(8)), "laptop")
+        with self.assertRaises(ValueError):
+            admit_envelope(values, {0, 8}, "laptop")
+    def test_laptop_cannot_admit_qinda_envelope(self):
+        with self.assertRaises(ValueError):
+            admit_envelope(self.values(), set(range(8)), "laptop")
+    def test_unknown_or_nonstring_profile_refused(self):
+        for name in ("auto", "", None, {}, 4):
+            with self.subTest(name=name):
+                with self.assertRaises(ValueError):
+                    manifest_profile({"resourceProfile": name})
+                with self.assertRaises(ValueError):
+                    argv(dict(kernel=3, initramfs=4, system=5, vendor=6), name)
 
 if __name__ == "__main__": unittest.main()

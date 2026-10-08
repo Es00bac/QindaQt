@@ -99,3 +99,34 @@ Pure source tests and syntax checks are separate from all five gates.
 The boot plan uses cpio/gzip rather than dracut sysroot includes: installed dracut prepends its sysroot to external include paths. The frozen unfinished183b draft preserved that unqualified approach; no boot asset was generated from it. Cpio receives only a separately frozen prepared root, NUL-delimited paths and no symlink traversal. Stage package closure/signatures and every archived byte remain independent admission gates; shape checks alone do not authenticate them.
 
 The concrete [runtime input plan](RUNTIME-INPUTS.md) and runtime-inputs.json freeze the13-package resolver result, eight proposed build prerequisites, hook constraints and the mandatory full stage closure. The boot builder now requires a separately admitted complete object inventory and enforces REQUIRED entries; no runtime asset is inferred from a present directory.
+
+## Fixed laptop profile (source candidate)
+
+The protected four-input manifest may explicitly set `resourceProfile` to
+`laptop`:4 vCPUs,4096MiB guest, native `-cpu host`. The same fixed profile
+governs live cgroup admission: at most5GiB memory, zero swap, four CPU quota,
+affinity contained in0-7,256 tasks and nice at least10. Source/package work
+uses jobs4/load4. The default/missing profile remains the original qinda8CPU/
+8192MiB guest and12GiB host policy; unknown profile names refuse before launch.
+All four held readonly inputs and the no-network/no-GPU/no-audio/no-host-export
+QEMU options, deadlines and owned-process cleanup remain unchanged.
+
+Laptop0-7 were observed to be four physical cores with both SMT threads,
+leaving four other physical cores outside this fixture. Installed znver3 and
+x86-64-v3 payloads stay on that native Zen3 host; this is architecture evidence,
+not a successful boot or general CPU compatibility certificate.
+
+The guest-only overlay declares nobody65534 for the stock network helper,
+fixed python3→python3.14, sh→bash, awk→gawk and usr/sbin→bin aliases. It never
+copies host accounts or alternatives configuration. `staged_mode` permits
+only the exact installed mount/umount4755→0755 normalization; every other
+privileged mode still refuses. Source bytes and source/stage modes must be
+bound in the input manifest. Archive admission remains strict.
+
+The laptop input receipt binds an installed public-file inventory separately;
+it does not authorize a guest or assert complete dynamic loading. After
+independent source/input review, the next gate is a fresh protected stage,
+all REQUIRED entries/aliases and dependency checks, archive digest admission,
+then a separately granted one-shot VM. No host package merge is needed if
+that stage qualifies. The existing qinda prerequisite proposal remains a
+fallback, not an action executed by selecting this profile.

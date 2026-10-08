@@ -108,3 +108,25 @@ bind the archive listing and resulting digest before a separate QEMU grant.
 
 No rendered input, resize/close, authenticated app identity, platform origin or
 ED completion is qualified by these source/pretend/tiny-file tests.
+
+## Laptop alternative — no prerequisite merge assumed
+
+The fixed laptop profile reuses the installed stock Waydroid1.6.3/LXC7.0.0,
+nftables1.1.6,dnsmasq2.93,gbinder1.1.52 and Python bindings1.3.1, with the
+installed R20 compositor/owned KWin and matching kernel6.18.48. A read-only
+inventory records exact VDB CONTENTS and metadata hashes, source MD5
+correspondence, SHA256/size/version-pinned public files, resolved ELF
+interpreter/DT_NEEDED dependencies, selected matching kernel-module dependency
+closure, Python/GI/Qt plugin/QML data and fonts. No host /etc,/home,/run or
+private state is an input. Installed provenance is not relabeled as a new
+signed binary package.
+
+`laptop-inputs.json` binds the exact review evidence rather than copying
+thousands of host-specific observations into a general public API. All
+unresolved inputs must refuse the actual stage. The inventory is a selected
+static closure candidate: script/dlopen/QML runtime behavior, guest memory
+sufficiency, actual stage admission, boot and two-window behavior remain
+unqualified. The first collector variants and their usr-merge/native-ABI/GI
+selection corrections are preserved; zero final static issues is not runtime
+success. The actual protected stage must pin generated overlay sources and
+use the existing `boot_plan.plan`/`stage_inventory.admit` gate unchanged.
