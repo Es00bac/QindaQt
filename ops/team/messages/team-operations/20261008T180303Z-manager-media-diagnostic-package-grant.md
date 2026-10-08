@@ -1,0 +1,9 @@
+# Manager grant — fresh original-ASan diagnostic package
+
+- Timestamp: 2026-10-08T18:03:03.406958+00:00
+- Exact source: `5ebcd7b49a3ba3d8ef02fb50365ec5024bfcfb59`. Independent resource SOURCE ACCEPT `184d138acf595f80c4f74668c441fe4b71ae3f35`; terminal-driver acceptance `f6ae10bad5c2f4b3242241ac05c9615d9cf39a2d`. Root read complete 375-line driver, plan and exact dispatch, and rehashed all 114 current source/tool/input pins with zero differences.
+- Authorize exactly one fresh package-only diagnostic invocation of reviewed `dispatch.json`, replacing only every `LEASE_TIMESTAMP` with `20261008T180303Z`. Plan SHA256 `b270158f8333061fbb30a99bec6d795993a85c92af0e08b68801b4a45e8a127e`; driver SHA256 `aa0b7a1e61891114c64db6b7107bbd7988308e944f2372d5c6a64bd14ea78070`. Exact substituted argv retained in ignored manager admission.
+- Resource lease: sole qinda heavy, eight jobs/load eight, eight-CPU quota, six physical cores through affinity 0-5,12-17, nice 10, memory 12 GiB, no swap, tasks 256, runtime 1800 seconds. Files author has released its completed lease. Available disk 63,273,635,840 bytes at admission exceeds 16 GiB.
+- Root retains initiating Popen/pidfd/start identity through actual wait, observes exact unit MainPID/cgroup/effective limits and workload affinity/nice, retains raw output and terminal and actual unit settlement. Resource failure, missing evidence, late/cancelled terminal or unsettled owners refuses qualification.
+- Failed original 51-row lab remains immutable/inadmissible. New full registry/JSON/JUnit/per-row private absent buses and correct compiled-present/tested-absent markers are mandatory. Complete failed-original diagnostic only; no retry, fabricated markers, sanitizer suppression, global configuration, host merge, runtime experiment, PCM or production gain.
+- EOD today remains the delivery deadline; this bounded diagnostic closes a prerequisite rather than claiming Audio completion.
