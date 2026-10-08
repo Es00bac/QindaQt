@@ -8,19 +8,37 @@
 
 #include <QtCore/QObject>
 
+#include <functional>
+#include <memory>
+
 namespace QindaQt::Services::Clipboard {
 
-// Owns all payload bytes and history policy on one Qt thread. The borrowed
-// adapter outlives the host. Settings and lock state enter only through the
-// explicit gates; both default false and either false state purges C0.
+class ClipboardPrivacyState;
+
+// Borrowed same-thread, synchronous, read-only and non-reentrant admission.
+// Captures outlive the host. Empty/throwing/reentrant admission denies privacy,
+// purges history and cancels capture. Production supplies live independently
+// authenticated native attachment/lock proof; setUnlocked(true) alone is not
+// authority. No callback is invoked after host destruction.
+using PrivacyAdmission = std::function<bool()>;
+
+// Owns payload bytes and history policy on one Qt thread. The borrowed adapter
+// and admission dependencies outlive the host. Consent and privacy default
+// false; either false purges content and revokes prior entry lineage.
+// Source-compatible legacy construction is for explicitly gated test/legacy
+// compositions; native production must use the admission-taking overload.
 class ClipboardHost final : public QObject,
                             public ClipboardWayland::CaptureObserver {
     Q_OBJECT
 public:
     explicit ClipboardHost(ClipboardWayland::ClipboardWaylandAdapter *adapter,
                            quint64 epoch, QObject *parent = nullptr);
+    ClipboardHost(ClipboardWayland::ClipboardWaylandAdapter *adapter,
+                  quint64 epoch, PrivacyAdmission admission, QObject *parent = nullptr);
     ~ClipboardHost() override;
     [[nodiscard]] quint64 epoch() const noexcept { return m_epoch; }
+    // Also reconciles synchronous authority loss: an event-loop-delayed signal
+    // cannot disclose retained descriptors. Reconciliation may emit changed().
     [[nodiscard]] Snapshot snapshot() const;
     [[nodiscard]] OperationResult submit(const OperationRequest &request);
     void setHistoryOptIn(bool enabled);
@@ -39,16 +57,14 @@ private:
     [[nodiscard]] OperationResult resultFor(const OperationRequest &request,
                                             OperationStatus status,
                                             const QString &reasonCode) const;
-    void publishIfChanged(quint32 generation, quint64 revision,
-                          bool enabled, bool allowed);
+    void publishIfChanged(const ClipboardModel::HistorySnapshot &before);
+    [[nodiscard]] bool operationAdmitted(quint32 generation);
     [[nodiscard]] static QString reasonFor(ClipboardModel::ClipboardError error);
 
     ClipboardWayland::ClipboardWaylandAdapter *m_adapter = nullptr;
-    ClipboardModel::ClipboardHistoryModel m_history;
+    std::unique_ptr<ClipboardPrivacyState> m_privacy;
     quint64 m_epoch = 0;
     quint64 m_tick = 0;
-    bool m_optedIn = false;
-    bool m_unlocked = false;
 };
 
 } // namespace QindaQt::Services::Clipboard

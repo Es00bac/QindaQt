@@ -8,6 +8,8 @@ target_sources(
     qindaqt_clipboard_service
     PRIVATE
         src/clipboard_host.cpp
+        src/clipboard_privacy_state.cpp
+        src/clipboard_privacy_state_p.h
         src/clipboard_service_object.cpp
         src/clipboard_service_object_p.h
         src/resident_clipboard_service.cpp
@@ -39,13 +41,17 @@ install(
 qt_add_executable(qindaqt-clipboard-host
     app/main.cpp
     app/clipboard_history_consent.cpp
-    app/clipboard_history_consent.h)
+    app/clipboard_history_consent.h
+    app/native_clipboard_lock_observer.cpp
+    app/native_clipboard_lock_observer.h)
 target_link_libraries(
     qindaqt-clipboard-host
     PRIVATE
         QindaQt::ClipboardService
         QindaQt::SettingsClient
         QindaQt::SessionLockState
+        QindaQt::CompositorAttachment
+        qindaqt_compositor_names
         Qt6::Core
         Qt6::DBus
 )

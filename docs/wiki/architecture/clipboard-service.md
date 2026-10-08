@@ -80,8 +80,8 @@ can never force allocation before it is refused.
 The model starts fail-closed: history disabled and privacy `Denied`. Nothing
 is admitted, nothing is disclosed, and snapshots return empty content with
 the flags that explain why — not even aggregate byte totals are exposed while
-withheld. The future host sets privacy `Allowed` only from authenticated
-unlocked state, mirroring the notification presentation gate.
+withheld. The resident host sets privacy `Allowed` only from authenticated
+unlocked state and rechecks live authority at use, independently of Shell.
 
 - Disabling the history or denying privacy **purges every entry and raises
   the generation by exactly one**. Re-stating the current authority value is
@@ -212,13 +212,20 @@ truth and cancels capture instead of silently selecting another protocol
 contract.
 
 The production adapter uses a private Wayland connection and authenticates its
-peer with `SO_PEERCRED`. The resulting compositor PID is the only PID accepted
-by the injected `SessionLockState` monitor. Capture is enabled only while all
+peer with `SO_PEERCRED`. Its kernel PID is supplied to the clipboard-private
+native lock observer. The observer pins the first Session1 unique owner,
+re-resolves that owner on the constructing bus, and joins the public ordinary
+CompositorAttachment's live socket/PIDFD and exact compositor owner/PID/bus proof
+with public native nonce-correlated lock receipts. Native compositor and
+supervisor ScreenSaver facades may have different owners. Neither Lock1 nor
+ScreenSaver payloads, cached adapter availability/PID or environment-supplied
+PIDs grant unlocked authority. Environment only selects runtime/socket; failed
+proof stays closed with no legacy fallback. Capture is enabled only while all
 three facts are simultaneously true:
 
 1. Settings1 has confirmed `services.clipboardHistory` as Boolean `true` whose
    `sourceLayers` entry is exactly `user-overrides`;
-2. authenticated lock state is conclusively `Unlocked`; and
+2. live admitted native compositor lock state is conclusively `Unlocked`; and
 3. the data-control device is available.
 
 Startup, Settings1 uncertainty, owner loss, lock transition, and protocol loss
@@ -227,6 +234,30 @@ model before readable metadata can be published. Both shipped settings schemas
 default the key to `false`. Defense in depth keeps schema and profile defaults
 outside the consent boundary even if either later resolves to Boolean `true`:
 only an explicit user override can enable capture.
+
+The production service constructor borrows a nonempty same-thread, synchronous,
+read-only PrivacyAdmission callback whose captured dependencies outlive the
+host. Empty, throwing or recursive admission denies. Original constructors are
+source-compatible explicit legacy/test seams, never the native production
+fallback; rebuilt static consumers can use the new overload without a wire
+schema change.
+
+The host's private privacy/history collaborator reconciles revocation even
+through a const public snapshot before queued owner watchers run. Snapshot,
+submit and capture admission, plus immediately before Copy publication, recheck
+live privacy. Denial purges and advances generation before capture cancellation
+or Changed can reenter. A cancelled capture argument may belong to the adapter's
+freed transfer, so the denial path returns without touching it. No history row
+reference or pre-denial encoded descriptor list survives disclosure. Calls
+recheck after adapter calls and Changed; loss after Copy was sent or after a
+mutation notification returns Uncertain rather than stale success.
+
+Getters cannot revive a cached unlocked state after observed denial. Fresh
+native authenticated state is required. Attachment revocation or observer stop
+retires the composition; replacement owners need a fresh resident composition.
+Initial missing session/socket authority remains unavailable. Late native
+interfaces use only the existing bounded receipt retry. A successful observer
+start means observation installed, not unlocked or capture enabled.
 
 `clipboard_service` owns the model, all payload bytes, the adapter, and the
 private D-Bus name in one Qt event-loop thread. It installs a D-Bus activation
@@ -281,3 +312,7 @@ history, allowlist storage, purge-on-privacy-loss with generation fencing,
 and the pure-model seam ahead of the Wayland adapter — are recorded in
 [ADR-0031](../adr/0031-volatile-bounded-clipboard-history.md) and the C1 process
 boundary in [ADR-0058](../adr/0058-isolate-clipboard-capture-in-a-volatile-host.md).
+Native authority and synchronous disclosure guards are specified in
+[ADR-0358](../adr/0358-authenticate-native-clipboard-privacy-at-use.md). The current
+repair is source-authored; native old/fixed regression, independent acceptance,
+integrated rerun and installed capture qualification remain separate gates.
