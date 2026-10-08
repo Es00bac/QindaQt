@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — First exact635 synthetic attempt stopped on retained AF_UNIX path-length harness failure; resources released, awaiting bounded harness correction review.
+- Status: available — Narrow short-TMPDIR harness frozen for same-Astra review; unchanged635 fixture, original failure preserved, no retry or resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -279,3 +279,5 @@
 - 2026-10-08T11:32:54+00:00: Root read same-Astra6e54 bounded source ACCEPT closing botha06 blockers and granted one exact635 synthetic cohort, overall90s/module bounds/output caps. Preserving oldd3af70; fresh first failure stops without retry. No Wine/namespace/preflight/compiler/Java/Portage/bus/device action.
 
 - 2026-10-08T11:36:26+00:00: One authorized cohort stopped first module25.024s/exit-9, heldPID2288372/start47107426 reaped/absent. Actual retained child stderr AF_UNIX path too long from my long TMPDIR evidence path; log has12ok/8FAIL/1incomplete, no final unittest total. Later five modules unrun; source635 unchanged. No retry/repair/runtime; root notified, recommend reviewed short private TMPDIR only. All resources released.
+
+- 2026-10-08T11:41:57+00:00: Root authorized sole source-only short mode700/tmp geometry amendment. Ignored harness AST/hash frozen, full synthetic suffix budget admitted before subprocess; no fixture/source/assertion/deadline/output/HOME/bus or subreaper policy change. Private scratch always retained; deletion requires separate observed settlement. Exact harness review then new cohort grant pending; no execution.
