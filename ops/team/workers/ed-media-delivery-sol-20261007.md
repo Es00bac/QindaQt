@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — repairing normal-login clipboard initial owner ordering and preparing exact native regression gates
+- Status: working — executing sole bounded clipboard immutable-old/repaired native and installed SDK gates
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
 - Ownership: clipboard service Host/Resident public overloads and private privacy-state/app observer, owning CMake/focused tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: exact source freeze and independent Astra trust review, then assigned old/fixed native privacy gates; source-only now
+- Next gate: actual strict Clipboard old/fixed/native/SDK/poison/restoration under root-granted sole lease; release promptly afterward
 
 ## Updates
 
@@ -89,3 +89,7 @@
 - 2026-10-08T02:22:13+00:00: Exact clipboard06463d7 source preserved on hub for Astra/root review. Actual documentation links531 exit0, strict MkDocs exit0, production shape14/test shape15 both zero issues, boundary/diff0; source maximum Host173/privacy99/main97/native96 nonblank. Log hashes/evidence saved in ignored .cache/clipboard-static. No compile/CTest/native/installed/content capture; preparing immutable-old source harness while root holds native lease.
 
 - 2026-10-08T02:31:51+00:00: Astra exact064 source review8ef070c found one P1: supervisor resident refresh precedes Session1 publication, so initial absence permanently retired observer. Root authorized same-worktree repair. Authored one bounded initial-owner timer/30-second monotonic window/max11 lookups, pin-once/no post-admission replacement, late-first owner beyond short receipt budget, timeout/late-after-timeout and stop cases. Actual docs531/strict/shapes14+15/boundary/diff0; native unexecuted. Frozen repaired source goes to exact review now; root retains integrated Printing/Copier lease.
+
+- 2026-10-08T02:36:20+00:00: Exactdecb source independently accepted60a6facb4e9aa8e030b1db2430538ac3bef942a3. Root integrated Printing/Copier gates passed and all resources released; explicit sole qinda compiler/private-bus lease now granted for Clipboard old/fixed/SDK gates. Confirming exact product commit and actual MAKEOPTS, configure strict/usr/libexec with both host buses blocked/private XDG, no host capture. Native results not inferred yet.
+
+- 2026-10-08T02:43:31+00:00: Actual strict foundation build0, immutable original a6 Host/header/MOCs build0 and regression4passed16failed0skip/blacklist(exit16); immutable064 observer/header/MOCs build0 and unchanged delayed-first fixture2passed2failed0skip/blacklist(exit2). Raw txt/XML/provenance retained. Strengthened own staged-only consumer header selection against ambient SDK fallback before poison execution; production and both regression fixture bytes unchangeddecb. Repaired owning build/runtime/SDK gates next under current lease; no host content capture.
