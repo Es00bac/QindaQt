@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Integrate the independently accepted R18 resolver repair and route signed package qualification while full-plan work continues.
+- Status: working — Repair the PDF Viewer text/search candidate in an isolated worktree while Platform qualifies R18.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -88,3 +88,5 @@
 - 2026-10-08T07:09:48+00:00 — Actual R18 private Portage build failed before configure/compiler/signing on the nonexistent dev-libs/dbus atom I specified. Platform preserved exact failure4fe2a58ac, released all processes and owns source-only mirrored sys-apps/dbus repair plus genuine pretend resolver gate; the same Astra reviewer rechecks exact successor pins. Runtime5858/archive620ad2 and installedR17 remain unchanged. Corrected normative ADR0359/Bluetooth dependency provider and current status docs; historical receipts preserved. Owner confirms inventory but reports wasted space in both Audio surfaces. Full remaining estimate50workingdays/range30–80, immediate core/UI1–3; no whole-journey credit.
 
 - 2026-10-08T07:14:46+00:00 — Read exact independent superseding R18 review7c2f2e99, verified repaired ea14088/a829 mirrorSHAa1b82d26, actual private pretend0/onlyr18 logSHAa60210 and product equality5858. Integrating source-only repair, preserving failure4fe and original aca receipt; signed build/artifact gates next. No installed change, native UI proof37/273 remains applicable because runtime unchanged. Full goal/ETA unchanged.
+
+- 2026-10-08T07:22:44+00:00 — Previous goal turn made integrated source progress: dependency repair59a1/overlaya829, exact same-reviewer7c2 acceptance and genuine private resolver0. Verified R18 retry parentPID2150183/start45565990 live with no terminal status. Root now claims Viewer text/search repair from exactbase59a1 in worker/everyday-viewer-text-r18-20261008; old15e candidate preserved clean. Owned Viewer src/tests/primary wiki/ADR0218 and minimal testing-harness docs, own records only; qinda compiler/private fixtures remain Platform, root source-only now.
