@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — diagnostic archive2150 qualified and laptop heavy released; exact second VM plan frozen awaiting root grant.
+- Status: available — second VM failed at guest libgcc lookup; actual proof preserved and laptop heavy released; narrow loader repair proposed.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -247,3 +247,5 @@
 - 2026-10-08T21:49:48.334497+00:00: Root accepted e762/4140 and granted one archive2150; protected two inputs root0400 checked, actual held observer running.
 
 - 2026-10-08T21:51:29.032702+00:00: Actual archive0/21.772s and all7208/oneguest parity qualified; fourthinput105945, secondplan dcd4 pending separate boot grant.
+
+- 2026-10-08T21:54:18.306518+00:00: Actual secondVM1/11.298s, QEMUretired/inputstable; stockinit reachedbinderfs/config thenlxc-info missingloaderpath, existingpinnedGCCruntime located. No thirdboot.

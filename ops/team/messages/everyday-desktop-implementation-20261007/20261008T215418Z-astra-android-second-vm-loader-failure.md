@@ -1,0 +1,9 @@
+# Second stock VM: actual guest loader failure, retired
+
+Exact granted dcd4 second-plan/9b58 manifest/105945 fourth input ran ONCE. Observer exit1/11.298s, outer2527459/start11340095 reaped/absent, main2527464/start11340101. Six actual live4CPU/5GiB/swap0/tasks256/nice10/affinity0-7 witnesses. QEMU2527549/start11340332 exited0 and retired; inputVersionsStable=true. Final unit inactive/dead/MainPID0 is settlement only. Laptop heavy RELEASED immediately; no retry.
+
+Actual guest passed the generated parent repair: stock init mounted binderfs and saved /var/lib/waydroid/waydroid.cfg. It then failed at lxc-info --version: libgcc_s.so.1 cannot be opened. Exact traceback and stock diagnostic retained. Cleanup independently false because lxc-info also failed; no Android app/window/identity qualification.
+
+Read-only cause: the qualified stage already contains usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1. Installed lxc-info DT_NEEDED requests libgcc_s.so.1 with no RPATH/RUNPATH. Host cache resolves the GCC path from generated ld.so.conf.d; the isolated fixture intentionally does not copy host /etc/cache. Thus this is missing guest loader search configuration for an already admitted runtime object, not evidence a new package is needed. Proposed source-only repair: one fixed guest GCC library search path or guest-only alias to the existing pinned object, with staged ELF dependency resolution checked against guest paths. No host configuration, ldconfig, package or third boot action authorized or executed by this receipt.
+
+Proof .cache/android-second-vm-proof.tar.gz 19,147bytes SHA25650df86b8f020e8c8b8dff97cf07554db8f0064f1e11fcd0a0675e6e208392cbb; eight regular members/seven indexed raw payloads independently rehashed on qinda. Includes complete serial, result, exact source-plan/argv, observer/unit/cap settlement. Original first VM and both immutable archives remain.
