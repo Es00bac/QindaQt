@@ -146,3 +146,35 @@ anti-cheat separately; do not equate a polished launcher with compatibility.
 When an app cannot run, the graphical flow must explain the known reason and
 offer a useful next step. No terminal workaround is required for a workflow
 advertised as supported.
+
+
+## Private Windows initial server lifetime proof
+
+The retained v9 attempt observed two fixed built-in windows and independent
+server geometry/close steps, but rejected its second prefix's ambiguous
+wineserver -k exit1. Its stop diagnostics were discarded, so an already-exited
+server remains a source hypothesis rather than an observed cause. Window
+absence is insufficient cleanup proof.
+
+The next source-only fixture owns a foreground persistent server per fresh
+prefix. It pins no-follow prefix/server-directory/regular-lock/socket identity,
+checked Linux x86_64 flock ABI, the initial unreaped Popen/pidfd lifetime and
+actual listening socket peer. Lock acquisition alone is not readiness. Loss or
+replacement of the initial server permanently rejects the journey; a later
+auto-start cannot restore it. No WINESERVER override suppresses the installed
+loader's sibling-server precedence.
+
+Normal retirement requires SIGINT through the owned pidfd, actual exit0,
+wait/reap and held/current lock release without replacement. Forced containment
+is separately recorded failure. Checked driver subreaper accounting retains
+observed descendant lifetimes, reaps adopted children and refuses unknown
+survivors without signaling them. Unknown-process environment or numeric
+ancestry never grants signal authority. Prefix/server logs and data remain;
+no -k/-w, bare PID/group signal, prefix deletion or host access fallback.
+
+Pure and actual synthetic Python/kernel child/file tests qualify these
+collaborators only. Installed Wine, private compositor/two-window operation and
+complete per-prefix retirement still require different-author source review,
+a fresh granted preflight and separately granted one-attempt native run.
+This is a trusted-built-in experiment, not production Windows integration,
+authenticated blue origin, rendered resize/input or ordinary app data support.

@@ -1,0 +1,107 @@
+{
+  "sourceBase": "a34f15c10fc23e8d272cc504dae5dd6c16e727b0",
+  "payloads": {
+    "/usr/bin/bwrap": {
+      "bytes": 76288,
+      "sha256": "0e811acd643886e0ff8831fba743c97d60b952e98e08c7369dee6a3fbe2b1179"
+    },
+    "/usr/bin/python3": {
+      "bytes": 18640,
+      "sha256": "4aa761d8794e35bd64deef99e98acd0812883a5dd6d3f14a5bdd769b2aaf671d"
+    },
+    "/usr/bin/qindaqt-wm": {
+      "bytes": 96464,
+      "sha256": "d7d7fae41b530c5c0f3ce518ac1867dea2194b8abd51cbc376f8b0b639a035dd"
+    },
+    "/usr/bin/qindaqt-kwin": {
+      "bytes": 1483328,
+      "sha256": "e4690b828d267524caeef582928b2e53840e1a1ee99026fbd4c11301dc86aba1"
+    },
+    "/usr/bin/Xwayland": {
+      "bytes": 2341760,
+      "sha256": "540f3faa0c3cb60d9529e2438ee7d992121a250d321f15c5df46e972392a7418"
+    },
+    "/usr/lib/wine-proton-11.0.2/bin/wine": {
+      "bytes": 14280,
+      "sha256": "be890be57b12546caae30eca1c938afa83767008d53ace5f946fb5bdde878894"
+    },
+    "/usr/lib/wine-proton-11.0.2/bin/wineserver": {
+      "bytes": 762136,
+      "sha256": "52c402e61dca99274512eb875fd850f8f253ab8707139b7f2f1a877e6f0d2905"
+    },
+    "/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/notepad.exe": {
+      "bytes": 280173,
+      "sha256": "e57118984553a5da2ad1dfd0913b4d49993866ced817cc6302fd3ff93cb54b64"
+    },
+    "/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/wordpad.exe": {
+      "bytes": 577393,
+      "sha256": "a355f232ff23bfe3a5eda140daad34140e76678e6c0cda801ce98f6f62b324f9"
+    },
+    "/usr/lib64/libX11.so.6": {
+      "bytes": 1362264,
+      "sha256": "e88f4d012fb2066f9f5913bb678effa3545bfd4c2079ac4337632513220e656d"
+    },
+    "/usr/lib64/libXRes.so.1": {
+      "bytes": 18592,
+      "sha256": "3b64a6a7ca75ef1476d85fe5a8ce2e8f4972501042444ade56a93980142cb84d"
+    },
+    "/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": {
+      "bytes": 5158664,
+      "sha256": "5174baa029270c94b41fea5f3a86d10c432f910e0c2a3d0cea9c71f86b8f3c16"
+    },
+    "/usr/bin/sh": {
+      "bytes": 937200,
+      "sha256": "df33c0a06a02007fe003f623c11727f64a946d3ee3cb3248a308c56d5e53b97a"
+    },
+    "/usr/bin/xkbcomp": {
+      "bytes": 217056,
+      "sha256": "c5ea5f01fe8daaca8be1d615d96252817ecd087dd794f5d5eed966f9724c9879"
+    },
+    "/usr/share/xkeyboard-config-2/rules/evdev": {
+      "bytes": 31520,
+      "sha256": "0cc48ee1279d91045fe2cf092ee5a0744cbee1c02bd164f02871d13140d12132"
+    },
+    "/usr/share/xkeyboard-config-2/symbols/us": {
+      "bytes": 113891,
+      "sha256": "d70b84ee6b8bc7aa796690d5e93d6a7382d919ddca03f3b05338efc3a4aa2739"
+    },
+    "/usr/share/xkeyboard-config-2/keycodes/evdev": {
+      "bytes": 26508,
+      "sha256": "5f48b3c4c5f6d7db41699bc1e7c714743508ee22fe2948640d3660b2c438d4f9"
+    },
+    "/usr/share/xkeyboard-config-2/types/complete": {
+      "bytes": 179,
+      "sha256": "038d66c8861dbc797b7d2226bc9135698e62adf3d6d9f99f1be60b768f591aee"
+    },
+    "/etc/fonts/fonts.conf": {
+      "bytes": 2700,
+      "sha256": "65768ac37ea9ac185535d7b2080fa8503cef3a7464a935f570cbd2bb867ecdca"
+    }
+  },
+  "environmentAllowlist": {
+    "PWD": "/fixture",
+    "PATH": "/usr/bin",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "HOME": "/fixture/home",
+    "USER": "fixture",
+    "LOGNAME": "fixture",
+    "XDG_CONFIG_HOME": "/fixture/config",
+    "XDG_DATA_HOME": "/fixture/data",
+    "XDG_CACHE_HOME": "/fixture/cache",
+    "XDG_STATE_HOME": "/fixture/state",
+    "XDG_RUNTIME_DIR": "/fixture/runtime",
+    "TMPDIR": "/tmp",
+    "KWIN_COMPOSE": "Q",
+    "QT_QPA_PLATFORM": "wayland",
+    "QT_QUICK_BACKEND": "software",
+    "LIBGL_ALWAYS_SOFTWARE": "1",
+    "QT_NO_XDG_DESKTOP_PORTAL": "1",
+    "GTK_USE_PORTAL": "0",
+    "QT_IM_MODULE": "none",
+    "GTK_IM_MODULE": "none",
+    "XMODIFIERS": "@im=none"
+  },
+  "nativeExecuted": false,
+  "prefixCreated": false
+}
