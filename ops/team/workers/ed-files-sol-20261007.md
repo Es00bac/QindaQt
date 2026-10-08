@@ -1,10 +1,10 @@
 # Everyday Files Sol
 
-- Status: available — protocol candidate qualified; awaiting exact independent review
-- Assignment: standalone protocol values/codec and valid/adversarial tests only
-- Base: 0d15023cc31f7b46e31a8fa3447c80aa7624505c
-- Branch: worker/everyday-media-protocol-20261007
-- Canonical active worktree: everyday-media-protocol-20261007; previous worktrees retained for evidence/review
+- Status: working — paired Voice credentials/reload boundary and masked Settings UI; source/private tests only, no heavy lease.
+- Assignment: VoiceConfiguration1 secure credentials and truthful selected/effective/fallback state; Trash repair worktree retained
+- Base: desktop32aae08d89a1f4ebdc28481866c42c65f7875188; provider78ba261d1f6c515d8a277bab202ed702b762b7d1
+- Branch: worker/everyday-voice-credentials-20261008 (both desktop and lowercase gabbee hubs)
+- Canonical active worktree: container-wm.worktrees/everyday-voice-credentials-20261008 + gabbee.worktrees/everyday-voice-credentials-20261008; Trash/ED05 retained
 - Runtime: active collaboration worker; provider/model identity not independently measured
 
 ## Updates
@@ -20,3 +20,5 @@
 - 2026-10-07T18:36:00+00:00: Final normal registry configure exit0 with /usr, explicit KDE libexec/share and production shell ON (KWin plugin OFF), generated protocol target and all3 tests. No broad build/runtime. All protocol acceptance gates pass; compiler lease released to manager, no private bus lease used. Preparing exact review candidate; ED04 stays open.
 
 - 2026-10-07T18:37:02+00:00: Handed off exact source/test/docs f88974a5f90f447f0026ef6bd2d8d966a4ed93f2, preserved directly in qinda bare hub branch worker/everyday-media-protocol-20261007. Worktree remains intact for same-reviewer repairs. Read first-party queue; manager explicitly stops at this qualified module pending followup. No compiler/private lease, no new work.
+
+- 2026-10-08T20:18:17.576061+00:00: Claimed rootpairedVoice credential/reload outcome, ADR0364 reserved. Providerhubactual lowercasegabbee; no providerAGENTS/CLAUDE tracked, README and headlessADR0233 read. Own newvoice_configuration publicmodule, settings/voice helper/UI, focusedtests/minimalregistries/docs and providerqindaqt_voice_configuration+minimalmain/controller/confighooks/tests/README. No livekey/microphone/API/package/heavy run. ExistingunlockedSecretServiceitem withstaleVoice1mask4 makesexplicitsecureReloadmandatory, notforcedkeyreentry.
