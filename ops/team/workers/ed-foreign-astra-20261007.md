@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — Independent Files551 Trash source review; Android access/laptop availability checkpoint preserved, no package/guest action.
+- Status: working — Authoring bounded Android laptop resource profile and read-only Portage input inventory; no package, stage or VM execution.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -207,3 +207,5 @@
 - 2026-10-08T19:51:06.898941+00:00 — Completed bounded existing-runtime comparison and authorized private-root mode repair. Actual Portage250 read/hash151 plus5workspace sentinels0, private denial verified. Both binpkg indexes advertise0 selected runtime rows; laptop installednative mostlyznver3 not qualified qinda closure. Four source archives still absent. Zero package/guest phases; resources released.
 
 - 2026-10-08T19:53:06.342877+00:00 — Laptop host KVM/kernel/runtime availability read-only confirmed; unchanged8GiB fixture exceeds5GiB laptop cap. No compatibility/boot claim. Switching to exact Files551 source authority/transactions/raw-name review as root requested.
+
+- 2026-10-08T20:00:11.805016+00:00 — Root assigned laptop4vCPU/4GiB profile at exactf343. Existing qinda profile preserved; minimal manifest-to-envelope/argv threading and installed public closure checks underway.
