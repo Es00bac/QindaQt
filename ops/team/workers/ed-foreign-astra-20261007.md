@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — exact Android eight-prerequisite transaction proposal frozen for independent review; no install/build/stage/boot grant.
+- Status: available — Android prerequisite permission successor frozen for same reviewer; Windows source blockers returned.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -191,3 +191,5 @@
 - 2026-10-07T23:05:20+00:00: Root accepted ED05 bounded design021140 after independent33/33; cross-device production remains staged after copier safety. Claimed exact hidden Wi-Fi14b83f50 critical review in detached review worktree. Source authority/compatibility trace has no blocker; independent static boundary/all poisons0 and docs5240, strict build pending. Root owns native lease; no tests/compiler/buses executed by this worker.
 - 2026-10-07T23:07:35+00:00: Exact hidden Wi-Fi14b83 static ACCEPT: traced metadata-only optional RPC, exact selected device/security and secret authority; boundary/all poison controls0, docs524/strict/diff0. Inspected actual author39/39 JUnit and32-target command, distinct from own execution. Own selected seven hidden native rows and actual old copier sentinel build wait for root lease.
 - 2026-10-07T23:11:20+00:00: Granted short sublease completed and released: hidden14b83 independent7/7 CTest40Qt0fail0skip; actual old copier1a205 strict build0, f5 sentinel fixture2pass4fail exit4 proving all four foreign-data deletions. Frozen commands/raw logs/hashes. Hidden source fully ACCEPT within tested scope. Now source-only conservative copy-output repair with typed visible observations and required decomposition; root owns compiler/fixtures.
+
+- 2026-10-08T18:16:09.795774+00:00 — Preserved narrow1f3 permission-domain repair: root-only backups/pins separate from traversable nonsecret Portage config/workspace; exact paths/static delta checked, no privileged prep or process/package action. Windows17d source findings handed back independently.
