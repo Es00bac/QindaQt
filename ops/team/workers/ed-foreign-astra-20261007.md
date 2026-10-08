@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — observing granted archive2210 on laptop4CPU5GiB/120s, guest permission source00573; no VM.
+- Status: available — permission archive2210 qualified, laptop heavy released, exact fourth VM plan awaits root grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -261,3 +261,5 @@
 - 2026-10-08T22:06:25.366443+00:00: ThirdVM1/10.877s proofee5759 preserved; fullstagepermissionaudit and00573/81045 successor ready, no fourthboot.
 
 - 2026-10-08T22:13:55.989340+00:00: Root granted exact81045 once; two protected inputs and mechanicalonlydelta pass; held observer running.
+
+- 2026-10-08T22:15:01.353095+00:00: Actualarchive0/21.525s/allpins+oneguestparity; fourthd98377/plane97ee pendingdiagnosticboot.
