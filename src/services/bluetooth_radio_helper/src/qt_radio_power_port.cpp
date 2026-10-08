@@ -143,10 +143,10 @@ public:
                 }
                 const auto result = qdbus_cast<Result>(reply.arguments().constFirst());
                 const auto pendingIt = pending.constFind(id);
-                const auto now = boottimeMilliseconds();
+                const auto replyTime = boottimeMilliseconds();
                 if (!validResult(result) || result.nonce != nonce
-                    || pendingIt == pending.cend() || !now
-                    || now >= pendingIt->request.deadlineBoottimeMs) {
+                    || pendingIt == pending.cend() || !replyTime
+                    || replyTime >= pendingIt->request.deadlineBoottimeMs) {
                     finish(id, Disposition::Uncertain, QStringLiteral("radio-change-uncertain"));
                     return;
                 }
