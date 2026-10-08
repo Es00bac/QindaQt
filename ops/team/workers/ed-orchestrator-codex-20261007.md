@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Verify Viewer native/pixels and remaining gates; route Android/Windows and private audio cohorts after installed R18.
+- Status: working — Verify Viewer displayed pixels, review signed Android verifier, and route Windows preflight and audio helper gates after installed R18.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -100,3 +100,4 @@
 - 2026-10-08T09:15:31+00:00 — Actual Viewer a892 strict7/8owning and normal/2x captures pass; exact source/pixels and integration remain. Read exact independent Android d97 and Windows f989 source receipts; native package/app gates remain. First old-ASan attempt is preload-order setup failure, no HUA claim. Updated current plan versus installed R18 and remaining50day estimate; owner layout/physical acceptance open.
 
 - 2026-10-08T09:20:06+00:00 — Directly verified fresh Windows v8 preflight source7/payload19/bundle/namespace/absent wrapper; grant one bounded150sec private execute, no retry. Native Viewer proof46members/45payloads is copied and individually rehashed on qinda. Source/pixel/integration and whole-plan gates remain.
+- 2026-10-08T09:59:12+00:00 — Root active; live claim refreshed after its prior thirty-minute window elapsed. Actual Viewer old displayed-image control fails red after Next despite blue controller frame; exact817 strict build fails redundant QObject before tests. Corrected source559 preserved on hub; fresh laptop strict7/native8 invocation is running, no outcome claimed. Audio e704 source acceptance c502 and Windows9721 source acceptance edf450 read directly. Platform Android private build-only artifact bdf522 reports signed package and observed packaged10/actualAPK6; independent artifact/unsupported-algorithm review pending, no installation/guest. Platform holds exactly one freshv9 preflight; Media separately granted31 pure helper/AST fixtures after source review, no native/Portage lease. All ED completion gates remain open.
