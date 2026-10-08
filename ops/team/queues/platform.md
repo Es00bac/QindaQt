@@ -1,25 +1,26 @@
 ## Current Platform gates — 2026-10-08
 
 Installed R17 Audio1 Ready and Settings inventory are verified. Clipboard
-22/172, Power 6/56 and Bluetooth 40/282 integrated checks pass. Bluetooth
-3040022/7686226 is accepted and integrated at 3b4275ace; installed helper/radio
-and signed core delivery remain open. The qinda native lane is released.
+22/172, Power 6/56 and Bluetooth 40/282 integrated checks pass. Installed
+helper/radio and signed delivery remain open.
 
-Compact Audio 91530dc passed 31/31 and 171 Qt checks. Root's fresh owner-scale
-image rejected application-row overlap. Platform source 65f8826/control c75dea4
-have Astra source acceptance d7e22764 and a bounded old/fixed laptop native
-lease at -j32 -l16; root image review remains. No packaging grant is active.
+Compact b021/00c is independently source and root visually accepted, integrated
+at 5858bcc. Strict 28 targets pass; actual owning 33/185 plus profile/resolution
+4/88 pass. Both native lanes are released. Confirmed R18 freeze is5858bcc;
+Platform source14e4406/overlay af4e8ed await exact independent review and a
+signed build-only lease. No build/install grant is implied.
 
-Media authors package-image admission and the lifecycle/ASan/Portage recipe
-without a native lease. Its c17fd9/de491fa and overlay b489a5f8 have source
-acceptance only. Root alone controls live devices/services and installs.
-Foreign-runtime, physical and remaining ED gates stay open; see
+Media ec1 image/lifecycle diagnostics have source-only acceptance after the
+992 newline repair. Actual ASan/Portage/private lifecycle qualification remains
+open and production gain/guard is unwired. No Media native lease is active.
+Root alone controls live devices/services and installation.
+
+Astra Display finding cb8b502 confirms the old private fixture masks split
+native owners. Next is a private native-positive reproduction through public
+live attachment admission, preserving locked/unknown/revoke/loss guards.
+No live Preview, lock, display change or sleep is claimed. Foreign-runtime,
+physical and remaining ED gates stay open; see
 [Handoff](../../../docs/HANDOFF.md).
-
-Display Preview's legacy same-owner monitor conflicts with observed split
-Compositor/ScreenSaver owners. Next: private native-positive reproduction
-through the public native attachment boundary, preserving locked/unknown/loss
-guards. No host display transaction, lock or sleep was attempted.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

@@ -1,20 +1,19 @@
 ## Current Shell gates — 2026-10-08
 
 The installed AI usage icon opens; informative Claude and other provider feeds
-remain required. Installed R17 restores Audio inventory/control. Compact
-91530dc passes 31/31 and 171 Qt checks, but a fresh owner-scale image exposes
-application-row overlap. Exact repair 65f8826/control c75dea4 have independent
-source acceptance d7e22764; old/fixed execution and root image acceptance
-remain before packaging.
-The Settings page is visibly denser; no compact presentation is installed.
+remain required. R17 restores Audio inventory/control.
 
-Clipboard 22/172, Power 6/56 and Bluetooth 40/282 integrated gates pass. Signed
-delivery and ordinary installed startup remain open. The generic Settings
-facade is connected in source without an Audio-route claim. Existing mutation,
-grant, identity, owner-loss and accessibility contracts must remain intact.
-Platform holds the bounded laptop native lease; the qinda lane is released.
+Compact b021/00c is accepted after independent source review and root owner-scale
+pixels. Integration5858bcc passes strict28 targets,33/185 owning and4/88
+profile/resolution gates. The Settings page is denser; bounded popup scrolling,
+separate stream controls and generic Settings action are source-delivered.
+No compact presentation is installed. R18 source14e4406/overlay af4e8ed awaits
+independent recipe acceptance, signed build and installed qualification.
+Existing mutation/grant/identity/owner-loss and accessibility behavior remains.
 
-Scoped agents, actual usage feeds, accessibility, newcomer and foreign-origin
+Clipboard22/172, Power6/56 and Bluetooth40/282 integrated gates pass; installed
+startup and physical behavior remain separate. Both native lanes are released.
+Scoped agents, actual feeds, accessibility, newcomer and foreign-origin
 presentation remain required. See [Handoff](../../../docs/HANDOFF.md).
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00

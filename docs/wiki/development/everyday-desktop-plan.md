@@ -33,12 +33,12 @@ documentation-only and earlier model-escalation defaults.
 
 R17 is installed through Portage with independently verified artifact and image
 identity. Public Audio inventory/control works; the owner confirms devices in
-Settings and the installed AI popup opens. Compact 91530dc passes 31/31 owning
-CTests and 171 Qt checks, but a fresh owner-scale image reveals overlapping
-application controls. Exact 65f8826 repair and c75dea4 regression control have
-independent source acceptance d7e22764; old/fixed native proof and root image
-acceptance remain. The compact presentation is not
-installed.
+Settings and the installed AI popup opens. Compact b021/00c is independently
+source-accepted and root visually accepted at owner scale. Integration5858bcc
+passes strict28 targets,33/185 owning and4/88 profile/resolution gates.
+The Settings page is denser; the popup is bounded and scrollable with separate
+stream controls. R18 source14e4406/overlay af4e8ed awaits exact recipe review,
+signed build and installation. The compact presentation is not installed.
 
 Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 checks pass.
 Bluetooth 3040022/7686226 is integrated at 3b4275ace with independently verified
@@ -48,7 +48,8 @@ helper/radio or ordinary control. These remain explicit next gates.
 Full mixer gain/quiet-start requires the source-accepted Portage loopback
 cleanup b489a5f8, exact pre-load image admission and lifecycle/ASan/runtime
 qualification. Source c17fd9/de491fa is progress without working production
-gain. Android has no initialized/trusted app-window journey; Windows has no
+gain. Image/lifecycle diagnostic ec1cef36 has source-only acceptance after
+the992 newline repair; actual qualification remains open. Android has no initialized/trusted app-window journey; Windows has no
 complete real-app pass. USB/File Manager, safe Move/Trash, network expansion,
 Viewer, administration/recovery, accessibility, scoped agents and newcomer
 acceptance remain required.
@@ -347,10 +348,11 @@ behavior and evidence; this audit and its assignments add none.
 
 Installed R17 restores Audio inventory and a real default-volume roundtrip.
 The owner confirms Settings discovery and reports popup overflow/no scroll and
-excessive spacing. Compact 91530dc passes 31/31, but root's owner-scale image
-requires application-row repair before packaging. Integrated Clipboard 22/172,
-Power 6/56 and Bluetooth 40/282 checks pass; installed startup and physical
-control remain separate gates. Full mixer processing remains unfinished.
+excessive spacing. Compact b021/00c is source and root visually accepted;
+integration5858bcc passes37 CTests and273 Qt checks. R18 recipe review, signed
+build and installed compact startup remain. Integrated Clipboard22/172,
+Power6/56 and Bluetooth40/282 checks pass; ordinary startup and physical
+control remain separate gates. Full mixer processing is unfinished.
 Neither Android nor Windows has passed a complete app journey. The current
 source record in `docs/HANDOFF.md` separates evidence and remaining gates.
 No whole ED outcome is closed by these bounded slices.
