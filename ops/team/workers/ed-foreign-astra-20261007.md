@@ -1,11 +1,17 @@
 # ED foreign application architecture
-- Status: available — completed installed Waydroid source-provenance help; awaiting exact Android KVM source review and separate package inputs.
-- Outcome: stock Android KVM fixture source review support; no runtime admission.
+- Status: available — Android9d0f source/input proposal frozen; ready for independent review repair and Files native failure recheck.
+- Outcome: concrete stock runtime prerequisite plan and enforced boot-stage input admission; runtime remains unqualified.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
-- Branch: worker/everyday-android-stock-runtime-20261008; isolated source worktree.
+- Branch: worker/everyday-android-stock-runtime-20261008; isolated own source tree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T17:43:50Z — Frozen9d0f:18 tiny controls/AST10/docs534/strict8.19/diff0. Normal pretend13 and prerequisite pretend8 pass; explicit all13 build-only refuses unmerged deps, preserved. Exact eight-package transaction proposed, no merge/build/stage/VM. Package artifacts/full ELF+Python+GI+Qt+module closure remain required. No resources held.
+
+- 2026-10-08T17:34:02.317005+00:00 — Claimed source-only runtime closure after independentf676 acceptance. Inspecting exact LXC/libcap hooks and private package.use; no package build, merge, staging, boot or heavy lease.
+
+- 2026-10-08T17:30:39Z — Claimed/completed source-only3bec/22e5 review: exactly five local identifier substitutions, seven normalized phase objects and seven current pins match; actual11225-byte old compiler failure rehashed. No native/compiler/unit action. SOURCE/argv ACCEPT; Android holds heavy and root grants continuation separately.
 
 - 2026-10-08T17:25:46Z — Read-only reviewer help completed: six installed Waydroid1.6.3 source files match VDB CONTENTS; direct container bus publication and block-device initializer traced. No cached official archive/Makefile claim. No runtime or resource lease.
 
