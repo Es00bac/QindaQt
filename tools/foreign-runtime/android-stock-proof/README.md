@@ -195,3 +195,12 @@ loader cache. The fixture now sets only the fixed guest
 No host loader cache/config or package bytes are copied or modified. Static
 DT_NEEDED search checks qualify directly reached native executables separately;
 they do not prove plugin loading or a successful Android/container journey.
+
+The third guest completed stock initialization and independently observed
+LXC STOPPED during cleanup, then failed with PermissionError before windows.
+The protected host stage's root and generated usr/bin are0700. Guest PID1
+normalizes only its disposable / and /usr/bin copies to0755 and uses022 while
+stock creates shared runtime/configuration; explicit private HOME and runtime
+remain0700. The private guest bus parent is0755. Host stage protections remain
+unchanged. Fixed operation-stage, errno and bounded256-character exception
+diagnostics distinguish later failures. No app success is claimed.
