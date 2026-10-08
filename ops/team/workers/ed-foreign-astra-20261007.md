@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — archive2325 actualsuccess separately verified after observerpollfailure; tenth9bb5/f02f proposal awaiting review; laptopheavyreleased.
-- Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
+- Status: working — exact fixed-launch source/archive proposal frozen; inspecting next public interaction boundary while root reviews; no heavy lease.
+- Outcome: two stock Android app windows, followed by real interaction/lifecycle and public integration.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T23:31:56.119005+00:00 — Source328fcf22b ten injected tests/docs/strict pass. Archive2340 plan6f76ebef and exact windows14e0a0 frozen, unexecuted. Tenth full receipt failed Clock launch10s; console/cleanup qualified. Immutable proof15payloads preserved; laptop heavy released.
+
+- 2026-10-08T23:29:37.661553+00:00 — Tenth VM settled1/47.224s; held outer reaped, QEMU0/retired, strict one result and cleanup/input stability qualified. Calculator only; Clock launch timeout retained. Laptop heavy released; narrow launch-budget repair source only.
 
 - 2026-10-08T18:07:09Z — Frozen exact three-phase prerequisite proposal: preserve oldlibcap/pretend/ordinary eight-atom oneshot buildpkg merge, each separately admitted. Read hooks/default features; both proposed names/IDs absent in local account files, NSS recheck required. No command executed beyond earlier pretend/read-only metadata; no resource lease. Files5bfd native ACCEPTcc44 preserved.
 
@@ -319,3 +323,5 @@
 - 2026-10-08T23:19:55.418603+00:00 — Archive2325 exact7791/18c6 started; MainPID2690287/invocatione62b11a46de746fa9b7574d54aa12223 active4CPU5GiB, no retry.
 
 - 2026-10-08T23:23:08.197872+00:00 — Preservedobserver3stimeout, thenoriginalunitsuccess102.103s/mainouterabsent/archivehash+oneobjectparity. No retry; tenthplanfrozenonly.
+
+- 2026-10-08T23:24:23.238931+00:00 — Tenth9bb5/f02f pins pass; unit2330 invocation5c60aea0e3de49e2a467a5f72ba97f36 active4CPU5GiB; no retry.
