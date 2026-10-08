@@ -41,6 +41,7 @@ Item {
     property Component voiceComponent: null
     property Component keyringComponent: null
     property Component portalPermissionsComponent: null
+    property Component printingComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -92,6 +93,7 @@ Item {
             : navigation?.activeRouteComponent === "voice" ? supplementalLoaders.voiceLoader
             : navigation?.activeRouteComponent === "keyring" ? supplementalLoaders.keyringLoader
             : navigation?.activeRouteComponent === "portal-permissions" ? supplementalLoaders.portalPermissionsLoader
+            : navigation?.activeRouteComponent === "printers-scanners" ? supplementalLoaders.printingLoader
               : unavailableLoader
 
     SettingsRouteConstructionWitness {

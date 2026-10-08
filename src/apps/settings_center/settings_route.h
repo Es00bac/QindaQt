@@ -32,6 +32,7 @@ enum class SettingsRouteComponent {
   Voice,
   Keyring,
   PortalPermissions,
+  Printing,
 };
 
 [[nodiscard]] QString

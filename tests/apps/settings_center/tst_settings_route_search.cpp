@@ -45,7 +45,7 @@ private Q_SLOTS:
 
 void SettingsRouteSearchTest::everyBuiltInRouteHasKeywords() {
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
-  QCOMPARE(registry.count(), 22);
+  QCOMPARE(registry.count(), 24);
   for (const SettingsRoute &route : registry.routes()) {
     QVERIFY2(route.isValid(), qPrintable(route.id));
     QVERIFY2(!route.keywords.isEmpty(), qPrintable(route.id));
@@ -60,6 +60,10 @@ void SettingsRouteSearchTest::everyBuiltInRouteHasKeywords() {
               ->keywords.contains(QStringLiteral("battery")));
   QVERIFY(registry.route(QStringLiteral("passwords-keys"))
               ->keywords.contains(QStringLiteral("wallet")));
+  QVERIFY(registry.route(QStringLiteral("printers-scanners"))
+              ->keywords.contains(QStringLiteral("cups")));
+  QVERIFY(registry.route(QStringLiteral("printers-scanners"))
+              ->keywords.contains(QStringLiteral("scanner")));
   // W15: Customize is the layout preset page now (ADR-0267).
   QVERIFY(registry.route(QStringLiteral("customize"))
               ->keywords.contains(QStringLiteral("layout presets")));
@@ -81,7 +85,8 @@ void SettingsRouteSearchTest::searchMetadataLeavesOrderAndDigitRoutesUnchanged()
       QStringLiteral("about-computer"), QStringLiteral("startup"),
       QStringLiteral("screensaver"),   QStringLiteral("login-screen"),
       QStringLiteral("voice"),
-      QStringLiteral("passwords-keys"),
+      QStringLiteral("passwords-keys"), QStringLiteral("portal-permissions"),
+      QStringLiteral("printers-scanners"),
   };
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   QStringList actual;
@@ -106,7 +111,7 @@ void SettingsRouteSearchTest::onlyInputDeclaresDestinations() {
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   for (const SettingsRoute &route : registry.routes()) {
     if (route.component == SettingsRouteComponent::Input) {
-      QCOMPARE(route.destinations.size(), 5);
+      QCOMPARE(route.destinations.size(), 6);
     } else {
       QVERIFY2(route.destinations.isEmpty(), qPrintable(route.id));
     }
@@ -121,7 +126,7 @@ void SettingsRouteSearchTest::onlyInputDeclaresDestinations() {
   }
   QCOMPARE(ids, (QStringList{QStringLiteral("pointers"), QStringLiteral("tablet"),
                              QStringLiteral("keyboard"), QStringLiteral("shortcuts"),
-                             QStringLiteral("touch")}));
+                             QStringLiteral("touch"), QStringLiteral("controllers")}));
 }
 
 void SettingsRouteSearchTest::inputDestinationsMatchTheInputPage() {
@@ -141,7 +146,7 @@ void SettingsRouteSearchTest::inputDestinationsMatchTheInputPage() {
     const auto found = match.next();
     pageDestinations.append({found.captured(1), found.captured(2)});
   }
-  QCOMPARE(pageDestinations.size(), 5);
+  QCOMPARE(pageDestinations.size(), 6);
 
   const auto input =
       SettingsRouteRegistry::createDefault().route(QStringLiteral("input"));
@@ -208,7 +213,7 @@ void SettingsRouteSearchTest::controllerProjectsKeywordsAndDestinations() {
   QCOMPARE(input.value(QStringLiteral("id")).toString(), QStringLiteral("input"));
   const QVariantList destinations =
       input.value(QStringLiteral("destinations")).toList();
-  QCOMPARE(destinations.size(), 5);
+  QCOMPARE(destinations.size(), 6);
   const QVariantMap shortcuts = destinations.at(3).toMap();
   QCOMPARE(shortcuts.value(QStringLiteral("id")).toString(),
            QStringLiteral("shortcuts"));

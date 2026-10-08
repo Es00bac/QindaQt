@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — implementing ED11 delegated printer/scanner Settings route, fixed public catalog/argv boundary and focused source fixtures; compiler resources idle
+- Status: paused — user requested safe logout/login checkpoint; incomplete read-only ED05 review preserved and all resources released
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
-- Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
-- Ownership: new settings/printing module/tests/wiki/ADR0356; approved minimal SettingsCenter route/host/search/CMake and docs wiring
-- Next gate: exact ED11 source freeze, independent root review and leased focused/installed/poison/DPI2 validation; hardware/Portage journey separate
+- Outcome: different-author exact ED05 recovery codec/store/mount collaborator source review; Viewer repair pending and ED11 preserved
+- Ownership: own board and timestamped review records only; Astra owns ED05 product/docs/tests and root owns Viewer
+- Next gate: user resume and root exact packet; incomplete ED05 source review and Viewer repair recheck remain pending
 
 ## Updates
 
@@ -43,3 +43,23 @@
 - 2026-10-07T22:59:30+00:00: Read current First-party/Platform queues after handoff and offered Platform the exact scanner packaging facts. Existing printer owner source contains connection dialog/retry, test-page and job-cancellation error paths; no runtime claim. Readonly inventory complete; transitioning to available while manager assigns fresh source ownership. All source/evidence commits preserved and all resources remain released.
 
 - 2026-10-07T23:04:59+00:00: Fetched hub main and confirmed exact1a205444cff9264ac0b21a3968506133132db5bc, created fresh isolated printing worktree/branch. Root approved inventory paths/ADR0356. Platform confirms no Network collision; coordinated additive shared CMake. Source authoring only; no compiler, private runtime, service/device/job or Portage action.
+
+- 2026-10-07T23:25:51+00:00: Authored fixed public catalog/argv collaborators, shared compiled Printing route 24 and own-prefix preflight, preserving the prior 23 route indices. Added model/catalog and real page keyboard/compact/normal/DPI 2 fixtures plus relocated withheld-module/restoration gate; corrected affected stale route-count fixtures. Docs links 526 exit 0, strict MkDocs exit 0, new production 11 and test 6 source-shape files zero issues, diff check exit 0. Existing Main.qml 424 shape debt recorded in ADR; registry 484/main 473 stay below 500. No compiler, CTest, installed application launch, service/device/job or hardware qualification claim.
+
+- 2026-10-07T23:35:52+00:00: Root assigned bounded readonly ED11 later-gate inventory while Astra holds the native lane. Exact source 83e261591a16126683fd3219a21b11d2807a6d83 remains frozen. Inspecting only sanitized CUPS/config/device metadata counts and a stable exact simple-scan Portage pretend plan; no job, scan, service/config/world/package transaction or native test.
+
+- 2026-10-07T23:39:03+00:00: Root explicitly transferred sole ED11 native lease after Astra release. Detached ignored verification tree is exact 83e261 source; strict /usr + KDE libexec and actual MAKEOPTS -j24 -l24, both host buses blocked and private XDG. Readonly inventory shows CUPS three units disabled/inactive, no socket/current printers.conf or classified USB printer/imaging/SANE device; scanner presence remains unqualified. Exact stable simple-scan pretend exits 1 with Avahi mdnsresponder-compat slot conflict, proposed 18 packages/75413 KiB; no package/config/world/service transaction. Native outcomes not yet claimed.
+
+- 2026-10-08T00:04:47+00:00: Exact55113184 strict production build exit0; full native/offscreen/relocated CTest18/18 with87 Qt passed and zero failures/skips/blacklisted. Installed public catalog1/1 with11 Qt passed, actual staged-header poison build exit1, restored build+1/1 exit0; four staged producer headers/zero source leaks/14 byte-matched payloads/Core-only. Docs526/strict/production11+test6 shape/diff pass. Original83e and488 16/18 failures preserved; root approved precise Controllers metadata/page order and palette fixture repair. Explicitly RELEASED all compiler/runtime/staging resources to root before receipt; no Portage/hardware/service claim.
+
+- 2026-10-08T00:07:36+00:00: Exact handoff and configure reproduction flags preserved in79dedf91b. Read current hub First-party queue at3859cc78 and offered root/Platform bounded installed-owner delegation or read-only scanner package provenance help. No new source ownership assumed. Transitioning to available pending exact root review or next compatible packet; compiler/runtime remain released.
+
+- 2026-10-08T00:09:16+00:00: Root reactivated me as different-author read-only reviewer of exact15eec7ec915d9388f5c0128f58438e3359ebceeb at base1a205444c. Confirmed clean exact Viewer worktree and source freeze; read repository instructions and owning wiki. Inspecting permission-aware extraction, UTF-16/query/page bounds, search semantics, serialized worker and GUI/lifetime fences, PlainText/dialog/clipboard/keyboard behavior and real tests. Native source is uncompiled; Platform alone owns qinda Windows diagnostic lease. No Viewer production edits or ED11 source changes.
+
+- 2026-10-08T00:14:25+00:00: Exact15eec source review NEEDS_FIX_SOURCE, P0/P1/P2/P3=0/0/1/1. Direct installed toolkit and Qt6.11.1 source trace Enter bubbling from focused Previous/Next/Copy actions to dialog acceptance; new capabilities also override public available contract. Root will add real old-source keyboard negatives and cancel→zoom coverage, then freeze repair. Permissions/search limits/worker/revision fences show no other source blocker. Independent docs524/strict/Viewer shape/diff0 and actual fixture hash pass; no native/compiler/installed/AT claim.
+
+- 2026-10-08T00:16:18+00:00: Source-only review completed and canonical807891f19 receipt delivered to root; offered immediate exact repaired-candidate and old/fixed gate recheck. Transitioning to available while implementer authors/runs the agreed regressions, preserving genuine liveness. No source changes or compiler/native lease claim.
+
+- 2026-10-08T00:25:44+00:00: Root reactivated independent read-only ED05 first collaborator review at exact41165258389ad58922b2ea4f73514317f9cf07af/base3859cc785. Confirmed clean source, read owning ADR0355/0357 and recovery/wiki contract. Inspecting strict codec/append-only durability/exclusive no-follow filesystem/statx descriptor lifetimes and real authored fault fixtures. Only own board/review records edited; no Astra source, compiler/native lease, whole Move or durability execution claim.
+
+- 2026-10-08T00:27:00+00:00: User requested safe stopping point through root; paused review/refill immediately. Preserved incomplete exact41165258 review after codec/types/store/admission inspection; actual fault fixtures and native/static review gates remain pending. One same-inode post-file-fsync/pre-readback durability concern is recorded as unexecuted, not a reproduced blocker. No product edits/compiler/native lease. Viewer807 NeedsFix and Printing551 qualified source handoff remain unchanged.

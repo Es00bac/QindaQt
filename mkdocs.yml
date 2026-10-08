@@ -175,6 +175,7 @@ nav:
       - Removable media: apps/removable-media.md
       - Image and PDF Viewer: apps/viewer.md
       - Settings Center: apps/settings-center.md
+      - "Settings Printers & scanners route": apps/printers-scanners-settings.md
       - Settings Appearance route: apps/appearance-settings.md
       - Settings Display route: apps/display-settings.md
       - Settings Network route: apps/network-settings.md
@@ -552,3 +553,4 @@ nav:
       - "0335: Native remote input portal": adr/0335-native-remote-input-portal.md
       - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md
       - "0355: Preserve source bytes during cross-device moves": adr/0355-preserve-source-bytes-during-cross-device-moves.md
+      - "ADR-0356: Delegate printer/scanner Settings to installed tools": adr/0356-delegate-printer-and-scanner-settings-to-installed-tools.md

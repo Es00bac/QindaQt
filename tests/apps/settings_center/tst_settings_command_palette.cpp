@@ -65,6 +65,7 @@ class SettingsCommandPaletteTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void ctrlKFindsNetworkByKeyword();
+  void printingSearchSelectsDiscoverablePage();
   void filteredRowsKeepCrossSectionRelevanceOrder();
   void destinationOpensInputSubPageEvenWhenInputIsOpen();
   void activeShortcutCaptureOwnsShellShortcutKeys();
@@ -227,6 +228,26 @@ void SettingsCommandPaletteTest::search(QQuickWindow *window, QObject *palette,
   QTRY_COMPARE(palette->property("filterText").toString(), text);
 }
 
+void SettingsCommandPaletteTest::printingSearchSelectsDiscoverablePage() {
+  SettingsNavigationController navigation(SettingsRouteRegistry::createDefault(),
+                                          QStringLiteral("notifications"));
+  auto root = createWindow(navigation, QSize(420, 320));
+  QVERIFY(root != nullptr);
+  auto *window = qobject_cast<QQuickWindow *>(root.get());
+  QObject *searchPalette = palette(root.get());
+  QVERIFY(searchPalette != nullptr);
+  for (const auto &term : {QStringLiteral("scanner"), QStringLiteral("cups")}) {
+    search(window, searchPalette, term);
+    if (QTest::currentTestFailed()) return;
+    QCOMPARE(currentRow(searchPalette).value(QStringLiteral("id")).toString(),
+             QStringLiteral("route:printers-scanners"));
+    QTest::keyClick(window, Qt::Key_Return);
+    QCOMPARE(navigation.activeRouteId(), QStringLiteral("printers-scanners"));
+    QTRY_VERIFY(sceneItem(window->contentItem(),
+                          QStringLiteral("printingRefreshButton")) != nullptr);
+  }
+}
+
 void SettingsCommandPaletteTest::ctrlKFindsNetworkByKeyword() {
   SettingsNavigationController navigation(SettingsRouteRegistry::createDefault(),
                                           QStringLiteral("notifications"));
@@ -249,7 +270,7 @@ void SettingsCommandPaletteTest::ctrlKFindsNetworkByKeyword() {
                               map.value(QStringLiteral("shortcut")));
     }
   }
-  QCOMPARE(shortcutsByRoute.size(), 21 + 5);
+  QCOMPARE(shortcutsByRoute.size(), 24 + 6);
   QCOMPARE(shortcutsByRoute.value(QStringLiteral("route:notifications")).toString(),
            QStringLiteral("Ctrl+1"));
   QCOMPARE(shortcutsByRoute.value(QStringLiteral("route:color")).toString(),
@@ -310,6 +331,7 @@ void SettingsCommandPaletteTest::filteredRowsKeepCrossSectionRelevanceOrder() {
            QStringList({QStringLiteral("route:screensaver"),
                         QStringLiteral("route:display"),
                         QStringLiteral("route:login-screen"),
+                        QStringLiteral("route:portal-permissions"),
                         QStringLiteral("route:power"),
                         QStringLiteral("route:streaming"),
                         QStringLiteral("destination:input/touch")}));
