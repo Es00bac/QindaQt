@@ -1,3 +1,19 @@
+## Current paused outcome order — October 8, 13:06 MDT
+
+The owner requested reassessment before resuming. **No implementation, package
+transaction or runtime grant is active.** This is a ready order, not a claim of
+worker liveness. See the [current plan](../../../docs/wiki/development/everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt).
+The Program Manager supplies an exact fresh base/worktree/path assignment
+before each resumed implementation; preserved candidates below are not completion.
+
+| Outcome | Owner and current boundary | Reviewer and next gate | Collision/help |
+| --- | --- | --- | --- |
+| Installed R20 Audio and usage | Root after owner resumes; R20 installed, Claude/Codex fresh public feeds | Relevant module owner; usable compact popup, current default/per-app readback, keys/audible result and usage refresh | User session; no automatic lock/suspend/settings writes |
+| Shared app presentation and scoped assistance | Unclaimed until runtime/protocol-ready; existing catalog and Proposed ADR0353 | Astra for new authority; authenticated green/blue association and one grant/action/revoke journey | Catalog/shared toolkit ownership; do not count usage plugin as ED17/18 |
+| Accessibility/onboarding | Unclaimed; four accessibility consumers exist, screen reader reserved | Independent module reviewer; real AT-SPI/keyboard and task-based Welcome fixes | Real assistive/newcomer checks;8–12tasks, not people |
+
+One heavy cohort; qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/half cores. Today remains the deadline; full scope is retained. Earlier routing below is historical.
+
 ## Current resource-capped delivery — 2026-10-08T17:19:42+00:00
 
 | Outcome | Current evidence | Next gate |

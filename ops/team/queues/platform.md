@@ -1,3 +1,20 @@
+## Current paused outcome order — October 8, 13:06 MDT
+
+The owner requested reassessment before resuming. **No implementation, package
+transaction or runtime grant is active.** This is a ready order, not a claim of
+worker liveness. See the [current plan](../../../docs/wiki/development/everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt).
+The Program Manager supplies an exact fresh base/worktree/path assignment
+before each resumed implementation; preserved candidates below are not completion.
+
+| Outcome | Owner and current boundary | Reviewer and next gate | Collision/help |
+| --- | --- | --- | --- |
+| Windows ordinary apps | Platform; source985 reviewed,21controls accepted; freshplan454573a85 unrun | Astra; actual two-app/cleanup and added typing proof, then existing public runner/catalog | One native fixture; no generic supervisor expansion |
+| Android ordinary apps | Astra; signed stock images, source-reviewed containment; prep2c52 unqualified | Independent Platform review; shortest qualified runtime closure, then stock two-app result | No package/guest phase started; no unreviewed host initialization |
+| Ordinary Audio then full mixer | Platform/source owner; existing public default/volume/mute/moveStream; full gain still unwired | Astra for lifecycle; ordinary route acceptance separate from Media036528bb6 package/lifetime/PCM path | One heavy job; custom console diagnostics do not block unrelated ordinary flows |
+| Network/admin/travel | Unclaimed; use existing Network1/QindaPortage/CUPS/recovery owners | Independent owner review; ED08/09/11–15 concrete GUI/hardware/server journeys | Audit current implementation first; hardware and credentials need real evidence |
+
+One heavy cohort; qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/half cores. Today remains the deadline; full scope is retained. Earlier routing below is historical.
+
 ## Current resource-capped delivery — 2026-10-08T17:19:42+00:00
 
 | Outcome | Current evidence | Next gate |
