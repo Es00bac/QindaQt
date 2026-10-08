@@ -61,7 +61,10 @@ def main():
               "platformOriginQualified": False, "cleanupQualified": False}
     env = {"PATH": "/usr/bin:/usr/sbin:/bin:/sbin", "LANG": "C.UTF-8",
            "HOME": "/root", "DBUS_SYSTEM_BUS_ADDRESS":
-           "unix:path=/run/android-proof/system-bus"}
+           "unix:path=/run/android-proof/system-bus",
+           # Fixed qualified GCC runtime directory reproduces Gentoo's loader
+           # cache inside this fixture; no host environment/cache is inherited.
+           "LD_LIBRARY_PATH": "/usr/lib/gcc/x86_64-pc-linux-gnu/15"}
     os.environ.clear(); os.environ.update(env)
     Path("/etc/machine-id").write_text(Path("/proc/sys/kernel/random/uuid").read_text().replace("-", ""))
     try:

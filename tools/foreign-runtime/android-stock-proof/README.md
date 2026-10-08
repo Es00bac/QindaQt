@@ -186,3 +186,12 @@ The pinned stock launcher uses nonrecursive mkdir for /var/lib/waydroid before
 logging initialization, making the absent parent a concrete source explanation
 for the first failure. This remains an inference until the repaired boot;
 stock diagnostics remain enabled and no host directory is adopted.
+
+The second actual guest reached binderfs/configuration, then lxc-info could not
+resolve libgcc_s.so.1. The object was already in the admitted GCC15 package
+closure; normal Gentoo resolves its nondefault directory through the host
+loader cache. The fixture now sets only the fixed guest
+/usr/lib/gcc/x86_64-pc-linux-gnu/15 library path after clearing its environment.
+No host loader cache/config or package bytes are copied or modified. Static
+DT_NEEDED search checks qualify directly reached native executables separately;
+they do not prove plugin loading or a successful Android/container journey.
