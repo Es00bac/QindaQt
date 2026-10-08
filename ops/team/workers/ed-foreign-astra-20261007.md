@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — preserving eighth actual two-window observation but failed terminal receipt; narrow guest drain source repair, no heavy held.
+- Status: available — terminal source368c/6fake controls/docs pass; archive2315 exact3bca awaiting rootreview; no heavy held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -305,3 +305,5 @@
 - 2026-10-08T22:58:15.115736+00:00 — Eighth3063/272b exactsource21/fourinputSHA checks passed; unit2310 invocation4a9a0241f64847e98fada9c65db3d6b0 active under4CPU5GiB.
 
 - 2026-10-08T23:02:11.612065+00:00 — Eighthactual Calculator+Clock distinctwindows/bootcomplete; hostreceipt failed fromPID1panic interleaving. Strictfailurepreserved; QEMUretired/inputs stable, laptopheavyreleased.
+
+- 2026-10-08T23:04:44.334608+00:00 — Froze guest-only drain/quarantine and existingoneobject archiveproposal; sixinjectedcontrols/AST/docs pass; eighthfailure/twowindow observation preserved.
