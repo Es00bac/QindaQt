@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — archive2225 qualified and fifth VM plan preserved; no heavy lease, awaiting exact boot grant.
+- Status: working — fifth Android VM exact root grant active on laptop; preserving detailed stock LXC evidence.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -271,3 +271,5 @@
 - 2026-10-08T22:22:55.935124+00:00: Protected guest/driver root0400 exact pins verified; granted archive observer session56481 started.
 
 - 2026-10-08T22:24:57.993056+00:00: Archive0/21.109s,7208/oneguestparity, initrdfe62da; fifthplan5e84 and manifest6cf2 prospective.
+
+- 2026-10-08T22:25:38.120954+00:00: Fifth observer99506/outer2576944-start11537059/main2576948-start11537064/invocationa7ccfc4a226b4bd78898e3fc95e785fd active; immediate witnesses preserved on qinda.
