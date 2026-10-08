@@ -1,3 +1,9 @@
+## Full-plan work resumed after fresh login
+
+User returned. Actual laptop shell matches installed desktopr16/source2188 bytes; AI popup click/contents await the user observation. qinda hubmain contains reviewed Printing checkpointdd631. Source/native/package/hardware qualifications remain distinct.
+
+Current resources: Platform owns one bounded150-second isolated Windowsv6 application attempt, no automatic retry or toolkit build; Astra owns ED05 source only, Media read-only exact411 review, root owns isolated Viewer repair/laptop focused build. After Windows lease release, signed toolkit build-only and ED05/integrated Printing/copy gates require explicit collision-free routing. All ED01–24 required work continues.
+
 ## Owner-requested logout/login checkpoint — 2026-10-08
 
 Work is paused at the owner request. Laptop Portage has desktop r16/source2188 installed and verified; the saved top bar includes agent-usage after Power. The running shell is the replaced old executable, not the installed r16 bytes; a fresh login loads r16. No session action or new package transaction is performed by this checkpoint.
