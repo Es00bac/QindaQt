@@ -12,6 +12,18 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
+## Latest stock-runtime and package boundary — 2026-10-08T17:19:42+00:00
+
+The stock-first architecture is now integrated from accepted da559/99b92233.
+Recipe486 resolves the actual Portage-generated distfile link failure while
+preserving the original verifier. Independent15 synthetic controls pass; root
+fresh archive/source pins match. A real signed data package is still pending.
+Both first launcher and unpack failures remain preserved. Astra's minimal KVM
+sourcef676 is under independent review; no guest initialization, boot or two-app
+window success is claimed. Windows635 reached both owned server retirements,
+but refused unknown adopted children before window steps. Its ownership repair,
+rendered input/resize/independent close and production identity remain open.
+
 ## October 8 implementation progress
 
 Android sourcec05d9c16/23ab470 and source reviewd97ea819 establish bounded

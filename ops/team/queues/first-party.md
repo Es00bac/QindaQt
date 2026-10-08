@@ -1,3 +1,18 @@
+## Current resource-capped delivery — 2026-10-08T17:19:42+00:00
+
+| Outcome | Current evidence | Next gate |
+| --- | --- | --- |
+| Compact Audio R20 | Artifact8557ae accepted; laptop Portage install0, all2332files/fourlinks match; Audio Ready/Bluetooth default | Next-login UI and hardware acceptance; full mixer remains open |
+| Android images/runtime | Recipe486 acceptedfbcca/15tiny controls; root current inputs match; stock-first architecture integrated | One fresh private package after Files; separate reviewed KVM boot and two-app window journey |
+| Files recovery | Source9bec accepted18d; first prepare failure retained, no compilation | Same-pair corrected d6daa launcher admission, serial Debug/Release native cohort |
+| Audio gain | Resource8candidate5eb accepted184d, accepted terminal source unchanged | One fresh old-only diagnostic cohort after Files/Android; real module/lifetime/PCM and production gain |
+| Windows apps | First635 attempt refused before window steps; server retirement qualified only | Same-author adopted-child ownership repair and renewed actual two-app journey |
+
+One heavy group only: qinda8jobs/load8/quota8CPU/12GiB/swap0/half cores/nice10;
+laptop4jobs/load4/half cores. Fresh real provider feeds and all remaining ED,
+foreign, physical and newcomer outcomes stay required today. Historical routing
+below records prior state; worker activity adds no completion credit.
+
 ## Manager current routing — 2026-10-08T16:19:23+00:00
 
 | Outcome | Exact current evidence | Next gate / owner |

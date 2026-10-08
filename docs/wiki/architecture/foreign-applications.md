@@ -333,3 +333,102 @@ The package installer should present the required downloads/space and user
 data retention before applying its normal authorized plan. It must not
 activate a new global service, alter networking or initialize guest state as
 an unannounced side effect of the documentation or metadata probe.
+
+## Stock Android first: platform origin and application identity
+
+The first Android runtime qualification uses the unchanged stock Waydroid
+multiwindow implementation and the pinned September 27, 2026 Android 13 image
+pair. A custom system-server/SurfaceFlinger producer is **not a prerequisite**
+for observing two ordinary windows. The official
+[multiwindow property](https://docs.waydro.id/usage/waydroid-prop-options) and
+[app launch interface](https://docs.waydro.id/usage/install-and-run-android-applications)
+already provide a stock feasibility path.
+
+Two separate claims must remain explicit:
+
+- **Renderer platform origin:** an Android/green decoration can eventually be
+  admitted from the compositor's authenticated Wayland connection to a
+  supervisor-admitted Waydroid renderer, pinned process lifetime and runtime
+  generation. Connection/process replacement or runtime loss retires the
+  decoration. No badge is currently qualified merely by this proposal.
+- **Registered application association:** package/signature/UID/task/surface and
+  launch-incarnation proof is still required for application-specific grants,
+  catalog association, agent context and stop/force-stop. Stock app_id, title,
+  copied package text or HWC layer-name parsing cannot supply that proof.
+  Until a public producer is qualified these labels are display-only, and
+  application-specific authority remains unavailable.
+
+The platform badge grants no permission. Several guest applications can share
+one renderer connection. It cannot authorize killing that renderer, stopping the
+shared runtime, or selecting a guest package. Native surface close/resize remains
+shell-owned and must preserve peer windows. Stronger producer work follows the
+stock experiment only where the real stock API cannot meet a required outcome.
+This distinction qualifies the application-bound rules earlier on this page; it
+does not relax any application grant or ownership check.
+
+### Fixed-image Portage input
+
+The separately reviewed overlay candidate
+`app-containers/waydroid-vanilla-images-20.0_p20260927` follows GURU's
+preinstalled image path, with immutable official archive URLs and Manifest
+digests. It additionally verifies expanded image digests and exact ZIP members.
+It has no OTA, init, mount, service or guest execution hook. Existing Calculator
+and DeskClock APKs remain inside the tracked system image; no APK download or
+untracked installation is necessary for the two supported test applications.
+
+Whole-image licenses are composite. Hundreds of original embedded notices remain
+unchanged. The conservative restrictive aggregate license metadata and
+`RESTRICT="mirror bindist"` do not establish redistribution permission.
+Complete build/source correspondence remains open, separately from private stock
+feasibility. Previous a97 provenance and packaged apksig evidence remain immutable;
+signature checks establish the declared signer policy, not whole-image licensing.
+
+### Next private stock experiment: separate executable admission
+
+This is a plan, **not an execution grant or successful runtime evidence**.
+Before any package or runtime command, freeze a reviewed dispatcher with exact
+installed runtime/image hashes, argv, environment, process ownership, deadlines,
+output limits and rollback/retention receipts. The manager selects a disposable
+dedicated test host or VM; a nested Wayland socket alone does not isolate binder,
+LXC, host permissions, network or global Waydroid services.
+
+1. Package-only gate: resolve the fixed recipe against the captured repository,
+   run its synthetic verifier tests, build a private package, verify signature
+   and staged image hashes/modes/provenance. Reject unexpected files, symlinks,
+   download/init hooks and changed world/profile. Reserve at least half the host:
+   at most 8 jobs/load 8, 12 GiB, one heavy cohort, manager-approved CPU affinity
+   0-5,12-17 on the measured qinda topology.
+2. Before a separately approved installation/init: prove no existing Waydroid
+   session/container/data is adopted or overwritten; record installed package
+   owners, binder/kernel admission and dedicated work/data paths. Reject
+   /etc/waydroid-extra/images overriding the packaged /usr/share pair.
+   Stock 1.6.3 init modifies binder/LXC/permissions and may stop an existing
+   container; do not run it in an ordinary active session.
+3. After reviewed initialization on that isolated host, verify actual config
+   images_path equals /usr/share/waydroid-extra/images and system_ota/vendor_ota
+   are None. Rehash both files and inspect actual mounted read-only lower images;
+   mutable overlays and application data belong only to the private run.
+   Refuse auto-download, foreign mounts or unexpected owner/generation.
+4. On the held private session, use the stock commands
+   `waydroid prop set persist.waydroid.multi_windows true`, then the
+   documented session restart if necessary; launch
+   `waydroid app launch com.android.calculator2` and
+   `waydroid app launch com.android.deskclock`.
+   Each command is a future dispatcher operation, not a command to run on the
+   user's current desktop. Verify real package/signature/API33 inventory first.
+5. Observe two independent normal surfaces on the private compositor. Exercise
+   pointer and keyboard input, resize and independent close; keep the other
+   application responsive. Capture actual surface/process/runtime observations,
+   not title-based identity. Test runtime loss and replacement without reusing
+   stale surface authority. Lack of strong application association must be
+   reported independently from successful ordinary windows.
+6. Settle only held, explicitly admitted runtime/session ownership. Do not kill
+   a peer app/shared runtime from window title or app_id. Preserve private data,
+   logs and uncertain mount/process state; containment is not proof of successful
+   app retirement. Manager-reviewed exact cleanup and final image/host-state
+   readback are required before calling the run complete.
+
+The current boundary remains source-only: stock runtime is installed but
+uninitialized on the laptop and was absent on qinda at inventory. Neither
+presence nor this recipe proves binder readiness, image initialization, guest
+boot, two applications, platform decoration or app-specific lifecycle.
