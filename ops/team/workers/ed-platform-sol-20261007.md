@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Audio stream layout native proof complete; awaiting manager pixel review/integration and exact future package pin
+- Status: waiting — R18 immutable source/recipe ready for independent review and manager freeze confirmation; no package/native lease
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -199,3 +199,7 @@
 - 2026-10-08T06:21:01.144445+00:00 — Old168 strict build0, registered2 expected red8:12Qt pass2fail only header lineCount5. Corrected unknown admission and known bounds pass. Fixedb021 strict24-target configure/build0; actual33-row serial owning cohort running under private laptop environment.
 
 - 2026-10-08T06:23:13.566387+00:00 — Fixedb021 strict24 build0, actual33/33 owning0 and185Qt pass0fail0skip0blacklist. Old168 expected header red2/2 (12pass2fail); original c75 negatives preserved. Single fresh owner render0/3Qtpass, actual1536x864logical/DPR1.25/image450x600. All native/compiler resources released; no installed usability/package claim.
+
+- 2026-10-08T06:38:02.482558+00:00 — Root visually accepted compact Audio popup/Settings; native proof33/185 preserved. Fresh R18 desktop5858/overlayb128 trees after explicit hub fetch. Existing R17 directory untouched; source-only preparation, no native/package/install lease.
+
+- 2026-10-08T06:41:41.748344+00:00 — Source5858 archive9747 blobs/39,433,447bytes/SHA620ad2 verified; mirroredr18 explicit libdbus DEPEND/RDEPEND only dependency change. Actual Portage metadata, release contract7/7, docs533/strictMkDocs all0. Overlayaf4e8ed pushed; manager37 gate/artifact/install still pending. No native/compiler/Portage build/install or publication.
