@@ -55,7 +55,9 @@ def main():
         raise RuntimeError("not-fixture-pid1")
     signal.signal(signal.SIGTERM, cancel)
     signal.signal(signal.SIGINT, cancel)
-    os.umask(0o077)
+    # Stock privileged initialization creates configuration read by UID1000.
+    # This conventional guest-only mask never changes the protected host stage.
+    os.umask(0o022)
     result = {"schema": 1, "kind": "stock-android-feasibility",
               "success": False, "appIdentityQualified": False,
               "platformOriginQualified": False, "cleanupQualified": False}
@@ -67,7 +69,13 @@ def main():
            "LD_LIBRARY_PATH": "/usr/lib/gcc/x86_64-pc-linux-gnu/15"}
     os.environ.clear(); os.environ.update(env)
     Path("/etc/machine-id").write_text(Path("/proc/sys/kernel/random/uuid").read_text().replace("-", ""))
+    phase = "guest-permissions"
     try:
+        # The private host stage and generated usr/bin are0700. Only the
+        # disposable guest copies need traversal by the fixed session UID.
+        os.chmod("/", 0o755)
+        os.chmod("/usr/bin", 0o755)
+        ROOT.chmod(0o755)
         if Path("/etc/waydroid-extra/images").exists():
             raise RuntimeError("unexpected-image-override")
         if Path("/var/lib/waydroid").exists():
@@ -75,13 +83,16 @@ def main():
         # Stock Waydroid creates /var/lib/waydroid with mkdir, not parents.
         # /var is a fresh guest-only tmpfs; no host directory is adopted.
         Path("/var/lib").mkdir(mode=0o755, exist_ok=True)
+        phase = "private-buses"
         for name in ("system", "session"):
             conf = ROOT / (name + ".conf")
             conf.write_text(bus_config(str(ROOT / (name + "-bus"))))
             conf.chmod(0o644)
             spawn(["/usr/bin/dbus-daemon", "--nofork", "--config-file=" + str(conf)])
             wait_path(ROOT / (name + "-bus"))
+        phase = "stock-init"
         call(["/usr/bin/waydroid", "--details-to-stdout", "init"])
+        phase = "stock-config"
         config = configparser.ConfigParser()
         config.read("/var/lib/waydroid/waydroid.cfg")
         expected = {"images_path": "/usr/share/waydroid-extra/images",
@@ -93,7 +104,9 @@ def main():
             raise RuntimeError("updater-not-disabled")
         if "ro.hardware.egl=swiftshader" not in properties:
             raise RuntimeError("software-renderer-not-selected")
+        phase = "stock-container"
         container = spawn(["/usr/bin/waydroid", "container", "start"])
+        phase = "container-admission"
         import dbus
         bus = dbus.SystemBus()
         ready_end = time.monotonic() + 10
@@ -107,8 +120,10 @@ def main():
                                       "/org/freedesktop/DBus"), "org.freedesktop.DBus")
         if int(bus_daemon.GetConnectionUnixProcessID(owner)) != container.pid:
             raise RuntimeError("container-owner-not-held-process")
+        phase = "user-paths"
         home = Path("/home/proof")
-        home.mkdir(parents=True); home.parent.chmod(0o755); os.chown(home, 1000, 1000)
+        home.mkdir(parents=True, mode=0o700); home.chmod(0o700)
+        home.parent.chmod(0o755); os.chown(home, 1000, 1000)
         runtime = Path("/run/user/1000")
         runtime.mkdir(parents=True, mode=0o700); runtime.parent.chmod(0o755); os.chown(runtime, 1000, 1000)
         userenv = dict(env, HOME=str(home), USER="proof", LOGNAME="proof",
@@ -122,7 +137,9 @@ def main():
                    "--scale", "1", "--output-count", "1", "--no-lockscreen",
                    "--no-global-shortcuts", "--test-scenario", "/proof/scenario.json",
                    "--session", "/proof/windows.py"]
+        phase = "compositor-launch"
         compositor = spawn(command, userenv, user=1000)
+        phase = "window-proof"
         compositor.wait(timeout=220)
         if compositor.returncode != 0:
             raise RuntimeError("nested-compositor-or-window-proof-failed")
@@ -133,6 +150,11 @@ def main():
         result["success"] = True
     except BaseException as error:
         result["errorType"] = type(error).__name__
+        result["errorStage"] = phase
+        number = getattr(error, "errno", None)
+        result["errorErrno"] = number if isinstance(number, int) and 0 <= number <= 4095 else 0
+        # Only this disposable public-input guest's exception is reported.
+        result["errorMessage"] = str(error).replace("\n", " ").replace("\r", " ")[:256]
         result["success"] = False
     finally:
         # Entire namespace/kernel is fixture-owned, yet stop observation remains
