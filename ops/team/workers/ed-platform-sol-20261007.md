@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: waiting — R18 actual package atom repaired and private pretend qualified; exact Astra recheck and renewed build lease pending
-- Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
-- Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
+- Status: available — Owned-server fixture source and70 synthetic controls frozen for Astra exact review; no Wine/native/preflight/compiler/Java/Portage resources held.
+- Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
+- Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -213,3 +213,61 @@
 - 2026-10-08T07:08:03.633839+00:00 — Root approved mirrored sys-apps/dbus build/runtime atom repair only. Runtime5858/archive620ad2 unchanged, original failed signed-build resolver preserved. Actual private pretend and static gates now, no compiler/signing/install or host action.
 
 - 2026-10-08T07:10:00.778856+00:00 — Mirrored sys-apps/dbus correction only; exact overlaya829b04, actual private pretend0 selects onlyr18 in7.21s. Original resolver1/log preserved, runtime5858/archive620ad2/Manifest/source unchanged; source/release7/docs533/strict/diff all0. No compiler/signing/install/newrealbuild or host action.
+
+- 2026-10-08T07:16:33.170003+00:00 — Same-reviewer7c2f2e99/root accepted exact ea14088/a829b04, runtime5858/archive620ad2. Renewed sole qinda compiler/private qualification lease; one retry with separate receipt/log, actual -j24 -l24/signing observed. No install/publication/host changes.
+
+- 2026-10-08T07:22:00.301889+00:00 — Corrected real build passed resolver/configure and actual graph progressed through1768/5215. Retaining complete actual phase-log bytes via held read-onlyFD despite Portage cleanup; configuration/job/signing policy unchanged. Artifact consumers prepared only, no helper activation or host action.
+
+- 2026-10-08T07:40:25.063086+00:00 — Corrected R18 real build0; private61,491,200-byte gpkgSHAcd9e363, actual full signature/recipe/source5858 verified. Image2321files4links, Audio/Radio/Agent SDK/headerpoison/restoration, radio configuredunit/noFallback/ELF, ABI,11profiles,Network12,normal2xpreview/release all0;worldprofileequal.113-file indexed raw proof frozen; all owned processes/resources released. No install/publication/helperactivation or live usability claim.
+
+- 2026-10-08T08:11:05+00:00: Completed read-only remaining-milestone inventory and estimate from current ED plan/tasks/queue. Exact fd93 artifact acceptance supersedes older R18 pending prose; installed usability still open. No product/native/Portage/device actions; resources released and available for exact findings.
+
+- 2026-10-08T08:28:55+00:00: Completed different-author SOURCE ACCEPT of exact Display6f4439 old control, without compiler/native execution. Reviewed Windows v7 c8ad bundle/current4f277 and directly rehashed8archive/7manifest/12payloads with zero differences. Fresh v7 preflight/root acceptance is required before one150s execution; v6 source binding cannot authorize v7. Root reports R18 installed exact2321files/4links; own no host actions. All leases released, available for exact review findings.
+
+- 2026-10-08T08:30:09+00:00: Executed root-granted single unchanged v7 preflight only after8/7/12 fresh rehash/no fixture process admission. Actual wrapper2214838/start46002882 settled0/no uncertainty, kernel namespace proof true, no driver/prefix/compositor/EXE. Full private root3rrdbb58 retained. No next native grant presumed; resources released.
+
+- 2026-10-08T08:35:01+00:00: Root independently accepted actual v7 preflight and granted exactlyone150s execute. Fresh8/7/12 and reviewed outerSHA equal; frozen invocation uses the required outer-evidence receipt, not raw preflight. Actual private root yvfdqu31 has preflight/native log, driver pending; no source change/retry. Sole private lane held until settlement.
+
+- 2026-10-08T08:37:32+00:00: Exactlyone granted v7 application attempt exit1. Driver private-X11-readiness timeout, no apps/prefixes/windows; actual native XKB/keymap failure and launcher135s timeout retained. Wrapper2217426/start46032436 settled1/no uncertainty, namespaces contained. No retry/source change; all private display/bus/application resources released.
+
+- 2026-10-08T08:41:31+00:00: Claimed fresh a34 isolated source-only prerequisites lane. Exact installed Xwayland24.1.13 source fetched into ignored cache and Gentoo ManifestSHA512 matched; ddxLoad174 Popen and utils1366 /bin/sh identify omitted merged-usr alias. Auditing public XKB/font/library closure and actual source pure cases; all native/Portage leases absent.
+
+- 2026-10-08T08:46:01+00:00: Source-only v8 frozen: synthetic /bin alias and bounded public prerequisite checks, unchanged driver/process/X11/scenario. Actual11 pure tests/docs533/strict8.10/diff0; public symlink23 and transitive ELF42/95 audit no unresolved inputs. Bundle9b4c3ec8 preserved, no namespace/EXE/compile/Portage. Different-author review and explicit fresh preflight/execute grants next; all resources released.
+
+- 2026-10-08T08:46:41+00:00: Final source-copy mode inspection caught copied loose scripts0644 versus reviewed tar0755. Restored loose/tracked Python script modes to exact bundle0755, including directly launched driver; all source bytes/bundle hash unchanged. No execution, test threshold or production change.
+
+- 2026-10-08T09:06:43+00:00: Completed independent paired Android source review. Own pinned archive644/tree/126core+4officialKMS checks and7fixture hashes/Manifest pass; public APIs/Javaeclass17/actual cached SDK33 checked. Own15pure/docs535/strict8.14/diff0. First reviewer dotfile tree-driver mistake retained/corrected, no author source defect. No Java/compiler/package/guest run; source acceptance does not qualify10CLI, real signatures, licensing/distribution or trusted runtime producer. Resources released.
+
+- 2026-10-08T09:17:37+00:00: Executed exactlyone root-granted unchanged v8 preflight after8/7/19/mode rehash. Actual private rootetqzbcs5 exit0/wrapper2233503 start46285185 settled0, namespace containment and public shell/XKB/font true; no driver/prefix/EXE. All private resources released. Root actual receipt review and separate execute grant remain; no retry assumed.
+
+- 2026-10-08T09:20:08+00:00: Started exactlyone approved unchanged v8 execute after8/7/19 and accepted225a receipt rehash. Fresh root private-ivvg617u; observed wrapper []. No retry or source changes; outcomes pending.
+
+- 2026-10-08T09:21:47+00:00: Single unchanged v8 execute EXIT1, retained wrapper2234374/start46305958 settled1/no uncertainty (settled before live inspection). Actual XRes1.2 and compositorWindows ok/empty inventory; Xauthority guard refused before prefixes/apps. No source changes/retry/host action. All private compositor/bus/Wine resources released; exact diagnosis and reviewed repair require routing.
+
+- 2026-10-08T09:29:11+00:00: Prepared private Android package argv/environment/gates without Java/Portage/resolver execution. VDB confirms managed JDK21/25 and Python3.13/14, actual public signing settings and24/24 read. Distfile preseeded privatecache; test/keyword additions explicitly proposed, preview-only-target guard. Waiting root source/argv review and exclusive lease; all resources released.
+
+- 2026-10-08T09:37:29+00:00: Actual one private Android pretend exit0/onlyapksig/test enabled, PID2240300/start46399473 settled. Effective24/24/gpkg/signing and sandbox/user/network/PID/IPC isolation retained. First locked observer failure preserved; clonedconfig corrected without changing package argv. No Java/build/install; Portage lane released. Next authorized source-only Windows v9 controls/freeze; no native grant.
+
+- 2026-10-08T09:46:21+00:00: Root directly verified one pretend/expanded sandbox/signing policy and granted exact reviewed buildArgv. Windows v9 source frozen9721b98 separately; Android package starts now under sole qinda compiler/Portage lane, configured24/24 unchanged. Actual phase JVM/Python,10CLI and artifact remain pending, no automatic retry.
+
+- 2026-10-08T09:51:44+00:00: Single granted apksig build exit0 PID2247566/start46464837 retired, no timeout/uncertainty; world/profile/normal package cache unchanged. Exact gpkg6f6837a0/440320 required-signature extraction and actual GPG VALIDSIG pass. Embedded phase runtime OpenJDK25.0.4_p7/Python3.14; original phase stdout unavailable with unset LOGDIR, not counted as observed10. Separately actual packaged JAR10/10 public CLI and6/6 real imageAPK positive/matching-hash signature-poison/restoration pass. No merge/guest/license/producer claim. Windows9721 source review pending; no native retry.
+
+- 2026-10-08T09:58:33+00:00: Root granted exactly one fresh unchanged v9 preflight after Android package resource release. Actual bundle8/source7 byte+mode checks passed before invocation; current19payload identity is recorded by the frozen outer. No app/Wine/prefix execution, Android or compiler action authorized.
+
+- 2026-10-08T09:59:31+00:00: Single root-granted v9 preflight0 in fresh rootprivate-s6pbltkx; wrapper2252612/start46538009 retired, command2252611 retired, uncertaintyfalse. Actual source7/currentpayload19 rehashed and bound, kernel private PID/network and absence guards pass; no prefix/driver/app/compositor. OuterSHAffa77a51; preflight1b50debc (kernel inode values may recycle after prior namespace retirement). All private lane resources released; no automatic execute.
+
+- 2026-10-08T10:02:53+00:00: Root directly accepted fresh v9 outerffa77a/source7/payload19 and granted one150second execute. Rehashed8/7/19/preflight binding before frozen invocation; private lane held only until settlement, no source/env change/retry.
+
+- 2026-10-08T10:04:20+00:00: Actual v9 oneattempt exit1/no uncertainty, wrapper2255163/start46563971 retired. Both fixed app windows and independent server geometry/close steps observed, but second-prefix stop exit1 causes frozen complete-cleanup admission rejection. No overall two-app acceptance, rendering/input or origin claim. Actual authority exactempty confirmed; no retry/guard/source change. All native resources released; Android correction is records-only next.
+
+- 2026-10-08T10:04:54+00:00: Astra actual count check found handoff arithmetic error: raw index28/tar29, not29/30. Corrected only own receipt counts; package/proof/index all bytes unchanged SHA6f6837a0/87d68d. Original handoffbdf522 and review failure remain in history. No Java/build/native action. Waiting exact Android artifact and Windows failure reviews, no resources held.
+
+- 2026-10-08T10:09:13+00:00: Exact stop argv is per-prefix wineserver -k, but stderr/stdout discarded by frozen source; no observed failure reason can be recovered. Actual matching installed source proves -k exit1 is ambiguous (unlocked/already-gone or query/signal failure), and -w0 alone ignores lock-wait error. No cleanup relaxation. Recommend explicit owned foreground persistent per-prefix server lifetime+lock PID binding, bounded pidfd retirement and reaped child/current lock release proof; negative fixtures and different-author source review before any runtime. Actual archive Manifest/VDB server digest verified, no native action.
+
+- 2026-10-08T10:14:32+00:00: Root granted one20s actual packagedJAR unsupported-only authenticAOSP fixture448d22/12496 from originalf73c archive. PID2258964/start46629084 held Popen/pidfd settled expected4/notimeout, verifiedfalse/android-verification-refused/not-evaluated; stderr empty/fixture+JAR unchanged. No source/package/guest mutation or retry. Four new raw items separately indexed; original28/29 proof bytes unchanged. Java/private resources RELEASED; Android full-image/guest/producer remain unresolved.
+
+- 2026-10-08T10:30:06+00:00: Claimed fresh0fcc isolated fixture authoring per root grant; original9721/bb732/d239 trees retained. Read exact15cae contract: real socketpeer supplements current lock, initial loss latches forever, SIGINT only normal server retirement, checked subreaper/unknownchild refusal, ownedhandles only. Pure/filesystem-owned-child controls allowed, no installedWine/native/namespace execution.
+
+- 2026-10-08T10:41:58+00:00: Cohesive owned-child/files/server/ledger source authored; actual kernel lock/SO_PEERCRED/pidfd and checked subreaper known-orphan/unknown-doublefork controls run withoutWine/namespace. First nested synthetic code2fail and reserved-shell status recorder failure preserved, meaningful source policies unchanged; final focused evidence recorded. Initial server incarnation permanently latched, source mode/peer/current lock rechecks, SIGINT retirement, unknown survivors rejected/no peer signals. Preparing exact different-author source freeze.
+
+- 2026-10-08T10:51:48+00:00: Source-only owned-server candidate frozen at exact0fcc authorbase. Actual33 owned-process/files/lifecycle,3 checkedsubreaper/detached-doublefork,10 complete-retirement admission,13authority and11publicdata =70/70 pass. AST/docs475/strict7.94/diff0; module189/61/116/50/87 lines, largesttest201. Bundleef76a7d7/71680/12 current11source digests; same19publicpayload plan and unchanged inside/X11/scenario/readonlyplan. First nested-script2fail and reserved-shell observer failure retained; no guard relaxation. Original ambiguous provenance key clarified with distinct archive/server digests, oldrecord intact. No installedWine, namespace/bus/Java/Portage/compiler action. Exact different-author source review then new preflight/grant remain.
