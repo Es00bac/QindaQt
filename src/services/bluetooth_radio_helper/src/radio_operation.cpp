@@ -27,7 +27,7 @@ Result RadioOperation::execute(const QString &sender, const Request &request) {
         if (it.value() <= now) it = m_seen.erase(it);
         else ++it;
     }
-    const auto key = qMakePair(sender, request.nonce);
+    const auto key = qMakePair(request.authorityOwner, request.nonce);
     if (m_seen.contains(key))
         return reply(Disposition::Refused, "radio-request-rejected");
     if (m_seen.size() >= kMaxLiveRequests)

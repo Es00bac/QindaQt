@@ -5,10 +5,10 @@
 
 using namespace QindaQt::BluetoothRadio;
 namespace {
-Request request() {
+Request request(const QString &owner = QStringLiteral(":1.10")) {
     return {QString(32, QLatin1Char('a')), QStringLiteral(":1.20"),
         QStringLiteral("/org/bluez/hci0"), QStringLiteral("12:34:56:78:9A:BC"),
-        QStringLiteral(":1.30"), 2100};
+        QStringLiteral(":1.30"), 2100, owner, owner};
 }
 struct Authority final : RadioAuthority {
     int calls = 0;
@@ -71,7 +71,7 @@ private Q_SLOTS:
         const auto original = request();
         QCOMPARE(f.run(original).disposition, Disposition::VerifiedUnblocked);
         f.authority.owner = QStringLiteral(":1.11");
-        auto other = original; other.nonce = QString(32, QLatin1Char('b'));
+        auto other = request(f.authority.owner); other.nonce = QString(32, QLatin1Char('b'));
         f.platform.s.observed.softBlocked = true;
         QCOMPARE(f.operation.execute(f.authority.owner, other).disposition,
                  Disposition::VerifiedUnblocked);
@@ -88,7 +88,7 @@ private Q_SLOTS:
         QCOMPARE(f.run().disposition, Disposition::VerifiedUnblocked);
         f.authority.owner = QStringLiteral(":1.11");
         f.platform.s.observed.softBlocked = true;
-        QCOMPARE(f.operation.execute(f.authority.owner, request()).disposition,
+        QCOMPARE(f.operation.execute(f.authority.owner, request(f.authority.owner)).disposition,
                  Disposition::VerifiedUnblocked);
         f.authority.owner = QStringLiteral(":1.10");
         QCOMPARE(f.run().reasonCode, QStringLiteral("radio-request-rejected"));
@@ -102,17 +102,34 @@ private Q_SLOTS:
             QCOMPARE(f.run(next).disposition, Disposition::NoWriteUnavailable);
         }
         f.authority.owner = QStringLiteral(":1.11");
-        QCOMPARE(f.operation.execute(f.authority.owner, request()).reasonCode,
+        QCOMPARE(f.operation.execute(f.authority.owner, request(f.authority.owner)).reasonCode,
                  QStringLiteral("radio-busy"));
         QCOMPARE(f.platform.s.selections, 512);
         f.now = 2100;
-        auto fresh = request(); fresh.deadlineBoottimeMs = 4100;
+        auto fresh = request(f.authority.owner); fresh.deadlineBoottimeMs = 4100;
         QCOMPARE(f.operation.execute(f.authority.owner, fresh).disposition,
                  Disposition::NoWriteUnavailable);
         QCOMPARE(f.platform.s.selections, 513);
         f.authority.owner = QStringLiteral(":1.10");
         QCOMPARE(f.run().disposition, Disposition::Refused);
         QCOMPARE(f.platform.s.selections, 513);
+    }
+    void replacingDelegatedCallerDoesNotResetIssuerNonce() {
+        struct Delegation final : RadioAuthority {
+            QString caller = QStringLiteral(":1.10");
+            bool current(const QString &sender, const Request &value) override {
+                return sender == caller && value.transportCaller == caller
+                    && value.authorityOwner == QStringLiteral(":1.10");
+            }
+        } authority;
+        Platform platform;
+        RadioOperation operation(authority, platform, [] { return quint64(100); });
+        auto original = request();
+        QCOMPARE(operation.execute(authority.caller, original).disposition, Disposition::VerifiedUnblocked);
+        authority.caller = QStringLiteral(":1.99");
+        original.transportCaller = authority.caller;
+        QCOMPARE(operation.execute(authority.caller, original).reasonCode, QStringLiteral("radio-request-rejected"));
+        QCOMPARE(platform.s.writes, 1);
     }
     void alreadyUnblockedDoesNotWrite() {
         Fixture f; f.platform.s.observed.softBlocked = false;

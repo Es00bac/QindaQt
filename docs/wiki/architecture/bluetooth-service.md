@@ -260,6 +260,23 @@ and replies retire on caller, run, owner or adapter-incarnation loss. Method
 replies never synthesize Powered; property publications remain current truth.
 Fixed public reasons distinguish block, authority and uncertain outcome.
 
-This source draft and focused fixtures remain uncompiled. Exact review, native
-tests, effective RW namespace qualification, Portage installation and ordinary
-selected control remain open. A read-only probe does not qualify writing.
+The revised composition owns a native transport and a Qt authority connection
+to one GUID-pinned Unix bus through public RadioServiceSession. The native
+caller is explicitly delegated in the full pending intent; real native sender
+and reply serial checks cover success and error replies. Qt reply service()
+is never used as peer identity. A foreign correct-serial response can cause
+refusal or uncertainty, never success or replay. Cancellation/current-callback
+reentrancy re-finds the pending entry before completion. The module privately
+links libdbus-1; the installed static consumer declares that dependency.
+
+A pre-peer preparation failure may retain Qt-only inventory/device startup
+with a definitive no-write unavailable port. Supplied malformed addresses,
+selected GUID mismatch, connection loss or possible dispatch never enable a
+new fallback or reconnection. The existing main daemon sandbox is unchanged.
+
+The original strict build passed but native tests exposed the reply-identity
+defect. This replacement source and its new private-bus fixtures are uncompiled.
+Exact review, revised native gates, full effective helper-unit qualification,
+Portage installation and ordinary selected control remain open. A separate
+transient O_RDWR open/fstat/close with zero bytes transferred proves access
+only, not radio mutation or helper behavior.

@@ -4919,20 +4919,29 @@ no-write compatibility, caller/object retirement, late Failed/property truth,
 and no optimistic snapshot change from an empty reply. Settings/applet fixtures
 assert fixed typed feedback through their public boundaries.
 
-Build the radio helper/client, radio operation/intent/authority tests, BlueZ
+Build the radio helper/client, radio operation/intent/authority/reply/session/native_service tests, BlueZ
 power recovery and existing Bluetooth service/adapter/model/client/protocol
 targets with strict warnings and the manager's configured native build options.
 Nested staged-consumer builds use ordinary cmake build defaults. Run the owning radio,
 BlueZ, service, Settings and applet rows under private XDG roots with both host
 bus addresses invalid. The radio staged-install row installs the B1 component
-inside the build cache, compiles an installed-only Core/DBus public-port consumer,
-withholds its exact staged header, requires the expected compile failure and
-restores exact bytes/build/run. It never launches the radio helper.
+inside the build cache, compiles an installed-only Core/DBus/libdbus public
+session/port consumer, independently withholds each exact staged public
+header, requires the expected compile failure and restores exact bytes/build/run. It never launches the radio helper.
 
-Native execution remains pending for this draft. Separately record effective
-helper namespace and RW-open admission before any authorized selected-radio
-write/readback. A successful synthetic suite or read-only namespace probe does
-not close installed control, hardware effects or whole-desktop acceptance.
+The original native batch retained three failures, including the production
+reply identity defect. New sender-preserving rows exercise actual native helper
+dispatch over an in-memory radio platform, correct-serial/nonce foreign replies,
+error/malformed/late replies, lost owners, cancellation/deletion during the
+borrowed callback, and GUID/address refusal. Both helper and port must complete
+the positive path. A forged reply may consume the pending call and cause
+uncertainty; it must never cause success. The session broker uses its ordinary
+permissive policy. New source execution remains pending.
+
+Separately record the effective installed helper namespace and RW-open
+admission before any authorized selected-radio write/readback. A successful
+synthetic suite or zero-byte transient namespace open does not close installed
+control, hardware effects or whole-desktop acceptance.
 
 The radio ledger fixtures retain A's unexpired nonce across actual A→B→A
 well-known alias ownership and refuse a full global ledger without eviction.

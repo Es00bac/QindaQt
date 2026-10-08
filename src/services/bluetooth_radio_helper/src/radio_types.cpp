@@ -20,7 +20,8 @@ bool validRequest(const Request &request) {
     static const QRegularExpression path(QStringLiteral("^/org/bluez/hci(0|[1-9][0-9]{0,4})\\z"));
     static const QRegularExpression address(QStringLiteral("^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}\\z"));
     if (!nonceValid(request.nonce) || !ownerValid(request.bluezOwner)
-        || !ownerValid(request.initiatingCaller) || !path.match(request.adapterPath).hasMatch()
+        || !ownerValid(request.initiatingCaller) || !ownerValid(request.authorityOwner)
+        || !ownerValid(request.transportCaller) || !path.match(request.adapterPath).hasMatch()
         || !address.match(request.adapterAddress).hasMatch() || !request.deadlineBoottimeMs)
         return false;
     bool valid = false;
@@ -62,14 +63,16 @@ void registerDBusTypes() {
 QDBusArgument &operator<<(QDBusArgument &argument, const Request &value) {
     argument.beginStructure();
     argument << value.nonce << value.bluezOwner << value.adapterPath
-             << value.adapterAddress << value.initiatingCaller << value.deadlineBoottimeMs;
+             << value.adapterAddress << value.initiatingCaller << value.deadlineBoottimeMs
+             << value.authorityOwner << value.transportCaller;
     argument.endStructure();
     return argument;
 }
 const QDBusArgument &operator>>(const QDBusArgument &argument, Request &value) {
     argument.beginStructure();
     argument >> value.nonce >> value.bluezOwner >> value.adapterPath
-             >> value.adapterAddress >> value.initiatingCaller >> value.deadlineBoottimeMs;
+             >> value.adapterAddress >> value.initiatingCaller >> value.deadlineBoottimeMs
+             >> value.authorityOwner >> value.transportCaller;
     argument.endStructure();
     return argument;
 }

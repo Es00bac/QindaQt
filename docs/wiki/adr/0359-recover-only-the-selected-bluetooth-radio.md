@@ -29,7 +29,7 @@ the existing desktop package. Direct D-Bus Exec fallback is disabled: lack of
 systemd activation cannot silently run the helper outside its unit.
 
 The main daemon keeps its sandbox. Constructor-injected public RadioPowerPort
-has one observe-and-unblock operation. Policy, Qt IPC authority, Linux
+has one observe-and-unblock operation. Policy, sender-preserving IPC authority, Linux
 descriptor/sysfs integration and presentation are separate collaborators.
 The port is same-thread and borrowed for the backend lifetime; it returns a
 local ID before asynchronous completion. Cancellation removes intent but cannot
@@ -50,10 +50,12 @@ policy write, discovery, pairing or trust operation in the helper.
 
 The bounded request contains a 32-character lowercase nonce, exact BlueZ unique
 owner, canonical /org/bluez/hciN path, canonical address, initiating unique caller
-and CLOCK_BOOTTIME deadline at most two seconds ahead. This wire is separate
-from unchanged Bluetooth1/2. The helper accepts only the current Bluetooth1
-unique owner on its constructing session bus under the existing user UID, and
-checks the initiating caller still exists on that same bus.
+and CLOCK_BOOTTIME deadline at most two seconds ahead, plus the issuing main
+authorityOwner and its explicitly delegated transportCaller. This new helper
+wire is (ssssstss), separate from unchanged Bluetooth1/2. The helper requires
+the actual caller to equal the delegated raw connection and the full request
+to remain issued by the current Bluetooth1 authority owner on the same bus.
+Same UID is an additional restriction, never delegation by itself.
 
 A fixed read-only intent endpoint on the daemon confirms the **entire issued
 request**, including arguments, caller and expiry, against its pending ledger.
@@ -100,8 +102,11 @@ error messages enter those messages.
 The helper user unit uses PrivateUsers, PrivateDevices, an explicit /dev/rfkill
 bind, closed device policy for that node only, NoNewPrivileges, protected
 system/home and AF_UNIX only. Existing ACLs remain authoritative: the unit adds
-visibility, not privilege. Effective namespace and RW open require independent
-qualification. The prior read-only namespace probe is not RW/mutation evidence.
+visibility, not privilege. Effective namespace and RW open require independent qualification. A separate
+manager probe opened/fstat/closed the node O_RDWR under the named sandbox
+settings without reading or writing any bytes. That qualifies access for that
+transient unit only; the effective installed helper unit, per-index syscall and
+ordinary control still require separate evidence.
 
 Required gates include policy/replay/deadline negatives, private-bus
 caller/current-owner/full-intent binding, real private BlueZ replacement and
@@ -131,13 +136,14 @@ An A→B→A alias transition could therefore forget A's unexpired nonce inside 
 operation engine. Current full-intent and completed-request retirement are
 additional barriers; this was not demonstrated as an end-to-end radio replay.
 The repair retains globally bounded exact-owner/nonce entries until deadline.
-Direct injected-policy and actual private-bus alias transition fixtures exercise
-the real engine; their native execution remains pending. The staged consumer
+Direct injected-policy and private-bus alias transition fixtures exercise
+the real engine. The prior native batch passed those rows but failed transport
+authority elsewhere; the revised native boundary must rerun the complete cohort. The staged consumer
 uses ordinary configured/default cmake build behavior, with no portable source
 hard-coding of the manager's native parallelism settings.
 
 
-## Proposed sender-preserving repair — not implemented
+## Sender-preserving source repair — native qualification pending
 
 The first native authority positive exposed a production transport defect:
 Qt 6.11.1 QDBusMessage::service() always returns an empty string for reply and
@@ -158,14 +164,18 @@ be an explicit Portage/build dependency of this module and its static SDK
 consumer. No Keyring private code is imported; its sender-preserving transport
 is an architectural precedent only.
 
-A public RadioServiceSession factory would own two connections to one constructing
+The public RadioServiceSession factory owns two connections to one constructing
 Unix message bus: native transport first, then the main Qt service connection.
 Read the authenticated native server GUID with dbus_connection_get_server_id and
 pin the Qt connection's explicit address to that GUID. The documented D-Bus
 address GUID and actual libdbus authentication check reject a different broker
 incarnation between opens. Admit only a bounded, single Unix address; do not
 guess addresses, fall back to another bus, or transparently reconnect. Failure
-leaves the session unavailable. This owner outlives ResidentBluetoothService and
+leaves the composed session unavailable. Only missing composition or an open
+failure before any peer/GUID selection may preserve existing Qt-only startup;
+the compatibility port is then definitively NoWriteUnavailable. A supplied
+malformed address, selected GUID mismatch or subsequent connection loss never
+permits that fallback. This owner outlives ResidentBluetoothService and
 the borrowed radio port; its Qt connection remains the public Bluetooth1/2 host.
 The executable composition captures the constructing address once. Startup
 compatibility with activation and deterministic fixtures must be tested before
@@ -224,5 +234,9 @@ the existing Portage dbus-1.16.2 archive. See
 [Qt message implementation](https://raw.githubusercontent.com/qt/qtbase/v6.11.1/src/dbus/qdbusmessage.cpp),
 [D-Bus connection API](https://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html)
 and [D-Bus specification](https://dbus.freedesktop.org/doc/dbus-specification.html).
-The native source cache records archive/file hashes; this design is not native
-or installed acceptance.
+The native source cache records archive/file hashes. The current source uses
+separate private wire, codec, authority and service collaborators; its public
+factory and port expose no native transport objects. The 25 ms bounded pump
+also drains queued output and buffered messages when socket readability alone
+would not progress them. New source and fixtures remain uncompiled until exact
+independent review; this is not native or installed acceptance.

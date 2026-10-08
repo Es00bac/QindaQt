@@ -11,6 +11,7 @@ inline constexpr auto kPath = "/org/qindaqt/BluetoothRadio1";
 inline constexpr auto kInterface = "org.qindaqt.BluetoothRadio1";
 inline constexpr auto kIntentPath = "/org/qindaqt/BluetoothRadioIntent1";
 inline constexpr auto kIntentInterface = "org.qindaqt.BluetoothRadioIntent1";
+inline constexpr auto kRequestSignature = "(ssssstss)";
 inline constexpr quint64 kRequestWindowMs = 2000;
 inline constexpr qsizetype kMaxLiveRequests = 512;
 
@@ -24,6 +25,8 @@ struct Request {
     QString adapterAddress;
     QString initiatingCaller;
     quint64 deadlineBoottimeMs = 0;
+    QString authorityOwner; // Exact Qt Bluetooth1 owner issuing this intent.
+    QString transportCaller; // Exact separately owned native connection.
     friend bool operator==(const Request &, const Request &) = default;
 };
 

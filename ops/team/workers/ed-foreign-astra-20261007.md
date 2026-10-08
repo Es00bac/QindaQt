@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: working — Bluetooth sender-preserving transport design after actual native authority blocker; source only.
+- Status: working — implementing reviewed Bluetooth native sender/delegation boundary and private negative fixtures; source only, no native lease.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: explicitly RELEASED all qinda compiler/private-runtime resources to root; source only. No host bus/device/radio/services or installed actions.
 ## Updates
+
+- 2026-10-08T04:44:06Z — Frozen sender-preserving native source for exact manager review: GUID-bound owner session, delegated caller/full intent, real sender/serial, lifetime negatives and installed header closure. Docs531/strict/boundary/diff0; global shapes63 errors all reported files unchanged from exact5b7. New C++ remains uncompiled; native lane unleased. Prior failures preserved.
+
+- 2026-10-08T04:36:28Z — Drafted owned libdbus wire/codec/helper authority and full raw-caller intent delegation, GUID-pinned Qt authority session and deferred/refound completion. Added real private reply/session negatives; all new source remains uncompiled. Original7d7 failures retained; root exact source review required before native continuation. Access-only O_RDWR namespace fact is not helper/write/installed acceptance.
 
 - 2026-10-08T04:11:29Z — Released native lease;638 broker-policy premise independently NEEDS_FIX70d850 and withdrawn. Proposed0359 now describes owned libdbus sender preservation, GUID-pinned same-bus session factory and exact owner-issued raw-caller delegation. No product edits or native rerun; root/Platform exact contract review next.
 
