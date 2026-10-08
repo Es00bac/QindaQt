@@ -8,6 +8,25 @@ import time
 
 APPS = ("com.android.calculator2", "com.android.deskclock")
 
+def run_command(args, deadline, *, boot_readiness=False):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise RuntimeError("window-proof-deadline")
+    # AGENT-GUARD: Stock IPlatform discovery can wait for asynchronous boot.
+    # Only boot-readiness queries may consume the existing startup budget;
+    # timeout remains terminal, never an individual-command retry.
+    timeout = remaining if boot_readiness else min(10, remaining)
+    return subprocess.run(["/usr/bin/waydroid", *args], stdin=subprocess.DEVNULL,
+                          capture_output=True, text=True, check=True,
+                          timeout=timeout).stdout.strip()
+
+
+def bounded_output(value):
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", "replace")
+    return value[:2048] if isinstance(value, str) else ""
+
+
 def main():
     import dbus
     if os.getuid() != 1000 or os.environ.get("HOME") != "/home/proof":
@@ -20,15 +39,14 @@ def main():
         if value <= 0:
             raise RuntimeError("window-proof-deadline")
         return value
-    def command(*args):
-        return subprocess.run(["/usr/bin/waydroid", *args], stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, check=True,
-                              timeout=min(10, remaining())).stdout.strip()
+    def command(*args, boot_readiness=False):
+        return run_command(args, deadline, boot_readiness=boot_readiness)
     session = subprocess.Popen(["/usr/bin/waydroid", "session", "start"],
                                stdin=subprocess.DEVNULL)
     evidence = {"schema": 1, "twoWindowsObserved": False, "steps": [],
                 "identityAuthority": False, "renderedInputQualified": False,
                 "resizeCloseQualified": False}
+    phase = "compositor-baseline"
     try:
         bus = dbus.SessionBus()
         owner = str(bus.get_name_owner("org.qindaqt.Compositor"))
@@ -50,16 +68,21 @@ def main():
                 raise RuntimeError("unexpected-window-count")
             return {row["id"]: row for row in windows}
         before = snapshot()
-        while command("prop", "get", "sys.boot_completed") != "1":
+        evidence["compositorBaselineObserved"] = True
+        phase = "boot-readiness"
+        while command("prop", "get", "sys.boot_completed", boot_readiness=True) != "1":
             if session.poll() is not None:
                 raise RuntimeError("session-ended-before-readiness")
             time.sleep(.5)
+        evidence["bootCompletedObserved"] = True
+        phase = "multiwindow-readback"
         command("prop", "set", "persist.waydroid.multi_windows", "true")
         if command("prop", "get", "persist.waydroid.multi_windows") != "true":
             raise RuntimeError("multiwindow-readback")
         observed = []
         previous = before
         for app in APPS:
+            phase = "app-launch-" + app
             command("app", "launch", app)
             while True:
                 current = snapshot()
@@ -79,8 +102,14 @@ def main():
             previous = current
         evidence["twoWindowsObserved"] = len(set(observed)) == 2
         evidence["final"] = list(snapshot().values())
+    except BaseException as error:
+        evidence["error"] = {"stage": phase, "type": type(error).__name__,
+                             "stdout": bounded_output(getattr(error, "stdout", None)),
+                             "stderr": bounded_output(getattr(error, "stderr", None))}
+        raise
     finally:
         Path("/home/proof/windows.json").write_text(json.dumps(evidence, sort_keys=True))
+        print("QINDA_ANDROID_WINDOWS=" + json.dumps(evidence, sort_keys=True), flush=True)
         try: command("session", "stop")
         finally:
             if session.poll() is None:
