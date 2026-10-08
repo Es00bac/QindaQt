@@ -96,6 +96,10 @@ format and its validation are recorded in
 
 ## Compact Devices tab and latency offsets
 
+[ADR-0362](../adr/0362-present-audio-devices-with-two-lines-and-disclosed-details.md)
+supersedes ADR-0288's three-line device presentation while preserving its public
+latency mechanism and persistence.
+
 The Devices tab uses QindaTK's small controls (`Tk.Button`, `Tk.Switch`,
 `Tk.Slider`, `Tk.NumberField`, `Tk.SectionHeader`) under the page's
 `QindaQtTheme` bridge. Common device controls occupy two short lines: name,
@@ -382,8 +386,9 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   held target until readback, one queued successor, and fallback on refusal;
 - `qindaqt.settings-audio-latency-page` (with `QT_FATAL_WARNINGS=1`) proves the
   field's SpinBox role and device name, bounded steps and clamped typing,
-  Reset, the absent and read-only cases, Tab order after **Mute** with arrow
-  stepping, and the compact row pitch (at most 100 px per device row);
+  Reset, the absent and read-only cases, **Mute → Details → field** Tab order
+  with arrow stepping, collapse focus, and the compact row pitch (at most
+  64 logical pixels per device row);
 - the stream-routing model and offscreen page rows prove direction-matched
   choices, exact-handle dispatch, pending/readback truth, refusal, removal,
   owner replacement, keyboard selection, and compact wheel scrolling;

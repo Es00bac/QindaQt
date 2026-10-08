@@ -4,7 +4,7 @@
 - **Date:** 2026-09-28
 - **Owners:** Audio service and Settings Audio route
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0362](0362-present-audio-devices-with-two-lines-and-disclosed-details.md), Settings and compact-page presentation clauses only
 
 ## Context
 
