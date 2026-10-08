@@ -1,3 +1,13 @@
+## Latest integrated gate — 2026-10-08T20:25:44+00:00
+
+Trash0273 manager strict Release22/22 (298Qt+12pure) passed; heavy lease released. Root prepares signed Portage delivery. Files owns paired Voice credentials/unlock/status source; Platform Windows save/close and Astra Android stage source continue. Full installed/physical and other original requirements remain open.
+
+## Resumed routing — 2026-10-08T20:16:00+00:00
+
+Trash candidate0273a7189 awaits final Astra evidence acceptance and manager integration. ED05 is integrated and awaits package delivery. Files is reassigned to the new Voice credentials blocker; symlink COPY and other first-party outcomes remain queued.
+
+The earlier paused routing below is historical. One heavy cohort, qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/load4/5GiB/half cores. Full scope and today's deadline remain.
+
 ## Current paused outcome order — October 8, 13:06 MDT
 
 The owner requested reassessment before resuming. **No implementation, package

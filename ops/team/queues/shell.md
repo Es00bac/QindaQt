@@ -1,3 +1,9 @@
+## Resumed routing — 2026-10-08T20:16:00+00:00
+
+Root verifies installed R20 controls and coordinates release; the user accepted popup fit/scroll and volume readback passed. Voice credential entry and fallback truth are assigned to Files in fresh desktop/Gabbee worktrees. Physical and full mixer journeys remain.
+
+The earlier paused routing below is historical. One heavy cohort, qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/load4/5GiB/half cores. Full scope and today's deadline remain.
+
 ## Current paused outcome order — October 8, 13:06 MDT
 
 The owner requested reassessment before resuming. **No implementation, package

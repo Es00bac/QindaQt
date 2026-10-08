@@ -2,9 +2,11 @@
 #include "media_presenter.h"
 #include "folder_navigations.h"
 #include "../model/navigation_controller.h"
+#include "../mutation/volume_trash.h"
 #include <QDir>
 #include <QVariantMap>
 #include <algorithm>
+#include <utility>
 
 namespace QindaQt::Apps::FileManager {
 namespace Media = QindaQt::RemovableMedia;
@@ -64,11 +66,13 @@ QString rowState(const Media::VolumeRow &row) {
 MediaPresenter::MediaPresenter(Media::MediaSource &source, FolderNavigations &navigations,
                                QObject *parent)
     : QObject(parent), m_source(source), m_navigations(navigations) {
+    connect(&m_trashDiscovery, &TrashDiscovery::completed, this, &MediaPresenter::trashDiscovered);
     connect(&source, &Media::MediaSource::snapshotChanged, this, &MediaPresenter::sourceChanged);
     connect(&source, &Media::MediaSource::operationFinished, this, &MediaPresenter::finished);
     connect(&navigations, &FolderNavigations::activeChanged, this, [this] {
         // Changing tab retires only this window's deferred open, not owner work.
         m_openAfter.reset();
+        m_trashOpen.reset();
         observeActive();
         emit changed();
     });
@@ -77,6 +81,7 @@ MediaPresenter::MediaPresenter(Media::MediaSource &source, FolderNavigations &na
     });
     for (auto *navigation : navigations.controllers()) observeController(navigation);
     observeActive();
+    requestTrashDiscovery();
 }
 QVariantList MediaPresenter::rows() const {
     QVariantList result;
@@ -85,8 +90,22 @@ QVariantList MediaPresenter::rows() const {
         QString label = row.displayName;
         if (row.partitionNumber) label += tr(" · partition %1").arg(row.partitionNumber);
         const bool canOpen = row.actions.open.enabled || row.actions.mount.enabled;
+        QVariantList trashLocations;
+        if (snapshot.availability == Media::Availability::Ready &&
+            row.mountState == Media::MountState::Mounted && row.actions.open.enabled) {
+            const auto paths = m_trashPaths.value(row.preferredRoot).toStringList();
+            for (qsizetype i = 0; i < paths.size(); ++i)
+                trashLocations.append(QVariantMap{
+                    {QStringLiteral("path"), paths[i]},
+                    {QStringLiteral("label"), paths.size() == 1 ? tr("Trash")
+                        : tr("Trash store %1").arg(i + 1)}});
+        }
         result.append(QVariantMap{
             {QStringLiteral("handle"), row.attachment.handle},
+            {QStringLiteral("trashLocations"), trashLocations},
+            {QStringLiteral("trashReason"), m_trashPending ? tr("Checking existing volume Trash…")
+                : !m_trashDiagnostic.isEmpty() ? m_trashDiagnostic
+                : tr("No existing accessible volume Trash is available.")},
             {QStringLiteral("name"), label}, {QStringLiteral("kind"), row.kind},
             {QStringLiteral("status"), rowState(row)},
             {QStringLiteral("openEnabled"), canOpen && !busy()},
@@ -116,6 +135,55 @@ QString MediaPresenter::recoveryLabel() const {
 }
 bool MediaPresenter::busy() const {
     return m_source.actionPending() || m_source.snapshot().pending.has_value();
+}
+void MediaPresenter::requestTrashDiscovery() {
+    m_trashPending = true;
+    const auto snapshot = m_source.snapshot();
+    QStringList roots;
+    if (snapshot.availability == Media::Availability::Ready)
+        for (const auto &row : snapshot.rows)
+            if (row.mountState == Media::MountState::Mounted && row.actions.open.enabled)
+                roots.append(row.preferredRoot);
+    m_trashDiscovery.request(++m_trashGeneration, std::move(roots));
+}
+void MediaPresenter::trashDiscovered(quint64 generation, const QVariantMap &paths,
+                                     const QString &diagnostic) {
+    if (generation != m_trashGeneration) return;
+    m_trashPending = false;
+    m_trashPaths = paths;
+    m_trashDiagnostic = diagnostic;
+    const auto interest = std::exchange(m_trashOpen, std::nullopt);
+    if (interest && interest->navigation) {
+        const auto snapshot = m_source.snapshot();
+        const auto *row = rowFor(snapshot, interest->attachment);
+        if (snapshot.availability == Media::Availability::Ready &&
+            sameOwner(snapshot.lineage, interest->lineage) && row &&
+            row->mountState == Media::MountState::Mounted && row->actions.open.enabled &&
+            row->preferredRoot == interest->root &&
+            interest->navigation->currentPath() == interest->navigationPath &&
+            interest->navigation->listingGeneration() == interest->listingGeneration &&
+            paths.value(interest->root).toStringList().contains(interest->filesPath))
+            openRow(*row, *interest->navigation, interest->filesPath);
+        else m_notice = tr("Volume Trash observation changed; choose a current device and retry.");
+    }
+    emit changed();
+}
+void MediaPresenter::openTrash(const QString &handle, const QString &filesPath) {
+    const auto snapshot = m_source.snapshot();
+    const auto row = std::find_if(snapshot.rows.cbegin(), snapshot.rows.cend(),
+        [&](const auto &value) { return value.attachment.handle == handle; });
+    auto *navigation = qobject_cast<NavigationController *>(m_navigations.active());
+    if (busy() || !navigation || snapshot.availability != Media::Availability::Ready ||
+        row == snapshot.rows.cend() || row->mountState != Media::MountState::Mounted ||
+        !row->actions.open.enabled) return;
+    if (!m_trashPaths.value(row->preferredRoot).toStringList().contains(filesPath)) {
+        m_notice = tr("This volume Trash is unavailable; no storage was created.");
+        emit changed(); return;
+    }
+    m_trashOpen = TrashOpenInterest{navigation, snapshot.lineage, row->attachment,
+        row->preferredRoot, filesPath, navigation->currentPath(), navigation->listingGeneration()};
+    requestTrashDiscovery();
+
 }
 void MediaPresenter::open(const QString &handle) {
     const auto snapshot = m_source.snapshot();
@@ -179,7 +247,8 @@ void MediaPresenter::acquireLocation(NavigationController &navigation, bool deli
     else if (deliberate) *existing = interest;
 }
 
-void MediaPresenter::openRow(const Media::VolumeRow &row, NavigationController &navigation) {
+void MediaPresenter::openRow(const Media::VolumeRow &row, NavigationController &navigation,
+                             const QString &observedPath) {
     if (row.preferredRoot.isEmpty() || !row.mountRoots.contains(row.preferredRoot)) return;
     const auto selected = locationAt(m_source.snapshot(), row.preferredRoot);
     if (!selected.row || selected.ambiguous || selected.row->attachment != row.attachment) {
@@ -196,10 +265,11 @@ void MediaPresenter::openRow(const Media::VolumeRow &row, NavigationController &
         connect(&navigation, &NavigationController::navigationChanged, this, &MediaPresenter::navigationChanged, Qt::UniqueConnection);
     } else *existing = interest;
     m_opening = true;
-    navigation.navigateTo(row.preferredRoot);
+    navigation.navigateTo(observedPath.isEmpty() ? row.preferredRoot : observedPath);
     m_opening = false;
 }
 void MediaPresenter::navigationChanged() {
+    m_trashOpen.reset();
     if (m_opening || m_reconciling) return;
     m_locations.removeIf([](const auto &interest) {
         return !interest.navigation || !within(interest.navigation->currentPath(), interest.root)
@@ -212,6 +282,9 @@ void MediaPresenter::navigationChanged() {
     if (auto *navigation = qobject_cast<NavigationController *>(sender())) acquireLocation(*navigation, true);
 }
 void MediaPresenter::sourceChanged() {
+    m_trashOpen.reset();
+    m_trashPaths.clear();
+    requestTrashDiscovery();
     const auto snapshot = m_source.snapshot();
     m_reconciling = true;
     for (auto &interest : m_locations) {

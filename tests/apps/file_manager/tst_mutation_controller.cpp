@@ -166,6 +166,12 @@ void TestMutationController::cancellationCompletesWithTypedFailure() {
 }
 
 void TestMutationController::restoreAndEmptyTrashClearRecoveryState() {
+  // Restore now admits the real original parent before backend dispatch.
+  // Keep this recording-backend state test on a disposable existing parent;
+  // an invented /fixture parent must not bypass that production guard.
+  QTemporaryDir originalParent;
+  QVERIFY(originalParent.isValid());
+  const QString original = originalParent.filePath(QStringLiteral("item"));
   auto backend = std::make_unique<RecordingBackend>(QThread::currentThread());
   RecordingBackend *recording = backend.get();
   MutationController controller(std::move(backend));
@@ -175,7 +181,7 @@ void TestMutationController::restoreAndEmptyTrashClearRecoveryState() {
                                 {QStringLiteral("modifiedNanoseconds"),
                                  QStringLiteral("4")},
                                 {QStringLiteral("mode"), QStringLiteral("5")}};
-  QVERIFY(controller.trashItem(QStringLiteral("/fixture/item"), identity));
+  QVERIFY(controller.trashItem(original, identity));
   QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 2000);
   QVERIFY(controller.canRestore());
   QVERIFY(controller.restoreLast());
@@ -183,7 +189,7 @@ void TestMutationController::restoreAndEmptyTrashClearRecoveryState() {
   QCOMPARE(recording->lastKind.load(), static_cast<int>(MutationKind::Restore));
   QVERIFY(!controller.canRestore());
 
-  QVERIFY(controller.trashItem(QStringLiteral("/fixture/item"), identity));
+  QVERIFY(controller.trashItem(original, identity));
   QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 2000);
   QVERIFY(controller.canRestore());
   QVERIFY(controller.emptyTrash());

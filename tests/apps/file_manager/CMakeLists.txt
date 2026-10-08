@@ -21,6 +21,19 @@ qindaqt_add_file_manager_test(
     tst_local_mutation_backend.cpp
     qindaqt.file-manager-local-mutation
 )
+qindaqt_add_file_manager_test(qindaqt_file_manager_trash_discovery_tests
+    tst_trash_discovery.cpp qindaqt.file-manager-trash-discovery)
+qindaqt_add_file_manager_test(qindaqt_file_manager_volume_trash_tests
+    tst_volume_trash.cpp qindaqt.file-manager-volume-trash)
+qindaqt_add_file_manager_test(qindaqt_file_manager_trash_transactions_tests
+    tst_trash_transactions.cpp qindaqt.file-manager-trash-transactions)
+qindaqt_add_file_manager_test(qindaqt_file_manager_trash_controller_tests
+    tst_trash_controller.cpp qindaqt.file-manager-trash-controller)
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_trash_metadata_tests
+    tst_trash_metadata.cpp
+    qindaqt.file-manager-trash-metadata
+)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_home_trash_tests
     tst_home_trash.cpp
@@ -665,3 +678,11 @@ set_tests_properties(qindaqt.file-manager-media-ui PROPERTIES
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 
 include(MutationRecoveryTests.cmake)
+
+add_test(NAME qindaqt.file-manager-trash-restore-qml
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_trash_restore.qml")
+set_tests_properties(qindaqt.file-manager-trash-restore-qml PROPERTIES
+    LABELS "file-manager;mutation;trash;fake" TIMEOUT 20
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")

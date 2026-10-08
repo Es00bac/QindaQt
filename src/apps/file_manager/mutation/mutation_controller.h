@@ -28,6 +28,7 @@ class MutationController final : public QObject {
   Q_PROPERTY(QVariantList recoveryRecords READ recoveryRecords NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canUndo READ canUndo NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canRestore READ canRestore NOTIFY stateChanged FINAL)
+  Q_PROPERTY(QString lastTrashOriginalPath READ lastTrashOriginalPath NOTIFY stateChanged FINAL)
 
 public:
   explicit MutationController(MutationBackendPtr backend,
@@ -47,6 +48,7 @@ public:
   [[nodiscard]] QVariantList outputObservations() const;
   [[nodiscard]] bool canUndo() const;
   [[nodiscard]] bool canRestore() const;
+  [[nodiscard]] QString lastTrashOriginalPath() const { return m_lastTrashOriginalPath; }
 
   Q_INVOKABLE bool createFolder(const QString &parentPath, const QString &name);
   Q_INVOKABLE bool renameItem(const QString &sourcePath, const QString &newName,
@@ -98,9 +100,17 @@ public:
   Q_INVOKABLE bool makeLinks(const QVariantList &items);
   // Delete Permanently: no Trash, no undo; the caller has already confirmed.
   Q_INVOKABLE bool deleteItems(const QVariantList &items);
-  // Put Back: returns items of the home Trash's files/ folder to the path
+  // Put Back: returns admitted home/volume Trash payloads to the path
   // their Trash record names; that folder must still exist.
   Q_INVOKABLE bool putBackItems(const QVariantList &items);
+  // Deliberate existing-folder choice. Metadata basename is retained; worker
+  // re-admits both store and destination and refuses cross-device/collision.
+  Q_INVOKABLE bool putBackItemsTo(const QVariantList &items, const QString &folder);
+  Q_INVOKABLE bool restoreLastTo(const QString &folder);
+  // Deliberate bounded metadata observation (may wait for kernel I/O), and
+  // pure menu classification. Neither is path mutation authority.
+  Q_INVOKABLE QString originalTrashPath(const QString &payload) const;
+  Q_INVOKABLE bool isTrashFilesPath(const QString &path, const QString &homeFiles) const;
   // New File: an empty file, or a copy of the template at templatePath.
   Q_INVOKABLE bool createFile(const QString &parentPath, const QString &name,
                               const QString &templatePath = QString());
@@ -159,6 +169,7 @@ private:
   std::shared_ptr<MutationRequest> m_undoRequest;
   QString m_lastTrashToken;
   QString m_lastTrashOriginalPath;
+  QString m_lastTrashPayloadPath;
   std::optional<FileIdentity> m_lastTrashIdentity;
   int m_progressValue = 0;
   QString m_progressText;

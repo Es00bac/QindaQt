@@ -4,7 +4,7 @@
 - **Date:** 2026-09-03
 - **Owners:** File Manager
 - **Supersedes:** None
-- **Superseded by:** [ADR-0355](0355-preserve-source-bytes-during-cross-device-moves.md) for cross-device Move refusal only
+- **Superseded by:** [ADR-0355](0355-preserve-source-bytes-during-cross-device-moves.md) for cross-device Move refusal only; [ADR-0363](0363-admit-per-volume-trash-without-following-payload-links.md) for home-only Trash admission and final-link refusal only
 
 ## Context
 

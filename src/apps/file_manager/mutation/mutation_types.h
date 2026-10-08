@@ -67,6 +67,8 @@ struct MutationRequest final {
   QString sourcePath;
   QString destinationPath;
   QString trashToken;
+  // Explicit alternate restore keeps the metadata basename; never automatic.
+  bool restoreToChosenFolder = false;
   // Recovery actions accept a catalog operation UUID, never a QML path grant.
   QString recoveryOperationId = {};
   QStringList declaredRoots;
@@ -131,6 +133,16 @@ struct MutationRecoveryReceipt final {
   bool restoreAvailable = false;
 };
 
+// Value-only Trash placement/evidence receipt, never reopen/delete authority.
+// Failure may have moved an entry; payloadConfirmed is a completed transaction
+// observation, not a promise that this path still names it.
+struct MutationTrashReceipt final {
+  QString root, topDirectory, payloadPath, metadataPath, originalPath;
+  bool payloadConfirmed = false;
+  bool metadataRetained = false;
+  bool restoredConfirmed = false;
+};
+
 struct MutationItemOutcome final {
   bool attempted = false;
   QString sourcePath;
@@ -138,6 +150,7 @@ struct MutationItemOutcome final {
   MutationError error = MutationError::None;
   MutationOutputObservation output;
   MutationRecoveryReceipt recovery = {};
+  MutationTrashReceipt trash = {};
 };
 
 struct MutationResult final {
@@ -153,6 +166,7 @@ struct MutationResult final {
   QVector<MutationItemOutcome> itemOutcomes;
   MutationRecoveryReceipt recovery = {};
   QVector<MutationRecoveryReceipt> recoveryReceipts = {};
+  MutationTrashReceipt trashReceipt = {};
 
   [[nodiscard]] bool ok() const { return error == MutationError::None; }
 };

@@ -6,9 +6,11 @@
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
+#include <qscopeguard.h>
 
 #ifdef Q_OS_UNIX
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 
 using QindaQt::Apps::FileManager::ListingError;
@@ -37,6 +39,8 @@ private slots:
   void unreadableDirectoryIsPermissionDenied();
   void emptyDirectoryListsCleanly();
   void publishesTheDetailsColumnsStatFacts();
+  void badNativeNameCannotBorrowLiteralReplacementIdentity();
+  void validSpecialNamesRetainIdentity();
 };
 
 void TestLocalDirectoryLister::listsAndSortsDirectoriesBeforeFilesCaseInsensitively() {
@@ -178,6 +182,66 @@ void TestLocalDirectoryLister::publishesTheDetailsColumnsStatFacts() {
 #endif
   // Birth time is filesystem-dependent: valid, or unknown -- never invented.
   QVERIFY(!entry.created.isValid() || entry.created <= QDateTime::currentDateTime().addSecs(5));
+}
+
+void TestLocalDirectoryLister::badNativeNameCannotBorrowLiteralReplacementIdentity() {
+#ifdef Q_OS_UNIX
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+  const QString literal = QString(QChar(0xfffd)) + QStringLiteral(".txt");
+  QVERIFY(writeFile(dir.filePath(literal), "literal"));
+  const QByteArray badPath = QFile::encodeName(dir.path()) + "/"
+      + QByteArray(1, static_cast<char>(0xff)) + ".txt";
+  const int fd = ::open(badPath.constData(), O_CREAT | O_EXCL | O_WRONLY, 0600);
+  QVERIFY(fd >= 0);
+  QCOMPARE(::write(fd, "bad", 3), static_cast<ssize_t>(3));
+  QCOMPARE(::close(fd), 0);
+  const auto result = LocalDirectoryLister().list(dir.path());
+  QVERIFY(result.ok());
+  QCOMPARE(result.entries.size(), 2);
+  for (const auto &entry : result.entries) {
+    QCOMPARE(entry.name, literal);
+    QCOMPARE(entry.inode, quint64(0));
+    QCOMPARE(entry.device, quint64(0));
+    QCOMPARE(entry.mode, quint32(0));
+  }
+  QFile source(dir.filePath(literal));
+  QVERIFY(source.open(QIODevice::ReadOnly));
+  QCOMPARE(source.readAll(), QByteArray("literal"));
+  QCOMPARE(::unlink(badPath.constData()), 0);
+  // Without an ambiguous native sibling, literal U+FFFD is valid.
+  const auto restored = LocalDirectoryLister().list(dir.path());
+  QCOMPARE(restored.entries.size(), 1);
+  QVERIFY(restored.entries.first().inode != 0);
+#else
+  QSKIP("Native bad-byte names require POSIX");
+#endif
+}
+
+void TestLocalDirectoryLister::validSpecialNamesRetainIdentity() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+  const QStringList names{QStringLiteral("line\n%name.txt"),
+                          QString::fromUtf8("雪.txt"),
+                          QString(QChar(0xfeff)) + QStringLiteral("bom.txt"),
+                          QString(QChar(0xfffd)) + QStringLiteral(".txt")};
+  // Qt's own directory cleanup decodes a leading BOM as a document marker.
+  // Remove only the exact names this fixture created, retaining the BOM test
+  // and fatal warnings rather than hiding a leaked disposable directory.
+  const auto cleanup = qScopeGuard([&] {
+    for (const auto &name : names) QFile::remove(dir.filePath(name));
+  });
+  for (const auto &name : names) {
+    QVERIFY(writeFile(dir.filePath(name), "unchanged"));
+  }
+  const auto result = LocalDirectoryLister().list(dir.path());
+  QVERIFY(result.ok());
+  QCOMPARE(result.entries.size(), names.size());
+  for (const auto &entry : result.entries) {
+    QVERIFY(names.contains(entry.name));
+    QVERIFY(entry.inode != 0);
+    QVERIFY(entry.device != 0);
+  }
 }
 
 QTEST_APPLESS_MAIN(TestLocalDirectoryLister)

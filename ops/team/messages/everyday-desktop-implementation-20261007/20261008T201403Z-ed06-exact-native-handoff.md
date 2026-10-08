@@ -1,0 +1,24 @@
+# ED06 exact native-qualified candidate handoff
+
+Candidate 0273a7189a36091b27f62d7abb8449088be3cd34; source/tests actually exercised6076ff36b7c5abf23586511b4a3de07155eec98f (final candidate adds owning qualification docs only). Base5bfdc243dd5acf6535fb3a4aa1de403f73180379; isolated worker/everyday-trash-completion-20261008, explicit qinda bare hub preserved. Source Astra accepted551/45f atd97aa62; later exact moc/BOM/fixture source deltas were routed back to same Astra; final native evidence review remains requested before integration.
+
+Outcome: same-volume private/sticky-shared Trash1.0 admission, byte-faithful representable metadata and original relative paths, opaque final link payloads, durable/version-bound metadata, no-replace relocation and conflict-safe chosen-folder restore; public-media existing-store discovery uses one coalesced read-only worker with generation/attachment fences. No mount/helper/private service authority, no permanent-delete fallback. Bad-byte/QString aliases have no mutation identity; Unicode/BOM/newline/%/literalU+FFFD remain valid. Source/payload/metadata retained on uncertainty and partial batches remain explicit.
+
+43 exact product/test/docs paths: build/ed06-final-proof/changed-product-paths.txt and105-pin immutable proof index build/ed06-final-proof/index.json SHA25619fabb5a0b7ca449d0d03d08e4ecf942390b6bb17a33a492e7c3d78fb8b7a0b5. Changed registries narrowly owned src/apps/file_manager/CMakeLists.txt, tests/apps/file_manager/CMakeLists.txt, docs/wiki/adr/index.md, mkdocs.yml; only File Manager row in module-boundaries. Root carefully merges these against later manager additions. All ED05 proof/source remains untouched.
+
+Actual commands are original195006Z normal CMake build targets and12-row selector, with separately approved KDE_INSTALL_LIBEXECDIR=libexec; retained owning build/ed06-debug, strict Debug/warnings-as-errors. Root transient envelope each native phase: --expand-environment=no/exactcwd, CPUQuota800%, MemoryMax12G/swap0/tasks256, taskset0-5,12-17/nice10, configure180/build900/test300s, TimeoutStopSec5s/KillModecontrol-group. Private XDG, both invalid startup buses, offscreen/software/generic/Fusion/fatalwarnings, cleared loader overrides. Metadata records actual initiating/launcher/worker stat/cgroup/status and live caps plus inactive/dead/MainPID0 retirement; no all-descendant-empty inference.
+
+Actual evidence, not one fictitious all-green run:
+- Originalconfigure1/5.561s on fixed capture install layout; preserved ed06-native-20261008T195216Z.
+- Correctedconfigure0/36.673s; firststrictbuild1/57.172s on owning helper ambiguity/byte conversion; preserved195400Z.
+- Causalcompilerfix warmbuild1/166.617s on PUBLIC-header consumer AUTOMOC duplication; preserved195642Z. Rootapproved support-headerPRIVATE registration, publicinclude/link contract unchanged.
+- Mocfixedconfigure0/35.254s; strictproduction/allfocusedtargetbuild0/34.843s; first12rowCTest10PASS2FAIL/exit8/2.033s with142QtPASS2FAIL,0skip/blacklist; preserved200125Z.
+- UnicodeBOM + real-parent recordingfixture repair: warmtwo-targetbuild0/8.560s; failedtwo rows2/2PASS/36QtPASS/exit0/1.175s; preserved200534Z.
+- Originalfulltargetregression build0/5.253s; full12rowCTest11PASS1ABORT/exit8/2.783s; only new BOM temporary-directory cleanup warning, assertions passed; preserved200642Z with read-only LastTest/Failed/Cost.
+- Exact-name test-only cleanup: owninglistertargetbuild0/4.820s; owningrow1/1PASS/11QtPASS/exit0/0.216s; preserved200902Z. Other11rows did not replay because product unchanged. Composed passing summaries144QtPASS/0FAIL/0SKIP/0BLACKLIST across12rows (unchanged11 + repaired1), NOT freshfull12/12.
+- Actual distinct-device disposable/tmp versus/dev/shm fixtures and metadata/transaction/collision/parent/symlink/cancel/detach cases passed, along with controller, public-media discovery/UI and real restore-component fake-model checks. Expected named rows/totals are in raw and LastTest, not inferred from exit alone.
+- Required documentation: tools/validate-docs exit0/535Markdown; mkdocs build --strict exit0; diffcheck0. Tiny exact-owned leftoverBOM fixture cleanup verified no-follow uid/content/inode before removing its sole created entry and empty directory; witness in owned-bom-fixture-cleanup.json.
+
+Heavy lease released immediately at settlement. Worktree/proofs retained for same-author repairs. No install, host volume, Portage or active service mutation. No GUI installed/physical ED06 claim; ProposedADR0363 awaits manager acceptance. Symlink COPY remains separate next outcome.
+
+Requested next gate: same Astra exact source/native evidence review, then manager integration/affected gates/package journey. Available while that review proceeds; source/test ownership retained for corrections. Read first-party queue after handoff; offer separately owned symlink Copy packet only on fresh manager dispatch, no heavy launch.

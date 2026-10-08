@@ -39,8 +39,10 @@ Item {
         }
         return ""
     }
-    readonly property bool inTrash: root.trashPath.length > 0
-        && root.navigationController.currentPath === root.trashPath
+    readonly property bool inTrash: root.mutationController
+        && typeof root.mutationController.isTrashFilesPath === "function"
+        ? root.mutationController.isTrashFilesPath(root.navigationController.currentPath, root.trashPath)
+        : root.trashPath.length > 0 && root.navigationController.currentPath === root.trashPath
     readonly property var templates: root.fileTemplates ? root.fileTemplates.templates : []
 
     function selectedEntries() {
@@ -186,7 +188,12 @@ Item {
             }
             return true
         case "file.put-back":
-            root.mutationController.putBackItems(entries)
+            if (entries.length > 0) {
+                trashRestoreDialog.items = entries
+                trashRestoreDialog.originalPath = root.mutationController.originalTrashPath(entries[0].path)
+                trashRestoreDialog.initialFolder = ""
+                trashRestoreDialog.open()
+            }
             return true
         case "file.new-file":
             root.refreshTemplates()
@@ -198,6 +205,12 @@ Item {
             return true
         }
         return false
+    }
+
+    TrashRestoreDialog {
+        id: trashRestoreDialog
+        controller: root.mutationController
+        anchors.centerIn: parent
     }
 
     OpenWithDialog {

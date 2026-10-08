@@ -2,6 +2,7 @@
 #pragma once
 #include <qindaqt/services/removable_media_client/media_source.h>
 #include <QPointer>
+#include "trash_discovery.h"
 #include <QVariantList>
 #include <QVector>
 
@@ -27,6 +28,8 @@ public:
     [[nodiscard]] QString recoveryLabel() const;
     [[nodiscard]] bool busy() const;
     Q_INVOKABLE void open(const QString &handle);
+    // Read-only existing-store discovery/navigation; never mounts or creates.
+    Q_INVOKABLE void openTrash(const QString &handle, const QString &filesPath);
     Q_INVOKABLE void mountReadOnly(const QString &handle);
     Q_INVOKABLE void unmount(const QString &handle);
     Q_INVOKABLE void remove(const QString &handle);
@@ -52,13 +55,29 @@ private:
         quint64 generation = 0;
     };
     void request(const QString &, QindaQt::RemovableMedia::Action, bool openAfter);
-    void openRow(const QindaQt::RemovableMedia::VolumeRow &, NavigationController &);
+    void openRow(const QindaQt::RemovableMedia::VolumeRow &, NavigationController &,
+                 const QString &observedPath = {});
     void observeActive();
     void observeController(NavigationController *);
     void acquireLocation(NavigationController &, bool deliberate = false);
     void sourceChanged();
+    void requestTrashDiscovery();
+    void trashDiscovered(quint64, const QVariantMap &, const QString &);
     void navigationChanged();
     void finished(const QindaQt::RemovableMedia::OperationResult &);
+    struct TrashOpenInterest {
+        QPointer<NavigationController> navigation;
+        QindaQt::RemovableMedia::Lineage lineage;
+        QindaQt::RemovableMedia::Attachment attachment;
+        QString root, filesPath, navigationPath;
+        quint64 listingGeneration = 0;
+    };
+    TrashDiscovery m_trashDiscovery;
+    QVariantMap m_trashPaths;
+    std::optional<TrashOpenInterest> m_trashOpen;
+    quint64 m_trashGeneration = 0;
+    bool m_trashPending = false;
+    QString m_trashDiagnostic;
     QindaQt::RemovableMedia::MediaSource &m_source;
     FolderNavigations &m_navigations;
     QVector<LocationInterest> m_locations;

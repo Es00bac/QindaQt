@@ -4,6 +4,7 @@
 #include "archive_codec.h"
 #include "device_resolver.h"
 #include "home_trash.h"
+#include "volume_trash.h"
 #include "mutation_backend.h"
 #include "cross_volume_move.h"
 
@@ -19,7 +20,8 @@ public:
   explicit LocalMutationBackend(
       QString homeTrashRoot,
       DeviceResolverPtr deviceResolver = std::make_shared<LocalDeviceResolver>(),
-      ArchiveCodecPtr archives = nullptr, QString recoveryCatalogPath = {});
+      ArchiveCodecPtr archives = nullptr, QString recoveryCatalogPath = {},
+      TrashTopDirectoryPtr trashTopology = std::make_shared<TrashTopDirectory>());
 
   [[nodiscard]] MutationResult
   execute(const MutationRequest &request,
@@ -51,6 +53,7 @@ private:
                                        const MutationProgressCallback &progress);
   DeviceResolverPtr m_deviceResolver;
   HomeTrash m_homeTrash;
+  VolumeTrash m_volumeTrash;
   ArchiveCodecPtr m_archives;
   CrossVolumeMove m_crossVolume;
 };
