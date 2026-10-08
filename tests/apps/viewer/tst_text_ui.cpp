@@ -13,6 +13,38 @@
 #include <QSignalSpy>
 #include <QTest>
 
+namespace {
+void exerciseFocusedSearchKeys(QQuickWindow *window,
+                               QindaQt::Viewer::ViewerController &viewer)
+{
+    auto *dialog = window->findChild<QObject *>(QStringLiteral("viewerTextDialog"));
+    auto *area = window->findChild<QQuickItem *>(QStringLiteral("viewerPageText"));
+    QVERIFY(dialog && area);
+    for (const auto name : {QStringLiteral("viewerFindPrevious"),
+                            QStringLiteral("viewerFindNext"),
+                            QStringLiteral("viewerCopyText")}) {
+        auto *button = window->findChild<QQuickItem *>(name);
+        QVERIFY(button && button->isEnabled());
+        for (const auto key : {Qt::Key_Return, Qt::Key_Enter}) {
+            button->forceActiveFocus();
+            QVERIFY(button->hasActiveFocus());
+            QSignalSpy search(&viewer, &QindaQt::Viewer::ViewerController::stateChanged);
+            const bool copy = name == QStringLiteral("viewerCopyText");
+            if (copy)
+                QGuiApplication::clipboard()->setText(QStringLiteral("before focused keyboard copy"));
+            QTest::keyClick(window, key);
+            if (copy)
+                QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("BETA"));
+            else
+                QTRY_VERIFY(!search.isEmpty());
+            QTRY_VERIFY(!viewer.searchBusy() && !viewer.busy());
+            QVERIFY(dialog->property("visible").toBool());
+            QTRY_COMPARE(area->property("selectedText").toString(), QStringLiteral("BETA"));
+        }
+    }
+}
+} // namespace
+
 class ViewerTextUiTest final : public QObject {
     Q_OBJECT
 private slots:
@@ -85,6 +117,7 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     QTRY_VERIFY(!viewer.searchBusy() && !viewer.busy());
     QVERIFY(dialog->property("visible").toBool());
     QTRY_COMPARE(area->property("selectedText").toString(), QStringLiteral("BETA"));
+    exerciseFocusedSearchKeys(window, viewer);
     QVERIFY(window->grabWindow().save(QStringLiteral(VIEWER_ARTIFACTS_DIR "/text-normal.png")));
     window->resize(420, 320); QTest::qWait(200);
     for (int index = 0; index < 12; ++index) QTest::keyClick(window, Qt::Key_Tab);

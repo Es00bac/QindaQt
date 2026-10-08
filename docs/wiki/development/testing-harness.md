@@ -73,9 +73,11 @@ host buses. They do not claim native compositor or physical-input coverage.
 
 The text extension registers `apps.viewer.text` (real PDF Unicode, permissions,
 password and 262144-unit/4096-page/query/cancel boundaries),
-`apps.viewer.text_controller` (single-flight and retired close/open/navigation),
+`apps.viewer.text_controller` (single-flight, retired close/open/navigation and
+cancel→renderAt/zoom→settle),
 and `apps.viewer.text-ui`/`apps.viewer.text-ui-dpi2` (actual Ctrl+F focus,
-Return/keypad Enter search, selection/Ctrl+C clipboard, manual copy, text
+Return/keypad Enter search both in the query and with Previous/Next/Copy focused,
+selection/Ctrl+C clipboard, manual copy, text
 Ctrl+Home, explicit keyboard Close, busy/capability behavior, Escape and
 compact/normal/2x QindaTK layout). Copy-restricted assets are
 self-authored and documented in the owning fixture README. Search parser
