@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — building independently accepted immutable R18 privately with signed Portage build-only; artifact qualification follows
+- Status: waiting — R18 build resolver rejected nonexistent dev-libs/dbus; exact recipe repair approval/review needed, no compiler active
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -207,3 +207,5 @@
 - 2026-10-08T06:42:18.149221+00:00 — Root confirms exact5858 runtime37/37 and273Qt pass0fail0skip0blacklist, strict28-target0; own release docs/receipt updated with attributed manager evidence. Immutable620ad2 archive and overlayaf4e8ed unchanged. Independent recipe/artifact/install remain required; no package lease assumed.
 
 - 2026-10-08T07:00:30.549655+00:00 — Root exact source/recipe acceptance aca238, runtime5858 manager37/273 and explicit sole qinda build-only lease received. Actual configured MAKEOPTS -j24 -l24/signing observed; private PKGDIR/DISTDIR/TMP/depcache, no config/features overrides, install/publication or host actions.
+
+- 2026-10-08T07:01:53.524451+00:00 — Actual signed build-only attempt exited1 after9.51s dependency resolution, no configure/compiler/artifact. dev-libs/dbus absent; installed sys-apps/dbus-1.16.2 owns dbus.h, dbus-1.pc and libdbus-1.so. No retry or installed changes; source/archive immutable.
