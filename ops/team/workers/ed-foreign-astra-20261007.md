@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — observing granted third Android diagnostic VM e0bc/c3d6 on laptop4CPU5GiB; no other runtime action.
+- Status: available — third VM reached stock init/qualified cleanup then permission failure; guest-only permission source and archive2210 plan frozen; no resources held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -257,3 +257,5 @@
 - 2026-10-08T22:00:42.822431+00:00: Actual2200archive0/20.608s, oneguest parity and allpinsstable; fourth240f01/plane0bc, no thirdboot.
 
 - 2026-10-08T22:02:14.330590+00:00: Exact third VM source20/QEMU/protectedmanifest checked; held observer running under330/300/360s bounds.
+
+- 2026-10-08T22:06:25.366443+00:00: ThirdVM1/10.877s proofee5759 preserved; fullstagepermissionaudit and00573/81045 successor ready, no fourthboot.
