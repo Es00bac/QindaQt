@@ -419,3 +419,7 @@ does not prove the installed Settings surface or hardware controls.
 The focused density fixture measures both always-visible, enabled device volume controls and waits for their
 minimum laid-out height before measuring card spacing, so an unpolished zero-size
 layout cannot satisfy the compactness assertion.
+
+Device volume sliders keep their compact visual track inside a minimum
+22-logical-pixel interaction height. Layout retains larger implicit/theme
+Touch targets; this local page floor does not alter the shared toolkit density.
