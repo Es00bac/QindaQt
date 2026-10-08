@@ -1,0 +1,7 @@
+# One immutable R20 Audio native cohort
+
+The manager read the full exact acf4fb2711dd883f4d2af7568eec812e1e8b1ebc input-admission receipt and concrete Audio command eccb76c71cc75e39b9a4da0b0d9e2183156a7d44a12b3b549cacfabb624a9095. Fresh current portageq MAKEOPTS is exactly -j24 -l24; all six accepted helper source hashes plus manifest cdcb4c2c95e0c4325bc3e1f3b0a6225f568d7c2480f03c6f4205eafd7ee77613 match, and the named output is absent.
+
+Platform receives the sole qinda compiler/private-QML lease for ONE execution of that exact argv, against immutable package75e37f24/image ledger8ad870ca and exact dependency inventory561c0812. Configure120/build180/probe30/cohort900 seconds and per-step8MiB limits remain unchanged. Retain outer initiating identity, full stdout/stderr, actual exit/final elapsed, all step identities/outcomes, four unique full-page captures and original inputs. On failure preserve the first attempt; diagnose without retry or fixture/source mutation. Only the driver's held-owned process handles have signal authority. There is no descendant-empty or interrupted-restoration assumption.
+
+No host audio/Bluetooth/bus/session/service/software action, source QML/private SDK/ambient QindaQt rescue, package recut or installation is in this grant. SDK/Network gates remain separate source-input review before a separate grant. Release the compiler/private-QML lease at actual settlement, then hand off exact native evidence to the same independent Audio reviewer.
