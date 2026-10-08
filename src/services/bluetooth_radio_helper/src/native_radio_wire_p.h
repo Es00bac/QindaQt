@@ -63,6 +63,7 @@ private:
     std::function<void()> m_progress;
     QString m_guid, m_pinnedAddress;
     bool m_selectedPeer = false, m_pumping = false, m_closing = false;
+    bool m_filterInstalled = false;
 };
 NativeMessage nativeMethod(const QString &peer, const char *path,
     const char *interface, const char *method);

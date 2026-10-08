@@ -210,7 +210,10 @@ constructing Qt thread; a bounded native socket notifier/pump delivers work
 there. Deferred port completion is posted to a guarded Qt lifetime rather
 than destroying an owner inside libdbus dispatch. Teardown disables notifier
 and callbacks, cancels local pending admission, and closes/unrefs owned native
-connections; it cannot undo an attempted radio write. Parsing and message queues
+connections; it cannot undo an attempted radio write. Filter removal is paired
+only with successful filter registration: authentication/Hello/GUID refusal may
+leave an owned connection without a filter, and teardown must remain safe in
+that partial state. Parsing and message queues
 remain bounded. No second connection impersonates a lost name or automatically
 reissues a request.
 

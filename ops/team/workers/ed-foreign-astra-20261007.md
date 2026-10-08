@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — granted sole qinda strict Bluetooth native batch at exact58af source; old762 control then main/applet/SDK gates.
+- Status: working — preserving actual Bluetooth40d session teardown crash and freezing registration-owned cleanup repair for exact review; native stopped.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: sole qinda compiler/private-fixture lease granted by root; strict Debug -j24 -l24, serial CTests; no host bus/radio/device/installed actions.
 ## Updates
+
+- 2026-10-08T05:10:05Z — Strict40d build0; main32 settled31pass/1session SIGSEGV exit8. Wrong-GUID refusal destroys a connection before filter registration; unconditional removal crashes libdbus. Minimal registration-owned cleanup frozen, original fixture unchanged; no further native cohort before root recheck. Applet unrun; no host action.
 
 - 2026-10-08T05:02:51Z — Old762 actual strict build0 and immutable regression2pass3fail reproduced. Revised58af configure0/actual32rows25targets; strict build1 missing QDBusMessage definition in only new native-service fixture. All running jobs settled; production helper linked but no revised tests. Frozen explicit test include repair for root recheck; no warning/authority relaxation.
 

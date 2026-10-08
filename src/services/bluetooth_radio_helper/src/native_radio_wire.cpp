@@ -67,7 +67,9 @@ NativeRadioWire::~NativeRadioWire() {
     if (m_notifier) { m_notifier->setEnabled(false); delete m_notifier; }
     m_handler = {}; m_progress = {};
     if (m_connection) {
-        dbus_connection_remove_filter(m_connection, filter, this);
+        // AGENT-GUARD: failed authentication/Hello may leave an owned connection
+        // without a registered filter. Remove only our acquired registration.
+        if (m_filterInstalled) dbus_connection_remove_filter(m_connection, filter, this);
         dbus_connection_close(m_connection); dbus_connection_unref(m_connection);
     }
 }
@@ -127,6 +129,7 @@ bool NativeRadioWire::open(const QString &address, bool eventPump) {
     int descriptor = -1;
     if (!dbus_connection_get_unix_fd(m_connection, &descriptor) || descriptor < 0
         || !dbus_connection_add_filter(m_connection, filter, this, nullptr)) return false;
+    m_filterInstalled = true;
     if (eventPump) {
         m_notifier = new QSocketNotifier(descriptor, QSocketNotifier::Read, this);
         connect(m_notifier, &QSocketNotifier::activated, this, [this] { pump(); });
