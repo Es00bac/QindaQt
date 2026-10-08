@@ -100,6 +100,10 @@ or decoded image on a serialized worker thread. `ViewerController` owns that
 thread and joins it during teardown. Only value requests/results cross the
 thread boundary; Poppler objects never enter QML or the scene graph. Each
 request has a revision, and close/open/navigation/zoom invalidate old results.
+The engine-owned image provider stages a copied frame before publishing its own
+GUI-thread revision to QML. Image URL updates consume that revision; a controller
+notification alone cannot promise that a separate image-staging slot ran first.
+Provider requests hold only a short mutex while copying the image.
 Obsolete queued work is skipped, and Poppler's cancellation callback stops an
 obsolete PDF render. Closing a document clears cached pixels and passwords.
 Password strings cross the Poppler Qt6 boundary using its documented Latin-1

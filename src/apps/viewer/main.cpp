@@ -52,7 +52,8 @@ int main(int argc, char **argv)
     auto *provider = new QindaQt::Viewer::FrameProvider;
     engine.addImageProvider(QStringLiteral("document"), provider);
     QObject::connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged,
-                     &engine, [&] { provider->setFrame(viewer.frame()); });
+                     provider, [&] { provider->setFrame(viewer.frame()); });
+    engine.rootContext()->setContextProperty(QStringLiteral("frameProvider"), provider);
     engine.rootContext()->setContextProperty(QStringLiteral("viewer"), &viewer);
     engine.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
     engine.loadFromModule(QStringLiteral("QindaQt.Viewer"), QStringLiteral("Main"));
