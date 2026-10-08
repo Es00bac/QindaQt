@@ -13,9 +13,10 @@ def run_command(args, deadline, *, boot_readiness=False):
     if remaining <= 0:
         raise RuntimeError("window-proof-deadline")
     # AGENT-GUARD: Stock IPlatform discovery can wait for asynchronous boot.
-    # Only boot-readiness queries may consume the existing startup budget;
+    # Only boot readiness and the two fixed launch RPCs may consume that budget;
     # timeout remains terminal, never an individual-command retry.
-    timeout = remaining if boot_readiness else min(10, remaining)
+    fixed_app_launch = tuple(args) in tuple(("app", "launch", app) for app in APPS)
+    timeout = remaining if boot_readiness or fixed_app_launch else min(10, remaining)
     return subprocess.run(["/usr/bin/waydroid", *args], stdin=subprocess.DEVNULL,
                           capture_output=True, text=True, check=True,
                           timeout=timeout).stdout.strip()
