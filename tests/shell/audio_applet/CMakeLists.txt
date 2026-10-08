@@ -319,3 +319,16 @@ add_test(NAME qindaqt.audio-applet-geometry-ambiguous
 set_tests_properties(qindaqt.audio-applet-geometry-ambiguous PROPERTIES
     LABELS "shell;audio;presentation;offscreen;negative"
     ENVIRONMENT "QT_QUICK_BACKEND=software")
+
+# Real selected-output evidence remains valid without unique display names.
+add_test(NAME qindaqt.audio-applet-scroll-unnamed
+    COMMAND qindaqt_audio_applet_scroll_tests
+    constrainedPopupReachesFooterWithoutChangingAudio -platform offscreen)
+add_test(NAME qindaqt.audio-applet-scroll-duplicate
+    COMMAND qindaqt_audio_applet_scroll_tests
+    constrainedPopupReachesFooterWithoutChangingAudio
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-ambiguous.json")
+set_tests_properties(qindaqt.audio-applet-scroll-unnamed
+    qindaqt.audio-applet-scroll-duplicate PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;scroll;selected-output"
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1")
