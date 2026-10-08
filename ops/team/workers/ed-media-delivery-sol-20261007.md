@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — preserving exact ED11 native handoff and reading the next compatible First-party packet; all compiler/runtime resources released
+- Status: available — exact ED11 source and native handoff preserved; all resources released; compatible First-party and package-provenance help offered
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
 - Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
@@ -51,3 +51,5 @@
 - 2026-10-07T23:39:03+00:00: Root explicitly transferred sole ED11 native lease after Astra release. Detached ignored verification tree is exact 83e261 source; strict /usr + KDE libexec and actual MAKEOPTS -j24 -l24, both host buses blocked and private XDG. Readonly inventory shows CUPS three units disabled/inactive, no socket/current printers.conf or classified USB printer/imaging/SANE device; scanner presence remains unqualified. Exact stable simple-scan pretend exits 1 with Avahi mdnsresponder-compat slot conflict, proposed 18 packages/75413 KiB; no package/config/world/service transaction. Native outcomes not yet claimed.
 
 - 2026-10-08T00:04:47+00:00: Exact55113184 strict production build exit0; full native/offscreen/relocated CTest18/18 with87 Qt passed and zero failures/skips/blacklisted. Installed public catalog1/1 with11 Qt passed, actual staged-header poison build exit1, restored build+1/1 exit0; four staged producer headers/zero source leaks/14 byte-matched payloads/Core-only. Docs526/strict/production11+test6 shape/diff pass. Original83e and488 16/18 failures preserved; root approved precise Controllers metadata/page order and palette fixture repair. Explicitly RELEASED all compiler/runtime/staging resources to root before receipt; no Portage/hardware/service claim.
+
+- 2026-10-08T00:07:36+00:00: Exact handoff and configure reproduction flags preserved in79dedf91b. Read current hub First-party queue at3859cc78 and offered root/Platform bounded installed-owner delegation or read-only scanner package provenance help. No new source ownership assumed. Transitioning to available pending exact root review or next compatible packet; compiler/runtime remain released.
