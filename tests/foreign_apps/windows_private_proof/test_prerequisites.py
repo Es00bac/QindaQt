@@ -56,6 +56,15 @@ class PublicRuntimeTests(unittest.TestCase):
     def test_manifest_actual_members(self):
         hashes=outer.source_identity()
         self.assertEqual(len(hashes),18)
+    def test_nonexecutable_staged_driver_refuses_before_launch(self):
+        import shutil
+        from unittest.mock import patch
+        staged=self.root/"reviewed-source";staged.mkdir()
+        for name in [*outer.source_identity(),"source-sha256.json"]:
+            shutil.copy2(outer.HERE/name,staged/name)
+        (staged/"driver.py").chmod(0o644)
+        with patch.object(outer,"HERE",staged):
+            with self.assertRaisesRegex(RuntimeError,"executable mode absent"):outer.source_identity()
     def test_public_payloads_bound(self):
         self.assertEqual(len(outer.REQUIRED),20)
         self.assertIn("/usr/lib64/libXtst.so.6",outer.REQUIRED)
