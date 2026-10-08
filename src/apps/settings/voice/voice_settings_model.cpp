@@ -16,8 +16,8 @@ using Services::SettingsProtocol::SettingsWireStatus;
 
 VoiceSettingsModel::VoiceSettingsModel(
     Services::SettingsClient::SettingsClient &settingsClient,
-    Services::Voice::VoiceClient &voiceClient, QObject *parent)
-    : QObject(parent), m_settingsClient(settingsClient), m_voiceClient(voiceClient)
+    Services::Voice::VoiceClient &voiceClient, QObject *parent, QObject *configuration)
+    : QObject(parent), m_settingsClient(settingsClient), m_voiceClient(voiceClient), m_configuration(configuration)
 {
     connect(&m_settingsClient, &Services::SettingsClient::SettingsClient::stateChanged,
             this, &VoiceSettingsModel::handleSettingsState);

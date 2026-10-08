@@ -15,7 +15,11 @@ or configured-versus-effective fallback projection. An unlocked matching
 Secret Service item can become available after Gabbee's startup credential
 cache was read: selecting ElevenLabs then still advertises only local Whisper.
 A manager-observed graceful idle provider restart changed availability4 to5
-without reading a secret or opening a microphone. Existing keys must be
+without reading a secret or opening a microphone. Later metadata showed the same item locked under normal configured idle-lock
+policy after a watchdog owner replacement, with availability returning to4.
+Neither observation establishes a sole startup-cache cause. Explicit reload
+may invoke the owning Secret Service prompt; never weaken idle/screen lock.
+Existing keys must be
 reloadable graphically; asking users to enter the key again is not recovery.
 
 ## Decision

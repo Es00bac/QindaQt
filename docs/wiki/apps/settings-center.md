@@ -404,3 +404,11 @@ service pages beyond the compiled routes, search inside a page's controls,
 arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.
+
+
+The Voice route includes a masked ElevenLabs credential entry and an explicit
+**Reload saved key** action through the provider's optional configuration
+extension. It shows configured and effective providers separately, including
+local fallback and environment-key precedence. See [Voice input secure
+configuration](../architecture/voice-input.md#secure-provider-credential-configuration)
+for storage ownership, timeout recovery and qualification limits.

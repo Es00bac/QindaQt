@@ -22,6 +22,7 @@ struct Snapshot final {
   bool credentialCached = false;
   bool environmentOverride = false;
   bool canConfigure = false;
+  bool operator==(const Snapshot &) const = default;
 };
 struct Result final {
   quint64 requestId = 0;
