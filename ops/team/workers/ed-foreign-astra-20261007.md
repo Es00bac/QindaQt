@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — actual private Pulse stage2250 passed; archive2255 proposal frozen for root review; laptop heavy released.
+- Status: available — archive2255 passed with stable7296 inventory; seventh VM exact504617/49a75 proposal awaits root grant; laptop heavy released.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -285,3 +285,7 @@
 - 2026-10-08T22:40:17.743307+00:00: Source21/AST and28tinycontrols pass; freshstageplaned55/argva518/source03f preserved, no stage execution.
 
 - 2026-10-08T22:46:18.826576+00:00 — Actual protected stage2250 passed0/6807 inputs/7296 objects; six live cap witnesses and held retirement preserved. Archive2255 exact proposal AST-only, no archive/VM grant consumed.
+
+- 2026-10-08T22:47:52.762197+00:00 — Archive2255 exact6f443/c53d/e5d dispatched; actual active MainPID2623656/invocation016fe26ba5874b55981b3a8c1b1f6667,4CPU5GiB. Preserving one attempt, no VM.
+
+- 2026-10-08T22:49:05.950931+00:00 — Actual archive2255 all3phases0/52.522s, stable source/inventory, held outer retired. Frozen seventh VM plan only; no guest run.
