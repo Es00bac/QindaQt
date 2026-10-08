@@ -38,4 +38,3 @@ tests/shell/audio_applet/offscreen-1536x864.json
 tests/shell/audio_applet/offscreen-ambiguous.json
 tests/shell/audio_applet/tst_audio_applet_model.cpp
 tests/shell/audio_applet/tst_audio_applet_scroll.cpp
-
