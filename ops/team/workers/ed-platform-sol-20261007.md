@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Media private-bus RCA handed off; Windows9850 source safety recheck pending; no resources held.
+- Status: working — executing root-granted Windows985 four-module private synthetic controls under capped unit.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -311,3 +311,5 @@
 - 2026-10-08T18:22:40+00:00 — Froze parent-incarnation edge admission and independently continuing synthetic cleanup; AST/diff only, all generation tests unrun.
 
 - 2026-10-08T18:26:20+00:00 — Read-only Media saved-environment/Portage incremental RCA establishes missing negative ENV_UNSET override; no rerun or implementation.
+
+- 2026-10-08T18:29:43+00:00 — Root-granted exact985 source revalidation passed; four-module single attempt begins, no native/Wine.

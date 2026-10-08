@@ -1,0 +1,3 @@
+# Windows985 bounded synthetic cohort claim
+
+Root explicitly granted one sequential protocol/edges/retirement/kernel cohort after same-reviewer0463 source safety acceptance. Revalidated actual27 source files against exact985 Git and index, runtime16 manifest and17-member bundle. Reused accepted held-Popen/pidfd shortTMP supervisor with only source/bundle/module/output metadata and fresh private HOME plus post-hash checks. Harness SHA256 70df6e8bc3e2d8e39fe0f59f52bf00ca7cdd8be13cf267b0714ba381892db5b1. Fixed25s/module90overall1MiB; capped unit8CPU/12G/swap0/tasks256/nice10/half-affinity. No Wine/native/preflight/namespace/Portage/guest. First failure stops; retain scratch, no descendant-empty inference.
