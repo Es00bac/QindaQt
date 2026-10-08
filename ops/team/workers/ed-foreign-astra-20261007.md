@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: available — repaired R18 ea14088/a829b04 exact source and actual resolver evidence accepted; ready for artifact/failure recheck.
-- Outcome: source/package review before a manager-authorized R18 build; no installed or runtime acceptance.
-- Base: desktop14e440673b488ae8d77698bf56abb35345340766; runtime5858bccd; overlayaf4e8ed at masterb128.
-- Branch: review/everyday-r18-astra-20261008; isolated desktop and overlay review worktrees.
-- Ownership: own review board/receipts only; Platform owns R18 recipes and package qualification.
-- Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
+- Status: working — stock Waydroid isolated runtime dispatcher source and boot-input admission; no runtime execution.
+- Outcome: reviewable package-to-two-window feasibility fixture; ordinary windows first, app identity authority remains separate.
+- Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
+- Branch: worker/everyday-android-stock-runtime-20261008; isolated qinda worktree.
+- Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
+- Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T16:33:06Z — Claimed exact stock-runtime fixture. Read accepted da559/29cbc and 99b source review, stock initializer/container/LXC/mount helpers and original integration plan. Qinda kernel has Binder built-in and KVM; runtime/LXC absent. Stock retained sys_time and implicit loop mounts require a guest-kernel boundary or separately proven equivalent, not socket isolation. Preparing narrow boot-input and dispatcher proposal; no runtime actions.
 
 - 2026-10-08T07:12:31Z — Superseding exact R18 acceptance: ea14088/a829b04 only correct nonexistent dev-libs/dbus to actual sys-apps/dbus provider, archive/runtime unchanged. Original failed build1 and reviewaca238 preserved; acknowledged missed existence check. Read actual private pretend0/onlyr18 and bound logs to exact recipe hash; independently installed ownership/static7/docs533/strict/diff0. No real build retry or native/host action by reviewer.
 
