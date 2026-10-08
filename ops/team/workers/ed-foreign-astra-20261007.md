@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — stock Waydroid isolated runtime dispatcher source and boot-input admission; no runtime execution.
+- Status: working — priority image recipe Portage DISTDIR repair; KVM dispatcher source draft preserved, unreviewed and unexecuted.
 - Outcome: reviewable package-to-two-window feasibility fixture; ordinary windows first, app identity authority remains separate.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated qinda worktree.
 - Ownership: new test-only Android stock-proof collaborators and own documentation/records; Platform owns image/runtime package plan.
 - Resources: source/read-only inventory only; no compiler, VM, namespace, guest, mount, service or package lease.
 ## Updates
+
+- 2026-10-08T16:54:15+00:00 — Preserved unreviewed minimal KVM draft: fixed readonly disk/kernel/initramfs input plan, guest stock phases and separate cleanup observations. Pure plan5/5, Python AST7 and shell syntax pass; no VM/build or guest action. Root reprioritized actual29cbc Portage unpack ELOOP: inspect PORTAGE_ACTUAL_DISTDIR and repair original image recipe without weakening nofollow verifier.
 
 - 2026-10-08T16:33:06Z — Claimed exact stock-runtime fixture. Read accepted da559/29cbc and 99b source review, stock initializer/container/LXC/mount helpers and original integration plan. Qinda kernel has Binder built-in and KVM; runtime/LXC absent. Stock retained sys_time and implicit loop mounts require a guest-kernel boundary or separately proven equivalent, not socket isolation. Preparing narrow boot-input and dispatcher proposal; no runtime actions.
 
