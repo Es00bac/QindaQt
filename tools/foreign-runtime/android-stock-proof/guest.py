@@ -113,7 +113,11 @@ def quarantine_terminal_failure():
 
 def emit_terminal(result):
     fd = sys.stdout.fileno()
-    if fd != 1 or not os.isatty(fd) or os.ttyname(fd) not in ("/dev/console", "/dev/ttyS0"):
+    device = os.fstat(fd)
+    # Inherited /dev/console can support termios while ttyname raises ENOTTY.
+    # Admit kernel character-device identity, never a mutable pathname alias.
+    if (fd != 1 or not stat.S_ISCHR(device.st_mode) or not os.isatty(fd)
+            or (os.major(device.st_rdev), os.minor(device.st_rdev)) not in ((5, 1), (4, 64))):
         raise RuntimeError("terminal-not-guest-console")
     termios.tcgetattr(fd)  # Refuse an unsupported terminal before publication.
     os.sync()
