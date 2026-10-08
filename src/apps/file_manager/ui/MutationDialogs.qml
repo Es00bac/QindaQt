@@ -8,7 +8,7 @@ Item {
     required property var navigationController
     required property var mutationController
     required property var transferQueueController
-    // ADR-0198: only the recoverable home Trash may skip its confirmation.
+    // ADR-0198: only the recoverable Trash may skip its confirmation.
     // Empty Trash is permanent and always asks, whatever this says.
     property bool confirmTrash: true
     // ADR-0271: where Copy To and Move To start. The Commander style sets it
@@ -59,7 +59,10 @@ Item {
             }
             trashSelection()
         } else if (actionId === "file.restore-last") {
-            mutationController.restoreLast()
+            lastTrashRestore.items = []
+            lastTrashRestore.originalPath = mutationController.lastTrashOriginalPath
+            lastTrashRestore.initialFolder = ""
+            lastTrashRestore.open()
         } else if (actionId === "file.empty-trash") {
             emptyTrashConfirmationDialog.open()
         } else if (actionId === "edit.undo") {
@@ -225,16 +228,22 @@ Item {
 
         Label {
             text: root.selectedItems.length > 1
-                ? qsTr("Move %1 selected items to the recoverable home Trash. Batch trash is not covered by Restore Last.")
+                ? qsTr("Move %1 selected items to the recoverable Trash. Batch trash is not covered by Restore Last.")
                       .arg(root.selectedItems.length) + "\n\n"
                   + root.selectedItems.slice(0, 5).map(entry => entry.name).join("\n")
                   + (root.selectedItems.length > 5
                      ? qsTr("\n…and %1 more").arg(root.selectedItems.length - 5) : "")
-                : (root.selectedEntry ? qsTr("Move “%1” to the recoverable home Trash.")
+                : (root.selectedEntry ? qsTr("Move “%1” to the recoverable Trash.")
                                            .arg(root.selectedEntry.name) : "")
             wrapMode: Text.Wrap
             Accessible.name: text
         }
+    }
+
+    TrashRestoreDialog {
+        id: lastTrashRestore
+        controller: root.mutationController
+        anchors.centerIn: parent
     }
 
     Dialog {

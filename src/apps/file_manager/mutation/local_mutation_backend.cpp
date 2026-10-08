@@ -138,9 +138,11 @@ namespace {
 
 LocalMutationBackend::LocalMutationBackend(QString homeTrashRoot,
                                            DeviceResolverPtr deviceResolver,
-                                           ArchiveCodecPtr archives, QString recoveryCatalogPath)
+                                           ArchiveCodecPtr archives, QString recoveryCatalogPath,
+                                           TrashTopDirectoryPtr trashTopology)
     : m_deviceResolver(deviceResolver),
-      m_homeTrash(std::move(homeTrashRoot), std::move(deviceResolver)),
+      m_homeTrash(homeTrashRoot, deviceResolver),
+      m_volumeTrash(std::move(homeTrashRoot), std::move(deviceResolver), std::move(trashTopology)),
       m_archives(std::move(archives)),
       m_crossVolume(recoveryCatalogPath.isEmpty()
           ? QDir(QStandardPaths::writableLocation(QStandardPaths::StateLocation))
@@ -181,9 +183,9 @@ MutationResult LocalMutationBackend::execute(
   case MutationKind::Copy:
     return copy(request, cancellation, progress);
   case MutationKind::Trash:
-    return m_homeTrash.trash(request);
+    return m_volumeTrash.trash(request, cancellation);
   case MutationKind::Restore:
-    return m_homeTrash.restore(request);
+    return m_volumeTrash.restore(request, cancellation);
   case MutationKind::EmptyTrash:
     return m_homeTrash.empty(cancellation, progress);
   case MutationKind::CreateFile:

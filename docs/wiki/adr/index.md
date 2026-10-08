@@ -403,3 +403,5 @@ integration retains every accepted decision in numeric order.
 | [ADR-0358](0358-authenticate-native-clipboard-privacy-at-use.md) | Accepted | Authenticate native clipboard privacy at every disclosure and publication |
 
 - [ADR-0362: Present Audio devices with two lines and disclosed details](0362-present-audio-devices-with-two-lines-and-disclosed-details.md) — Accepted; supersedes only ADR-0288's device presentation.
+
+- [ADR-0363: Admit per-volume Trash without following payload links](0363-admit-per-volume-trash-without-following-payload-links.md) — Accepted; supersedes only home-only Trash admission and final-link refusal portions of0064.

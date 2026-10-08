@@ -7,6 +7,11 @@ target_sources(
         mutation/archive_codec.cpp
         mutation/device_resolver.cpp
         mutation/home_trash.cpp
+        mutation/trash_metadata.cpp
+        mutation/trash_storage.cpp
+        mutation/trash_relocate.cpp
+        mutation/volume_trash.cpp
+        mutation/mutation_controller_trash.cpp
         mutation/local_mutation_backend.cpp
         mutation/mutation_controller.cpp
     mutation/mutation_controller_results.cpp
@@ -96,6 +101,7 @@ target_sources(
         runtime/finder_integration.cpp
         runtime/folder_navigations.cpp
         runtime/media_presenter.cpp
+        runtime/trash_discovery.cpp
         runtime/layout_style_hint.cpp
         runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
@@ -155,7 +161,10 @@ target_sources(
         mutation/karchive_codec.cpp
         mutation/karchive_codec_extract.cpp
         mutation/karchive_io.h
-    PUBLIC
+    # AGENT-GUARD: the support library owns each QObject's moc exactly once.
+    # Propagating these as INTERFACE_SOURCES makes consumers generate duplicate
+    # metaobjects when the library moc object is linked for a new collaborator.
+    PRIVATE
         app_shell/file_manager_action_catalog.h
         mutation/archive_codec.h
         mutation/device_resolver.h
@@ -348,6 +357,7 @@ qt_add_qml_module(
         ui/ApplicationInfoDialog.qml
         ui/ApplicationsPlaceActions.qml
         ui/MutationDialogs.qml
+        ui/TrashRestoreDialog.qml
         ui/StatusBanners.qml
         ui/MoveRecoveryPanel.qml
         ui/MoveRecoveryRestoreDialog.qml

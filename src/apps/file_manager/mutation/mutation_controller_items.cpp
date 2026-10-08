@@ -7,7 +7,6 @@
 #include "mutation_controller.h"
 
 #include "archive_codec.h"
-#include "home_trash.h"
 #include "local_mutation_backend.h"
 
 #include <QDir>
@@ -155,41 +154,6 @@ bool MutationController::deleteItems(const QVariantList &items) {
     requests.append(std::move(request));
   }
   return submitRequests(MutationKind::Delete, std::move(requests));
-}
-
-bool MutationController::putBackItems(const QVariantList &items) {
-  QVector<MutationRequest> requests;
-  for (const QVariant &item : items) {
-    QString payload;
-    FileIdentity identity;
-    if (!parseItem(item, &payload, &identity)) {
-      return false;
-    }
-    const QString name = QFileInfo(payload).fileName();
-    const QString original = HomeTrash::originalPathFor(payload);
-    if (original.isEmpty()) {
-      fail(MutationError::InvalidRequest,
-           QStringLiteral("“%1” has no Trash record to put it back from").arg(name));
-      return false;
-    }
-    const QString folder = QFileInfo(original).absolutePath();
-    MutationRequest request;
-    request.expectedParent = LocalMutationBackend::identityForPath(folder);
-    if (!request.expectedParent) {
-      fail(MutationError::Vanished,
-           QStringLiteral("The folder “%1” came from no longer exists").arg(name));
-      return false;
-    }
-    // The same request Restore Last builds; HomeTrash::restore re-reads the
-    // record and refuses unless it still names this exact path.
-    request.kind = MutationKind::Restore;
-    request.trashToken = name;
-    request.destinationPath = original;
-    request.declaredRoots = {folder};
-    request.expectedSource = identity;
-    requests.append(std::move(request));
-  }
-  return submitRequests(MutationKind::Restore, std::move(requests));
 }
 
 bool MutationController::createFile(const QString &parentPath, const QString &name,

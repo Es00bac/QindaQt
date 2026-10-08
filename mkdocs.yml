@@ -559,3 +559,4 @@ nav:
       - "ADR-0356: Delegate printer/scanner Settings to installed tools": adr/0356-delegate-printer-and-scanner-settings-to-installed-tools.md
       - '0360: Retire replaced Power1 at session entry': adr/0360-retire-replaced-power-owner-at-session-entry.md
       - '0362: Compact Audio device details': adr/0362-present-audio-devices-with-two-lines-and-disclosed-details.md
+      - '0363: Per-volume Trash admission': adr/0363-admit-per-volume-trash-without-following-payload-links.md

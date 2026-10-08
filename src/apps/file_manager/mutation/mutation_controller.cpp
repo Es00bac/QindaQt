@@ -202,22 +202,6 @@ bool MutationController::moveItemsTo(const QVariantList &items,
   return submitBatch(MutationKind::Move, items, destinationDirectory);
 }
 
-bool MutationController::restoreLast() {
-  if (!canRestore()) {
-    fail(MutationError::InvalidRequest, QStringLiteral("There is no recoverable Trash item"));
-    return false;
-  }
-  MutationRequest request;
-  request.kind = MutationKind::Restore;
-  request.trashToken = m_lastTrashToken;
-  request.destinationPath = m_lastTrashOriginalPath;
-  request.declaredRoots = {QFileInfo(m_lastTrashOriginalPath).absolutePath()};
-  request.expectedSource = m_lastTrashIdentity;
-  request.expectedParent = LocalMutationBackend::identityForPath(
-      QFileInfo(m_lastTrashOriginalPath).absolutePath());
-  return submit(std::move(request));
-}
-
 bool MutationController::emptyTrash() {
   MutationRequest request;
   request.kind = MutationKind::EmptyTrash;
@@ -312,7 +296,7 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
        progress = std::move(progress)]() mutable {
         MutationResult result = backend->execute(request, cancellation, progress);
         result.itemOutcomes = {{true, request.sourcePath, request.destinationPath,
-                                result.error, result.outputObservation, result.recovery}};
+                                result.error, result.outputObservation, result.recovery, result.trashReceipt}};
         if (guard) {
           QMetaObject::invokeMethod(guard, [guard, generation, result]() {
             if (guard && guard->m_requestGeneration == generation) {
@@ -456,7 +440,7 @@ bool MutationController::submitRequests(MutationKind kind,
           };
           outcome = backend->execute(request, cancellation, itemProgress);
           items[itemIndex++] = {true, request.sourcePath, request.destinationPath,
-                                outcome.error, outcome.outputObservation, outcome.recovery};
+                                outcome.error, outcome.outputObservation, outcome.recovery, outcome.trashReceipt};
           if (!outcome.ok()) {
             outcome.diagnostic =
                 QStringLiteral("Completed %1 of %2 items; %3: %4")

@@ -1,3 +1,13 @@
+## Latest integrated gate — 2026-10-08T20:25:44+00:00
+
+Trash0273 manager strict Release22/22 (298Qt+12pure) passed; heavy lease released. Root prepares signed Portage delivery. Files owns paired Voice credentials/unlock/status source; Platform Windows save/close and Astra Android stage source continue. Full installed/physical and other original requirements remain open.
+
+## Resumed routing — 2026-10-08T20:16:00+00:00
+
+Platform owns Windows real private-file typing/save/close repair; Astra owns the bounded laptop Android profile/runtime closure. Root reserves the next heavy slot for accepted Trash manager gates; Windows native run follows. No guest boot or completed two-app lifecycle is claimed.
+
+The earlier paused routing below is historical. One heavy cohort, qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/load4/5GiB/half cores. Full scope and today's deadline remain.
+
 ## Current paused outcome order — October 8, 13:06 MDT
 
 The owner requested reassessment before resuming. **No implementation, package

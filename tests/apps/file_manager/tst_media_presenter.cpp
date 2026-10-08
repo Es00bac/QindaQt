@@ -4,6 +4,7 @@
 #include "model/navigation_controller.h"
 #include "runtime/folder_navigations.h"
 #include "runtime/media_presenter.h"
+#include "trash_test_support.h"
 #include "../../services/removable_media_client/media_source_fixture.h"
 #include <QDir>
 #include <QFile>
@@ -29,6 +30,39 @@ struct Harness {
 class MediaPresenterTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void volumeTrashReadOnlyDiscoveryAndUnavailableDoesNotMount() {
+        Harness h;
+        QTemporaryDir volume(QStringLiteral("/dev/shm/qindaqt-ed06-media-XXXXXX"));
+        QVERIFY(volume.isValid());
+        MutationResult admission;
+        const auto root = volume.filePath(QStringLiteral(".Trash-") + QString::number(::getuid()));
+        QVERIFY(TrashStorage::open({root, volume.path(), false}, true, admission));
+        h.source.value.rows = {MediaFixture::volume("one", volume.path())};
+        h.source.value.rows[0].readOnly = Media::ReadOnlyState::ReadOnly; h.source.publish();
+        QTRY_COMPARE_WITH_TIMEOUT(h.presenter.rows()[0].toMap()["trashLocations"].toList().size(), 1, 3000);
+        const auto locations = h.presenter.rows()[0].toMap()["trashLocations"].toList();
+        QCOMPARE(locations.size(), 1);
+        const auto files = locations[0].toMap()["path"].toString();
+        QCOMPARE(files, QDir(root).filePath("files"));
+        h.presenter.openTrash("one", files);
+        QTRY_COMPARE_WITH_TIMEOUT(h.first->currentPath(), files, 3000); QCOMPARE(h.source.writes, 0);
+        h.presenter.openTrash("one", h.temp.path());
+        QCOMPARE(h.first->currentPath(), files); QCOMPARE(h.source.writes, 0);
+        h.source.value.rows.clear(); ++h.source.value.lineage.revision; h.source.publish();
+        QVERIFY(h.first->mediaLocationRevoked());
+        h.presenter.openTrash("one", files); QCOMPARE(h.source.writes, 0);
+    }
+    void absentVolumeTrashDiscoveryCreatesNothing() {
+        Harness h; const auto root = h.temp.filePath("device");
+        QVERIFY(TrashTest::privateDir(root));
+        h.source.value.rows = {MediaFixture::volume("one", root)}; h.source.publish();
+        QVERIFY(h.presenter.rows()[0].toMap()["trashLocations"].toList().isEmpty());
+        const auto privateRoot = QDir(root).filePath(QStringLiteral(".Trash-") + QString::number(::getuid()));
+        QVERIFY(!QFileInfo::exists(privateRoot)); QVERIFY(!QFileInfo::exists(QDir(root).filePath(".Trash")));
+        h.presenter.openTrash("one", QDir(privateRoot).filePath("files"));
+        QCOMPARE(h.first->currentPath(), h.temp.path()); QCOMPARE(h.source.writes, 0);
+    }
+
     void observationAndDuplicateRowsDoNotMount() {
         Harness h; h.source.value.rows = {MediaFixture::volume("one"), MediaFixture::volume("two")};
         h.source.value.rows[1].partitionNumber = 2; h.source.publish();

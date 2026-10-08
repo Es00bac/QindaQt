@@ -1899,3 +1899,57 @@ Accepted ADR0355 governs the integrated storage contract. No startup replay,
 automatic cleanup/release or physical power-loss guarantee is introduced.
 Full ED05 remains open for installed GUI and physical journeys; prior-version
 comparison is separately recorded as unrun.
+
+### Per-volume Trash source packet
+
+[Proposed ADR-0363](../adr/0363-admit-per-volume-trash-without-following-payload-links.md)
+defines the ED06 storage/admission and explicit restore-folder outcome.
+The source packet preserves independently reviewed ED05 copy/recovery contracts.
+Pure bounded trashinfo codec and adversarial fixtures are being authored; they
+now implement candidate production routing and controller/restore UI; author native evidence below does not establish installed delivery.
+Unrepresentable native filenames refuse through the existing QString boundary,
+with all entries retained. Per-volume transactions, symlink payloads, public
+media read-only discovery and graphical chosen-folder restore remain pending
+until exact source/native review and manager integration.
+
+Per-volume Trash filename admission (Proposed ADR0363): native local listings retain unrepresentable names visibly but withhold mutation identity from decoded aliases, including a literal-U+FFFD sibling. A bounded incomplete enumeration grants no identities. Valid Unicode/newline/percent paths retain exact identity; this does not expand the QString path ABI.
+
+### ED06 author qualification (October8)
+
+The candidate routes local Trash to the admitted same-volume store, keeps final
+symlink entries opaque, preserves source/payload on failure, and offers explicit
+chosen-folder restore without replacing collisions. One coalesced read-only
+worker discovers existing stores from mounted public device rows; passive rows
+do not create storage or gain mount authority.
+
+Strict Debug production/owning-test builds passed. The full focused CTest run
+passed11/12; its only remaining failure was Qt temporary-directory cleanup of
+the newly tested leading-BOM filename. A test-only exact-name cleanup then
+passed the owning lister row1/1 under unchanged fatal-warning conditions. Thus
+all12 rows have actual passing evidence, composed of the unchanged11 and the
+repaired1; this is not a new full12/12 run. Aggregate Qt checks are 144 passed,
+0 failed/skipped/blacklisted across those passing summaries. Original failures
+and raw/Testing metadata remain preserved.
+
+The fixtures exercise real distinct-device disposable trees, private/shared
+Trash admission, opaque/broken/looping links, metadata versions/barriers,
+collision and parent replacement, cancellation and detach, partial batches,
+Unicode/BOM/newline/percent and bad-byte refusal, public device discovery
+fencing, and the real restore dialog over its fake model. Exact independent
+native review, manager integration and installed/physical user journeys remain
+separate gates. Symlink Copy policy remains a separate unfinished ED06 packet.
+
+## Manager Trash integration qualification — October 8
+
+Exact Trash candidate0273a7189 received independent source/native acceptance
+7b02284cf. All38 source/test paths match that candidate on the manager tree;
+the shared documentation append conflict preserved both ED05 and ED06 records.
+The manager then built the production File Manager and affected tests with strict
+Release warnings, and ran the actual22-row Trash/move-recovery selector:22/22
+passed,298Qt checks plus12pure controls, zero failures/skips/blacklists.
+Configure/build/tests exited0 in39.284/175.743/3.871seconds. Live witnesses confirm
+eight-CPU quota,12GiB/no swap/tasks256,half physical affinity and nice10; the unit
+settled successfully in219.029seconds with3.5GiB peak memory. Accepted ADR0363
+records the integrated contract. Author Debug composed evidence and its original
+failures remain preserved separately. This is source integration, not installed
+ED06 completion. Package delivery, physical journeys and symlink Copy remain open.

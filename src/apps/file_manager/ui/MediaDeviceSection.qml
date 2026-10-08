@@ -46,6 +46,7 @@ ColumnLayout {
     Repeater {
         model: root.presenter ? root.presenter.rows : []
         ColumnLayout {
+            id: volumeRow
             required property var modelData
             Layout.fillWidth: true
             Layout.minimumWidth: 0
@@ -69,6 +70,26 @@ ColumnLayout {
                 text: modelData.kind + " · " + modelData.status
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: modelData.trashLocations || []
+                ToolButton {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    enabled: root.presenter !== null && !root.presenter.busy
+                    text: modelData.label
+                    contentItem: Label { text: parent.text; textFormat: Text.PlainText; wrapMode: Text.Wrap }
+                    Accessible.description: qsTr("Open existing volume Trash without creating storage or mounting")
+                    onClicked: root.presenter.openTrash(volumeRow.modelData.handle, modelData.path)
+                }
+            }
+            ToolButton {
+                visible: !modelData.trashLocations || modelData.trashLocations.length === 0
+                enabled: false
+                text: qsTr("Trash unavailable")
+                Accessible.description: modelData.trashReason || qsTr("No existing accessible volume Trash is available; opening a device does not create one.")
+                contentItem: Label { text: parent.text; textFormat: Text.PlainText; wrapMode: Text.Wrap }
             }
             // Two short rows also fit the compact 148px window sidebar.
             RowLayout {

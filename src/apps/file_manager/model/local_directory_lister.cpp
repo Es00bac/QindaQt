@@ -3,6 +3,11 @@
 #include "mutation/local_mutation_backend.h"
 
 #include <QDir>
+#include <QFile>
+#include <QSet>
+
+#include <cerrno>
+#include <dirent.h>
 #include <QFileInfo>
 #include <QFileInfoList>
 
@@ -11,6 +16,51 @@
 namespace QindaQt::Apps::FileManager {
 
 namespace {
+
+// AGENT-GUARD: QDir has already decoded native bytes by the time QFileInfo
+// reaches us. A bad-byte name can therefore alias a real U+FFFD sibling.
+// Preserve visible rows, but never mint mutation authority for either alias.
+// Bound the native check; incomplete enumeration cannot prove any name safe.
+struct NativeNames final {
+  QSet<QString> refused;
+  QFileInfoList infos;
+  bool truncated = false;
+  bool complete = false;
+};
+
+[[nodiscard]] NativeNames inspectNativeNames(const QString &path) {
+  NativeNames result;
+  const QByteArray encoded = QFile::encodeName(path);
+  if (QFile::decodeName(encoded) != path) {
+    return result;
+  }
+  DIR *directory = ::opendir(encoded.constData());
+  if (directory == nullptr) {
+    return result;
+  }
+  qsizetype count = 0;
+  errno = 0;
+  while (const auto *entry = ::readdir(directory)) {
+    const QByteArray bytes(entry->d_name);
+    if (bytes == "." || bytes == "..") {
+      continue;
+    }
+    if (++count > LocalDirectoryLister::maximumEntries) {
+      result.truncated = true;
+      break;
+    }
+    // Keep an initial U+FEFF filename character; it is not a document BOM.
+    const QString decoded = QFile::decodeName(QByteArray("/") + bytes).mid(1);
+    if (QFile::encodeName(decoded) != bytes) {
+      result.refused.insert(decoded);
+    }
+    result.infos.append(QFileInfo(QDir(path).filePath(decoded)));
+    errno = 0;
+  }
+  result.complete = count <= LocalDirectoryLister::maximumEntries && errno == 0;
+  ::closedir(directory);
+  return result;
+}
 
 // Directories sort before files; ties break case-insensitively, then
 // case-sensitively, so ordering never depends on filesystem enumeration order.
@@ -78,16 +128,16 @@ ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
     return result;
   }
 
-  QDir directory(absolutePath);
-  directory.setFilter(QDir::AllEntries | QDir::Hidden | QDir::System |
-                       QDir::NoDotAndDotDot);
-  const QFileInfoList infos = directory.entryInfoList();
-
-  // AGENT-NOTE: A directory that reports readable permission bits can still
-  // return an empty QDir listing on some filesystems this slice already
-  // excludes (network/remote mounts). Local POSIX permission bits are already
-  // checked above, so this slice does not attempt to distinguish "genuinely
-  // empty" from "silently denied" any further.
+  const NativeNames nativeNames = inspectNativeNames(absolutePath);
+  // Use the same native enumeration for displayed rows and identity admission;
+  // a second QDir enumeration could introduce an unchecked decoded alias.
+  const QFileInfoList &infos = nativeNames.infos;
+  result.truncated = nativeNames.truncated;
+  if (!nativeNames.complete && !nativeNames.truncated) {
+    result.error = ListingError::PermissionDenied;
+    result.diagnostic = QStringLiteral("%1 could not be completely enumerated").arg(absolutePath);
+    return result;
+  }
   result.entries.reserve(
       static_cast<qsizetype>(std::min<qsizetype>(infos.size(), maximumEntries)));
   for (const QFileInfo &info : infos) {
@@ -95,7 +145,15 @@ ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
       result.truncated = true;
       break;
     }
-    result.entries.append(entryFor(info));
+    DirectoryEntry entry = entryFor(info);
+    if (!nativeNames.complete || nativeNames.refused.contains(entry.name)) {
+      entry.device = 0;
+      entry.inode = 0;
+      entry.identitySize = 0;
+      entry.modifiedNanoseconds = 0;
+      entry.mode = 0;
+    }
+    result.entries.append(entry);
   }
   std::sort(result.entries.begin(), result.entries.end(), lessThan);
   return result;
