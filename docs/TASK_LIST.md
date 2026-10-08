@@ -1,3 +1,9 @@
+## Current Voice delivery boundary — 2026-10-08T21:27:35+00:00
+
+Accepted Voice desktop e86b77f667a1beb8a9f4f116e246fda92c2d1d38 and Gabbee b4462610de605490336b0c1e702f15b7a45f4b4b are integrated in source. Independent final review c819cd6e3 accepted the exact pair. Manager source/test parity28/28, strict Release build0 and owning4/4 CTest (39Qt, zero failure/skip/blacklist) pass; provider manager98pytest plus2subtests pass1.47s. Root inspected compact normal/2x masked-entry and truthful fallback captures. Gabbee hub and clean normal checkout are fast-forwarded. Signed Gabbee-r6 and desktopR22 package/image/installed credential recovery remain next; R20 is still installed. No real ElevenLabs account authentication or dictation is claimed.
+
+Peripheral Power inventory is a new required outcome, assigned in isolated base373fa539 worktree/ADR0365. Actual UPower exposes speaker50percent and DualSense5percent; implementation is not installed. Android stage/archive passed, guest remains unrun. Windows745 reached two genuine ordinary app windows but failed its focus/input gate; compatibility remains unqualified. Full original ED-01–24 scope stays active. Earlier sections below are historical.
+
 ## Active source milestone — 2026-10-08T20:25:44+00:00
 
 Exact Trash candidate0273a7189 received independent source/native acceptance

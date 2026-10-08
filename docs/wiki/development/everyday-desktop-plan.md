@@ -1,3 +1,7 @@
+## Added peripheral battery requirement — October 8
+
+The owner requires the Power applet to show all battery and charging information exposed by connected peripherals, including Bluetooth and USB mice, game controllers, speakers and headphones. The laptop currently exposes speaker and DualSense battery readings through UPower; the existing desktop decoder excludes them and the popup lacks device rows. This is assigned implementation work, not completed capability. Use a compatible additive public Power service/client inventory, keep peripheral batteries outside laptop aggregation and critical-power policy, and present compact scrollable rows with truthful unknown/coarse values and hotplug updates. Voice credential delivery and the original ED-01–24 outcomes remain required.
+
 ## Integrated Trash checkpoint — 2026-10-08T20:25:44+00:00
 
 Exact Trash candidate0273a7189 received independent source/native acceptance
