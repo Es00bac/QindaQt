@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Narrow short-TMPDIR harness frozen for same-Astra review; unchanged635 fixture, original failure preserved, no retry or resources held.
+- Status: available — One reviewed short-TMPDIR synthetic cohort actual80/80 passed and raw proof preserved; waiting same-Astra evidence review, no resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -281,3 +281,7 @@
 - 2026-10-08T11:36:26+00:00: One authorized cohort stopped first module25.024s/exit-9, heldPID2288372/start47107426 reaped/absent. Actual retained child stderr AF_UNIX path too long from my long TMPDIR evidence path; log has12ok/8FAIL/1incomplete, no final unittest total. Later five modules unrun; source635 unchanged. No retry/repair/runtime; root notified, recommend reviewed short private TMPDIR only. All resources released.
 
 - 2026-10-08T11:41:57+00:00: Root authorized sole source-only short mode700/tmp geometry amendment. Ignored harness AST/hash frozen, full synthetic suffix budget admitted before subprocess; no fixture/source/assertion/deadline/output/HOME/bus or subreaper policy change. Private scratch always retained; deletion requires separate observed settlement. Exact harness review then new cohort grant pending; no execution.
+
+- 2026-10-08T11:48:50+00:00: Root independently read exactharness5234/0adb and Astraa595 SOURCE ACCEPT; granted one invocation with unchanged25/90/1MiB/heldpidfd policy, scratch retained. Immediate harness hash admitted; original5d4f raw untouched. No Wine/preflight/namespace/compiler/Portage/Java/bus/device action.
+
+- 2026-10-08T11:49:56+00:00: Exact0adb oneinvocation exit0; actual summaries33owned/5ledger/12retirement/9deadline/10authority/11prerequisite=80/80, no fails/errors/skips, all heldmodulePIDs reaped/absent. No83 inferred from prospective counts; oldd3af70 remains historical claim. Actual scratch/tmp/w-5xqeorws0700/currentUID/admitted101bytes retained; original5d4f negative unchanged. Frozen raw20/bundle21; no Wine/preflight/native/package actions/resources. Same Astra raw review then separate rootgrant remains.
