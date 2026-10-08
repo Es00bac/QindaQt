@@ -135,7 +135,9 @@ ctest --test-dir build/dev -R '^apps.viewer\.' --output-on-failure
 ```
 
 The eight focused gates render genuine generated PDFs and every advertised
-image format, check password failures/success, navigation/rotation/size bounds,
+image format, check actual displayed red/blue pixels after next/previous page
+navigation (a correct controller frame alone is insufficient), password
+failures/success, navigation/rotation/size bounds,
 latest-open and close fencing, QindaTK UI keyboard paths and 960×680/640×480
 captures, then exercise CLI paths/file URLs and a relocated `Viewer` install.
 Text gates use real Poppler Unicode/markup-like text, copy-restricted and password

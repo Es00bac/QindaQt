@@ -7,6 +7,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickItem>
+#include <QQuickItemGrabResult>
 #include <QQuickWindow>
 #include <QSignalSpy>
 #include <QTest>
@@ -47,6 +48,12 @@ void ViewerUiTest::documentInteractionAndLayouts()
     auto *document = window->findChild<QQuickItem *>(QStringLiteral("documentImage"));
     QVERIFY(viewport && document);
     QVERIFY(document->width() > 0 && document->height() > 0);
+    // AGENT-GUARD: a correct controller frame is not proof of the texture
+    // displayed by the Image provider. Capture the actual item on both pages.
+    const auto displayedRed = document->grabToImage(QSize(32, 32));
+    QVERIFY(displayedRed);
+    QTRY_VERIFY(!displayedRed->image().isNull());
+    QCOMPARE(displayedRed->image().pixelColor(16, 16), QColor(Qt::red));
     QVERIFY(window->grabWindow().save(QStringLiteral(VIEWER_ARTIFACTS_DIR "/viewer-960x680.png")));
 
     auto *next = window->findChild<QQuickItem *>(QStringLiteral("nextPage"));
@@ -55,8 +62,17 @@ void ViewerUiTest::documentInteractionAndLayouts()
         next->mapToScene(QPointF(next->width() / 2, next->height() / 2)).toPoint());
     QTRY_VERIFY(viewer.page() == 1 && !viewer.busy());
     QCOMPARE(viewer.frame().pixelColor(10, 10), QColor(Qt::blue));
+    const auto displayedBlue = document->grabToImage(QSize(32, 32));
+    QVERIFY(displayedBlue);
+    QTRY_VERIFY(!displayedBlue->image().isNull());
+    QVERIFY(displayedBlue->image().save(QStringLiteral(VIEWER_ARTIFACTS_DIR "/viewer-next-page.png")));
+    QCOMPARE(displayedBlue->image().pixelColor(16, 16), QColor(Qt::blue));
     QTest::keyClick(window, Qt::Key_PageUp);
     QTRY_VERIFY(viewer.page() == 0 && !viewer.busy());
+    const auto displayedPrevious = document->grabToImage(QSize(32, 32));
+    QVERIFY(displayedPrevious);
+    QTRY_VERIFY(!displayedPrevious->image().isNull());
+    QCOMPARE(displayedPrevious->image().pixelColor(16, 16), QColor(Qt::red));
     QTest::keyClick(window, Qt::Key_R, Qt::ControlModifier);
     QTRY_VERIFY(viewer.pageSize().height() > viewer.pageSize().width() && !viewer.busy());
     QTest::keyClick(window, Qt::Key_0, Qt::ControlModifier);
