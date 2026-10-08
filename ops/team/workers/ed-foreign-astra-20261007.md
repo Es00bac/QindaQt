@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — corrected rejected archive cpio pin only; repaired981d/3f65 awaits root review, no archive/VM executed.
+- Status: available — archive2305 passed0/onewindowsobject; eighth VM3063/272b proposal awaits rootgrant; laptopheavy released.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -297,3 +297,7 @@
 - 2026-10-08T22:54:25.947355+00:00 — Frozen readiness-only correction and exactoneobject archiveproposal;6fake controls/AST/docs534/strict0. Seventhactualfailure preserved; no newarchive/guest.
 
 - 2026-10-08T22:55:04.024652+00:00 — Root caught accidental cpioSHA digit substitution in unexecuted archiveplan; fixedone digit, preservedrejectedbytes. Sourcecc4f/tests unchanged, no heavy held.
+
+- 2026-10-08T22:56:04.975069+00:00 — Exact981d/3f65 archive2305 started after protected pins pass; main2644922/invocation03ed8e813dc641e1b878c2d80ff71fc4,4CPU5GiB. No retry/guest.
+
+- 2026-10-08T22:57:15.957205+00:00 — Actual readinessarchive all3phases0/22.178s,7295unchangedobjects, pinnedtools/source/heldretirement qualified. Eighthplanfrozenonly.
