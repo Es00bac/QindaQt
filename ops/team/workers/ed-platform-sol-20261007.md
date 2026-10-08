@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Exact eb28 repaired source and static bundle preserved; waiting same-Astra safety recheck before repaired child controls. No resources held.
+- Status: available — First exact635 synthetic attempt stopped on retained AF_UNIX path-length harness failure; resources released, awaiting bounded harness correction review.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -275,3 +275,7 @@
 - 2026-10-08T11:04:30+00:00: Exact reviewer counterexample and unbounded synthetic-release hazard acknowledged; oldd3af70/raw intact. Adding permanent pre/post deadline failure and final-publication boundary facts, plus self-expiring every synthetic generation/finally-ownedpidfd supervisor settlement/reaping with pre-release and communication-timeout controls. Source/AST freeze goes to same Astra before repaired synthetic rerun; no Wine/preflight/namespace/Java/Portage/compiler.
 
 - 2026-10-08T11:26:10+00:00: Root preserved exacteb28 source repair after original-user authorization was recognized; root receipt read and finally refinements inspected. Refreshed own source manifest/bundle12 and AST including embedded3/expanded2 only; no repaired child controls executed, prior d3af70 remains prior-only. No native/preflight/compiler/Portage/Java resources held. Same Astra safety recheck required before execution.
+
+- 2026-10-08T11:32:54+00:00: Root read same-Astra6e54 bounded source ACCEPT closing botha06 blockers and granted one exact635 synthetic cohort, overall90s/module bounds/output caps. Preserving oldd3af70; fresh first failure stops without retry. No Wine/namespace/preflight/compiler/Java/Portage/bus/device action.
+
+- 2026-10-08T11:36:26+00:00: One authorized cohort stopped first module25.024s/exit-9, heldPID2288372/start47107426 reaped/absent. Actual retained child stderr AF_UNIX path too long from my long TMPDIR evidence path; log has12ok/8FAIL/1incomplete, no final unittest total. Later five modules unrun; source635 unchanged. No retry/repair/runtime; root notified, recommend reviewed short private TMPDIR only. All resources released.
