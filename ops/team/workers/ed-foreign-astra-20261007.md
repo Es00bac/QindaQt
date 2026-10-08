@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — fixed guest GCC loader source and archive2200 plan frozen; static12 roots/143ELF/0missing checked; no resources held.
+- Status: working — observing granted archive2200 on laptop4CPU5GiB/120s; mechanical-only driver delta verified; no VM.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -251,3 +251,5 @@
 - 2026-10-08T21:54:18.306518+00:00: Actual secondVM1/11.298s, QEMUretired/inputstable; stockinit reachedbinderfs/config thenlxc-info missingloaderpath, existingpinnedGCCruntime located. No thirdboot.
 
 - 2026-10-08T21:56:44.522675+00:00: Froze bc0 source/d494 plan; libgcc alreadypinnedGCC15, readonlyDT_NEEDED closure0missing. No archive/thirdboot.
+
+- 2026-10-08T21:59:29.770292+00:00: Root granted d494 once; protected loaderguest9886 and driveree48 checked, observer running.
