@@ -564,3 +564,23 @@ readiness, as specified in [ADR-0338](../adr/0338-own-scoped-display-power-and-s
 Asynchronous transport construction alone does not retire compatible power logic:
 missing prerequisites reject the session with owned cleanup and exit2. Installed
 cutover/physical behavior still require manager qualification.
+
+## Replaced executable at fresh login
+
+The session supervisor conditionally retires a Power1 owner only when its
+same-user held process lifetime and exact installed executable deleted marker
+prove package replacement. Healthy owners stay untouched; Power is not added
+to unconditional resident-unit restart. Current-owner/PID/user/starttime/raw
+executable rechecks precede pidfd signalling; a failed observation grants no
+signal. Retirement is bounded and best effort, without brightness, profile
+or preference writes. [ADR-0360](../adr/0360-retire-replaced-power-owner-at-session-entry.md)
+records the predicate and test boundary.
+
+The packaged descriptor and unit execute the installed resident with production
+upstreams. Existing public clients request ordinary D-Bus activation when an
+owner is missing. Current supervisor ordering starts the shell before Session1
+registration, so its Power applet can request activation before Session1; native
+lock runtime starts another Power client after its admitted composition. The
+historical PB-2 activation/arbitration contract above is not a claim that this
+entry point already enforces all those fences, nor does this narrow replaced
+owner repair introduce arbitration or healthy foreign-owner takeover.

@@ -69,6 +69,7 @@ set_target_properties(
 target_compile_definitions(
     qindaqt_session_supervisor_support
     PRIVATE
+        QINDAQT_POWER_SERVICE_INSTALL_PATH="${KDE_INSTALL_FULL_BINDIR}/qindaqt-power-service"
         QINDAQT_POLKIT_AGENT_INSTALL_PATH="${KDE_INSTALL_FULL_LIBEXECDIR}/qindaqt-polkit-agent"
 )
 qindaqt_enable_warnings(qindaqt_session_supervisor_support)
