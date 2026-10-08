@@ -83,6 +83,9 @@ def main():
         # Stock Waydroid creates /var/lib/waydroid with mkdir, not parents.
         # /var is a fresh guest-only tmpfs; no host directory is adopted.
         Path("/var/lib").mkdir(mode=0o755, exist_ok=True)
+        # LXC compiled rootfs mountpoint is distinct from Waydroid image path.
+        # The fresh /var tmpfs hides the package-owned empty mount directory.
+        Path("/var/lib/lxc/rootfs").mkdir(parents=True, mode=0o755, exist_ok=True)
         phase = "private-buses"
         for name in ("system", "session"):
             conf = ROOT / (name + ".conf")
