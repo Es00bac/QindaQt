@@ -24,3 +24,14 @@ target_compile_definitions(
     PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_PROTOCOL_DBUS_DAEMON}"
 )
 
+
+# Actual FILE_SET stage, separate linked client and mandatory negative/restore.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME qindaqt.audio-installed-sdk-closure
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_audio_sdk.py"
+        --source-root "${CMAKE_SOURCE_DIR}"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/installed-sdk-evidence"
+        --cmake "${CMAKE_COMMAND}")
+set_tests_properties(qindaqt.audio-installed-sdk-closure
+    PROPERTIES TIMEOUT 240 LABELS "service;audio;installed;sdk")

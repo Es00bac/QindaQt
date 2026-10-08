@@ -291,3 +291,24 @@ with at most one activation request in flight and a one-second retry interval.
 Activation resolves an exact unique owner before any snapshot request; controls
 are never replayed. Private activation tests start only the public client, so
 they cover a genuinely cold installed service instead of pre-starting it.
+
+## Installed public client header closure
+
+The AudioProtocol production FILE_SET includes audio_console.h, an existing
+public dependency of audio_types.h and the console-related service headers.
+Installed clients consume that same protocol API; a complete source include
+tree cannot substitute for package header delivery.
+
+The owning qindaqt.audio-installed-sdk-closure gate builds the production
+AudioProtocol and AudioClient targets in an isolated fixture and stages their
+actual CMake FILE_SET installation. A separately configured C++20 consumer
+links the staged targets and constructs an inactive AudioClient without
+opening a bus or PipeWire connection. It receives no production source include
+path. Named poison headers after the stage prevent a missing dependency from
+being rescued by a host installation; deleting audio_console.h must fail the
+consumer build, and restoring it must rebuild and run successfully. The gate
+uses plain cmake --build, preserving the harness's native job policy.
+
+This package/SDK closure evidence does not establish live Audio1 backend
+readiness, hardware controls or installed-session behavior. Those remain
+separate service and actual delivery gates.

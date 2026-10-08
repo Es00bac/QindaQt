@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: paused — user requested safe logout/login stopping point; available for later exact repair; all worker resources released
-- Base: adbb1dee30983e98737ffcc0d39d95338b08f589
-- Branch: worker/everyday-windows-proof-20261007
+- Status: working — isolated Core SDK public Audio header export repair and staged consumer preparation; no compiler/native lease
+- Base: a462c415a3678dc8dc96f15bd996abdceea20189
+- Branch: worker/everyday-core-sdk-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -134,3 +134,16 @@
 - 2026-10-08T00:21:35+00:00 — Root accepted exactv6b516 path correction, granted one preflight; actual all8/source12payload rehash and preflightPASS0 private-4rjeakoh. Outera3baa600/current source+wm binding, preflighte8cb/diagnostic4260; wrapperPID1868639/starttime43072803 settled0/no uncertainty, no driver/appdirs. Awaiting separate actual receipt review/execution grant; all prior failures retained.
 
 - 2026-10-08T00:26:36+00:00 — User requested immediate safe stopping point. All new tests/actions held; no v6 application grant issued. Exact v6b516 source/current7dbf preflight receipts frozen, signed toolkit artifact unbuilt and Android licensing/source correspondence unresolved. No owned native/Portage/compiler work running or pending subprocess; all worker compiler/private-bus/offscreen/runtime resources released. No install/session/radio/action initiated. Paused/available until root routes authorized continuation.
+
+- 2026-10-08T01:13:44+00:00 — User resumed; fresh cleana8cf/source8/7/actualpayload12/no-owned-process admission PASS. All5 prior wrapper identities retired and no own fixture commands found. Root independently verifies unchangedb516/a3baa binding and grants exactly one V6 attempt under150s/8MiB/private namespace/prefix bounds. Toolkit not granted.
+
+- 2026-10-08T01:16:24+00:00 — Exactly grantedv6 app attempt EXIT1 private-wq1tpp4s; plugin/compositor started but native log explicitly missing/tmp/.X11-unix, driver refused display/bus before Wine/prefix. Driver2ed19d12/outere991f7d9/native1fbbb60f receipts retained; wrapper1885276/starttime43389116 settled1/no uncertainty, resources RELEASED immediately. Exact fork24d0c6 source confirms owned sticky directory prerequisite. Minimal source-only execute-stage FD-verified private tmpfs directory v7c8ad90455da6dd72b3acc9d4c2f3046085132a2300ca8962cd675e9287d490b9 frozen; ordinary own-cache directory tests3/3/AST1 pass. No native repeat; root holds lease.
+
+- 2026-10-08T01:19:04+00:00 — Claimed clean root-created Claude usage worktree exacta462. Actual qinda installed Claude2.1.280/VDB and --version agree; existing publisher already projects documented five-hour/seven-day percentage/reset fields with context-token/session-cost scope. Availability-only normalized report audit performed without settings/auth/transcript reads or raw/numeric output. Windows/toolkit immutable boundaries untouched; source-only/no compiler or provider inference.
+
+- 2026-10-08T01:27:32+00:00: Switched from held Claude source work to read-only core startup/package inventory after fresh installed desktop Audio/Bluetooth report. Exact a462 base, explicit caller session buses, supervisor child order, units and ADR0170/0276 traced; qinda VDB r13 is not laptop r16 evidence. No live bus, service, device, radio, package or compiler action.
+- 2026-10-08T01:27:32+00:00: Handed off core startup matrix and qualified activation/failure requirements. Uncommitted Claude parser/test authoring is held and excluded from this board-only commit; no parser gap or production repair claimed. Available for exact owner-directed repair after actual client/backend findings.
+
+- 2026-10-08T01:38:20+00:00: Claimed Core SDK at exact a462 in new isolated worktree; Claude three WIP files preserved elsewhere. Confirmed existing public audio_console.h omitted from production FILE_SET. Static287 service-header/278 include-edge audit finds only three unresolved edges to that same header. Preparing actual production FILE_SET stage and isolated consumer/header poison gate; Astra owns Audio implementation and compiler lease.
+
+- 2026-10-08T01:42:15+00:00: Core SDK source candidate prepared: production audio_console.h FILE_SET fix, actual production install/export fixture, independent stage-only linked client, source/host header poison, deletion/restoration gate. Python AST/whitespace and docs530/strict MkDocs pass; compiler and runtime not executed. Manager approved exact own test registration; native lease requested after Astra. Baseline installed laptop failure attributed to manager, not own reproduction.
