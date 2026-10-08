@@ -5,8 +5,12 @@ Settings device discovery and the AI popup opening. Compact b0210bd/00c427f is
 independently source-accepted and root visually accepted at owner scale.
 Integrated runtime freeze 5858bcc passes strict 28-target build, 33/33 owning
 CTests with 185 Qt checks and four profile/resolution rows with 88 Qt checks.
-The compact popup and Settings page are not installed. R18 source14e4406 and
-overlay af4e8ed are prepared for exact review before a signed build.
+The compact popup and Settings page are not installed. Initial R18 recipe
+14e4406/overlay af4e8ed passed source review, but the private Portage build
+failed before compilation at dependency resolution. The nonexistent
+dev-libs/dbus atom is being corrected to actual sys-apps/dbus, with a genuine
+pretend resolver gate and exact independent recheck required before retry.
+Failure receipt 4fe2a58ac is preserved; runtime/archive identity is unchanged.
 
 Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 gates pass.
 Bluetooth source 3040022/7686226 is integrated at 3b4275ace with independently

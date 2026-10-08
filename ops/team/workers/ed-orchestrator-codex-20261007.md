@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Preserve compact Audio37/273 acceptance and review the immutable R18 core delivery while full-plan work continues.
+- Status: working — Correct the R18 dependency contract, preserve the failed resolver evidence and report full-plan progress while exact recipe repair/review proceeds.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -84,3 +84,5 @@
 - 2026-10-08T06:32:29+00:00 — Independently verifies all45 Audio raw payloads on both hosts and701389-byte/47-member archive9e0ebf1; old168 header-only2 negatives and fixedb02133/185 pass. Root actual owner-pixel and Settings visual ACCEPT. Author-only receipt EOF repair00c preserves src/tests; exact worker-board bytes resolve sole merge conflict, integration5858bcc. Root holds sole qinda24/24 strict owning+profile/resolution gate; laptop released, Media992 source-only Astra review. R17 unchanged.
 
 - 2026-10-08T06:46:23+00:00 — Integrated5858 actual strict28 build0; owning33/185 andprofile-resolution4/88 pass, all zero fail/skip/blacklist. qinda native lane released; confirmedR18freeze5858 and routed exact14/af recipe review to Astra. Root45-payload/archive/pixel acceptance preserved. Mediaec1 source acceptance and Displaycb8 finding imported verbatim, runtime/host gates open. InstalledR17 unchanged; full goal/ETA unchanged.
+
+- 2026-10-08T07:09:48+00:00 — Actual R18 private Portage build failed before configure/compiler/signing on the nonexistent dev-libs/dbus atom I specified. Platform preserved exact failure4fe2a58ac, released all processes and owns source-only mirrored sys-apps/dbus repair plus genuine pretend resolver gate; the same Astra reviewer rechecks exact successor pins. Runtime5858/archive620ad2 and installedR17 remain unchanged. Corrected normative ADR0359/Bluetooth dependency provider and current status docs; historical receipts preserved. Owner confirms inventory but reports wasted space in both Audio surfaces. Full remaining estimate50workingdays/range30–80, immediate core/UI1–3; no whole-journey credit.

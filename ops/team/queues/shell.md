@@ -7,8 +7,11 @@ Compact b021/00c is accepted after independent source review and root owner-scal
 pixels. Integration5858bcc passes strict28 targets,33/185 owning and4/88
 profile/resolution gates. The Settings page is denser; bounded popup scrolling,
 separate stream controls and generic Settings action are source-delivered.
-No compact presentation is installed. R18 source14e4406/overlay af4e8ed awaits
-independent recipe acceptance, signed build and installed qualification.
+No compact presentation is installed. Initial R18 source14e4406/overlay
+af4e8ed passed source review; its private build failed at dependency resolution
+before compilation. Platform corrects the nonexistent atom to sys-apps/dbus
+and proves actual pretend resolution before exact independent recheck and a
+renewed build lease. No R18 artifact or installed change exists.
 Existing mutation/grant/identity/owner-loss and accessibility behavior remains.
 
 Clipboard22/172, Power6/56 and Bluetooth40/282 integrated gates pass; installed

@@ -283,6 +283,6 @@ that refusal remains safe. Root independently accepts the exact raw evidence
 and SDK poisons; integration at 3b4275ace passes the strict 33-target build,
 40 owning CTests and 282 Qt checks. Full effective installed helper-unit
 qualification, Portage delivery and ordinary selected-radio control remain
-open. The next immutable recipe must declare dev-libs/dbus directly. A separate
+open. The next immutable recipe must declare sys-apps/dbus directly. A separate
 transient O_RDWR open/fstat/close with zero bytes transferred proves access
 only, not radio mutation or helper behavior.

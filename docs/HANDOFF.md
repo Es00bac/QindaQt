@@ -40,9 +40,14 @@ Prior 915/435 and failed unknown-fixture evidence remain separate.
 The compact repair is integrated at 5858bccdf82808a74a6bab358d8e6f08c7ac256a.
 The manager strict 28-target build passes; actual owning 33/33 CTests report
 185/0/0/0 Qt and four profile/resolution rows report 88/0/0/0. Both native lanes
-are released. R18 uses this confirmed runtime freeze; exact source recipe
-14e4406/overlay af4e8ed await independent acceptance and a signed build.
-The new recipe declares direct dev-libs/dbus build/runtime dependencies.
+are released. R18 uses this confirmed runtime freeze. Initial exact recipe
+14e4406/overlay af4e8ed passed source review aca238, but its actual private
+Portage build stopped at dependency resolution before compilation or signing:
+the declared dev-libs/dbus atom does not exist. Failure receipt 4fe2a58ac and
+the original build log/status/argv are preserved. Gentoo sys-apps/dbus supplies
+the required public headers and library; Platform is preparing the minimal
+mirrored DEPEND/RDEPEND correction and actual pretend resolver gate for the
+same independent reviewer. No R18 artifact or installed change follows.
 No compact UI or newer core repair is installed yet. The generic Settings
 action does not claim an Audio-specific route.
 
