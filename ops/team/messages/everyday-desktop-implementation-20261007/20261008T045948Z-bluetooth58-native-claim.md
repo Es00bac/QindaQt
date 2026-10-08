@@ -1,0 +1,3 @@
+# Bluetooth58 native lease claim
+
+Exact source58af9d542bf67281d153ad2b4f432c9a63cd9ac4 root SOURCE ACCEPT. Product/test diff empty. Sole qinda compiler/private-fixture lane: strict Debug -j24 -l24, serial CTests. Fresh private700 XDG, invalid host buses and removed starter/display endpoints. All six old-source/fixture files now byte/hash verified from committed provenance. Original hand-transcribed hash preflight failed; non-fail-fast script still configured old harness0 before stopping. That attempt is preserved; no target build/test ran before corrected verification. Native sequence old762 configure/build/run, main32 generated registry, standalone7, both staged SDK poisons/restores. No host/device/radio/installed actions.

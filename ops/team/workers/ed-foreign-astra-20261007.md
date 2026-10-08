@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: available — Bluetooth58af test-only repair frozen for root recheck; Audiofc378 NeedsFix03c7 complete; ready for exact repair or upstream lifetime proposal review.
+- Status: working — granted sole qinda strict Bluetooth native batch at exact58af source; old762 control then main/applet/SDK gates.
 - Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
-- Resources: explicitly RELEASED all qinda compiler/private-runtime resources to root; source only. No host bus/device/radio/services or installed actions.
+- Resources: sole qinda compiler/private-fixture lease granted by root; strict Debug -j24 -l24, serial CTests; no host bus/radio/device/installed actions.
 ## Updates
+
+- 2026-10-08T04:59:48Z — Root58af SOURCE ACCEPT; native lease claimed. Exact six old762/original8c02 source files verified against committed provenance, current product/test bytes58af match, strict Debug cache/private700 XDG verified. A transcribed hash preflight failed and non-fail-fast orchestration still configured old harness0; preserved, no target build/test then. Corrected to committed full-hash manifest before build, fail-fast restored.
 
 - 2026-10-08T04:55:34Z — Handoff: Bluetooth58af9d542 exact test-only descendant pushed, production remains04a6; no new native execution. Root recheck/grant pending. Audiofc378 NeedsFix03c7 delivered with direct source/package evidence. Resources none; available for same-reviewer repairs or separate proposed Portage lifetime patch review, not claiming program completion.
 
