@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — recover installed Audio/Bluetooth and verify core service readiness; coordinate exact Audio/SDK review and Portage repair
+- Status: working — deliver accepted Audio repair, diagnose remaining Bluetooth power failure, verify core-service lifetime and coordinate clipboard privacy recovery
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -59,3 +59,5 @@
 - 2026-10-08T01:13:44+00:00: User returned and goal resumed. Actual running laptop shell209845 matches installedr16 SHA2564881f914; no desktop interruption. Corrected source-of-truth hubmain fromd728 to preserveddd631 via explicit hub push (origin is GitHub). Platform granted one exactv6 app fixture only after direct archive8/source7/payload12 rehash0issues; no retry/toolkit grant. Astra resumes manifest/source and Media exact411 read-only review. Root Viewer strict aggregate repair and old/fixed keyboard tests remain isolated.
 
 - 2026-10-08T01:41:00+00:00 — Owner confirms fresh r16 AI popup and reports Audio/Bluetooth failure. Actual Audio1 Degraded/backend-malformed with zero rows, upstream devices present; same normal user bus, no startup absence. Bluetooth2 raw Ready adapter off, typed/control gates open. Installed public SDK compile fails missing exported audio_console.h. Astra Audio sole qinda native lease; Media exact2a361 source review; Platform isolated SDK repair source-only; root laptop read-only health probes. Windows v6 failed pre-Wine X11 directory; v7 ungranted. No entire ED completion or host mutation.
+
+- 2026-10-08T02:14:14+00:00 — Integrated independent Audio e053/d8 and SDK022; own strict owning24/24/221Qt plus real stage/poison/restoration passed, docs530/strict0. Exactold/fixed laptop mapper rejected/accepted; sanitized21-member81920-byte proofSHA246346 preserved qinda. Native Bluetooth power stillFails after selectedrfkill unblock; upstreamFailed notBlocked, no recovery claim. ActualPower runningSHA differs installed, Network/BT match. Media clipboard source/Astra trust review, Platform next lifecycle/Portage source packet. Root native Audio resources released; Printing/copy integrated gates and signed R17 remain next.
