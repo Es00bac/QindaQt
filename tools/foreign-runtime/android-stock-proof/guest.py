@@ -105,7 +105,7 @@ def main():
         if "ro.hardware.egl=swiftshader" not in properties:
             raise RuntimeError("software-renderer-not-selected")
         phase = "stock-container"
-        container = spawn(["/usr/bin/waydroid", "container", "start"])
+        container = spawn(["/usr/bin/waydroid", "--details-to-stdout", "container", "start"])
         phase = "container-admission"
         import dbus
         bus = dbus.SystemBus()
