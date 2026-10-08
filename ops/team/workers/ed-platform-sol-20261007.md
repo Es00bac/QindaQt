@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: waiting — Core SDK actual old/fixed closure gates qualified and lease released; exact candidate awaits manager independent review/integration
-- Base: a462c415a3678dc8dc96f15bd996abdceea20189
-- Branch: worker/everyday-core-sdk-20261008
+- Status: waiting — conditional replaced Power1 owner source candidate ready for independent review/native lease; no owned compiler/runtime process
+- Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
+- Branch: worker/everyday-power-startup-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -153,3 +153,7 @@
 - 2026-10-08T01:45:55+00:00: Manager granted sole focused compiler lease after Astra release. Observed native MAKEOPTS -j24 -l24; exact a462 Audio modules git-archived to isolated old source, first baseline gate executing. Fixture Wall/Wextra/Werror only, no stronger warning claim; private nonexistent bus addresses, no host install.
 
 - 2026-10-08T01:47:46+00:00: Direct Core SDK olda462 stage8headers fails isolated consumer1 at missing audio_console poison; corrected realFILE_SET stage9headers passes full driver0,10 child steps with only required negative exit1, restored build/run0. Consumer actual C++20 Wall/Wextra/Werror stage+poison includes, no source fallback. Native MAKEOPTS24/24 observed; all compiler/private fixture resources released. Exact source b6 native-tested, pending manager review; no install/liveAudio claim.
+
+- 2026-10-08T02:22:54+00:00: Claimed isolated Power startup outcome exact5b7f; parent actual laptop deleted Power1 process differs installed bytes, Network/Bluetooth match. Audited current Audio-only refresh query/retirement and ADR0025 session arbiter wording. Sent narrow Power reuse contract and requested confirmation of physical restart/foreign-binding fence before adopting authority; no production mutation/compiler/native run.
+
+- 2026-10-08T02:30:35+00:00: Manager chose retire-only closed-list extension, no unconditional Power refresh. Authored pidfd user/PID/starttime/deleted-executable proof across acquisition and exact unique-owner/PID/identity recheck; Private alwaysno signal. ADR0360Proposed and0094 consequences preserve historical0025 and actual shell-beforeSession1 limit. Focused modeled identity/owner negatives plus actual owned-child pidfd fixtures prepared; docs531 strict/shape/whitespace pass, no native run or completion claim. Awaiting exact source review and explicit lease.

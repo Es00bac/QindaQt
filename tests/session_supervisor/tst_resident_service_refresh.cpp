@@ -169,6 +169,14 @@ private Q_SLOTS:
         const QString processDirectory = proc.filePath(QString::number(owner.processId()));
         QVERIFY(QDir().mkpath(processDirectory));
         const QString exe = processDirectory + QStringLiteral("/exe");
+        QFile actualStat(QStringLiteral("/proc/%1/stat").arg(owner.processId()));
+        QVERIFY(actualStat.open(QIODevice::ReadOnly));
+        QFile modeledStat(processDirectory + QStringLiteral("/stat"));
+        QVERIFY(modeledStat.open(QIODevice::WriteOnly));
+        const QByteArray processStat = actualStat.readAll();
+        QCOMPARE(modeledStat.write(processStat), static_cast<qint64>(processStat.size()));
+        modeledStat.close();
+
 
         // An up-to-date executable, or a Private session, is never touched.
         QVERIFY(QFile::link(QStringLiteral("/usr/bin/qindaqt-settings-service"), exe));

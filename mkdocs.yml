@@ -554,3 +554,4 @@ nav:
       - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md
       - "0355: Preserve source bytes during cross-device moves": adr/0355-preserve-source-bytes-during-cross-device-moves.md
       - "ADR-0356: Delegate printer/scanner Settings to installed tools": adr/0356-delegate-printer-and-scanner-settings-to-installed-tools.md
+      - '0360: Retire replaced Power1 at session entry': adr/0360-retire-replaced-power-owner-at-session-entry.md

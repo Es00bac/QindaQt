@@ -287,3 +287,18 @@ set_tests_properties(qindaqt.native-power-startup PROPERTIES TIMEOUT 30
 
 # ADR-0348: bounded replacement admission and exact-owner shutdown.
 add_subdirectory(keyring_lifetime)
+
+# ADR0360: replaced Power owner admission, kernel lifetime and bounded return.
+qt_add_executable(qindaqt_replaced_power_owner_tests tst_replaced_power_owner.cpp)
+target_include_directories(qindaqt_replaced_power_owner_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_replaced_power_owner_tests
+    PRIVATE QindaQt::SessionSupervisorSupport Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_replaced_power_owner_tests PRIVATE
+    QINDAQT_TEST_POWER_PATH="${KDE_INSTALL_FULL_BINDIR}/qindaqt-power-service"
+    QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER="$<TARGET_FILE:qindaqt_session_resident_service_refresh_publisher>")
+add_dependencies(qindaqt_replaced_power_owner_tests qindaqt_session_resident_service_refresh_publisher)
+qindaqt_enable_warnings(qindaqt_replaced_power_owner_tests)
+add_test(NAME qindaqt.session-replaced-power-owner
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_replaced_power_owner_tests>)
+set_tests_properties(qindaqt.session-replaced-power-owner
+    PROPERTIES TIMEOUT 20 LABELS "session;dbus;power")
