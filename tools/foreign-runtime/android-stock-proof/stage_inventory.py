@@ -9,6 +9,18 @@ import os
 from pathlib import Path, PurePosixPath
 import stat
 
+def staged_mode(name, source_mode):
+    """Only the two reviewed util-linux helpers lose their installed setuid.
+
+    This is a proposed stage-copy mode, not permission to modify host inputs.
+    Other privileged objects remain refused by archive_paths; no broad strip.
+    """
+    if name in {"usr/bin/mount", "usr/bin/umount"} and source_mode == 0o4755:
+        return 0o755
+    if source_mode & 0o6000:
+        raise ValueError("unreviewed-privileged-stage-input")
+    return source_mode
+
 def guest_target(root, relative):
     pending = list(PurePosixPath(relative).parts)
     resolved = []

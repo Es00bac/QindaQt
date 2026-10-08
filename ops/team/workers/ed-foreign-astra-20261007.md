@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — Authoring bounded Android laptop resource profile and read-only Portage input inventory; no package, stage or VM execution.
+- Status: available — Android laptop profile/source input candidate frozen for independent review; no stage, package or guest execution. Available for Files native evidence.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -209,3 +209,5 @@
 - 2026-10-08T19:53:06.342877+00:00 — Laptop host KVM/kernel/runtime availability read-only confirmed; unchanged8GiB fixture exceeds5GiB laptop cap. No compatibility/boot claim. Switching to exact Files551 source authority/transactions/raw-name review as root requested.
 
 - 2026-10-08T20:00:11.805016+00:00 — Root assigned laptop4vCPU/4GiB profile at exactf343. Existing qinda profile preserved; minimal manifest-to-envelope/argv threading and installed public closure checks underway.
+
+- 2026-10-08T20:15:06.895290+00:00 — Fixed laptop profile/source freeze:25pure/AST10/strictdocs0; installed public inventory6,726objects/172owners/653MB with0selected static issues, preserved exact raw. Stage/boot/runtime remain open; no host software change.
