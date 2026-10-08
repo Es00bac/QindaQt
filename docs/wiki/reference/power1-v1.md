@@ -266,3 +266,29 @@ loss clear scopes and leases. No automatic mutation replay occurs. Method bool
 replies are not authenticated scope truth: use RequestIdleInhibitorStateWithReceipt
 and the public PowerClient cache. The registrar's cancel/destructor sends only a
 withdrawal to the original unique owner/epoch; it never registers on replacement.
+
+## Additive peripheral battery receipts
+
+[ADR-0365](../adr/0365-publish-peripheral-batteries-through-power1-receipts.md)
+extends the same owner/object with `RequestPeripheralSnapshotWithReceipt(s) -> b`,
+`PeripheralSnapshotReceipt(say)` targeted to the caller, and
+`PeripheralsChanged(tt)`. The existing snapshot signature and capabilities are
+unchanged. Method success is dispatch status only; the one-use nonce and actual
+current-owner signal authenticate the canonical payload.
+
+Peripheral schema1 uses big-endian QDataStream Qt_6_0 fields: magic `0x51503150`,
+u32 schema, u64 epoch/revision, u32 availability, length-prefixed UTF-8 reason,
+u32 omitted count, u8 truncation and u32 row count. Each row has u64 handle epoch,
+UTF-8 opaque ID, u32 kind, UTF-8 vendor/model, u8 present/percentage-known,
+f64 percentage, u32 coarse level/charge state, u8 time-to-empty-known and i64
+seconds, u8 time-to-full-known and i64 seconds. Strings use u32 byte lengths;
+booleans are exactly 0 or 1. Bounds are 128 KiB payload, 64 rows, 64-byte reason,
+128-byte opaque IDs, 256-byte names and 4096 omitted rows. A truncated snapshot
+has positive omission count and Degraded availability. Unknown percentages and
+times are canonical zero; known times are positive and at most 315360000s.
+Duplicate IDs, bad enums/UTF-8, mismatched handle epochs and trailing bytes reject.
+
+Local kinds are Other, Mouse, Keyboard, Controller, Headset, Speaker, Headphones,
+Phone, Tablet, Computer, Pen, Touchpad, MediaPlayer, Remote, Camera and Wearable
+in that order from zero. These are not UPower ordinals. Unknown upstream types
+map to Other. No peripheral enters system-battery aggregation or action policy.

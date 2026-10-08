@@ -37,6 +37,20 @@ QQuickItem *popupContent(QQuickItem *root)
 
 const QString kOwner = QStringLiteral(":1.42");
 
+class FakePeripheralTransport final : public Power::PeripheralTransport {
+public:
+    QString owner; quint64 token=0;
+    void bind(const QString &value) override { owner=value; token=0; }
+    void request(quint64 value) override { token=value; }
+    void cancel() override { token=0; }
+    void publish(const Power::PeripheralSnapshot &snapshot) {
+        QByteArray payload;
+        QVERIFY(Power::encodePeripheralSnapshot(snapshot,payload));
+        const auto request=token; token=0;
+        Q_EMIT receipt(owner,request,payload);
+    }
+};
+
 class StubSessionActions final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool canLock MEMBER canLock NOTIFY availabilityChanged)
@@ -139,6 +153,7 @@ class PowerAppletQmlTests final : public QObject
 
 private Q_SLOTS:
     void compiledAppletSupportsKeyboardAndAccessibility();
+    void peripheralInventoryScrollsAndPreservesLaptopSummary();
 };
 
 void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
@@ -298,6 +313,99 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QTRY_COMPARE(QGuiApplication::focusWindow(), popupContent(root)->window());
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
+}
+
+void PowerAppletQmlTests::peripheralInventoryScrollsAndPreservesLaptopSummary()
+{
+    FakePowerTransport transport;
+    Power::PowerClient client(&transport);
+    FakePeripheralTransport peripheralTransport;
+    Power::PeripheralClient peripherals(&client,&peripheralTransport);
+    PowerAppletController controller(&client,true,true);
+    controller.setPeripheralClient(&peripherals);
+    publishReady(client,transport);
+    const QString batteryLabel=controller.batteryLabel();
+    peripherals.start();
+    Power::PeripheralSnapshot inventory;
+    inventory.epoch=client.snapshot().epoch; inventory.revision=1;
+    inventory.availability=Power::Availability::Degraded;
+    inventory.omittedCount=2; inventory.truncated=true;
+    for(int i=0;i<64;++i) {
+        Power::PeripheralBattery row; row.handle={inventory.epoch,QString::number(i)};
+        row.model=QStringLiteral("Controller %1").arg(i);
+        row.kind=Power::PeripheralKind::Controller; row.percentageKnown=true;
+        row.percentage=5; row.level=Power::BatteryLevel::None;
+        inventory.devices.push_back(row);
+    }
+    peripheralTransport.publish(inventory);
+    QCOMPARE(controller.peripheralRows().size(),64);
+    QVERIFY(controller.peripheralDiagnostic().contains(QStringLiteral("2")));
+    QCOMPARE(controller.batteryLabel(),batteryLabel);
+    QQmlEngine engine;
+    engine.addImportPath(
+        QStringLiteral(QINDAQT_POWER_APPLET_QML_IMPORT_PATH));
+    QString iconError;
+    QVERIFY2(installResolvedIconFixture(
+                 engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
+                 {QStringLiteral("battery-060")}, &iconError),
+             qPrintable(iconError));
+    QVERIFY(publishTokens(engine));
+    QQmlComponent component(&engine);
+    component.loadFromModule(QStringLiteral("QindaQt.Shell.PowerApplet"),
+                             QStringLiteral("PowerApplet"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> owned(component.createWithInitialProperties(
+        {{QStringLiteral("access"), QVariant::fromValue(&controller)},
+         {QStringLiteral("theme"), testTheme()}}));
+    QVERIFY2(owned != nullptr, qPrintable(component.errorString()));
+    auto *root = qobject_cast<QQuickItem *>(owned.get());
+    QVERIFY(root != nullptr);
+
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 30);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    auto *summary = root->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletSummary"));
+    QVERIFY(summary != nullptr);
+    QCOMPARE(root->width(), 62.0);
+    QCOMPARE(root->height(), 28.0);
+    QCOMPARE(summary->width(), root->width());
+    auto *summaryIcon = summary->findChild<QQuickItem *>(
+        QStringLiteral("powerAppletIcon"));
+    QVERIFY(summaryIcon != nullptr);
+    QVERIFY(hasResolvedProviderSource(summaryIcon,
+                                      QStringLiteral("battery-060")));
+    summary->forceActiveFocus();
+    QVERIFY(summary->hasActiveFocus());
+    QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
+
+    QObject *popup = root->findChild<QObject *>(
+        QStringLiteral("powerAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QTRY_VERIFY(popup->property("opened").toBool());
+    QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(popupContent(root)->window() != &window);
+    QVERIFY(popup->property("height").toReal() > window.height());
+
+
+    const auto rows=visualItemsNamed(popupContent(root),QStringLiteral("powerAppletPeripheralRow"));
+    QCOMPARE(rows.size(),64);
+    auto *scroll=popupContent(root);
+    QVERIFY(popup->property("height").toReal()<=600);
+    QVERIFY(scroll->property("contentHeight").toReal()>scroll->height());
+    auto *flickable=scroll->property("contentItem").value<QQuickItem *>();
+    QVERIFY(flickable);
+    flickable->setProperty("contentY",flickable->property("contentHeight").toReal()-flickable->height());
+    QTRY_VERIFY(flickable->property("contentY").toReal()>0);
+    QAccessibleInterface *last=QAccessible::queryAccessibleInterface(rows.last());
+    QVERIFY(last); QVERIFY(last->text(QAccessible::Name).contains(QStringLiteral("5%")));
+    transport.announceOwner(QString{});
+    QTRY_VERIFY(controller.peripheralRows().isEmpty());
+    QVERIFY(!controller.peripheralDiagnostic().isEmpty());
 }
 
 QTEST_MAIN(PowerAppletQmlTests)

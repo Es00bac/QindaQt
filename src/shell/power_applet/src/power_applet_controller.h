@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/services/power_client/power_client.h>
+#include <qindaqt/services/power_client/peripheral_client.h>
 #include <qindaqt/shell/power_applet/brightness_request_state.h>
 #include <qindaqt/shell/power_applet/power_applet_types.h>
 
@@ -29,6 +30,8 @@ class PowerAppletController final : public QObject
     Q_PROPERTY(QString batteryLabel READ batteryLabel NOTIFY stateChanged)
     Q_PROPERTY(QString accessibleName READ accessibleName NOTIFY stateChanged)
     Q_PROPERTY(QString accessibleDescription READ accessibleDescription NOTIFY stateChanged)
+    Q_PROPERTY(QVariantList peripheralRows READ peripheralRows NOTIFY stateChanged)
+    Q_PROPERTY(QString peripheralDiagnostic READ peripheralDiagnostic NOTIFY stateChanged)
     Q_PROPERTY(QVariantList profileRows READ profileRows NOTIFY stateChanged)
     Q_PROPERTY(QVariantList keyboardRows READ keyboardRows NOTIFY stateChanged)
     Q_PROPERTY(bool operationPending READ operationPending NOTIFY stateChanged)
@@ -43,6 +46,10 @@ public:
                                    QObject *sessionActions = nullptr,
                                    QObject *parent = nullptr);
 
+    // Borrowed optional sibling must share the thread and outlive this facade.
+    void setPeripheralClient(Power::PeripheralClient *client);
+    [[nodiscard]] QVariantList peripheralRows() const;
+    [[nodiscard]] QString peripheralDiagnostic() const;
     [[nodiscard]] QString phase() const;
     [[nodiscard]] QString diagnostic() const { return m_model.diagnostic; }
     [[nodiscard]] bool hasBattery() const noexcept { return m_model.summary.present; }
@@ -84,6 +91,7 @@ private:
         const Power::OperationResult &result) const;
 
     Power::PowerClient *m_client = nullptr;
+    Power::PeripheralClient *m_peripherals = nullptr;
     bool m_powerReadGranted = false;
     bool m_powerControlGranted = false;
     PowerAppletModel m_model;

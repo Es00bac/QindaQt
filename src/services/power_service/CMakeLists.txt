@@ -17,6 +17,8 @@ target_sources(
         src/power_service_assembly.cpp
         src/power_service_assembly_p.h
         src/power_service_coordinator.cpp
+        src/peripheral_service.cpp
+        src/peripheral_service_object.cpp
         src/power_service_object.cpp
         src/power_service_object_p.h
         src/idle_consumer_authority.cpp
@@ -35,6 +37,8 @@ target_sources(
         src/adapters/production_battery_collaborator.cpp
         src/adapters/sysfs_backlight_source.cpp
         src/adapters/upower_battery_collaborator.cpp
+        src/adapters/peripheral_decoder.cpp
+        src/adapters/peripheral_decoder_p.h
         src/adapters/upower_device_decoder.cpp
         src/adapters/upower_device_decoder_p.h
         src/adapters/upstream_composition.cpp

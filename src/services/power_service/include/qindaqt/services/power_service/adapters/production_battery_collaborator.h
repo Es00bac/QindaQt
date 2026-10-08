@@ -51,6 +51,7 @@ private:
     quint64 m_generation = 0;
     quint64 m_nextGeneration = 0;
     bool m_haveUpowerFacts = false;
+    quint64 m_upowerGeneration = 0;
     bool m_running = false;
 };
 

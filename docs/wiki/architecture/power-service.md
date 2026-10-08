@@ -584,3 +584,22 @@ lock runtime starts another Power client after its admitted composition. The
 historical PB-2 activation/arbitration contract above is not a claim that this
 entry point already enforces all those fences, nor does this narrow replaced
 owner repair introduce arbitration or healthy foreign-owner takeover.
+
+## Peripheral battery inventory
+
+[ADR-0365](../adr/0365-publish-peripheral-batteries-through-power1-receipts.md)
+adds an independent read-only peripheral domain to the existing Power1 owner.
+UPower non-system-supply batteries flow through separate `PeripheralFacts`,
+canonical `PeripheralSnapshot` values and the public sibling `PeripheralClient`.
+The original supply inventory, eight-supply bound, aggregate and critical
+battery policy are unchanged. The Power popup shows device names, exposed
+exact/coarse levels, charge state and only reported estimates in a scrollable
+surface. Unknown upstream kinds remain visible as Other; omissions and the
+independent 64-row truncation bound are visible.
+
+The sibling transport reuses Power1's targeted nonce receipt authority pattern.
+It borrows current owner/epoch from the existing public PowerClient; no new
+owner watcher, shell UPower connection or native receiver is introduced.
+Malformed peripheral data and optional-method absence affect only device rows.
+
+Manager integration preserves all38 owning source/test paths and passes strict Release19targets plus22/22 owning CTest (193Qt, zero failures/skips). Independent source and native evidence reviews accepted the exact candidate. Installed full-shell and real peripheral inventory checks remain separate release gates.

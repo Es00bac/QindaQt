@@ -40,3 +40,9 @@ add_test(
 set_tests_properties(
     qindaqt.power-protocol-backlight-selection PROPERTIES LABELS "service;power;pure"
 )
+
+qt_add_executable(qindaqt_peripheral_protocol_tests tst_peripheral_protocol.cpp)
+target_link_libraries(qindaqt_peripheral_protocol_tests PRIVATE QindaQt::PowerProtocol Qt6::Test)
+
+add_test(NAME qindaqt.peripheral-protocol COMMAND qindaqt_peripheral_protocol_tests)
+set_tests_properties(qindaqt.peripheral-protocol PROPERTIES LABELS "power;peripheral" TIMEOUT 30)

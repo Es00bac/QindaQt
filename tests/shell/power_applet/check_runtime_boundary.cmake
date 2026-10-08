@@ -8,6 +8,7 @@ set(runtime_root "${SOURCE_ROOT}/src/shell/power_applet")
 file(GLOB applet_runtime_sources
     "${runtime_root}/src/power_applet_controller.h"
     "${runtime_root}/src/power_applet_controller.cpp"
+    "${runtime_root}/src/peripheral_presentation.cpp"
     "${runtime_root}/qml/*.qml")
 set(composition_sources "")
 foreach(candidate IN ITEMS

@@ -3,6 +3,8 @@
 #include <qindaqt/services/power_service/adapters/upower_battery_collaborator.h>
 
 #include "upower_device_decoder_p.h"
+#include "peripheral_decoder_p.h"
+#include <QtCore/QPointer>
 #include "upstream_dbus_util.h"
 
 #include <QtCore/QHash>
@@ -35,6 +37,8 @@ struct UpowerBatteryCollaborator::RefreshCycle {
     quint64 serial = 0;
     QString owner;
     QHash<QString, UpowerDeviceTruth> devices;
+    QHash<QString, PeripheralBattery> peripherals;
+    quint32 omittedPeripherals = 0;
     bool serviceReady = false;
     bool enumerationReady = false;
     bool onBattery = false;
@@ -349,6 +353,10 @@ void UpowerBatteryCollaborator::readDeviceProperties(
                 failRefresh(cycle, QStringLiteral("upower-malformed"));
                 return;
             }
+            PeripheralBattery peripheral;
+            const auto decoded = decodePeripheral(objectPath, properties, peripheral);
+            if (decoded == PeripheralDecode::Accepted) cycle->peripherals.insert(objectPath, peripheral);
+            else if (decoded == PeripheralDecode::Malformed) ++cycle->omittedPeripherals;
             cycle->devices.insert(objectPath, std::move(truth));
             --cycle->pendingDevices;
             tryPublish(cycle);
@@ -388,7 +396,19 @@ void UpowerBatteryCollaborator::tryPublish(
             facts.supplies.push_back(truth.supply);
         }
     }
+    PeripheralFacts peripherals;
+    peripherals.omittedCount = cycle->omittedPeripherals;
+    QStringList peripheralPaths = cycle->peripherals.keys();
+    std::sort(peripheralPaths.begin(), peripheralPaths.end());
+    for (const QString &path : peripheralPaths) {
+        if (peripherals.devices.size() == kMaxPeripheralBatteries) {
+            ++peripherals.omittedCount; peripherals.truncated = true;
+        } else peripherals.devices.push_back(cycle->peripherals.value(path));
+    }
+    QPointer<UpowerBatteryCollaborator> guard(this);
     Q_EMIT factsChanged(cycle->generation, facts);
+    if (!guard || m_refresh != cycle || !runningGeneration(cycle->generation)) return;
+    Q_EMIT peripheralFactsChanged(cycle->generation, peripherals);
 }
 
 void UpowerBatteryCollaborator::onAnyPropertiesChanged(

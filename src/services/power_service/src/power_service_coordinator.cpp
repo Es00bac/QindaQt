@@ -8,6 +8,7 @@
 #include <qindaqt/services/power_protocol/power_validation.h>
 
 #include <QtCore/QRandomGenerator>
+#include <QtCore/QPointer>
 
 #include <limits>
 #include <utility>
@@ -39,6 +40,7 @@ PowerServiceCoordinator::PowerServiceCoordinator(BatteryCollaborator *battery,
     m_snapshot.availability = Availability::Starting;
     m_snapshot.reasonCode = QStringLiteral("starting");
 
+    connectPeripherals();
     connectBattery(m_battery);
     connectProfile(m_profiles);
     connectSession(m_session);
@@ -157,7 +159,10 @@ void PowerServiceCoordinator::stop()
     m_battery->stop();
     m_profiles->stop();
     m_session->stop();
+    QPointer<PowerServiceCoordinator> guard(this);
     makePendingUncertain(QStringLiteral("service-stopped"));
+    if (!guard) return;
+    clearPeripherals(Availability::Unavailable, QStringLiteral("service-stopped"));
 }
 
 void PowerServiceCoordinator::markDomainUnavailable(DomainState &state,

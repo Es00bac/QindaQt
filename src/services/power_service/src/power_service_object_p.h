@@ -28,6 +28,10 @@ class PowerServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Power1\">"
+        "<method name=\"RequestPeripheralSnapshotWithReceipt\"><arg name=\"nonce\" type=\"s\" direction=\"in\"/>"
+        "<arg name=\"dispatched\" type=\"b\" direction=\"out\"/></method>"
+        "<signal name=\"PeripheralSnapshotReceipt\"><arg name=\"nonce\" type=\"s\"/><arg name=\"payload\" type=\"ay\"/></signal>"
+        "<signal name=\"PeripheralsChanged\"><arg name=\"epoch\" type=\"t\"/><arg name=\"revision\" type=\"t\"/></signal>"
         "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(bbbb"
         "bbb)(bubduubdbxbxu)a((ts)ussbbduubddbdbxbxu)(sa(ss)a((ts)sss)s)a(ssss)a("
         "(ts)sbuuub)a((ts)sbuubuuus)(bsut))\" direction=\"out\"/></method>"
@@ -80,6 +84,7 @@ public:
     void setNativeIdleAdmission(bool admitted);
 
 public Q_SLOTS:
+    Q_SCRIPTABLE bool RequestPeripheralSnapshotWithReceipt(const QString &nonce);
     Q_SCRIPTABLE QindaQt::Power::Snapshot GetSnapshot() const;
     Q_SCRIPTABLE void SetProfile(const QString &profileId);
     Q_SCRIPTABLE void AcquireProfileHold(const QString &profileId,
@@ -99,6 +104,8 @@ public Q_SLOTS:
     Q_SCRIPTABLE bool ReleaseIdleInhibitor(const QindaQt::Power::Handle &handle);
 
 Q_SIGNALS:
+    Q_SCRIPTABLE void PeripheralSnapshotReceipt(const QString &nonce, const QByteArray &payload);
+    Q_SCRIPTABLE void PeripheralsChanged(quint64 epoch, quint64 revision);
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
     Q_SCRIPTABLE void IdleInhibitorsChanged(quint32 supportedScopes,
                                              quint32 activeScopes);

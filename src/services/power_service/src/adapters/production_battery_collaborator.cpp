@@ -14,6 +14,11 @@ ProductionBatteryCollaborator::ProductionBatteryCollaborator(
     , m_backlights(std::move(backlights))
 {
     Q_ASSERT(m_upower != nullptr && m_backlights != nullptr);
+    connect(m_upower.get(), &UpowerBatteryCollaborator::peripheralFactsChanged, this,
+            [this](quint64 generation, const PeripheralFacts &facts) {
+                if (m_running && generation == m_upowerGeneration)
+                    Q_EMIT peripheralFactsChanged(m_generation, facts);
+            });
     connect(m_upower.get(), &UpowerBatteryCollaborator::factsChanged, this,
             [this](const quint64, const BatteryFacts &facts) {
                 if (!m_running) {
@@ -75,7 +80,7 @@ quint64 ProductionBatteryCollaborator::start()
     m_haveUpowerFacts = false;
     m_upowerFacts = BatteryFacts{};
     m_backlightDevices.clear();
-    m_upower->start();
+    m_upowerGeneration = m_upower->start();
     m_backlights->start();
     return m_generation;
 }

@@ -1,0 +1,11 @@
+# Independent peripheral Power source review — ACCEPT
+
+Exact candidate: `276151aca99e1c627fcc5d69b8af79dca4528d7b`, base `373fa539`, author worktree everyday-peripheral-power-20261008. Reviewer identity ed-voice-astra-20261008; no owning Power edits, no native build or test execution in this review.
+
+Read the46-path diff plus existing adapter decoding, coordinator context, public headers and installed UPower kind enum. No blocking source finding. The independent schema has a64-row/131072-byte bound; lengths precede allocation, unknown numeric values and duplicate identities reject, and decode failure preserves destination. Peripheral facts never enter existing supply aggregation; opaque IDs and sanitized names cross the boundary. Existing Power1 Snapshot fields, signature and capability bits remain unchanged.
+
+The new service method targets the requesting unique sender. Client publication requires a genuine SignalMessage with sender/path/interface/member/signature, bounded payload and current one-use nonce/token. Main-client owner/epoch are rechecked; stop/loss/timeout cancel pending authority. Method reply content is never provenance. Receipt transport consumes state before emission and has no subsequent member access; client publication/synchronize guard deletion and stopped/replaced lineage. Public export registries and composition owner-before-borrower destruction order are coherent. Installed UPower enum ordinals match the local mapping. The scrolling presentation reports unknown/coarse values without fabricating percentage or time estimates.
+
+Read source fixtures for64-row canonical roundtrip/hostile lengths, malformed peripheral isolation, collaborator generation/loss, genuine and foreign private-bus receipts, replay/cancel/epoch/deletion/stop/equal-revision contradiction, and compiled popup64-row scrolling/accessibility. These are authored coverage, not reviewer execution claims.
+
+Next gate: manager-leased strict owning compile and focused native/service/protocol/client/QML tests, preserve every failure and exact repaired successor, then integrated and installed artifact evidence. No physical peripheral, installed laptop, screenshot or test-pass claim is inferred from this source acceptance.

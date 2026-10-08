@@ -78,3 +78,8 @@ set_tests_properties(
     qindaqt.power-installed-package
     PROPERTIES LABELS "service;power;installed" TIMEOUT 120
 )
+
+qt_add_executable(qindaqt_peripheral_receipt_tests tst_peripheral_receipt.cpp)
+target_link_libraries(qindaqt_peripheral_receipt_tests PRIVATE QindaQt::PowerClient Qt6::Test)
+add_test(NAME qindaqt.peripheral-receipt COMMAND qindaqt_peripheral_receipt_tests)
+set_tests_properties(qindaqt.peripheral-receipt PROPERTIES LABELS "power;peripheral;dbus" TIMEOUT 30 RUN_SERIAL TRUE)

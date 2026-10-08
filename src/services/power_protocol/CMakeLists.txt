@@ -8,6 +8,8 @@ add_library(QindaQt::PowerProtocol ALIAS qindaqt_power_protocol)
 target_sources(
     qindaqt_power_protocol
     PRIVATE
+        src/peripheral_codec.cpp
+        src/peripheral_validation.cpp
         src/power_aggregation.cpp
         src/power_backlight_selection.cpp
         src/power_codec.cpp
@@ -19,6 +21,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/power_protocol/peripheral_types.h
             include/qindaqt/services/power_protocol/power_aggregation.h
             include/qindaqt/services/power_protocol/power_backlight_selection.h
             include/qindaqt/services/power_protocol/power_codec.h
