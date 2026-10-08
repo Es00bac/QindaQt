@@ -1,3 +1,9 @@
+## Current routing — 2026-10-08T20:53:31+00:00
+
+Voice is owned by everyday_voice_astra, Windows by everyday_windows_astra, and Android by everyday_foreign_architecture. Prior Files/Platform processes ended; ownership was explicitly transferred, not duplicated. R21 Files-only source ffc164253/overlay2ef819a2 is independently accepted4a52741, preserved and unbuilt; next combined release may include reviewed Voice without recutting R21. Windows actual95b attempt failed child interpreter identity, then bb37 preflight exposed namespace UID remapping; narrow repair continues. Android first stage copied653337381bytes then refused missing intermediate links; corrected86b7 input closure independently reviewed by root. No ordinary foreign-app journey or Voice install has passed.
+
+One heavy cohort globally; qinda8jobs/load8/8CPU/12GiB/no swap/half cores/nice10; laptop4CPU/5GiB/half cores. Full original scope remains required.
+
 ## Latest integrated gate — 2026-10-08T20:25:44+00:00
 
 Trash0273 manager strict Release22/22 (298Qt+12pure) passed; heavy lease released. Root prepares signed Portage delivery. Files owns paired Voice credentials/unlock/status source; Platform Windows save/close and Astra Android stage source continue. Full installed/physical and other original requirements remain open.

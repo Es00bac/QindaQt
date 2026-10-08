@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Integrate accepted Files, verify installed controls, and route the Voice credential fix alongside Windows and Android.
+- Status: working — Review Voice and foreign-app repairs, integrate accepted outcomes, and prepare the next Portage delivery.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -194,3 +194,5 @@
 - 2026-10-08T20:16:00+00:00 — Owner confirms R20 Audio popup fits/scrolls; actual default-volume0.98/readback/restore1.0 passes with unchanged default/mute. Bluetooth on, speaker off by owner report. Eight local evidence payloads preserved/hash-verified on qinda. Actual Voice1 selectedelevenlabs/availableMask4 confirms unconfigured cloud provider, missing Settings key entry and cached startup credentials; isolated paired Voice configuration outcome assigned to Files. Trash0273 exact native evidence review next; Windows save/close and Android laptop runtime prepare continue under existing resource limits.
 
 - 2026-10-08T20:25:44+00:00 — Integrated accepted0273 Trash43paths with one additive primary-doc conflict resolution; source/test parity38/38. Required strict Release normalregistry production build0 and22/22 CTest (298Qt+12pure/0fail/skip) pass under actual8CPU12GiB/half-core/nice10 witnesses, unit0/219.029s/3.5GiB. Heavy lease released. Voice restart briefly restoredElevenLabs but laterwatchdog/keyringlock returnedWhisper; preserve transition and fix actual SecretStorage unlock bool mismatch, no false durableonlineclaim. Docs/commit/release next.
+
+- 2026-10-08T20:53:31+00:00 — Voice is owned by everyday_voice_astra, Windows by everyday_windows_astra, and Android by everyday_foreign_architecture. Prior Files/Platform processes ended; ownership was explicitly transferred, not duplicated. R21 Files-only source ffc164253/overlay2ef819a2 is independently accepted4a52741, preserved and unbuilt; next combined release may include reviewed Voice without recutting R21. Windows actual95b attempt failed child interpreter identity, then bb37 preflight exposed namespace UID remapping; narrow repair continues. Android first stage copied653337381bytes then refused missing intermediate links; corrected86b7 input closure independently reviewed by root. No ordinary foreign-app journey or Voice install has passed. One heavy cohort remains globally; next useful Voice compile reserved.
