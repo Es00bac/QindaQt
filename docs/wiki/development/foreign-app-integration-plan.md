@@ -12,6 +12,31 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
+## Reassessed next outcomes — October 8, 13:06 MDT
+
+Implementation remains paused for the owner's R20 login test and planning
+checkpoint. The [revised delivery order](everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt)
+governs the next dispatch after resumption.
+
+Use the existing Wine/QindaLutris path for a complete two-app lifecycle and
+real text input, then wire public registration and authenticated blue identity.
+The repaired ownership source has 21 focused controls; the next native plan
+454573a85522704181d4e160cd5df1c5d573f8be is unexecuted and its frozen driver does
+not yet prove keyboard/text input.
+
+For Android, observe two stock Waydroid apps before deeper runtime work.
+The accepted KVM fixture is private containment, not a new product requirement.
+An existing qualified Portage runtime closure may shorten acquisition, but its
+availability must be established; otherwise use the reviewed narrow route.
+Checkpoint 2c52f6df4 preserves private preparation and backups only. Effective
+access is unqualified; no package phase or guest started. Neither host
+initialization nor bypassing the accepted isolation boundary follows from
+this reprioritization.
+
+ED-20–24 still require lifecycle, installation/data preservation, shared catalog,
+green/blue identity, grouping and the complete supported app journeys below.
+A first app window or a prepared image package does not close that scope.
+
 ## Current stock-runtime boundary — 2026-10-08T18:39:21.869979+00:00
 
 The stock-first architectureda559 is integrated. Repaired image recipe486 now

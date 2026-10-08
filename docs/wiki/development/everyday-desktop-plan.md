@@ -1,3 +1,108 @@
+## Reassessed delivery order — October 8, 13:06 MDT
+
+This is the current execution order, replacing the earlier routing below.
+The original audit remains the requirements baseline: complete ordinary
+graphical journeys with keyboard access, understandable failures and recovery,
+using the existing owners. Terminal and scoped-agent access remain first-class.
+The later AI usage plugin and integrated, advanced Audio mixer requirements
+remain additional commitments. The usage popup does not complete ED-17/18.
+
+The owner requested a planning checkpoint while preparing to test installed
+R20. **Product implementation, package transactions and runtime trials remain
+paused.** This review authorizes no host initialization, audio routing change,
+lock/suspend trial or automatic worker restart. The deadline remains
+**October 8, America/Denver**; the scope has not been reduced.
+
+### What is actually delivered
+
+| Boundary | Evidence and remaining distinction |
+| --- | --- |
+| Installed desktop | R20 is installed through Portage; all 2,332 regular files and four symlinks matched its signed image. Core service repairs, compact Audio popup/Settings, PDF text selection/search and hidden-personal-Wi-Fi source are in that package. Fresh-login UI and real hardware journeys still need acceptance. |
+| Audio and Bluetooth | Public Audio inventory is Ready, the Bluetooth speaker is the default, and a prior real volume change/restoration passed. Seven inspected core services were active. This does not yet prove keys, audible per-app routing, reconnect, microphone or the complete mixer. |
+| AI usage | The installed popup opens. Fresh public-SDK evidence includes Claude quota/reset, context tokens and session cost, and Codex quota/reset and lifetime tokens. Other requested provider feeds/setup remain incomplete; unavailable metrics must stay explicit. |
+| Files | Cross-volume move/recovery is integrated at dd98fed4989216c92853a81d04874653ea488ae0, independently reviewed and qualified by 11 native rows plus recovery UI checks. It is newer than installed R20. Per-volume Trash is preserved as uncompiled draft e8226c8ccd1862b245faf4370a10e8b88cb81b3c, with known repairs still outstanding. |
+| Android | Exact stock images have a verified signed Portage data package. Private prerequisite preparation exists, but access remains unqualified and no package phase, guest boot or app-window journey has run. |
+| Windows | Earlier private runs displayed two apps but failed complete cleanup. The repaired ownership boundary passes 21 focused controls. Its new real run, typing, application registration and blue desktop identity remain open. |
+
+Source acceptance, package installation and a finished ordinary task are
+different evidence boundaries. The feature ledger still contains QQ-001–007;
+it does not support an ED completion percentage. This review advances no weights.
+
+### Corrections to the critical path
+
+1. **Qualify existing Audio controls now after resumption.** Public AudioClient
+   already owns default device, volume, mute and per-app stream movement.
+   Settings binds those actions to current handles and readback. The custom
+   console gain diagnostic must not gate that existing user journey. Full
+   multi-device mixer gain, routing, DSP and quiet-start remain required,
+   with their real lifecycle and audible-signal checks intact.
+2. **Make stock Android windows the next Android result.** KVM is containment
+   for our private experiment, not a required new product architecture. Check
+   whether a qualified, Portage-owned existing runtime closure can supply the
+   fixture; its availability is not established. If it cannot, finish the
+   already reviewed narrow prerequisite route. Do not start a custom Android
+   producer, OS fork or broader guest-distribution project before the stock
+   multiwindow result identifies a missing contract.
+3. **Finish the nearest Windows journey.** Freeze the source-reviewed cleanup
+   repair, run its actual two-app lifecycle, and add the currently missing
+   rendered typing/input check. Then join the existing QindaLutris public runner
+   and shared application catalog. A test supervisor is not a second product
+   backend, and titles/app IDs are not authenticated origin.
+4. **Deliver accepted Files work instead of leaving it source-only.** Repair
+   and qualify the bounded Trash draft; batch compatible accepted work in the
+   next necessary package. An unrelated mixer or Android failure must not hold
+   a ready Files release. Preserve verified-copy-before-delete and safe restore.
+5. **Stop adding coordination around unchanged work.** Keep ownership, one
+   exact independent review, required affected tests and signed Portage delivery.
+   Recheck the changed risk after a repair; repeat a broader or long gate only
+   when new evidence requires it. Each lane's next checkpoint must name an
+   ordinary user outcome or the concrete defect blocking it.
+
+### Remaining outcomes and order after resumption
+
+These rows retain every original packet; later rows can proceed independently
+where ownership and the one-heavy-job resource limit allow.
+
+| Order / lane | Remaining work | Completion checkpoint |
+| --- | --- | --- |
+| First: installed confidence — ED-01–03, ED-09, usage | Fresh R20 login, compact popup reachability, speaker/microphone/default/per-app controls and physical volume keys; usage refresh; safe lock/password, power and credential-consumer journeys. Finish remaining provider setup/freshness. | Observable UI plus current public readback and the relevant real interaction. Schedule disruptive/human-secret checks with the owner; active services alone are insufficient. |
+| First-party — ED-04–07 | Existing volume sidebar/chooser: insertion, already-connected drive, mount/open, busy eject and disappearance. Package ED-05. Repair ED-06 raw-name ambiguity, per-volume Trash/chosen-folder restore, then link-preserving copy semantics. Finish remote menu/interruption/archive recovery using existing engines. | Disposable USB copy/move/Trash/restore/eject/reconnect with useful failure recovery; local and remote GUI/terminal parity. No silent deletion fallback. |
+| Foreign apps — ED-20–24 | Windows real two-app/input/cleanup, public non-game registration and blue identity; stock Android two-app feasibility, then lifecycle/registration and green identity. Shared catalog/search/pinning/tasks/containers, graphical management and file mapping follow those real runtime results. | Ordinary Applications launch, resize/type, independent close/relaunch and data preservation; then clipboard, files, audio, notifications, IME, mixed containers and the stated device/failure matrix. |
+| Audio completion — added owner requirement, ED-09 | Existing per-app routing first; separately finish console gain/lifetime/PCM and production wiring, then the requested multi-device/send/bus processing and control coverage. | Actual configured signal reaches the selected outputs with correct independent gains, mute and recovery. UI/document state is not audible proof or full mixer parity. |
+| Travel/network — ED-08–09 | Hidden-personal Wi-Fi installed journey; saved-profile editing; enterprise/certificates, VPN and captive-portal diagnosis. Dock/scale, lid/sleep, headset/call and capture consent/revoke. | Supported network/server and physical app/device journeys. Do not replace already implemented Display/Bluetooth/portal systems. |
+| Everyday applications/admin — ED-10–13, ED-15 | Wire PDF Print into Viewer; qualify existing printer entry and packaged scanning tool. Audit existing QindaPortage GUI before repairs. Join an existing personal-file backup tool, bounded package recovery and redacted diagnostics. Add supported locale/account paths and task-based Welcome content. | Read/select/find/print; print/scan; graphical package install/update/remove/failure; deleted/previous-version restore; fresh-account locale/admin journey. Existing tools are the default, not new engines. |
+| Access and assistance — ED-14, ED-16–18 | Real keyboard/AT-SPI and IME audit, then missing consumers/controls. Preserve QQ_Term SSH/TUI/argv/CWD behavior. Implement the scoped-context contract and selected-files/document providers through existing QindaTK/Office owners. | Grant selected context, perform a bounded action, inspect receipt/undo, revoke and reject late access; real assistive navigation and terminal regression. The quota applet does not substitute for this. |
+| Closing acceptance — ED-19 and cross-cutting gates | Maintain truthful help and supported app/device matrix; run newcomer tasks and repair observed blockers. | The original requirement is **8–12 ordinary tasks with newcomers**, not 8–12 people. Record terminal rescues as failures; retain external device/server/human gaps explicitly. |
+
+### Today's execution checkpoints
+
+After the owner resumes implementation, use three outcome lanes with review
+capacity reserved and serialize heavy/native fixtures. Keep qinda at eight
+jobs/load eight, an eight-CPU quota, half its physical cores, 12 GiB memory,
+no swap and nice 10; retain the laptop four-job/half-core limit. Global build
+settings and the other project's capacity remain untouched.
+
+The first 30–60 minutes should return R20 usability findings and a bounded
+Files/Windows next-gate result, not another broad planning pass. Windows'
+repaired real two-app result is a plausible one-to-two-hour target if its next
+run passes; this is not an estimate for all ED-22–24. Android's first boot/window
+attempt is an optimistic two-to-five-hour target after runtime inputs are ready,
+not a promise of integrated apps. Full mixer and broader administration/agent
+work still contain implementation, not just unchecked boxes.
+
+Check progress against these outcomes every 30–60 minutes. When a gate fails,
+identify one bounded causal repair; do not repeat the same long run unchanged.
+Reserve roughly the final fifth of the remaining work allowance for integrating
+accepted work, package verification, installation and final ordinary journeys.
+
+**EOD remains the target, but whole-plan completion is not currently a credible
+forecast.** Android has not booted, production mixer work and several original
+flows are missing, and required physical/server/newcomer checks remain. The
+correct response is to shorten the path to those outcomes and expose a concrete
+blocker promptly, not replace the full scope with a smaller release or substitute
+test counts for completion. Earlier 50-day and 3–7-day estimates below are
+withdrawn historical records, not the current forecast.
+
 ## Current implementation boundary — 2026-10-08T18:39:21.869979+00:00
 
 Files cross-volume recovery5bfd is integrated after independentcc44 acceptance.
@@ -508,7 +613,7 @@ option for demanding work when higher-effort Opus still falls short.
 | Luna, normally medium/high for a small agent | Bounded inventories, manifests, docs, labels, explicit fixtures and simple UI bindings with a fixed contract | Stop after one failed causal repair or discovery of cross-owner state/security design; hand the compact evidence to Sol/Sonnet. Do not give it an ambiguous “fix storage” task. |
 | GPT-6.1 Sol by default; Sonnet 5.5 as the parallel option, normally medium | Default implementation: focused multi-file UI/service work, provider adapters, test suites, package integration and normal reviews | Increase effort or request a bounded senior design review for new trust/persistence/transaction boundaries or two distinct failed hypotheses. Preserve the work; avoid repeated blind retries. |
 | Opus 5.5, medium/high as needed | Authentication, lock/sleep races, destructive storage semantics, privileged update/recovery, shared agent authority and difficult compositor bugs | Use for the hard decision or defect; return well-specified implementation to the normal tier. Use independent Opus review for critical changes; a Sol 6.1 reviewer can handle ordinary exact-candidate review. |
-| Astra or Fable 5.1, exceptional escalation only | A specifically demonstrated problem remaining beyond Sol 6.1 and Opus at appropriate effort | Reserve these models; do not make them default managers, code workers or reviewers. Owner explicitly prefers Opus over Astra and Sol 6.1 for most work. |
+| Astra for the hardest bits, by the owner's subsequent instruction | Difficult storage, lifecycle, trust and runtime decisions or defects, plus their independent critical review | Keep bounded assignments and return routine implementation to the ordinary tier. Earlier Opus-over-Astra planning preferences are superseded for this implementation. |
 
 Haiku is excluded by owner preference. “Tara” was mentioned but its exact
 provider/model identity and availability were not established; leave that slot

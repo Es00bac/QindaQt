@@ -1,3 +1,20 @@
+## Current paused outcome order — October 8, 13:06 MDT
+
+The owner requested reassessment before resuming. **No implementation, package
+transaction or runtime grant is active.** This is a ready order, not a claim of
+worker liveness. See the [current plan](../../../docs/wiki/development/everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt).
+The Program Manager supplies an exact fresh base/worktree/path assignment
+before each resumed implementation; preserved candidates below are not completion.
+
+| Outcome | Owner and current boundary | Reviewer and next gate | Collision/help |
+| --- | --- | --- | --- |
+| Files move/recovery delivery | Files; integrateddd98fed qualified, not in installedR20 | Astra accepted source/native; package and ordinary removable-drive journey | Next compatible release; unrelated foreign/DSP work is not dependency |
+| Per-volume Trash/link policy | Files; drafte8226c8 and coordination82fe3068 preserved, uncompiled | Astra; raw-name ambiguity repair, shared-doc ownership, native/GUI qualification | Own isolated worktree; no source edits during pause |
+| Existing remote/archive/PDF/print workflows | Files/next compatible owner; existing engines and R20PDF selection/search | Independent owner review; ED07 failures/recovery, ViewerPrint wiring, actual printer/scanner | No replacement engines; real device evidence separate |
+| Backup/terminal/scoped providers | Unclaimed; reuse existing recovery, QQ_Term, QindaTK/Office boundaries | Independent reviewer; restore/SSH-TUI/grant-edit-undo-revoke outcomes | Explicit cross-repo ownership before edits |
+
+One heavy cohort; qinda8jobs/load8/quota8/12GiB/no swap/half cores/nice10; laptop4jobs/half cores. Today remains the deadline; full scope is retained. Earlier routing below is historical.
+
 ## Current resource-capped delivery — 2026-10-08T17:19:42+00:00
 
 | Outcome | Current evidence | Next gate |

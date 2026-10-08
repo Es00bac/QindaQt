@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: available — Paused for the user's logout/backtest; no QindaQt build or verification lease held.
+- Status: working — Reassess the original delivery plan and preserve a corrected outcome order; builds and product implementation remain paused.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -184,3 +184,5 @@
 - 2026-10-08T18:39:21.869979+00:00 — ExactFiles5bfd independentcc44 accepted,45paths applied; actualmanagerstrictRelease11/11/183Qt+12pure andfakeQML4 all0 underlive8CPU12Ghalfcore/nice10 witnesses. RootAndroid fullsigneddata+11image/41proofpayload review passes; newowning15 actual0 separatelyfromlostsrctest. LaptoppublicSDK13memberproofcopiedqinda/all12payloadsverified, freshClaude/CodexReady. Windows985 source046/actual21 awaitingreview aftercwdcorrection; Mediaactual51newlabstillinadmissibleENV_UNSET mechanism7135/narrowsourcee000 underreview. Currentdocs/accepted0355 updated; strictdocs beforecommit. EOD/fullscope unchanged.
 
 - 2026-10-08T18:55:41+00:00 — User requested a clean logout/backtest stopping point. All three workers stopped and released resources; root jobs settled. R20 remains the latest installed laptop build, with no successor package build started. Files ED05 source/native milestone is integrated at dd98fed4989216c92853a81d04874653ea488ae0; ED06 unfinished uncompiled draft e8226c8ccd1862b245faf4370a10e8b88cb81b3c and coordination82fe3068ff68b82b95ac5f56b17428eb8986c2c4 are pushed. Android stop2c52f6df4 preserves private preparation/103config+48recipe pins only; no package phase or guest startup, effective access unqualified. Media036528bb6 and Windows454573a85 plans remain unexecuted. Full ED/foreign/Audio scope remains unfinished and is paused only at the user's request. See ops/team/messages/team-operations/20261008T185541Z-manager-user-logout-stop.md.
+
+- 2026-10-08T19:04:24+00:00 — User authorized a planning-only checkpoint after the logout stop. Original three audit/plan documents re-read; current hub0c9 and preserved candidates inspected. Three owners reviewed existing evidence without new builds, tests or host changes. Reconcile ordinary Audio routing versus full console gain, stock Android feasibility versus fixture preparation, Windows cleanup versus usable app integration, and all still-required everyday journeys. No implementation resumed.

@@ -1,3 +1,18 @@
+## Planning checkpoint — October 8, 13:06 MDT
+
+Product implementation and runtime/package work remain paused for the owner's
+logout/backtest. R20 is installed; product source dd98fed is newer and includes
+qualified Files cross-volume recovery. No successor package is near completion.
+
+The [reassessed delivery order](wiki/development/everyday-desktop-plan.md#reassessed-delivery-order-october-8-1306-mdt)
+is the current plan: verify existing installed controls; deliver accepted Files
+work; complete Windows real app/input/public registration and stock Android
+multiwindow; run the full mixer as its own outcome; retain all other ED-01–24
+commitments. It records delivered versus source-only work, remaining flows,
+resource limits and conditional near-term targets. Prior timestamped sections
+below are historical. EOD remains the target; full completion is not currently
+evidence-backed. This review does not resume execution or advance feature weights.
+
 ## Current implementation boundary — 2026-10-08T18:39:21.869979+00:00
 
 Files cross-volume recovery5bfd is integrated after independentcc44 acceptance.
