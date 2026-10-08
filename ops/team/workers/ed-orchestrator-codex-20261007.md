@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Execute one independently admitted private Windows lifecycle fixture while corrected R20 and fresh old-only audio package plans receive independent source review.
+- Status: working — Preserve the first Windows native child-ledger failure and route corrected R20 signed packaging; source-only audio cancellation repair remains active with Astra review.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -144,3 +144,5 @@
 - 2026-10-08T13:49:37+00:00 — Actual manager7993 native configure0/45.056s, strict four-target build0/14.221s, exact registry7, CTest7/7/0/21.334s and full Qt28/0/0/0 plus30 probes. Every owning input unchanged; staged27 files/23QML rehashed/source equal, metadata restored/no.withheld. First docs534/strict/diff pass; final annotations next. Root lease released; fresh R20 preparation is next, no package/install yet.
 
 - 2026-10-08T14:06:52+00:00 — Audio98342 qualified; root grants one frozen635 Windows150s execute-approved after current11 source/19 payload hashes and preflight093a match. Initial extra-membership guard stopped before any native call on generated processes.pyc; pure recompilation proves byte-for-byte88db source equality without executing/importing module or changing frozen copy. Root owns private-native lease; no retry, host network/audio/bus/session/Portage/install. R20 and Media plans remain source-only.
+
+- 2026-10-08T14:18:29+00:00 — First exact635 native execution2390010/start48027884 settles1/4.306s, owned parent reaped/absent, wrapper2390012 settles1 with containment/no namespace-exit uncertainty. Both prefix server readiness and real SIGINT retirement exit0/pidfddead/reaped/lockreleased/replacementabsent qualify; before any window scenario, child ledger refuses unknown adopted child. App/children cleanup remains unqualified, empty steps mean no new normal-window/resize/input pass. All raw retained and no retry. Root native lease released; same-pair readonly diagnosis next. R20 recipe source/docs review and build plan pending; helper38bee source accepted/unrun.
