@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — Android prerequisite permission successor frozen for same reviewer; Windows source blockers returned.
+- Status: working — Root-granted Android protected preparation, signed old-libcap preservation and exact8 pretend only; no merge.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -193,3 +193,5 @@
 - 2026-10-07T23:11:20+00:00: Granted short sublease completed and released: hidden14b83 independent7/7 CTest40Qt0fail0skip; actual old copier1a205 strict build0, f5 sentinel fixture2pass4fail exit4 proving all four foreign-data deletions. Frozen commands/raw logs/hashes. Hidden source fully ACCEPT within tested scope. Now source-only conservative copy-output repair with typed visible observations and required decomposition; root owns compiler/fixtures.
 
 - 2026-10-08T18:16:09.795774+00:00 — Preserved narrow1f3 permission-domain repair: root-only backups/pins separate from traversable nonsecret Portage config/workspace; exact paths/static delta checked, no privileged prep or process/package action. Windows17d source findings handed back independently.
+
+- 2026-10-08T18:45:26.694595+00:00 — Claimed explicit root first-two-phase grant for accepted8601/02ce. Sole8CPU12GiB resource lease; prepare root-owned protected inputs and actual Portage access checks, then signed preservation and exact pretend. No merge/runtime/stage/VM authority.
