@@ -118,6 +118,18 @@ private Q_SLOTS:
         QVERIFY(accessible);
         QCOMPARE(accessible->text(QAccessible::Name), label);
         QCOMPARE(name->property("textFormat").toInt(), int(Qt::PlainText));
+        auto *row = name->parentItem()->parentItem();
+        const auto directions = visualItemsNamed(row, QStringLiteral("audioStreamDirection"));
+        QCOMPARE(directions.size(), 1);
+        auto *direction = directions[0];
+        QTRY_COMPARE(direction->property("lineCount").toInt(), 1);
+        auto *directionAccessible = QAccessible::queryAccessibleInterface(direction);
+        QVERIFY(directionAccessible);
+        QCOMPARE(directionAccessible->text(QAccessible::Name),
+                 direction->property("text").toString());
+        const auto namesEnd = name->mapToItem(row, QPointF(name->width(), 0)).x();
+        const auto directionStart = direction->mapToItem(row, QPointF{}).x();
+        QVERIFY(namesEnd <= directionStart + 0.5);
         QCOMPARE(transport.operations.size(), 0);
     }
 };
