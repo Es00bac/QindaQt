@@ -14,6 +14,8 @@ foreach(part IN ITEMS renderer controller text text_controller)
     add_test(NAME apps.viewer.${part} COMMAND qindaqt_viewer_${part}_test)
     set_tests_properties(apps.viewer.${part} PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 45)
 endforeach()
+# The bound fixture checks real Poppler extraction before invoking the renderer.
+target_link_libraries(qindaqt_viewer_text_test PRIVATE PkgConfig::POPPLER_QT6)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/artifacts")
 qt_add_executable(qindaqt_viewer_ui_test tst_ui.cpp

@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QPdfWriter>
 #include <QTemporaryDir>
+#include <algorithm>
 
 namespace ViewerFixtures {
 inline QString pdf(const QString &directory)
@@ -44,7 +45,7 @@ inline QString textPdf(const QString &directory)
 }
 // Minimal self-authored PDF objects let limit tests exercise the real parser
 // without a giant committed asset or a fixture-generation package dependency.
-inline QString boundedTextPdf(const QString &directory, int pages, int characters)
+inline QString boundedTextPdf(const QString &directory, int pages, int extractedUnits)
 {
     QList<QByteArray> objects;
     QByteArray children;
@@ -54,12 +55,24 @@ inline QString boundedTextPdf(const QString &directory, int pages, int character
     objects.append("<< /Type /Pages /Count " + QByteArray::number(pages)
                    + " /Kids [" + children + "] >>");
     objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-    const QByteArray content = "BT /F1 0.01 Tf 10 50 Td ("
-        + QByteArray(characters, 'a') + ") Tj ET\n";
+    // AGENT-NOTE: Poppler drops tiny glyphs after 50000 characters per page.
+    // Ordinary-size, fully in-bounds lines make this a real extraction-limit
+    // fixture. ReadingOrder adds one newline per line and one per flow.
+    Q_ASSERT(extractedUnits == 0 || (extractedUnits >= 3 && extractedUnits <= 262145));
+    const int rows = extractedUnits == 0 ? 0 : (extractedUnits + 1022) / 1024;
+    int letters = extractedUnits == 0 ? 0 : extractedUnits - rows - 1;
+    QByteArray content("BT /F1 10 Tf 14 TL 10 3990 Td\n");
+    for (int row = 0; row < rows; ++row) {
+        const int count = std::min(1023, letters);
+        content += "(" + QByteArray(count, 'a') + ") Tj\n";
+        letters -= count;
+        if (row + 1 < rows) content += "T*\n";
+    }
+    content += "ET\n";
     objects.append("<< /Length " + QByteArray::number(content.size())
                    + " >>\nstream\n" + content + "endstream");
     for (int page = 0; page < pages; ++page)
-        objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 3000 100] "
+        objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 6000 4000] "
                        "/Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>");
     QByteArray data("%PDF-1.7\n% SPDX-License-Identifier: GPL-3.0-or-later\n");
     QList<qsizetype> offsets;

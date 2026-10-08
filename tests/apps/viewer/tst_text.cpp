@@ -2,6 +2,7 @@
 #include "document_renderer.h"
 #include "fixtures.h"
 #include <QTest>
+#include <poppler-qt6.h>
 using namespace QindaQt::Viewer;
 
 class ViewerTextTest final : public QObject {
@@ -83,10 +84,20 @@ private slots:
         TextSearchRequest request;
         request.revision = 7; request.query = QStringLiteral("a");
         request.path = ViewerFixtures::boundedTextPdf(temp.path(), 1, 262144);
+        const auto atLimit = Poppler::Document::load(request.path);
+        QVERIFY(atLimit && !atLimit->isLocked());
+        const auto atLimitPage = atLimit->page(0);
+        QVERIFY(atLimitPage);
+        QCOMPARE(atLimitPage->text(QRectF(), Poppler::Page::ReadingOrder).size(), 262144);
         auto result = renderer.find(request, search);
         QCOMPARE(result.status, TextSearchStatus::Found);
         QCOMPARE(result.text.size(), 262144);
         request.path = ViewerFixtures::boundedTextPdf(temp.path(), 1, 262145);
+        const auto aboveLimit = Poppler::Document::load(request.path);
+        QVERIFY(aboveLimit && !aboveLimit->isLocked());
+        const auto aboveLimitPage = aboveLimit->page(0);
+        QVERIFY(aboveLimitPage);
+        QCOMPARE(aboveLimitPage->text(QRectF(), Poppler::Page::ReadingOrder).size(), 262145);
         // A fresh renderer avoids the intentional same-path loaded-document cache.
         DocumentRenderer oversized(latest);
         result = oversized.find(request, search);

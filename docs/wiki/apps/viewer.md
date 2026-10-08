@@ -32,7 +32,8 @@ attempt and cancellation leaves a visible Unlock action.
 | Command | Shortcut |
 | --- | --- |
 | Open / close document / quit | Ctrl+O / Ctrl+W / Ctrl+Q |
-| Find/select PDF text | Ctrl+F |
+| Find in PDF | Ctrl+F |
+| Select PDF text | Ctrl+Shift+F |
 | Copy selected PDF text in the text pane | Ctrl+C |
 | Previous / next PDF page | Page Up / Page Down |
 | First / last PDF page | Ctrl+Home / Ctrl+End |
@@ -56,7 +57,7 @@ confirms that it hosts this exact menu endpoint. No private transport is added.
 
 ## PDF text and find
 
-Use **Find text…**, Ctrl+F, or Edit → Select PDF text to open the selectable
+Use **Find text…**, Ctrl+F, or **Select PDF text…**, Ctrl+Shift+F, to open the selectable
 plain text pane for the current PDF page. Select with the mouse or keyboard;
 Ctrl+C and **Copy selection** copy only the selection. Page text stays literal,
 including markup-like content. Copying does not write or modify the document.
@@ -135,7 +136,9 @@ image format, check password failures/success, navigation/rotation/size bounds,
 latest-open and close fencing, QindaTK UI keyboard paths and 960×680/640×480
 captures, then exercise CLI paths/file URLs and a relocated `Viewer` install.
 Text gates use real Poppler Unicode/markup-like text, copy-restricted and password
-fixtures, forward/backward/case/wrap and real page/query/text bounds. Controller
+fixtures, forward/backward/case/wrap and real page/query/text bounds. Ordinary-size,
+in-bounds fixtures first verify actual Poppler extraction at the text cap and
+cap-plus-one, avoiding its tiny-character discard safeguard. Controller
 gates check close/replacement/navigation retirement and single-flight admission.
 The text UI gates exercise actual keyboard focus, native clipboard selection,
 search selection, Return/keypad Enter in the query and focused Previous/Next/Copy

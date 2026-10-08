@@ -27,7 +27,7 @@ QList<AppShell::ActionSpec> viewerActions()
         action("file.open", "file", "File", "Open…", "Ctrl+O", 0),
         action("file.close", "file", "File", "Close document", "Ctrl+W", 1),
         action("file.quit", "file", "File", "Quit", "Ctrl+Q", 2),
-        action("edit.text", "edit", "Edit", "Select PDF text…", "", 0),
+        action("edit.text", "edit", "Edit", "Select PDF text…", "Ctrl+Shift+F", 0),
         action("edit.find", "edit", "Edit", "Find in PDF…", "Ctrl+F", 1),
         action("view.previous", "view", "View", "Previous page", "PgUp", 0),
         action("view.next", "view", "View", "Next page", "PgDown", 1),
