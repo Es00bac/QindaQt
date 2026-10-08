@@ -289,12 +289,13 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
   MutationBackend *backend = m_backend.get();
   const MutationCancellation cancellation = m_cancellation;
   const QPointer<MutationController> guard(this);
-  auto progress = [guard](const MutationProgress &update) {
+  const quint64 generation = ++m_requestGeneration;
+  auto progress = [guard, generation](const MutationProgress &update) {
     if (!guard) {
       return;
     }
-    QMetaObject::invokeMethod(guard, [guard, update]() {
-      if (!guard || !guard->busy()) {
+    QMetaObject::invokeMethod(guard, [guard, generation, update]() {
+      if (!guard || !guard->busy() || guard->m_requestGeneration != generation) {
         return;
       }
       guard->m_progressValue = update.totalItems > 0
@@ -307,14 +308,14 @@ bool MutationController::submit(MutationRequest request, bool isUndo) {
   m_busy = true;
   QMetaObject::invokeMethod(
       m_workerContext,
-      [guard, backend, request = std::move(request), cancellation,
+      [guard, generation, backend, request = std::move(request), cancellation,
        progress = std::move(progress)]() mutable {
         MutationResult result = backend->execute(request, cancellation, progress);
         result.itemOutcomes = {{true, request.sourcePath, request.destinationPath,
-                                result.error, result.outputObservation}};
+                                result.error, result.outputObservation, result.recovery}};
         if (guard) {
-          QMetaObject::invokeMethod(guard, [guard, result]() {
-            if (guard) {
+          QMetaObject::invokeMethod(guard, [guard, generation, result]() {
+            if (guard && guard->m_requestGeneration == generation) {
               guard->finish(result);
             }
           }, Qt::QueuedConnection);
@@ -399,13 +400,14 @@ bool MutationController::submitRequests(MutationKind kind,
   MutationBackend *backend = m_backend.get();
   const MutationCancellation cancellation = m_cancellation;
   const QPointer<MutationController> guard(this);
+  const quint64 generation = ++m_requestGeneration;
   const int total = static_cast<int>(requests.size());
-  auto progress = [guard, total](const MutationProgress &update) {
+  auto progress = [guard, generation, total](const MutationProgress &update) {
     if (!guard) {
       return;
     }
-    QMetaObject::invokeMethod(guard, [guard, update, total]() {
-      if (!guard || !guard->busy()) {
+    QMetaObject::invokeMethod(guard, [guard, generation, update, total]() {
+      if (!guard || !guard->busy() || guard->m_requestGeneration != generation) {
         return;
       }
       guard->m_progressValue = qBound(0, update.completedItems * 100 / total, 100);
@@ -416,7 +418,7 @@ bool MutationController::submitRequests(MutationKind kind,
   m_busy = true;
   QMetaObject::invokeMethod(
       m_workerContext,
-      [guard, backend, requests = std::move(requests), cancellation,
+      [guard, generation, backend, requests = std::move(requests), cancellation,
        progress = std::move(progress), total]() mutable {
         int completed = 0;
         MutationResult outcome;
@@ -454,7 +456,7 @@ bool MutationController::submitRequests(MutationKind kind,
           };
           outcome = backend->execute(request, cancellation, itemProgress);
           items[itemIndex++] = {true, request.sourcePath, request.destinationPath,
-                                outcome.error, outcome.outputObservation};
+                                outcome.error, outcome.outputObservation, outcome.recovery};
           if (!outcome.ok()) {
             outcome.diagnostic =
                 QStringLiteral("Completed %1 of %2 items; %3: %4")
@@ -476,8 +478,8 @@ bool MutationController::submitRequests(MutationKind kind,
               QStringLiteral("Finished %1 items").arg(completed);
         }
         if (guard) {
-          QMetaObject::invokeMethod(guard, [guard, outcome]() {
-            if (guard) {
+          QMetaObject::invokeMethod(guard, [guard, generation, outcome]() {
+            if (guard && guard->m_requestGeneration == generation) {
               guard->finish(outcome);
             }
           }, Qt::QueuedConnection);

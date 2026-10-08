@@ -1,6 +1,6 @@
 # File mutation recovery
 
-**Proposed ED-05 contract, not implemented behavior.** The independently reviewed failed-copy preservation repair is integrated separately under [Accepted ADR-0357](../adr/0357-preserve-failed-copy-output-without-cleanup-authority.md); it supplies no cleanup or recovery authority. [ADR-0355](../adr/0355-preserve-source-bytes-during-cross-device-moves.md) proposes a narrow replacement for [ADR-0064](../adr/0064-confine-file-mutation-to-identity-checked-local-authority.md)'s cross-device refusal. [File Manager](../apps/file-manager.md) continues to own its existing mutation coordinator; no new service, mount broker or parallel transfer queue is introduced.
+**Implemented ED-05 storage/controller contract with independent and integrated native qualification; installed graphical and physical journeys remain pending.** The independently reviewed failed-copy preservation repair is integrated separately under [Accepted ADR-0357](../adr/0357-preserve-failed-copy-output-without-cleanup-authority.md); it supplies no cleanup or recovery authority. [ADR-0355](../adr/0355-preserve-source-bytes-during-cross-device-moves.md) proposes a narrow replacement for [ADR-0064](../adr/0064-confine-file-mutation-to-identity-checked-local-authority.md)'s cross-device refusal. [File Manager](../apps/file-manager.md) continues to own its existing mutation coordinator; no new service, mount broker or parallel transfer queue is introduced.
 
 ## What a completed move means
 
@@ -72,3 +72,106 @@ The first production sequence is: reproduce/repair foreign-output cleanup; add s
 `tests/design/cross_device_move_contract.py` is a finite, in-memory design proof. It models named tree identity and byte retention, foreign destination collisions, interleaved writes/replacements, cancellation, crash phase observation and restore conflicts. It does not model Linux durability or establish executable production behavior.
 
 Native gates must use the real copier/coordinator and real descriptor-relative storage in disposable directories, inject syscall failures at each durability/rename boundary, replace the stage during publication and the destination before/after source retirement, retain opened child descriptors through retirement, and test actual different devices without mounting or touching personal data. A private installed UI journey must show retention/partial outcomes and safe restore. Hardware unplug/power-loss qualification is separate from synthetic failure injection.
+
+## Authored ED05 storage slice — October 8
+
+Owning recovery values, record codec/store, mount admission, manifest/hash,
+catalog and cross-volume move/recovery collaborators separate persistence,
+Linux descriptor fences, bounded verification, discovery and transfer/recovery
+coordination behind LocalMutationBackend. No service, dependency, device control
+or parallel worker queue is added.
+
+Canonical private JSON schema1 caps each record at64KiB, phase history at16
+exclusive append-only0600 slots and catalog admission at128 immutable prepared
+locators. The source-side journal supplies current observed phase. Files and
+directories are synced and read back; recovery storage device/inode/mount/owner/
+mode are bound in both records. Unknown, duplicate, malformed, partial, linked,
+replaced or excessive records refuse active recovery and remain inspectable.
+Catalog locking serializes capacity across application windows. Missing source
+volumes preserve discovery metadata with unavailable/uncertain state. No startup
+copy, rename, unlink or retry is reconstructed.
+
+The copier adds a borrowed-descriptor recovery entry point. Its strict branch
+checks permission/time syscall errors and depth128; ordinary Copy keeps previous
+policy. Complete source and destination manifests bind child sets and file
+readback before publication, before/after source retirement and terminal receipt
+durability. Stat sequences are observations, never atomic writer exclusion.
+The retained named inode tree protects surviving-descriptor writes. Destination
+metadata requirements cover kind, regular size, permission bits and modification
+time; cloned ownership, ACL and xattr semantics are not asserted by the content
+digest. Original metadata and named bytes remain in retained storage.
+
+The existing controller keeps one worker slot, generation-fenced callbacks and
+ordered per-item recovery receipts. Graphical recovery discloses retained space,
+shows literal accessible paths/byte estimates, and confirms fresh restore by
+catalog UUID. Restore reacquires storage/parent, verifies the current retained
+manifest before/after same-device no-replace rename and preserves the published
+destination. Changed retained bytes are current contents, not falsely rejected
+as damage. Corrupt/partial journals are inspection-only with no destructive
+workaround. Author native fixture evidence is below; independent/integrated and
+installed UI gates remain pending; no physical
+unplug/power-loss or complete ED05 claim follows from this source candidate.
+
+The source candidate now implements unexpected-capture best-effort return with
+a durable Required journal record before the repair syscall. Fresh full captured
+tree and exact current mount/parent/private-directory observations, cancellation
+and an absent original name are admission requirements. No-replace publication
+protects a name recreated during the remaining syscall interval. Successful
+return synchronizes both parents and reads back the returned tree; any return
+still reports the selected original source placement unconfirmed. Failed
+admission preserves the captured entry and other candidates for explicit repair.
+This closes the source-authoring gap; current author compiler/native fixture
+evidence is below, while independent native acceptance remains pending.
+
+The source repair restores the prior reviewed a2b625cf journal contract and
+original49cd same-inode regression. Both journal and immutable catalog appends
+keep a pre-file-fsync writer metadata baseline through held descriptor, named
+entry and separately opened reader checks. Equal decoded bytes on a substituted
+inode or an observed rewrite cannot borrow an earlier synchronization result.
+These are observed stability guards, not exclusion of external writers or a
+power-loss guarantee. Readback failure preserves every record candidate.
+Strict recovery transfer reads at most the opened source file size and checks
+one extra byte only to reject growth; shortened or changed files fail admission.
+Ordinary Copy retains its existing read policy. Current guard fixtures pass;
+a separate native prior-version old/fixed comparison has not run.
+
+The restart cohort is registered through an owning bounded Python outer runner,
+not merely a CTest timeout. It creates a private session, observes the exact
+leader with waitid WNOWAIT so its PID cannot be recycled before cleanup, caps
+the cohort at50 seconds, then retires only that owned process group and reaps
+the leader. Independent source admission preceded actual normal/early-error/
+timeout wrapper controls and owning native fixtures. Leader/unit/group results
+do not prove all descendants absent.
+
+Author native qualification on October8 uses actual distinct-device disposable
+storage, strict Debug/Release and poisoned subject buses/private XDG. Original
+full Debug CTest was10/11 with182Qtpassed/1failed; its only failed record fixture
+was repaired without changing production, then warm record-only Debug passed1/1
+and32Qtchecks. Other original Debug passes remain retained rather than rerun.
+Fresh full Release passes11/11 with183Qtchecks and12 pure runner controls,
+zero failures/skips/blacklists. All30 phase/barrier rows and four actual owned
+child-exit/wait/restart cases pass in original Debug and fresh Release. Current
+journal/catalog version guards, growing/truncated source bounds, replacement,
+cancellation and current retained-byte restore controls pass. Actual wrapper
+normal0/early-error7/timeout124 controls were qualified separately and retained.
+This is author evidence awaiting exact independent native review/integration;
+prior-version old/fixed comparison, installed graphical journeys and physical
+disconnect/power-loss remain separate. No full ED05 completion is claimed.
+
+## Manager integration qualification — October 8
+
+The preceding author snapshots preserve their original handoff state. Exact
+5bfd source and native evidence received independent acceptancecc44; the manager
+applied only45 product/test/owning-doc paths and retained all prior failures.
+Strict integrated Release configuration/build exits0 (0.833/24.064seconds).
+The actual registry has11 rows and full serial CTest passes11/11 in4.187seconds:
+183Qtchecks plus12pure controls, zero failures/skips/blacklists. The actual
+recovery QML component fixture passes4/4 with fatal warnings and offscreen
+software rendering (fake controller; no installed journey is inferred).
+The capped owning unit exits0/29.295seconds; five direct parent witnesses verify
+eight-CPU quota,12GiB/no swap/tasks256,half physical affinity and nice10. Its
+post-exit default properties are not substituted for those live witnesses.
+Accepted ADR0355 governs the integrated storage contract. No startup replay,
+automatic cleanup/release or physical power-loss guarantee is introduced.
+Full ED05 remains open for installed GUI and physical journeys; prior-version
+comparison is separately recorded as unrun.

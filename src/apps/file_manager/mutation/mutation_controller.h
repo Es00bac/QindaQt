@@ -25,6 +25,7 @@ class MutationController final : public QObject {
   Q_PROPERTY(QString resultText READ resultText NOTIFY stateChanged FINAL)
   Q_PROPERTY(QString outputNotice READ outputNotice NOTIFY stateChanged FINAL)
   Q_PROPERTY(QVariantList outputObservations READ outputObservations NOTIFY stateChanged FINAL)
+  Q_PROPERTY(QVariantList recoveryRecords READ recoveryRecords NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canUndo READ canUndo NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canRestore READ canRestore NOTIFY stateChanged FINAL)
 
@@ -108,6 +109,11 @@ public:
   // Whether Extract understands the file's name (zip, or tar with none,
   // gzip, bzip2, xz or zstd compression).
   Q_INVOKABLE bool isExtractable(const QString &path) const;
+  // Catalog ids only. Both calls use the existing serialized worker slot.
+  // Inspection publishes observations only; restore always reacquires admission.
+  Q_INVOKABLE bool inspectRecovery();
+  Q_INVOKABLE bool restoreRecovery(const QString &operationId);
+  [[nodiscard]] QVariantList recoveryRecords() const;
   Q_INVOKABLE bool restoreLast();
   Q_INVOKABLE bool emptyTrash();
   Q_INVOKABLE bool undo();
@@ -161,6 +167,8 @@ private:
   QString m_resultText;
   QString m_outputNotice;
   QVariantList m_outputObservations;
+  QVariantList m_recoveryRecords;
+  quint64 m_requestGeneration = 0;
   MutationKind m_runningKind = MutationKind::CreateFolder;
   bool m_isUndo = false;
   bool m_busy = false;

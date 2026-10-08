@@ -73,6 +73,11 @@ ColumnLayout {
         onActionTriggered: root.mutationController.undo()
     }
 
+    MoveRecoveryPanel {
+        Layout.fillWidth: true
+        mutationController: root.mutationController
+    }
+
     TransferQueueBanner {
         Layout.fillWidth: true
         transferQueueController: root.transferQueueController

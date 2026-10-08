@@ -1,10 +1,10 @@
 # ADR-0355: Preserve source bytes during cross-device moves
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-07
 - **Owners:** File Manager
-- **Supersedes:** Only ADR-0064's cross-device Move refusal, when this proposal is implemented and accepted; Accepted ADR-0357's failed-copy preservation invariant remains
-- **Implementation:** Contract and bounded design proof only; current production still refuses cross-device Move
+- **Supersedes:** Only ADR-0064's cross-device Move refusal; Accepted ADR-0357's failed-copy preservation invariant remains
+- **Implementation:** Storage/backend/controller integrated from independently accepted5bfd. Manager strict Release11/11,183Qtchecks plus12pure controls and recovery QML4/4 pass. Installed graphical and physical ED05 journeys remain open.
 
 ## Context
 
@@ -41,3 +41,69 @@ See [ADR-0064](0064-confine-file-mutation-to-identity-checked-local-authority.md
 ## Bounded contract review — October 7
 
 Exact design/model02114070c is independently reviewed; its33 in-memory preservation cases pass, including the previously failing combined stage/destination/source/mount replacements. The unchanged model also passes33 rows on the integrated contract tree. This accepts the proposal as a reviewed implementation packet, not production behavior or Linux durability/identity authority. ADR status remains Proposed until qualified implementation is integrated.
+
+## October 8 source implementation boundary
+
+The owning candidate selectively reuses preserved411/c398 values, strict
+record/store, descriptor mount admission and unfinished manifest files. It adds
+identity-bound private recovery storage, a locked128-operation immutable locator
+catalog under QStandardPaths::StateLocation/file-manager/move-recovery, phased
+strict-metadata descriptor copying, full readback verification and no-replace
+publication/whole-entry source retention. No recursive source unlink, output
+cleanup, retention expiry or mount/helper authority is added.
+
+The existing serialized controller carries per-item receipts and fences queued
+progress/results by request generation. Its graphical recovery panel discloses
+retained source space before moves, inspects on startup without replay, renders
+literal locations and confirms restore of a catalog UUID. Restore uses fresh
+private-directory, current payload and target-parent admission with no-replace
+rename, preserving the published destination and current surviving-writer bytes.
+Corrupt/partial journals remain read-only and refuse automatic restore;
+unavailable/replaced storage stays discoverable.
+
+Source-only boundary/model/parser/fake presentation checks are separate from
+production qualification. Authored real distinct-device, every-journal-barrier,
+metadata/space, cancellation, replacement/disconnection, late child write and
+child-exit/restart fixtures now have bounded author native evidence below.
+ADR0355 remains Proposed and ED05 open until required independent/integrated and
+installed gates are satisfied.
+
+The October8 source successor adds the proposed best-effort return of an
+unexpected captured entry: durable Required write-ahead, stable capture and
+parent/name admission, no-replace rename, parent synchronization and readback.
+Unsafe admission or a collision preserves all candidates; even a verified return
+does not claim the independently displaced selected original restored. Status
+remains Proposed pending independent native review and integration.
+
+Author native qualification on October8 uses actual distinct-device disposable
+storage, strict Debug/Release and poisoned subject buses/private XDG. Original
+full Debug CTest was10/11 with182Qtpassed/1failed; its only failed record fixture
+was repaired without changing production, then warm record-only Debug passed1/1
+and32Qtchecks. Other original Debug passes remain retained rather than rerun.
+Fresh full Release passes11/11 with183Qtchecks and12 pure runner controls,
+zero failures/skips/blacklists. All30 phase/barrier rows and four actual owned
+child-exit/wait/restart cases pass in original Debug and fresh Release. Current
+journal/catalog version guards, growing/truncated source bounds, replacement,
+cancellation and current retained-byte restore controls pass. Actual wrapper
+normal0/early-error7/timeout124 controls were qualified separately and retained.
+This is author evidence awaiting exact independent native review/integration;
+prior-version old/fixed comparison, installed graphical journeys and physical
+disconnect/power-loss remain separate. No full ED05 completion is claimed.
+
+## Manager integration qualification — October 8
+
+The preceding author snapshots preserve their original handoff state. Exact
+5bfd source and native evidence received independent acceptancecc44; the manager
+applied only45 product/test/owning-doc paths and retained all prior failures.
+Strict integrated Release configuration/build exits0 (0.833/24.064seconds).
+The actual registry has11 rows and full serial CTest passes11/11 in4.187seconds:
+183Qtchecks plus12pure controls, zero failures/skips/blacklists. The actual
+recovery QML component fixture passes4/4 with fatal warnings and offscreen
+software rendering (fake controller; no installed journey is inferred).
+The capped owning unit exits0/29.295seconds; five direct parent witnesses verify
+eight-CPU quota,12GiB/no swap/tasks256,half physical affinity and nice10. Its
+post-exit default properties are not substituted for those live witnesses.
+Accepted ADR0355 governs the integrated storage contract. No startup replay,
+automatic cleanup/release or physical power-loss guarantee is introduced.
+Full ED05 remains open for installed GUI and physical journeys; prior-version
+comparison is separately recorded as unrun.

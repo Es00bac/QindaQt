@@ -2,6 +2,7 @@
 #include "safe_tree_operations.h"
 #include "safe_tree_access_p.h"
 
+#include <algorithm>
 #include <array>
 #include <dirent.h>
 
@@ -46,9 +47,10 @@ private:
     const QByteArray &destinationName, const struct stat &initial,
     const MutationCancellation &token,
     const MutationProgressCallback &progress, int *copied,
-    CreatedCopyRoot *createdRoot) {
+    CreatedCopyRoot *createdRoot, bool strictMetadata, int depth) {
+  Q_UNUSED(depth);
   UniqueFd source(::openat(sourceParent, sourceName.constData(),
-                           O_RDONLY | O_CLOEXEC | O_NOFOLLOW));
+                           O_RDONLY | O_CLOEXEC | O_NOFOLLOW | (strictMetadata ? O_NONBLOCK : 0)));
   struct stat opened {};
   if (!source.valid() || ::fstat(source.get(), &opened) != 0) {
     return failure(errorForErrno(errno),
@@ -72,9 +74,19 @@ private:
   CopyRootCapture capture(destination.get(), createdRoot);
 
   std::array<char, 64 * 1024> buffer{};
+  // Strict recovery transfer is bounded by the observed source size. A
+  // growing writer cannot extend copying indefinitely; final identity checks
+  // still reject any observed change. Ordinary Copy keeps its existing policy.
+  off_t remaining = opened.st_size;
   while (!cancelled(token)) {
-    const ssize_t count = ::read(source.get(), buffer.data(), buffer.size());
+    if (strictMetadata && remaining == 0) break;
+    const size_t requested = strictMetadata
+        ? static_cast<size_t>(std::min<off_t>(remaining, static_cast<off_t>(buffer.size())))
+        : buffer.size();
+    const ssize_t count = ::read(source.get(), buffer.data(), requested);
     if (count == 0) {
+      if (strictMetadata && remaining != 0)
+        return failure(MutationError::Changed, QStringLiteral("Source shortened during bounded recovery copy"));
       break;
     }
     if (count < 0) {
@@ -84,6 +96,7 @@ private:
       return failure(errorForErrno(errno),
                      QStringLiteral("The source file could not be read"));
     }
+    if (strictMetadata) remaining -= count;
     ssize_t offset = 0;
     while (offset < count) {
       const ssize_t written = ::write(destination.get(), buffer.data() + offset,
@@ -102,9 +115,20 @@ private:
   if (cancelled(token)) {
     return failure(MutationError::Cancelled, QStringLiteral("Copy cancelled"));
   }
+  if (strictMetadata) {
+    char extra = 0;
+    ssize_t count = 0;
+    do { count = ::read(source.get(), &extra, 1); } while (count < 0 && errno == EINTR && !cancelled(token));
+    if (count < 0) return failure(errorForErrno(errno), QStringLiteral("Source end could not be verified"));
+    if (count != 0) return failure(MutationError::Changed, QStringLiteral("Source grew during bounded recovery copy"));
+  }
   const struct timespec times[2] = {opened.st_atim, opened.st_mtim};
   const int ignoredPermissions = ::fchmod(destination.get(), opened.st_mode & 07777);
+  if (strictMetadata && ignoredPermissions != 0)
+    return failure(errorForErrno(errno), QStringLiteral("Required copy permissions could not be preserved"));
   const int ignoredTimes = ::futimens(destination.get(), times);
+  if (strictMetadata && ignoredTimes != 0)
+    return failure(errorForErrno(errno), QStringLiteral("Required copy metadata could not be preserved"));
   Q_UNUSED(ignoredPermissions);
   Q_UNUSED(ignoredTimes);
   if (::fsync(destination.get()) != 0) {
@@ -126,14 +150,14 @@ private:
     int sourceParent, const QByteArray &sourceName, int destinationParent,
     const QByteArray &destinationName, const MutationCancellation &token,
     const MutationProgressCallback &progress, int *copied, int maximumItems,
-    CreatedCopyRoot *createdRoot = nullptr);
+    CreatedCopyRoot *createdRoot = nullptr, bool strictMetadata = false, int depth = 0);
 
 [[nodiscard]] MutationResult copyDirectoryAt(
     int sourceParent, const QByteArray &sourceName, int destinationParent,
     const QByteArray &destinationName, const struct stat &initial,
     const MutationCancellation &token,
     const MutationProgressCallback &progress, int *copied, int maximumItems,
-    CreatedCopyRoot *createdRoot) {
+    CreatedCopyRoot *createdRoot, bool strictMetadata, int depth) {
   UniqueFd source(::openat(sourceParent, sourceName.constData(),
                            O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW));
   struct stat opened {};
@@ -178,7 +202,7 @@ private:
       continue;
     }
     result = copyEntryAt(source.get(), name, destination.get(), name, token,
-                         progress, copied, maximumItems);
+                         progress, copied, maximumItems, nullptr, strictMetadata, depth + 1);
     if (!result.ok()) {
       break;
     }
@@ -201,7 +225,11 @@ private:
   }
   const struct timespec times[2] = {opened.st_atim, opened.st_mtim};
   const int ignoredPermissions = ::fchmod(destination.get(), opened.st_mode & 07777);
+  if (strictMetadata && ignoredPermissions != 0)
+    return failure(errorForErrno(errno), QStringLiteral("Required copy permissions could not be preserved"));
   const int ignoredTimes = ::futimens(destination.get(), times);
+  if (strictMetadata && ignoredTimes != 0)
+    return failure(errorForErrno(errno), QStringLiteral("Required copy metadata could not be preserved"));
   Q_UNUSED(ignoredPermissions);
   Q_UNUSED(ignoredTimes);
   if (::fsync(destination.get()) != 0) {
@@ -217,11 +245,11 @@ MutationResult copyEntryAt(
     int sourceParent, const QByteArray &sourceName, int destinationParent,
     const QByteArray &destinationName, const MutationCancellation &token,
     const MutationProgressCallback &progress, int *copied, int maximumItems,
-    CreatedCopyRoot *createdRoot) {
+    CreatedCopyRoot *createdRoot, bool strictMetadata, int depth) {
   if (cancelled(token)) {
     return failure(MutationError::Cancelled, QStringLiteral("Copy cancelled"));
   }
-  if (*copied >= maximumItems) {
+  if ((strictMetadata && depth > 128) || *copied >= maximumItems) {
     return failure(MutationError::Unsupported,
                    QStringLiteral("The copy exceeds the item safety bound"));
   }
@@ -237,12 +265,12 @@ MutationResult copyEntryAt(
   }
   if (S_ISREG(status.st_mode)) {
     return copyFileAt(sourceParent, sourceName, destinationParent,
-                      destinationName, status, token, progress, copied, createdRoot);
+                      destinationName, status, token, progress, copied, createdRoot, strictMetadata, depth);
   }
   if (S_ISDIR(status.st_mode)) {
     return copyDirectoryAt(sourceParent, sourceName, destinationParent,
                            destinationName, status, token, progress, copied,
-                           maximumItems, createdRoot);
+                           maximumItems, createdRoot, strictMetadata, depth);
   }
   return failure(MutationError::Unsupported,
                  QStringLiteral("Only regular files and folders can be copied"));
@@ -288,6 +316,16 @@ MutationOutputObservation observeCopyOutputNoFollow(
   observation.disposition = copyFinished ? MutationOutputDisposition::RetainedCopy
                                         : MutationOutputDisposition::RetainedPartial;
   return observation;
+}
+
+MutationResult copyRecoveryTreeAt(
+    int sourceParent, const QByteArray &sourceName, int destinationParent,
+    const QByteArray &destinationName, const MutationCancellation &cancellation,
+    const MutationProgressCallback &progress, int maximumItems) {
+  int copied = 0;
+  CreatedCopyRoot created;
+  return copyEntryAt(sourceParent, sourceName, destinationParent, destinationName,
+                     cancellation, progress, &copied, maximumItems, &created, true, 0);
 }
 
 MutationResult copyLocalTreeNoFollow(
