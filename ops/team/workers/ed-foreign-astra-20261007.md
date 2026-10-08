@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — root-granted one laptop protected copy_stage attempt; no archive/VM, Platform Windows waits for release.
+- Status: available — first Android protected stage refused missing intermediate libgbinder link; raw preserved, heavy released, exact input-closure repair ready to route.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -221,3 +221,5 @@
 - 2026-10-08T20:31:19.655767+00:00 — Frozen copier546:43 dummy controls0/AST12/diff0/strictdocs7.91s0. Original fixture error retained; no actual stage/archive/guest or package action. Exact plan e03efd handed off for independent review.
 
 - 2026-10-08T20:41:21.614673+00:00 — Protected20files/hash/mode root0400 and172currentVDB pins passed; exact546/e03efdb copier launched once under4CPU/5GiB cap, awaiting settlement. Normal laptop origin fetched; existing4ahead/1222behind branch/untracked work preserved.
+
+- 2026-10-08T20:43:25.034211+00:00 — Actual546 copy exit1/3.624s after653MB at final symlink closure. All20protected/172VDB pins match; unitcaps/settlement read; no archive/VM/retry. Root/Platform notified HEAVYreleased; causal missing intermediate link identified without weakening admission.
