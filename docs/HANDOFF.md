@@ -45,9 +45,12 @@ are released. R18 uses this confirmed runtime freeze. Initial exact recipe
 Portage build stopped at dependency resolution before compilation or signing:
 the declared dev-libs/dbus atom does not exist. Failure receipt 4fe2a58ac and
 the original build log/status/argv are preserved. Gentoo sys-apps/dbus supplies
-the required public headers and library; Platform is preparing the minimal
-mirrored DEPEND/RDEPEND correction and actual pretend resolver gate for the
-same independent reviewer. No R18 artifact or installed change follows.
+the required public headers and library. Exact corrected recipe ea14088c and
+overlay a829b04f pass actual private pretend resolution, proposing only R18.
+Independent superseding review 7c2f2e99 accepts the exact minimal repair and
+resolver evidence. Root also verifies mirror SHA256 a1b82d26 and unchanged
+runtime/archive. Signed build and artifact qualification are next; no R18
+artifact or installed change follows from source acceptance.
 No compact UI or newer core repair is installed yet. The generic Settings
 action does not claim an Audio-specific route.
 

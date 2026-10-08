@@ -9,9 +9,10 @@ profile/resolution gates. The Settings page is denser; bounded popup scrolling,
 separate stream controls and generic Settings action are source-delivered.
 No compact presentation is installed. Initial R18 source14e4406/overlay
 af4e8ed passed source review; its private build failed at dependency resolution
-before compilation. Platform corrects the nonexistent atom to sys-apps/dbus
-and proves actual pretend resolution before exact independent recheck and a
-renewed build lease. No R18 artifact or installed change exists.
+before compilation. Repaired sys-apps/dbus recipe ea14088c/overlay a829b04f
+passes actual pretend resolution and independent exact review 7c2f2e99.
+The next gate is the manager-authorized signed private build plus package
+qualification. No R18 artifact or installed change exists.
 Existing mutation/grant/identity/owner-loss and accessibility behavior remains.
 
 Clipboard22/172, Power6/56 and Bluetooth40/282 integrated gates pass; installed

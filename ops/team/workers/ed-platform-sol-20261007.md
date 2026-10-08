@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — R18 source freeze confirmed and recipe ready for independent review; no package/native lease
+- Status: waiting — R18 actual package atom repaired and private pretend qualified; exact Astra recheck and renewed build lease pending
 - Base: f2bb8c4d52e50815c74e2a0c66f143cb24e9fe42
 - Branch: worker/everyday-audio-popup-20261008 (native evidence verify/everyday-audio-popup-native-20261008)
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -205,3 +205,11 @@
 - 2026-10-08T06:41:41.748344+00:00 — Source5858 archive9747 blobs/39,433,447bytes/SHA620ad2 verified; mirroredr18 explicit libdbus DEPEND/RDEPEND only dependency change. Actual Portage metadata, release contract7/7, docs533/strictMkDocs all0. Overlayaf4e8ed pushed; manager37 gate/artifact/install still pending. No native/compiler/Portage build/install or publication.
 
 - 2026-10-08T06:42:18.149221+00:00 — Root confirms exact5858 runtime37/37 and273Qt pass0fail0skip0blacklist, strict28-target0; own release docs/receipt updated with attributed manager evidence. Immutable620ad2 archive and overlayaf4e8ed unchanged. Independent recipe/artifact/install remain required; no package lease assumed.
+
+- 2026-10-08T07:00:30.549655+00:00 — Root exact source/recipe acceptance aca238, runtime5858 manager37/273 and explicit sole qinda build-only lease received. Actual configured MAKEOPTS -j24 -l24/signing observed; private PKGDIR/DISTDIR/TMP/depcache, no config/features overrides, install/publication or host actions.
+
+- 2026-10-08T07:01:53.524451+00:00 — Actual signed build-only attempt exited1 after9.51s dependency resolution, no configure/compiler/artifact. dev-libs/dbus absent; installed sys-apps/dbus-1.16.2 owns dbus.h, dbus-1.pc and libdbus-1.so. No retry or installed changes; source/archive immutable.
+
+- 2026-10-08T07:08:03.633839+00:00 — Root approved mirrored sys-apps/dbus build/runtime atom repair only. Runtime5858/archive620ad2 unchanged, original failed signed-build resolver preserved. Actual private pretend and static gates now, no compiler/signing/install or host action.
+
+- 2026-10-08T07:10:00.778856+00:00 — Mirrored sys-apps/dbus correction only; exact overlaya829b04, actual private pretend0 selects onlyr18 in7.21s. Original resolver1/log preserved, runtime5858/archive620ad2/Manifest/source unchanged; source/release7/docs533/strict/diff all0. No compiler/signing/install/newrealbuild or host action.

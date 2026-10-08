@@ -8,9 +8,10 @@ CTests with 185 Qt checks and four profile/resolution rows with 88 Qt checks.
 The compact popup and Settings page are not installed. Initial R18 recipe
 14e4406/overlay af4e8ed passed source review, but the private Portage build
 failed before compilation at dependency resolution. The nonexistent
-dev-libs/dbus atom is being corrected to actual sys-apps/dbus, with a genuine
-pretend resolver gate and exact independent recheck required before retry.
-Failure receipt 4fe2a58ac is preserved; runtime/archive identity is unchanged.
+dev-libs/dbus atom is corrected to actual sys-apps/dbus in exact recipe
+ea14088c/overlay a829b04f. Actual private pretend selects only R18; independent
+superseding review 7c2f2e99 accepts the repair. Signed build/artifact gates
+are next. Failure4fe2a58ac and runtime/archive identity remain preserved.
 
 Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 gates pass.
 Bluetooth source 3040022/7686226 is integrated at 3b4275ace with independently

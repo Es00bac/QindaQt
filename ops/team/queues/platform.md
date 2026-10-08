@@ -9,9 +9,11 @@ at 5858bcc. Strict 28 targets pass; actual owning 33/185 plus profile/resolution
 4/88 pass. Both native lanes are released. Confirmed R18 freeze is5858bcc.
 Initial source14e4406/overlay af4e8ed passed exact source review, but actual
 Portage resolution rejected nonexistent dev-libs/dbus before compilation.
-Platform owns the source-only mirrored sys-apps/dbus repair and real private
-pretend resolver gate; the same Astra reviewer rechecks exact successors.
-Failure4fe2a58ac is preserved. No renewed build/install grant is implied.
+Exact mirrored sys-apps/dbus repair ea14088c/overlay a829b04f passes actual
+private pretend selecting only R18 and same-reviewer acceptance 7c2f2e99.
+Failure4fe2a58ac is preserved. Root routes Platform the next signed private
+build-only and package-qualification lane after integration gates pass.
+No installation, helper activation or live-device grant follows.
 
 Media ec1 image/lifecycle diagnostics have source-only acceptance after the
 992 newline repair. Actual ASan/Portage/private lifecycle qualification remains
