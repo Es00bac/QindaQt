@@ -1,0 +1,7 @@
+# Android unit working-directory correction grant
+
+Root fully read exact first-failure8444b525 receipt and actual outer log/result/settlement/control comparison. Actual failure2495915/start48974573 exited1/0.113917s before settings: source ROOT=Path.cwd sought the plan under home. No Portage phase files, unpack or package; controls equal. Original failure/index/archive remains immutable. Current accepted plan2a1a61fd and dispatcher43185af rehash exact; phase outputs absent.
+
+Grant same Platform exactly one corrected attempt, preserving all prior source/policy/bounds/phase paths. Add only --working-directory=/home/cabewse/work_SPaC3/container-wm.worktrees/everyday-android-private-package-plan-20261008 to the systemd-run unit argv and use fresh unit qindaqt-ed-android-images-cwd-20261008T1650Z. Record exact corrected command separately; do not overwrite failed command. Already copied task ZIPs must rehash exact without overwrite. All seven tracked source files/recipe stay equal.
+
+Sole heavy lease again belongs to this private signed data package under exact CPU8/12GiB/swap0/tasks256/8jobs/load8/half-core taskset/nice10/Runtime1800. Build1200/output128MiB, no automatic retry; preserve first actual phase failure, source/crypto/full image/src_test and beforeafter gates unchanged. Unit actual resource and retirement observations remain mandatory; no descendant-empty inference. No host merge/init/runtime/guest/window/badge action granted. Files/Media native remain queued.
