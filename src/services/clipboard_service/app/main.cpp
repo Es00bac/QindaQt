@@ -2,12 +2,11 @@
 
 #include <qindaqt/services/clipboard_service/resident_clipboard_service.h>
 #include <qindaqt/services/clipboard_wayland_adapter/production_clipboard_wayland_adapter.h>
-#include <qindaqt/services/session_lock_state/qt_session_lock_transport.h>
-#include <qindaqt/services/session_lock_state/session_lock_state_monitor.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
 #include "clipboard_history_consent.h"
+#include "native_clipboard_lock_observer.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QUuid>
@@ -42,7 +41,16 @@ int main(int argc, char **argv)
         ? adapter->peerProcessId() : 0;
     const quint64 epoch = static_cast<quint64>(
         qHash(QUuid::createUuid().toString(QUuid::WithoutBraces)));
-    Clipboard::ResidentClipboardService service(std::move(adapter), bus, {}, epoch);
+    // AGENT-GUARD: ordinary adapter proof supplies PID; environment only selects
+    // the runtime/socket. Observer is declared before the host which borrows it,
+    // and no cached adapter PID/availability is called live socket authority.
+    Clipboard::NativeClipboardLockObserver lockObserver(
+        bus, compositorPid, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+        qEnvironmentVariable("WAYLAND_DISPLAY"));
+    Clipboard::ResidentClipboardService service(std::move(adapter), bus, {}, epoch,
+        [&lockObserver] { return lockObserver.contentMayBeShown(); });
+    QObject::connect(&lockObserver, &Clipboard::NativeClipboardLockObserver::contentMayBeShownChanged,
+                     &service, [&service](bool allowed) { service.host()->setUnlocked(allowed); });
 
     SettingsClient::QtSettingsTransport settingsTransport(bus);
     SettingsClient::SettingsClient settingsClient(
@@ -58,21 +66,6 @@ int main(int argc, char **argv)
             service.host()->setHistoryOptIn(false);
         }
     });
-
-    std::unique_ptr<SessionLockState::QtSessionLockTransport> lockTransport;
-    std::unique_ptr<SessionLockState::SessionLockStateMonitor> lockMonitor;
-    if (compositorPid > 0) {
-        lockTransport = std::make_unique<SessionLockState::QtSessionLockTransport>(bus);
-        lockMonitor = std::make_unique<SessionLockState::SessionLockStateMonitor>(
-            *lockTransport, compositorPid);
-        QObject::connect(lockMonitor.get(),
-                         &SessionLockState::SessionLockStateMonitor::contentMayBeShownChanged,
-                         &service, [&service](bool allowed) { service.host()->setUnlocked(allowed); });
-        QString lockError;
-        if (!lockMonitor->start(&lockError)) {
-            qWarning("Clipboard1 lock authority unavailable");
-        }
-    }
 
     const Clipboard::ServiceStartStatus status = service.start();
     // AGENT-GUARD: NameAlreadyOwned means a live sibling already provides
@@ -98,11 +91,17 @@ int main(int argc, char **argv)
         qCritical("Clipboard1 service registration failed");
         return 2;
     }
+    if (!lockObserver.start()) {
+        qWarning("Clipboard1 native lock authority unavailable");
+    }
     QString settingsError;
     if (!settingsClient.start(&settingsError)) {
         qWarning("Clipboard1 Settings1 gate unavailable");
     }
     QObject::connect(&application, &QCoreApplication::aboutToQuit,
-                     &service, &Clipboard::ResidentClipboardService::stop);
+                     &service, [&service, &lockObserver] {
+        service.stop();
+        lockObserver.stop();
+    });
     return QCoreApplication::exec();
 }

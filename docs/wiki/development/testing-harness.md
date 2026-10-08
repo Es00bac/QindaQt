@@ -3670,6 +3670,11 @@ non-canonical media, aggregate-overflow claims, unsanitized metadata).
 The C1 rows add `clipboard-protocol` hostile structures and canonical QCDL
 snapshots, `clipboard-client` exact-owner/epoch/revision fencing and uncertain
 operation results, `clipboard-service` opt-in/lock/purge/copy behavior,
+`clipboard-privacy-admission` synchronous revocation, owned descriptor encoding,
+aliased capture cancellation and reentrant Copy/Changed uncertainty,
+`native-clipboard-startup` actual private-bus split-owner/ordinary socket/native
+receipt composition (including old legacy refusal, wrong PID, receipt spoofing,
+owner loss before queued watchers and delayed native object),
 `clipboard-settings-consent` schema/profile-default denial plus explicit
 user-override acceptance, `clipboard-request-cache` FIFO result eviction and
 the exact 64-caller ceiling,
@@ -4906,3 +4911,24 @@ clicks only real visible offered checkbox choices and the actual Grant button;
 a no-choice lock question still requires that button. No sanitizer, production
 consent, privilege or peer assertion is weakened. The native driver launches
 directly; the failed pre-exec environment experiment is preserved separately.
+
+### Native clipboard startup repair gates
+
+The native composition repair selector includes the existing Clipboard model,
+protocol, client, adapter, consent, host and private-bus rows and the new native
+startup row:
+
+```sh
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.(clipboard-|native-clipboard-startup$)'
+```
+
+The new admission fixture can be compiled separately with immutable old Host
+source/header and QINDAQT_CLIPBOARD_LEGACY_PRIVACY for direct old/fixed evidence.
+New dependency objects must not substitute old production symbols/layouts.
+Native fixtures use synthetic content, a private dbus-daemon and a real local
+UNIX socket/PID peer; they never inspect a host clipboard or activate a real
+service. The staged consumer must link the new strict Host/Resident constructors
+from installed-only archives and deny empty admission. Withheld installed
+public-header compile failure and restoration qualify the SDK boundary separately.
+Source-authored tests do not count as executed gates or installed login recovery.

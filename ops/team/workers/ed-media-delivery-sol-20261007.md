@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — clipboard source RCA and smallest native privacy composition proposal; exact Audio e053 review accepted
+- Status: working — authoring authenticated native clipboard privacy composition and synchronous revocation guards
 - Branch: worker/everyday-clipboard-startup-20261008
 - Worktree: everyday-clipboard-startup-20261008
 - Outcome: enabled clipboard history available after authenticated ordinary unlocked login, fail-closed on unknown/locked/replaced authority
-- Ownership: clipboard service app/private observer, owning CMake/startup privacy tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
-- Next gate: report clipboard public-native composition to root before implementation; source-only until native lease assigned
+- Ownership: clipboard service Host/Resident public overloads and private privacy-state/app observer, owning CMake/focused tests/primary wiki and coordinated boundary/ADR nav; no broad lock/shell private edits
+- Next gate: exact source freeze and independent Astra trust review, then assigned old/fixed native privacy gates; source-only now
 
 ## Updates
 
@@ -81,3 +81,7 @@
 - 2026-10-08T01:47:01+00:00: Manager reserved clipboard ADR0358 and prioritized newly frozen Audio e053e1f85310ea921fed6f48d470e04f460fade7 review. Clipboard source unchanged; legacy all-three-owner quorum and PID admission conflict with split native compositor/session facade source-traced. Reviewing exact Audio fix and author raw80Qt/old8failure evidence now, no independent compiler/host actions while Platform owns native lease.
 
 - 2026-10-08T01:50:29+00:00: Exact Audio e053 source ACCEPT0/0/0/0; all8 author log hashes independently matched, LastTest actual8passed/80Qt0fail0skip, original12pass8fail records inspected. Conservative empty channel truth blocks partial writes without weakening validation; helper unchanged and parent CMake scope repaired. Reviewer compiler/host/native idle. Preserved exact acceptance receipt and resumed clipboard source proposal in isolated a6 tree; ADR0358 reserved.
+
+- 2026-10-08T02:10:19+00:00: Manager approved bounded Host/Resident public admission overload and private cohesive privacy state plus native attachment observer. Authoring production code and failure-mode fixtures now; no compiler/native/host clipboard capture or install action. Existing explicit consent and strict lock/attachment authority remain independent.
+
+- 2026-10-08T02:20:23+00:00: Complete bounded clipboard production source and ADR0358 authored with strict new public constructor symbols, pinned native attachment/receipt composition, synchronous descriptor/capture/Copy guards, purge-before-cancel and reentrant completion checks. Two real failure-mode fixtures and installed-only symbol consumer authored; native unexecuted. Clipboard persistence/logging boundary and diff checks exit0. Ordinary installed fresh-login owner/socket ordering remains required before repair claim. Root holds integrated Printing/Copier lease; freezing source for independent Astra trust review now.

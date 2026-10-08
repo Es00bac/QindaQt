@@ -16,13 +16,22 @@ ResidentClipboardService::ResidentClipboardService(
     std::unique_ptr<ClipboardWayland::ClipboardWaylandAdapter> adapter,
     const QDBusConnection &connection, QString serviceName, quint64 epochSeed,
     QObject *parent)
+    : ResidentClipboardService(std::move(adapter), connection, std::move(serviceName),
+                               epochSeed, [] { return true; }, parent)
+{
+}
+
+ResidentClipboardService::ResidentClipboardService(
+    std::unique_ptr<ClipboardWayland::ClipboardWaylandAdapter> adapter,
+    const QDBusConnection &connection, QString serviceName, quint64 epochSeed,
+    PrivacyAdmission admission, QObject *parent)
     : QObject(parent), m_adapter(std::move(adapter)), m_connection(connection)
     , m_serviceName(serviceName.isEmpty() ? QString::fromLatin1(kServiceName)
                                           : std::move(serviceName))
 {
     Q_ASSERT(m_adapter != nullptr);
     registerDBusTypes();
-    m_host = std::make_unique<ClipboardHost>(m_adapter.get(), epochSeed);
+    m_host = std::make_unique<ClipboardHost>(m_adapter.get(), epochSeed, std::move(admission));
     m_object = std::make_unique<ClipboardServiceObject>(m_host.get());
 }
 
