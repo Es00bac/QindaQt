@@ -1,11 +1,27 @@
 # ED foreign application architecture
-- Status: paused — user-requested logout/login checkpoint; ED05 unfinished source preserved on qinda, no compiler/runtime resources held.
-- Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
-- Base: 1a205444cff9264ac0b21a3968506133132db5bc
-- Branch: worker/everyday-copy-safety-20261007
-- Ownership: own ADR0352/0353 pages/design proofs/records; isolated QindaTK scoped types/policy/host, tests, D-308 and public exports at base393c1ce5
-- Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
+- Status: available — exact Audio e053 source/native handoff complete; ready for same-author review repair and manager-routed package follow-through.
+- Outcome: restore usable Audio aggregate controls through strict channel projection; exact e053e1f85 awaits independent review and manager installed/live gates. ED05 remains preserved/open.
+- Base: a462c415a3678dc8dc96f15bd996abdceea20189; final Audio source e053e1f85310ea921fed6f48d470e04f460fade7.
+- Branch: worker/everyday-audio-recovery-20261008 at a462c415a3678dc8dc96f15bd996abdceea20189.
+- Ownership: Audio service mapper/coordinator diagnostic, owning focused tests/observer and audio-service wiki sections; no protocol/SDK/unit/UI edits. Platform owns SDK closure paragraph.
+- Resources: focused qinda compiler/private-runtime lease released after8/8 owning gates; no host graph/bus/device/installed actions.
 ## Updates
+
+- 2026-10-08T01:49:41Z — Available after clean exact e053 source/d6a evidence handoff. All requested owning gates passed; awaiting independent exact review and manager live fixed observer/integration/package gates. No resources held and no installed-control completion claim. Ready for immediate same-author repair reactivation.
+
+- 2026-10-08T01:47:26Z — Froze Audio e053e1f85 after actual immutable-old12pass8fail and final8/8 CTest80Qt0fail0skip, docs530/strict/boundary/diff0. Root live readonly observer confirmed two dimension mismatches; conservative unknown per-channel truth preserves aggregate controls and refuses partial writes. Media exact review and root readonly fixed observation requested; no installed usability claim. Native lease RELEASED.
+
+- 2026-10-08T01:35:13Z — Claimed root-created Audio repair worktree at a462. Own mapper/coordinator diagnostic, focused service tests and owning wiki; no SDK/protocol/unit/UI edits. Read-only graph observer first for manager laptop execution; focused qinda native lease only, no host graph action.
+
+- 2026-10-08T01:32:17Z — Handed off exact Bluetooth source trace176558441 and fixed-error mapping; no proven daemon/UI root cause. Offered bounded truthful Settings status repair once manager routes it. Available for live-observation follow-up or exact critical fix review; no active compiler, bus, radio or device resources.
+
+- 2026-10-08T01:30:48Z — Exact installed/current Bluetooth paths unchanged; traced v2 client composition, audited builtin grant defaults and control predicates. Root reports real v1 Ready/inventory and normal session bus, so no daemon-startup or private-bus mismatch diagnosis. Await exact v2/control observation; no live/device/native action.
+
+- 2026-10-08T01:22:09Z — User critical R16 Audio/Bluetooth failure reprioritization: preserve unqualified ED05 manifest WIP and switch to read-only Bluetooth/session startup trace. a2b journal has Media source-only acceptance; all native and whole Move gates remain open. No resources held.
+
+- 2026-10-08T01:17:49Z — Preserved direct unexecuted49cd journal regression, then repaired both independently traced version/readback gaps. New deterministic ReadRecord seam coverage is explicitly distinct from immutable-old reproduction. Source-only; exact old/fixed strict gate preparation next while manifest tests continue.
+
+- 2026-10-08T01:13:36Z — Resumed clean c398 ED05 checkpoint on user return; read Media3a4b pending durability concern and coordinated exact regression. Source-only under Platform lease; continuing manifest and recovery wiring without installed/completion claims.
 
 - 2026-10-08T00:26:41Z — User-requested safe pause. Preserved uncompiled/unregistered manifest draft in explicit unfinished checkpoint atop411652583; no milestone acceptance or installed change. First slice remains native/review-unqualified. All resources released (none held); no next work until resumed.
 
