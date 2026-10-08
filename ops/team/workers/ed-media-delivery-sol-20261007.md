@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — building and verifying exact ED11 Printing source in the sole leased isolated compiler/offscreen/staged lane; no live CUPS/scanner actions
+- Status: working — preserving exact ED11 native handoff and reading the next compatible First-party packet; all compiler/runtime resources released
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
 - Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
 - Ownership: new settings/printing module/tests/wiki/ADR0356; approved minimal SettingsCenter route/host/search/CMake and docs wiring
-- Next gate: independent exact ED11 review and leased focused/installed/poison/DPI 2 validation; hardware/Portage journey separate
+- Next gate: root independent acceptance of exact 55113184, integration and affected gates; later Portage and physical journeys remain separate
 
 ## Updates
 
@@ -49,3 +49,5 @@
 - 2026-10-07T23:35:52+00:00: Root assigned bounded readonly ED11 later-gate inventory while Astra holds the native lane. Exact source 83e261591a16126683fd3219a21b11d2807a6d83 remains frozen. Inspecting only sanitized CUPS/config/device metadata counts and a stable exact simple-scan Portage pretend plan; no job, scan, service/config/world/package transaction or native test.
 
 - 2026-10-07T23:39:03+00:00: Root explicitly transferred sole ED11 native lease after Astra release. Detached ignored verification tree is exact 83e261 source; strict /usr + KDE libexec and actual MAKEOPTS -j24 -l24, both host buses blocked and private XDG. Readonly inventory shows CUPS three units disabled/inactive, no socket/current printers.conf or classified USB printer/imaging/SANE device; scanner presence remains unqualified. Exact stable simple-scan pretend exits 1 with Avahi mdnsresponder-compat slot conflict, proposed 18 packages/75413 KiB; no package/config/world/service transaction. Native outcomes not yet claimed.
+
+- 2026-10-08T00:04:47+00:00: Exact55113184 strict production build exit0; full native/offscreen/relocated CTest18/18 with87 Qt passed and zero failures/skips/blacklisted. Installed public catalog1/1 with11 Qt passed, actual staged-header poison build exit1, restored build+1/1 exit0; four staged producer headers/zero source leaks/14 byte-matched payloads/Core-only. Docs526/strict/production11+test6 shape/diff pass. Original83e and488 16/18 failures preserved; root approved precise Controllers metadata/page order and palette fixture repair. Explicitly RELEASED all compiler/runtime/staging resources to root before receipt; no Portage/hardware/service claim.
