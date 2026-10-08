@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 def prepare(destination, source):
-    destination.mkdir(mode=0o700)
+    destination.mkdir(mode=0o755)  # parent run directory remains private0700
     for name in ("proc", "sys", "dev", "run", "tmp", "var", "root", "home",
                  "etc", "etc/fonts", "proof", "usr", "usr/share",
                  "usr/share/waydroid-extra", "usr/share/waydroid-extra/images"):
