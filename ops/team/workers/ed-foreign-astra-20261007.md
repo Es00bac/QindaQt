@@ -7,6 +7,10 @@
 - Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
 ## Updates
 
+- 2026-10-08T03:02:00Z — Verified Clipboard afa/0bd final evidence: 33 hashes match, raw 22/22 CTest and 172 Qt checks; actual old sources/fixtures and SDK poison/restoration inspected. Exact bounded ACCEPT posted; continuing Bluetooth source-only recovery and lifecycle tests.
+
+- 2026-10-08T02:59:04Z — Working: Bluetooth helper/power lifecycle source draft is uncompiled and not accepted; independently reading Media's final Clipboard 0bd/afa raw old/fixed evidence now. No compiler, bus, device, or installed resources held.
+
 - 2026-10-08T02:34:47Z — Independent exact Clipboarddecb source recheck ACCEPT; first-Session observation bounded and pin-once, original Host/SDK bytes unchanged. Direct docs531/strict/boundary/diff0. Native old/fixed, SDK and installed gates remain pending; resume approved Bluetooth source, no runtime lease.
 
 - 2026-10-08T02:32:54Z — Restore own board immediately after claim script used a branch absent from this worktree common repository and truncated the destination. Original record remained intact in Audio worktree; no product source affected. Bluetooth claim now preserved with explicit source paths; Clipboard repaired decb recheck preempts authoring.
