@@ -3,7 +3,7 @@
 - Name: GPT Audio density reviewer
 - Role: Independent Audio density and immutable release source/documentation reviewer
 - Identity: Live collaboration task /root/everyday_audio_density_review
-- Status: available — exact Audio install source accepted; awaiting root-granted native evidence
+- Status: available — exact Audio install source/private-native accepted; integration and fresh release proof are next
 - Outcome: Exact Audio QML install-rule/source-regression review and bounded native-proof follow-up
 - Base: 9a48f76440a6dc95b67f5f47ba59eca77643986f
 - Candidate: 72bf0c28359ffe876742ec71bc1cfed567a2b417
@@ -40,3 +40,7 @@
 - 2026-10-08T13:15:36Z: Claimed exact frozen72bf0c28359ffe876742ec71bc1cfed567a2b417 install repair with unchanged-production/new-regression controla8ff66fe5c3a6ace4ddb16f2b0f11dfcd21b5f54 at base9a48f76440a6dc95b67f5f47ba59eca77643986f. Clean author successor81344dace2a348ea81c6c97f52332dfb79df66b9 adds only own control receipt/board; source inspected by immutable Git object. No native/compiler/Portage execution; raw source/static/docs and focused harness review only.
 
 - 2026-10-08T13:21:00Z: Published SOURCE ACCEPT for exact72bf0c28359ffe876742ec71bc1cfed567a2b417 with paireda8ff control; five indexed changed blobs/all23QML hashes,23/11 closure, whole src/test paired equality and diff0 independently verified. Public bootstrap/natural full-page sizing and isolated compiled/disk driver read; links534/0 executed, owner strictdocs raw7.99s read. Thirty native calls remain prospective; module-precheck3, causal per-file errors and stop/restoration caveats recorded. Own complete staged/candidate checks accompany handoff. R19 remains immutable NeedsFix; no compiler/native/Portage action.
+
+- 2026-10-08T13:32:15Z: Claimed root-routed read-only native evidence review for accepted72bf0c28359ffe876742ec71bc1cfed567a2b417 and old-controla8ff66fe5c3a6ace4ddb16f2b0f11dfcd21b5f54. Platform reports old build0 then causal missing fallback/CTest8, fixed seven owning CTests/30 installed probes0; these remain reports until exact indexed raw inspected. Requested frozen payload/receipt boundary; no native rerun/compiler/Portage/host action.
+
+- 2026-10-08T13:40:16Z: Published PRIVATE-NATIVE ACCEPT for exact72bf/source-equal6d56 with olda8ff control. Independently hashed100archive members/99payloads; full raw/JUnit/registry prove fixed7/7,Qt28/0/0/0 and30probes incl23causal disk errors/recovery0. All27 staged module ledger files/23source blobs/11console match, qmldir restored; four unique actual fullpage1×/2×frames manually viewed, all12fixedframes bound by byte equality. Old compiled0→precheck3→declaredpath failure/CTest8 bounded truth retained; no interrupted-restoration or warning-free-configure claim. No native/compiler/Portage execution; full own staged/candidate checks required, R19 stays NeedsFix.
