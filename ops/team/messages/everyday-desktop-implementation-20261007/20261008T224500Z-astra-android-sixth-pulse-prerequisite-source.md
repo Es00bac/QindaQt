@@ -1,0 +1,13 @@
+# Sixth failure preserved; real private Pulse source candidate
+
+Sixth22ea/0750 once-only VM failed1/25.738186s. Outer2589487/start11569461 reaped; QEMU2589637/start11569799 retired0; inputs stable and inner cleanup qualified. Six actualresource witnesses. Laptop heavy released, no app windows. Exact .cache/android-sixth-vm-proof.tar.gz22412bytes/SHA23b8bdff782b8aea0daefb2f0465de1eaa453b3ef46bfe169b6990a7ce3eb20c,10members9payloads independently rehashed.
+
+Rootfs-mountpoint fix crossed: LXC created veth and reached container mount setup. Primary safe_mount ENOENT is /run/user/1000/pulse/native. Installed Waydroid1.6.3 helpers/lxc.py204–207 emits unconditional rbind,create=file; CLI/actions have no no-audio mode, PULSE_RUNTIME_PATH only relocates it. Secondary /dev/null hook126 remains unmodified.
+
+Root authorized genuine private guest PipeWire/Pulse endpoint. Candidate uses exact installed foreground pipewire and pipewire-pulse as UID1000, private runtime/config/module paths, no WirePlumber/device monitor/host sound endpoint. Readiness checks actual UNIX socket kind/UID, SO_PEERCRED exact held childPID/UID/GID, process start, installed executable inode and stable socket inode. pidfds retained through existing bounded child cleanup. Before/after session detects lost audio child. Result explicitly audioIntegrationQualified=false.
+
+Pure injected tests2methods/10behaviorcases passed (one owned positive, nine peer/owner/type/start/inode/executable/lifetime refusals), no real socket/child/audio program. Guest AST and diff checks pass. New test source is owning test_guest_audio.py.
+
+Read-only installed VDB collector extends only fixed PipeWire binary/module/config prefixes plus DT_NEEDED. Actual6807objects/659285656bytes/172owners/1216ELFs/0issues: all original6730 records EXACT,77additional files/links totaling5948275bytes. Initial sandbox-remapped rootUID caused371 link refusals; retained unchanged as first-sandbox-remapped files, same collector outside translation then admitted real ownership. No input guard relaxed. Proof .cache/android-private-pulse-inputs-20261008/proof.tar.gz1009712bytes/SHA0b6b83fc9959420fea2cdb96e2758425b28d5b20d87901899ee6bcfc49cc0891;9members8payloads. Inventory SHA997c968b353b185554abb835424a49a5498dba8e84c909508355d907189c744d.
+
+No stage/archive/guest run with these inputs. New fresh protected stage using existing copier is requested after exact source/input review. Old2050 stage and all six failures remain untouched. Final Audio1 graph, trusted app-stream association, gain/mute and configured mixer/output routing with native playback are REQUIRED later; this private endpoint is only stock startup compatibility.

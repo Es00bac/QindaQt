@@ -5,11 +5,15 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
+import stat
+import struct
 import subprocess
 import time
 
 ROOT = Path("/run/android-proof")
 children = []
+audio_handles = []
 cancelled = False
 
 def cancel(*_):
@@ -44,6 +48,50 @@ def wait_path(path, timeout=10):
         time.sleep(.05)
     raise RuntimeError("guest-readiness-timeout")
 
+def process_start(pid):
+    text = Path("/proc", str(pid), "stat").read_text()
+    return text[text.rfind(")") + 2:].split()[19]
+
+def owned_audio_socket(child, path, birth):
+    """Only an endpoint of our held foreground child admits stock socket bind."""
+    wait_path(path)
+    before = path.lstat()
+    if (child.poll() is not None or not stat.S_ISSOCK(before.st_mode)
+            or before.st_uid != 1000):
+        raise RuntimeError("private-audio-socket-admission")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(2)
+        connection.connect(str(path))
+        peer = struct.unpack("3i", connection.getsockopt(
+            socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
+    expected = os.stat("/usr/bin/pipewire")
+    actual = os.stat("/proc/" + str(child.pid) + "/exe")
+    after = path.lstat()
+    if (peer != (child.pid, 1000, 1000) or process_start(child.pid) != birth
+            or (actual.st_dev, actual.st_ino) != (expected.st_dev, expected.st_ino)
+            or (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)
+            or child.poll() is not None):
+        raise RuntimeError("private-audio-owner-changed")
+
+def start_private_audio(userenv, runtime):
+    # AGENT-GUARD: guest-only stock compatibility endpoint, never host Audio1
+    # integration. No session manager/device monitor or host socket is started.
+    audioenv = dict(userenv, PIPEWIRE_CONFIG_DIR="/usr/share/pipewire",
+                    PIPEWIRE_MODULE_DIR="/usr/lib64/pipewire-0.3",
+                    SPA_PLUGIN_DIR="/usr/lib64/spa-0.2",
+                    PIPEWIRE_RUNTIME_DIR=str(runtime), PIPEWIRE_CORE="pipewire-0",
+                    PIPEWIRE_REMOTE="pipewire-0",
+                    PULSE_RUNTIME_PATH=str(runtime / "pulse"))
+    owned = []
+    for name, endpoint in (("pipewire", runtime / "pipewire-0"),
+                           ("pipewire-pulse", runtime / "pulse/native")):
+        child = spawn(["/usr/bin/" + name], audioenv, user=1000)
+        audio_handles.append(os.pidfd_open(child.pid))
+        birth = process_start(child.pid)
+        owned_audio_socket(child, endpoint, birth)
+        owned.append(child)
+    return owned
+
 def bus_config(path):
     return ('<busconfig><type>session</type><listen>unix:path=' + path
             + '</listen><auth>EXTERNAL</auth><policy context="default">'
@@ -60,7 +108,8 @@ def main():
     os.umask(0o022)
     result = {"schema": 1, "kind": "stock-android-feasibility",
               "success": False, "appIdentityQualified": False,
-              "platformOriginQualified": False, "cleanupQualified": False}
+              "platformOriginQualified": False, "cleanupQualified": False,
+              "audioIntegrationQualified": False, "privateAudioEndpointReady": False}
     env = {"PATH": "/usr/bin:/usr/sbin:/bin:/sbin", "LANG": "C.UTF-8",
            "HOME": "/root", "DBUS_SYSTEM_BUS_ADDRESS":
            "unix:path=/run/android-proof/system-bus",
@@ -140,6 +189,11 @@ def main():
                    "--scale", "1", "--output-count", "1", "--no-lockscreen",
                    "--no-global-shortcuts", "--test-scenario", "/proof/scenario.json",
                    "--session", "/proof/windows.py"]
+        phase = "private-audio"
+        audio = start_private_audio(userenv, runtime)
+        if any(child.poll() is not None for child in audio):
+            raise RuntimeError("private-audio-lost-before-session")
+        result["privateAudioEndpointReady"] = True
         phase = "compositor-launch"
         compositor = spawn(command, userenv, user=1000)
         phase = "window-proof"
@@ -149,6 +203,8 @@ def main():
         windows = json.loads((home / "windows.json").read_text())
         if windows.get("twoWindowsObserved") is not True:
             raise RuntimeError("two-window-proof-missing")
+        if any(child.poll() is not None for child in audio):
+            raise RuntimeError("private-audio-lost-during-session")
         result["windows"] = windows
         result["success"] = True
     except BaseException as error:
@@ -181,6 +237,9 @@ def main():
                     child.kill(); child.wait(timeout=2)
                 except BaseException:
                     pass
+        for handle in audio_handles:
+            try: os.close(handle)
+            except OSError: result["cleanupQualified"] = False
         result["success"] = result["success"] and result["cleanupQualified"]
         print("QINDA_ANDROID_RESULT=" + json.dumps(result, sort_keys=True), flush=True)
         os.sync()
