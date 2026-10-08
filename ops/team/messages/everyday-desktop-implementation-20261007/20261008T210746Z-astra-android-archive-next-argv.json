@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "kind": "prospective-archive-only-and-next-vm-input-plan",
+  "executed": false,
+  "qualifiedStageReceipt": "d45e42d686f04ea3c750f81585bcfbd96c2b8d1e",
+  "root": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z",
+  "archiveOutput": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/archive-2110",
+  "runtimeAuthorized": false,
+  "inputPins": {
+    "stage-inventory.json": "1dea8d37a245548caf3030a4847ed8330f3171a157b3f26af6a467aa9e6f1214",
+    "archive-plan.json": "f9a1e59f98ab6299cba35de77ccc073e236962b3b07bb205ff52558af87de6bb",
+    "stage-result.json": "a0f65fb2cedd1729a4c53f7bfcd1952c9280d8ce9fd066fec0be0315870f968d"
+  },
+  "protectedSourcePlan": "665b3988a3773b0531fa8d8a328d4cb938304eca71bf3ac34b574b7161ac8f61",
+  "limits": {
+    "CPUQuota": "400%",
+    "CPUAffinity": "0-7",
+    "MemoryMax": 5368709120,
+    "MemorySwapMax": 0,
+    "TasksMax": 256,
+    "Nice": 10,
+    "RuntimeMaxSec": 120,
+    "TimeoutStopSec": 5,
+    "LimitFSIZE": 1073741824,
+    "LimitCORE": 0,
+    "UMask": "0077"
+  },
+  "commands": [
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/inputs/source/boot_plan.py",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage-inventory.json"
+      ],
+      "meaning": "Fresh before inventory/required admission; exact compare to accepted archive-plan; write NUL paths from its 7209 entries."
+    },
+    {
+      "argv": [
+        "/usr/bin/cpio",
+        "--null",
+        "--create",
+        "--format=newc",
+        "--owner=0:0",
+        "--reproducible",
+        "--quiet"
+      ],
+      "cwd": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage",
+      "stdin": "exclusive paths.nul",
+      "stdout": "exclusive initramfs.cpio",
+      "deadlineSeconds": 40
+    },
+    {
+      "argv": [
+        "/usr/bin/gzip",
+        "-n",
+        "-1",
+        "-c",
+        "initramfs.cpio"
+      ],
+      "cwd": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/archive-2110",
+      "stdout": "exclusive initramfs.cpio.gz",
+      "deadlineSeconds": 60
+    },
+    {
+      "argv": [
+        "/usr/bin/gzip",
+        "-t",
+        "initramfs.cpio.gz"
+      ],
+      "cwd": "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/archive-2110",
+      "deadlineSeconds": 10
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/inputs/source/boot_plan.py",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage",
+        "/var/tmp/qindaqt-android-laptop-stage-20261008T2050Z/stage-inventory.json"
+      ],
+      "meaning": "Final full inventory/required admission must equal before. Recheck protected source/input pins, archive size/hash and elapsed bound; publish no runtime admission."
+    }
+  ],
+  "toolPins": {
+    "/usr/bin/cpio": {
+      "resolved": "/usr/bin/gcpio",
+      "sha256": "c2fb928222355ae6883ceb06d71da73d70e80b40fcd0d00aae4c73f463c4e521",
+      "size": 165736
+    },
+    "/usr/bin/gzip": {
+      "resolved": "/usr/bin/gzip-reference",
+      "sha256": "a4a9164df114a27c0a73f113a88a9c9ddb3b2fe197af0dde2ea2649fa1691ccd",
+      "size": 97344
+    },
+    "/usr/bin/qemu-system-x86_64": {
+      "sha256": "f580fb233b0de6beae9d5e9be418297a8b8e4d64abec764bb98bde9bff6b7eda",
+      "size": 29648440
+    }
+  },
+  "prospectiveKernel": {
+    "source": "/usr/src/linux-6.18.48-gentoo-dist-bin/arch/x86/boot/bzImage",
+    "sha256": "08a14c2f0961cd867e3c9223f4718e3d2315b21a29b5c559d9fdbe07ef701eb7",
+    "size": 22608880
+  },
+  "nextVm": {
+    "source": "tools/foreign-runtime/android-stock-proof/run_vm.py",
+    "profile": "laptop",
+    "guestCPUs": 4,
+    "guestMiB": 4096,
+    "fixedFourInputs": [
+      "kernel",
+      "initramfs",
+      "system",
+      "vendor"
+    ],
+    "systemSha256": "30c87ee44412fee4f50173716a6bb7c6941d3021853f0adab4a249da8a9455ab",
+    "vendorSha256": "5cc4267517ded28f1cf60a5d2b6e8b88b15d8520de1f55a39de7764e7929a877",
+    "missing": "Actual protected initramfs hash/size and system/vendor protected source paths, then exact four-input review/grant."
+  }
+}
