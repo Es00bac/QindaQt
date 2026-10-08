@@ -31,8 +31,9 @@ void ViewerUiTest::documentInteractionAndLayouts()
     QSignalSpy warnings(&engine, &QQmlEngine::warnings);
     auto *provider = new QindaQt::Viewer::FrameProvider;
     engine.addImageProvider(QStringLiteral("document"), provider);
-    connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged, &engine,
+    connect(&viewer, &QindaQt::Viewer::ViewerController::frameChanged, provider,
             [&] { provider->setFrame(viewer.frame()); });
+    engine.rootContext()->setContextProperty(QStringLiteral("frameProvider"), provider);
     engine.rootContext()->setContextProperty(QStringLiteral("viewer"), &viewer);
     engine.rootContext()->setContextProperty(QStringLiteral("coordinator"), &coordinator);
     engine.load(QUrl::fromLocalFile(QStringLiteral(VIEWER_MAIN_QML)));

@@ -23,7 +23,8 @@ target_link_libraries(qindaqt_viewer_text_test PRIVATE PkgConfig::VIEWER_TEXT_TE
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/artifacts")
 qt_add_executable(qindaqt_viewer_ui_test tst_ui.cpp
-    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp")
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/frame_provider.h")
 target_link_libraries(qindaqt_viewer_ui_test PRIVATE qindaqt_viewer_support
     QindaQt::AppShell Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 target_compile_definitions(qindaqt_viewer_ui_test PRIVATE
@@ -43,7 +44,8 @@ add_test(NAME apps.viewer.cli-install
 set_tests_properties(apps.viewer.cli-install PROPERTIES ENVIRONMENT "${viewer_test_env}" TIMEOUT 60)
 
 qt_add_executable(qindaqt_viewer_text_ui_test tst_text_ui.cpp
-    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp")
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/viewer_actions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/apps/viewer/frame_provider.h")
 target_link_libraries(qindaqt_viewer_text_ui_test PRIVATE qindaqt_viewer_support
     QindaQt::AppShell Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 target_compile_definitions(qindaqt_viewer_text_ui_test PRIVATE
