@@ -178,3 +178,13 @@ complete per-prefix retirement still require different-author source review,
 a fresh granted preflight and separately granted one-attempt native run.
 This is a trusted-built-in experiment, not production Windows integration,
 authenticated blue origin, rendered resize/input or ordinary app data support.
+
+The owned-server fixture rejects expiry before and after blocking readiness,
+retirement, and release checks. Expiry is latched: failure containment may still
+settle held children, but cannot become successful qualification. Final driver
+admission and receipt publication also check the overall deadline. Synthetic
+child controls give every generation its own finite lifetime even without a
+release file; the supervisor and outer test settle held owners and reap adopted
+children on failure, retaining temporary data whenever settlement is uncertain.
+These repaired controls require separate source review and execution; the prior
+70-control receipt does not qualify the repaired source.

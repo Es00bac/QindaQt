@@ -39,19 +39,51 @@ def authority_state():
     return {"present":value is not None,"exactEmpty":value=="",
             "whitespaceOnly":bool(value) and value.isspace(),"cwd":os.getcwd()[:256]}
 
+def require_driver_time(evidence,deadline):
+    remaining=deadline-time.monotonic()
+    if evidence.get("deadlineExpired") or remaining<=0:
+        evidence["deadlineExpired"]=True
+        raise RuntimeError("overall driver deadline expired")
+    return remaining
+
+def qualify_driver(evidence,deadline):
+    from processes import admit_driver
+    evidence["deadlineQualified"]=False
+    require_driver_time(evidence,deadline)
+    evidence["deadlineQualified"]=True
+    try:
+        admit_driver(evidence)
+        require_driver_time(evidence,deadline)
+    except Exception:
+        evidence["deadlineQualified"]=False
+        raise
+    return True
+
+def publish_driver_result(evidence,deadline,path):
+    try:qualify_driver(evidence,deadline);result=0
+    except Exception:result=1
+    path.write_text(json.dumps(evidence,indent=2)+"\n")
+    if result==0:
+        try:require_driver_time(evidence,deadline)
+        except Exception:
+            evidence["deadlineQualified"]=False;result=1
+            path.write_text(json.dumps(evidence,indent=2)+"\n")
+    return result
+
 def main():
     evidence={"trustedFixturesOnly":True,"prefixesAreNotPerAppSandbox":True,"authenticatedBadge":False,"steps":[],"prefixesRetained":True}
     evidence["xauthorityInput"]=authority_state()
     apps=[];servers=[];serverlogs=[];x=None;ledger=None
     deadline=time.monotonic()+110
     def checkpoint():
-        if time.monotonic()>=deadline:raise RuntimeError("overall driver deadline")
+        require_driver_time(evidence,deadline)
         if ledger:ledger.checkpoint()
         for server in servers:
             if server.ready:server.guard()
     def bounded_wait(description,predicate,seconds=15):
-        def probe():checkpoint();return predicate()
-        return wait(description,probe,min(seconds,max(.01,deadline-time.monotonic())))
+        def probe():
+            checkpoint();value=predicate();checkpoint();return value
+        return wait(description,probe,min(seconds,require_driver_time(evidence,deadline)))
     try:
         if not os.environ.get("DISPLAY") or os.environ.get("DBUS_SESSION_BUS_ADDRESS","").find("/fixture/")<0:
             raise RuntimeError("private nested display/bus missing")
@@ -85,6 +117,7 @@ def main():
             env=wine_environment(name)
             for directory in [Path(env["HOME"]),Path(env["WINEPREFIX"]),*(Path(env[k]) for k in ["XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME"])]:
                 directory.mkdir(parents=True,exist_ok=True)
+            checkpoint()
             serverlog=(ROOT/(name+"-server.log")).open("wb");serverlogs.append(serverlog)
             server=OwnedServer(Path(env["WINEPREFIX"]),SERVER,env,serverlog,deadline)
             servers.append(server);ledger.register(server.child,name+" server")
@@ -93,6 +126,7 @@ def main():
                 "pid":server.child.process.pid,"starttime":server.child.initial["starttime"]})
             checkpoint()
             log=(ROOT/(name+".log")).open("wb")
+            checkpoint()
             owner=OwnedChild([LOADER,PE+fixture],env,log)
             try:ledger.register(owner,name+" app")
             except Exception:
@@ -161,7 +195,8 @@ def main():
             finally:server.close()
         for app in apps:
             try:
-                code=app["process"].wait(timeout=min(3,max(.01,deadline-time.monotonic())))
+                code=app["process"].wait(timeout=min(3,require_driver_time(evidence,deadline)))
+                require_driver_time(evidence,deadline)
                 app["owner"].reaped=True
                 if code!=0 or not app["owner"].dead():raise RuntimeError("application retirement refused")
                 evidence.setdefault("appRetirement",[]).append({"app":app["name"],
@@ -171,7 +206,10 @@ def main():
                 evidence.setdefault("uncertainCleanup",[]).append(app["name"]+" app")
                 app["owner"].contain()
         if ledger:
-            try:evidence["childrenRetirement"]=ledger.final()
+            try:
+                require_driver_time(evidence,deadline)
+                evidence["childrenRetirement"]=ledger.final()
+                require_driver_time(evidence,deadline)
             except Exception as error:
                 evidence.setdefault("uncertainCleanup",[]).append("child-ledger")
                 evidence["childrenRetirement"]={"qualified":False,"errorType":type(error).__name__}
@@ -181,9 +219,5 @@ def main():
         if x:
             try:x.close()
             except Exception:evidence.setdefault("uncertainCleanup",[]).append("X11")
-        (ROOT/"driver-evidence.json").write_text(json.dumps(evidence,indent=2)+"\n")
-    try:
-        from processes import admit_driver
-        admit_driver(evidence);return 0
-    except Exception:return 1
+    return publish_driver_result(evidence,deadline,ROOT/"driver-evidence.json")
 if __name__=="__main__":raise SystemExit(main())

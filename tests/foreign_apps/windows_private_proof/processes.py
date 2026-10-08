@@ -51,6 +51,8 @@ def wait(description,predicate,seconds=15):
 
 def admit_driver(value):
     """Fixed trusted fixture result admission; launcher exit alone is insufficient."""
+    if value.get("deadlineQualified") is not True or value.get("deadlineExpired"):
+        raise RuntimeError("driver deadline qualification absent")
     clients=value.get("clients",[])
     steps=value.get("steps",[])
     stops=value.get("serverRetirement",[])

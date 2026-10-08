@@ -11,7 +11,7 @@ def positive():
             'prefixIdentity':[1,i+1,os.getuid(),1],'serverDirectory':[2,i+1,os.getuid(),1],
             'lock':[3,i+1,os.getuid(),1],'socket':[4,i+1,os.getuid(),1],
             'peerPid':100+i,'peerUid':os.getuid()})
-    return {'passed':True,'clients':[{'application':r['app'],'fixedProgram':'notepad.exe' if i==0 else 'wordpad.exe',
+    return {'passed':True,'deadlineQualified':True,'clients':[{'application':r['app'],'fixedProgram':'notepad.exe' if i==0 else 'wordpad.exe',
         'normalWindowType':True,'fixedProgramArgumentObserved':True,'xid':str(i+1),
         'xresLocalPid':10+i,'prefix':r['prefix'],'starttime':10+i} for i,r in enumerate(rows)],
         'steps':[{'stage':s} for s in ['resize-a','close-a','resize-b','close-b']],
@@ -22,6 +22,12 @@ def positive():
         'appRetirement':[{'app':r['app'],'pid':10+i,'starttime':10+i,'exit':0,'reaped':True,'pidfdDead':True} for i,r in enumerate(rows)],
         'childrenRetirement':{'qualified':True,'subreaperChecked':True,'directReaped':4,'unknownSurvivors':False},'subreaperChecked':True}
 class Admission(unittest.TestCase):
+    def test_deadline_fact_required(self):
+        v=positive();v.pop('deadlineQualified')
+        with self.assertRaises(RuntimeError):admit_driver(v)
+    def test_expired_fact_refused(self):
+        v=positive();v['deadlineExpired']=True
+        with self.assertRaises(RuntimeError):admit_driver(v)
     def test_complete_positive(self):self.assertTrue(admit_driver(positive()))
     def test_old_cleanup_receipt_insufficient(self):
         v=positive();v.pop('serverRetirement');v['prefixServerStop']=[{'app':'app-a','exit':0},{'app':'app-b','exit':0}]
