@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Windows causal-domain source frozen for same-reviewer safety check; no generation/native resources held.
+- Status: available — Windows f1 source repairs frozen for same-reviewer safety recheck; no resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -305,3 +305,7 @@
 - 2026-10-08T17:52:00.665158+00:00 — Claimed existing Windows owned-server branch after Android source handoff; read full307ae, preserve635/nativefailure and implement closed per-prefix workers with kernel ECHILD retirement, no observed/adopted PID signal authority. Source safety review precedes generation tests.
 
 - 2026-10-08T18:07:09.963640+00:00 — Frozen Windows closed per-prefix worker/ledger/protocol and authored negative/kernel controls; only AST23+embedded3/docs checked. Exact safety review before all generation/native gates; Android artifact and postpackage-test proposal preserved separately.
+
+- 2026-10-08T18:21:48+00:00 — Claimed exact f1 source repair of Astra17d blockers; generation tests remain unrun pending same-reviewer safety recheck.
+
+- 2026-10-08T18:22:40+00:00 — Froze parent-incarnation edge admission and independently continuing synthetic cleanup; AST/diff only, all generation tests unrun.
