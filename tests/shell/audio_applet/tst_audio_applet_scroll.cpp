@@ -2,11 +2,21 @@
 #include "support/audio_applet_qml_fixture.h"
 
 #include <QImage>
+#include <QGuiApplication>
 #include <QScreen>
 #include <QWheelEvent>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_AudioAppletPlugin)
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
+
+class SettingsFacade final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool canOpenSettings READ canOpenSettings CONSTANT)
+public:
+    bool canOpenSettings() const { return true; }
+    Q_INVOKABLE bool openSettings() { ++calls; return true; }
+    int calls = 0;
+};
 
 namespace {
 Audio::Snapshot manyRows()
@@ -67,6 +77,8 @@ class AudioAppletScrollTests final : public QObject
 private Q_SLOTS:
     void constrainedPopupReachesFooterWithoutChangingAudio();
     void manyOutputsKeepTheDefaultInputAndOutput();
+    void selectedOutputGeometryRejectsUnknownAndAmbiguousNames();
+    void composedSettingsFacadeIsOptionalAndInvoked();
 };
 
 void AudioAppletScrollTests::constrainedPopupReachesFooterWithoutChangingAudio()
@@ -187,6 +199,74 @@ void AudioAppletScrollTests::manyOutputsKeepTheDefaultInputAndOutput()
     }
     QVERIFY(hasInput);
     QVERIFY(hasOutput);
+}
+void AudioAppletScrollTests::selectedOutputGeometryRejectsUnknownAndAmbiguousNames()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    QQuickWindow window;
+    QQuickItem anchor(window.contentItem());
+    QVERIFY(controller.popupAvailableSize(nullptr, window.screen()->name()).isEmpty());
+    QVERIFY(controller.popupAvailableSize(&anchor, QString{}).isEmpty());
+    QVERIFY(controller.popupAvailableSize(&anchor, QStringLiteral("missing-output")).isEmpty());
+    int matches = 0;
+    for (auto *screen : QGuiApplication::screens())
+        if (screen->name() == window.screen()->name())
+            ++matches;
+    const auto size = controller.popupAvailableSize(&anchor, window.screen()->name());
+    if (matches > 1)
+        QVERIFY(size.isEmpty());
+    else
+        QCOMPARE(size, window.screen()->availableGeometry().size());
+    for (auto *screen : QGuiApplication::screens()) {
+        if (screen->name() != QStringLiteral("z-audio-secondary"))
+            continue;
+        window.setScreen(screen);
+        window.setGeometry(screen->availableGeometry());
+        QCOMPARE(controller.popupAvailableSize(&anchor, screen->name()),
+                 screen->availableGeometry().size());
+    }
+}
+
+void AudioAppletScrollTests::composedSettingsFacadeIsOptionalAndInvoked()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    transport.reply(transport.fetches.constLast(), clientSnapshot());
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller, {QStringLiteral("audio-volume-medium")}, &error),
+        qPrintable(error));
+    auto *root = harness.root();
+    QQuickWindow window;
+    window.setGeometry(0, 0, 640, 360);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    root->setSize(QSizeF(32, 28));
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    const auto summaries = visualItemsNamed(root, QStringLiteral("audioAppletSummary"));
+    QCOMPARE(summaries.size(), 1);
+    summaries.constFirst()->forceActiveFocus();
+    auto *content = openPopupContent(root, &window);
+    QVERIFY(content);
+    auto settings = visualItemsNamed(content, QStringLiteral("audioOpenSettings"));
+    QCOMPARE(settings.size(), 1);
+    QVERIFY(!settings.constFirst()->isVisible());
+    SettingsFacade facade;
+    QVERIFY(root->setProperty("desktopControls", QVariant::fromValue<QObject *>(&facade)));
+    QTRY_VERIFY(settings.constFirst()->isVisible());
+    auto *button = settings.constFirst();
+    button->forceActiveFocus();
+    QTest::keyClick(button->window(), Qt::Key_Space);
+    QTRY_COMPARE(facade.calls, 1);
+    QCOMPARE(transport.operations.size(), 0);
+    QVERIFY(root->setProperty("desktopControls", QVariant::fromValue<QObject *>(nullptr)));
+    QTRY_VERIFY(!button->isVisible());
 }
 QTEST_MAIN(AudioAppletScrollTests)
 #include "tst_audio_applet_scroll.moc"

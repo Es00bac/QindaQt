@@ -75,8 +75,11 @@ localized sentences. Unknown or empty codes fall back to one generic
 sentence; a read denial maps to its own fixed access sentence. Diagnostics
 are never shown or parsed.
 
-Rows: at most 8 device rows (outputs before inputs, protocol
-ascending-serial order) and 8 stream rows. Anything beyond the window is
+Rows: at most 8 output and 8 input rows (outputs before inputs, protocol
+ascending-serial order within each kind) and 8 stream rows. Each current
+default is retained within its kind budget: if it lies outside the first
+eight, it replaces the final ordinary slot. Eight outputs cannot hide the
+default microphone. Anything beyond the window is
 summarized as an `overflowDeviceCount`/`overflowStreamCount` label. Each row
 carries label, default/direction flags, volume with `volumeKnown`, mute with
 `muteKnown`, capability booleans, the `pending` flag, and
@@ -118,7 +121,24 @@ label.
 
 ## Panel layout
 
-The details popup is 420 px wide and reads as a piece of desk equipment rather
+The details popup is at most 360 logical px wide and 480 logical px tall.
+Its actual attached output's QScreen.availableGeometry bounds both sizes,
+reserving its anchor height and edge padding. The small presentation geometry
+collaborator resolves the attached screen name without primary-screen or
+virtual-desktop inference; missing or ambiguous names fail closed. Screen
+geometry/add/remove notifications and each-open binding refresh this value,
+without retaining a screen pointer across hotplug.
+
+An explicit clipped vertical Flickable owns the content height and visible
+scrollbar. Wheel input over labels/gutters scrolls; wheel on a volume slider
+retains its existing 1% volume contract. PageUp/PageDown and CtrlHome/CtrlEnd
+scroll when a child has not consumed its own key semantics. Tab focus reveals
+the focused control, including the footer; sliders and device pickers retain
+their typed action identities and drag behavior. These presentation changes
+require constrained 1280×720 normal/2× and 1536×864 fractional-scale fixture
+evidence; source authoring alone is not live usability qualification.
+
+The compact surface reads as a piece of desk equipment rather
 than a menu. Four collapsible bands, each headed by the same caption-weight
 title, chevron and hairline:
 
@@ -159,7 +179,7 @@ closes. That state is **per session**: the desktop has no QML-side settings
 store, and persisting it across a restart needs a settings key that this slice
 does not add.
 
-Three things the mock in the wave plan asks for are deliberately absent,
+Two things the mock in the wave plan asks for are deliberately absent,
 because each needs a projection or intent this applet does not have:
 
 - **Per-device meters.** `DeviceRow` and `StreamRow` carry no level at all;
@@ -167,10 +187,11 @@ because each needs a projection or intent this applet does not have:
   measuring anything is worse than no meter.
 - **Bus strips in the console band.** The projection walks
   `snapshot.console.strips` only, and there is no bus fader or bus mute intent.
-- **A way into Settings.** `BuiltinAppletContent.qml` hands this applet only
-  its controller and orientation. `AudioApplet.qml` declares an optional
-  `desktopControls` property and renders the footer action only when something
-  supplies it, so no dead affordance is ever shown.
+
+The footer now receives the composed public SystemMenuController from
+BuiltinAppletContent.qml. Its optional **Settings…** action opens generic
+Settings through that existing public facade, not a dedicated Audio route;
+an absent/unavailable facade renders no dead action.
 
 The panel surface is one 32-by-28 icon button. Its symbolic name follows the
 default output's mute and normalized-volume state (`muted`, `low`, `medium`,
@@ -182,8 +203,9 @@ preventing the mixer layout from contributing to panel width or height.
 ## Request rules
 
 `requestVolume(serial, isStream, volume)` and
-`requestMute(serial, isStream, muted)` are the only mutations, and this
-applet never sets defaults or moves streams.
+`requestMute(serial, isStream, muted)` control device and stream levels.
+The default-device picker additionally uses requestDefault; console controls
+use their separately bounded strip intents. This applet does not move streams.
 
 - The control grant is checked before any dispatch; denial is refused
   locally with feedback.
@@ -288,3 +310,16 @@ or nested-compositor interaction. It owns no aggregation, threshold, or
 platform policy: those remain Audio1 and audio-service authority.
 Installed proof is relocation and source-policy evidence, not a claim that a
 live audio backend has become available.
+
+## Bounded popup regression qualification
+
+The owning popup-window fixture constructs actual compiled AudioApplet QML
+against a fake public AudioClient transport, with 8 outputs, 5 inputs,
+24 streams and 8 console strips. It delivers real wheel/key/Tab events,
+requires footer reach without audio mutation, verifies default-device budget
+retention, and checks optional generic Settings facade invocation. The old
+production+new fixture boundary is preserved separately before changing
+projection policy. Normal, 2×, fractional and ambiguous-output rows are
+isolated from host buses, routes and settings. Existing drag, volume-wheel,
+grant/owner-loss and static boundary gates remain required. Actual installed
+popup adoption is a separate manager gate.

@@ -305,3 +305,17 @@ foreach(scale IN ITEMS 1 2)
         LABELS "shell;audio;presentation;offscreen;scroll;accessibility"
         ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=${scale}")
 endforeach()
+
+add_test(NAME qindaqt.audio-applet-scroll-fractional
+    COMMAND qindaqt_audio_applet_scroll_tests
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-1536x864.json")
+set_tests_properties(qindaqt.audio-applet-scroll-fractional PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;scroll;accessibility"
+    ENVIRONMENT "QT_QUICK_BACKEND=software;QT_SCALE_FACTOR=1.25")
+add_test(NAME qindaqt.audio-applet-geometry-ambiguous
+    COMMAND qindaqt_audio_applet_scroll_tests
+    selectedOutputGeometryRejectsUnknownAndAmbiguousNames
+    -platform "offscreen:configfile=${CMAKE_CURRENT_LIST_DIR}/offscreen-ambiguous.json")
+set_tests_properties(qindaqt.audio-applet-geometry-ambiguous PROPERTIES
+    LABELS "shell;audio;presentation;offscreen;negative"
+    ENVIRONMENT "QT_QUICK_BACKEND=software")

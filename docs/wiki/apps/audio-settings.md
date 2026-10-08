@@ -402,3 +402,16 @@ graph state rather than a persistent application-device rule.
 Opening Audio now activates a cold installed service through the public client.
 The footer shows only an active change, without service epoch/revision counters.
 Failure text explains refreshing devices rather than exposing raw reason codes.
+
+## Compact device layout
+
+The Audio route reduces the outer page and nested device-card padding while
+retaining device names, default selection, level/mute, latency offset and
+channel disclosure controls. It does not collapse or hide controls to fit.
+The existing clipped viewport, scrollbar, keyboard paging and focus reveal
+remain responsible for reaching all rows. Consecutive collapsed device cards
+have a focused layout-density fixture; normal/2× captures and the existing
+page/console/wheel/stream-routing tests qualify readability and traversal.
+This is presentation only: backend availability, gain law, routing,
+persistence and public Audio1 validation are unchanged. Source-only authoring
+does not prove the installed Settings surface or hardware controls.

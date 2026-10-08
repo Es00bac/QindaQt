@@ -44,6 +44,7 @@ target_sources(
     qindaqt_shell_audio_applet_runtime
     PRIVATE
         audio_applet_controller.cpp
+        audio_popup_geometry.cpp
         audio_applet_controller.h
 )
 

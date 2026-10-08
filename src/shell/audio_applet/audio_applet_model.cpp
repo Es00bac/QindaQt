@@ -145,9 +145,8 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
     }
 
     // Presentation keeps only rows within the bounded window, in the
-    // protocol's ascending-serial order, outputs before inputs. The default
-    // labels stay correct even when the default device falls outside the
-    // window; the overflow count explains what was hidden.
+    // protocol's ascending-serial order, outputs before inputs. Each kind
+    // keeps its current default, and overflow names the remaining devices.
     // The console (ADR-0181): every strip the service publishes, in console
     // order, within a budget that keeps the tray a tray. Bound or not - an
     // unbound strip still shows its fader so a mute set in Settings reads
@@ -160,21 +159,29 @@ AudioAppletModel AudioAppletModel::project(Phase phase,
             strip.id, strip.label, Audio::faderPositionFromGainDb(strip.gainDb), strip.muted,
             strip.kind == Audio::StripKind::VirtualInput, strip.sourceKnown));
     }
-    const int deviceBudget = qMax(0, kMaxDeviceRows);
-    for (const Audio::Device &device : snapshot->outputs) {
-        if (model.m_deviceRows.size() >= deviceBudget)
-            break;
-        model.m_deviceRows.append(
-            projectDevice(device, pendingSerials.contains(device.handle.serial),
-                          requestedBySerial.value(device.handle.serial)));
-    }
-    for (const Audio::Device &device : snapshot->inputs) {
-        if (model.m_deviceRows.size() >= deviceBudget)
-            break;
-        model.m_deviceRows.append(
-            projectDevice(device, pendingSerials.contains(device.handle.serial),
-                          requestedBySerial.value(device.handle.serial)));
-    }
+    const qsizetype deviceBudget = qMax(0, kMaxDeviceRows);
+    const auto appendKind = [&](const auto &devices) {
+        const auto defaultDevice = std::find_if(devices.cbegin(), devices.cend(),
+            [](const Audio::Device &device) { return device.isDefault; });
+        const bool defaultOutside = defaultDevice != devices.cend()
+            && std::distance(devices.cbegin(), defaultDevice) >= deviceBudget;
+        // Keep protocol order with a per-kind window. If the default lies
+        // beyond it, reserve its last slot instead of silently losing a mic.
+        qsizetype retained = 0;
+        for (const auto &device : devices) {
+            const qsizetype ordinaryBudget = deviceBudget - (defaultOutside ? 1 : 0);
+            if (retained >= ordinaryBudget && !device.isDefault)
+                continue;
+            if (retained >= deviceBudget)
+                break;
+            model.m_deviceRows.append(
+                projectDevice(device, pendingSerials.contains(device.handle.serial),
+                              requestedBySerial.value(device.handle.serial)));
+            ++retained;
+        }
+    };
+    appendKind(snapshot->outputs);
+    appendKind(snapshot->inputs);
     const int totalDevices = static_cast<int>(snapshot->outputs.size())
         + static_cast<int>(snapshot->inputs.size());
     model.m_overflowDeviceCount = qMax(

@@ -28,13 +28,8 @@ Item {
     property var controller: null
     property bool vertical: false
 
-    // AGENT-NOTE: optional, and null in every composition today. The audio
-    // applet has no way to open Settings — src/shell/qml/BuiltinAppletContent.qml
-    // hands it only `controller` and `vertical`, while the
-    // `desktopControlsAccess` object that carries openSettings() is passed to
-    // other applets from the same file. That file is outside this lane, so the
-    // seam is declared here and the footer action renders only once something
-    // supplies it; nothing shows a button that cannot work.
+    // The composed public SystemMenuController supplies the generic Settings
+    // action. No service or app-launch authority is acquired inside QML.
     property var desktopControls: null
 
     readonly property bool showLists:
@@ -147,11 +142,28 @@ Item {
         vertical: root.vertical
         objectName: "audioAppletPopup"
         padding: Tokens.space["3"]
-        // A piece of desk equipment, not a menu: 420 px is what a device name,
-        // a full-width fader, a readout and a mute need side by side without
-        // the name wrapping onto three lines.
-        width: 420
-        height: Math.min(620, Math.max(160, panel.implicitHeight + padding * 2))
+        // AGENT-GUARD: Screen dimensions are logical pixels. A dense mixer
+        // must scroll inside the output, including a scaled/small output;
+        // neither its content nor a physical-pixel export sizes the window.
+        // Bind the selected item's screen facts and each-open revision, so
+        // migration/removal recomputes without retaining a borrowed QScreen.
+        readonly property size outputSpace: {
+            const revision = placementRevision + (root.controller?.popupGeometryRevision ?? 0)
+            const width = summary.Screen.width
+            const height = summary.Screen.height
+            if (revision < 0 || width <= 0 || height <= 0)
+                return Qt.size(0, 0)
+            return root.controller
+                ? root.controller.popupAvailableSize(summary, summary.Screen.name)
+                : Qt.size(0, 0)
+        }
+        readonly property real widthLimit: Math.max(1,
+            outputSpace.width - padding * 2)
+        readonly property real heightLimit: Math.max(1,
+            outputSpace.height - summary.height - padding * 2)
+        width: Math.min(360, widthLimit)
+        height: Math.min(480, heightLimit,
+            Math.max(160, panel.implicitHeight + padding * 2))
         closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
                      | T.Popup.CloseOnPressOutsideParent
 
@@ -161,22 +173,76 @@ Item {
             border.color: Tokens.outline.divider
         }
 
-        contentItem: T.ScrollView {
+        contentItem: Flickable {
             id: scroller
+            objectName: "audioAppletViewport"
             clip: true
-            // AGENT-GUARD: both dimensions are stated. A ScrollView left to
-            // infer its content size from a Layout child reported a height
-            // roughly one row short, so the popup sized itself just under its
-            // content and clipped the last console strip with no scrollbar to
-            // reach it. The popup height below reads the same number.
-            contentWidth: availableWidth
+            contentWidth: width
             contentHeight: panel.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.VerticalFlick
+            activeFocusOnTab: false
+
+            T.ScrollBar.vertical: T.ScrollBar {
+                objectName: "audioAppletScrollbar"
+                policy: T.ScrollBar.AsNeeded
+                activeFocusOnTab: false
+                Accessible.name: qsTr("Audio controls scroll position")
+            }
+
+            function revealItem(item) {
+                let cursor = item
+                while (cursor && cursor !== panel)
+                    cursor = cursor.parent
+                if (!cursor || !item)
+                    return
+                const position = item.mapToItem(panel, 0, 0)
+                const margin = Tokens.space["1"]
+                if (position.y - margin < contentY)
+                    contentY = Math.max(0, position.y - margin)
+                else if (position.y + item.height + margin > contentY + height)
+                    contentY = Math.min(Math.max(0, contentHeight - height),
+                        position.y + item.height + margin - height)
+            }
+
+            function revealActiveFocus() {
+                const window = panel.Window.window
+                if (window)
+                    revealItem(window.activeFocusItem)
+            }
+
+            // Preserve child slider/combo keys; page navigation bubbles here.
+            Keys.onPressed: event => {
+                const limit = Math.max(0, contentHeight - height)
+                if (event.key === Qt.Key_PageDown)
+                    contentY = Math.min(limit, contentY + height * 0.8)
+                else if (event.key === Qt.Key_PageUp)
+                    contentY = Math.max(0, contentY - height * 0.8)
+                else if (event.key === Qt.Key_End && (event.modifiers & Qt.ControlModifier))
+                    contentY = limit
+                else if (event.key === Qt.Key_Home && (event.modifiers & Qt.ControlModifier))
+                    contentY = 0
+                else
+                    return
+                event.accepted = true
+            }
+
+            onHeightChanged: Qt.callLater(revealActiveFocus)
+            onContentHeightChanged: Qt.callLater(revealActiveFocus)
 
             AudioAppletPanel {
                 id: panel
-                width: scroller.availableWidth
+                width: scroller.width - (scroller.contentHeight > scroller.height
+                    ? Tokens.space["3"] : 0)
+                height: implicitHeight
                 controller: root.controller
                 store: root
+            }
+
+            Connections {
+                target: panel.Window.window
+                enabled: target !== null
+                function onActiveFocusItemChanged() { scroller.revealActiveFocus() }
             }
         }
     }

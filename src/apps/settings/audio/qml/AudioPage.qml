@@ -78,7 +78,7 @@ T.Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.space["3"]
+        anchors.margins: Tokens.space["2"]
         spacing: Tokens.space["2"]
 
         AudioStatusHeader {
@@ -173,7 +173,7 @@ T.Page {
             FormSurface {
                 id: formSurface
                 width: parent.width
-                padding: Tokens.space["2"]
+                padding: Tokens.space["1"]
 
                 ColumnLayout {
                     width: parent.width
