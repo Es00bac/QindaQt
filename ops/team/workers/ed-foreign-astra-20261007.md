@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — preserving seventh first readiness timeout; authoring root-approved windows.py-only bounded readiness correction, no heavy lease.
+- Status: available — readiness sourcecc4f/6fake tests/docs pass; one-object archive2305 plan3e8b awaits root grant; no heavy held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -293,3 +293,5 @@
 - 2026-10-08T22:50:21.855264+00:00 — Exact504617/49a75 admitted; all21source/fourinput pins pass, unit2300 invocation1740badf60a1497f9d04c62bf674395c running under4CPU5GiB. No retry.
 
 - 2026-10-08T22:51:46.941030+00:00 — SeventhVM failed first10s boot property call; real privatePulse/container/Compositorbaseline reached, noapps. Allownedretirement/inputsqualified. Source-only narrow readiness repair authorized.
+
+- 2026-10-08T22:54:25.947355+00:00 — Frozen readiness-only correction and exactoneobject archiveproposal;6fake controls/AST/docs534/strict0. Seventhactualfailure preserved; no newarchive/guest.
