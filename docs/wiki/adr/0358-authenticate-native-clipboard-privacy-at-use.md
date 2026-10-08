@@ -115,3 +115,22 @@ startup or real selection capture. Exact old/fixed native gates, independent
 trust review, integrated rerun and user-consented installed acceptance remain
 separate. See [Clipboard service](../architecture/clipboard-service.md) and
 [Clipboard C0/C1 proof](../development/testing-harness.md#clipboard-c0c1-service-proof).
+
+## Author native qualification — 2026-10-08
+
+Exact fixture candidate 0bdcac43aa0a9baad8b47e27b6433782f6b05a10 retains production
+and both regression fixtures byte-identical to reviewed decb2afc5. The strict
+build and 22/22 owning CTest rows pass, with 172 Qt checks and zero failures,
+skips or blacklisted checks. The original a6 Host control has 4 passes and
+16 failures; the original 064 observer's delayed-first control has 2 passes and
+2 failures. Both controls compile actual immutable headers, sources and MOCs.
+Repaired privacy checks pass 20/20 and native startup checks pass 17/17,
+including setup and cleanup. The staged constructor consumer passes. Withholding
+its explicitly injected staged header causes compilation to fail at that
+missing path; restoring the exact header bytes restores build and execution.
+
+The compiler/private-bus lease was explicitly released. Raw XML, logs and
+provenance are preserved in the worker's cache and exact native handoff receipt.
+Independent final evidence review, integrated rerun and ordinary installed
+fresh-login ordering remain separate gates before claiming user recovery.
+This ADR remains Proposed pending manager acceptance.
