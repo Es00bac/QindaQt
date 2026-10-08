@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Route the independently confirmed Audio install-path repair and bounded Qt receipt fixture; preserve rejected R19 and prepare a corrected reviewed Portage release before laptop adoption.
+- Status: working — Review actual Audio install-path 7/7 and gain-receipt 36-check evidence; integrate accepted compact delivery, rerun manager gates and prepare corrected Portage release. R19 stays rejected and R18 installed.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -136,3 +136,5 @@
 - 2026-10-08T12:44:42+00:00 — Actual R19 private source build0/829.92s,61542400-byte signed packageSHAef002 and unchanged runtimee884 are preserved. Viewer original verifier StopIteration was a false direct-library expectation; exact successor dc782/command0660 SOURCE ACCEPT6998 read in full and rehashed, one corrected attempt separately granted, AudioDetails still source-admission pending. Astra fresh Windows preflight2d4 and Audio29-fixture sourcea413 receipts read in full; no Windows native or Audio compiler/old-image grant. Laptop mirrors exact qinda refs fetched with empty refmap; container main ancestry-checked65c→86ee. Same Media prepares a four-source QtCore/Test-only harness while R19 owns the lease. Full ED/hardware/provider/guest outcomes and weighted ledger remain open.
 
 - 2026-10-08T13:06:49+00:00 — Read fulla4b3 ARTIFACT NEEDS_FIX and actual1ee9 raw: R19 compiled1x/2x passes but all23 disk QML paths absent,12flattened/11console omissions, forced-disk2pass1fail/exit1. Original package unchanged/uninstalled; root local fullcrypto/recipe/image proof768000bytes/SHA49955ef5 copiedqinda/all12members/11payloads verified. Platform72bf source/old a8ff controls await same reviewer. Root read fullcdd harness admission, rehashed27pins/current24/24 and grants one four-source QtCore/Test fixture; no Core/Portage/native-old/Windows native grant. Copied immutable replies byte-for-byte; queues/plan/handoff now reflect actual gates, no ED weighting advance.
+
+- 2026-10-08T13:33:47+00:00 — Actual Platform old-control configure/build and compiled normal/2x pass before causal declared fallback failure; fixed exact72 native registry7/CTest7/7 pass, 30 installed-module probes observed. Compiler/private-QML lease released; same Audio reviewer independently reads raw/captures. Media exact strict Qt-only receipt fixture observes36/0/0/0, now under same-Astra evidence review; no old/Core/Portage image grant. Root source-of-truth fetch and laptop FF preserve showcase/untracked work; corrected immutable successor and integrated gates remain next. R19 remains uninstalled, Windows native ungranted and all whole ED/foreign/hardware journeys open.
