@@ -97,3 +97,5 @@ is inferred from QEMU termination. Failed guest/cleanup/readback stays failed.
 Pure source tests and syntax checks are separate from all five gates.
 
 The boot plan uses cpio/gzip rather than dracut sysroot includes: installed dracut prepends its sysroot to external include paths. The frozen unfinished183b draft preserved that unqualified approach; no boot asset was generated from it. Cpio receives only a separately frozen prepared root, NUL-delimited paths and no symlink traversal. Stage package closure/signatures and every archived byte remain independent admission gates; shape checks alone do not authenticate them.
+
+The concrete [runtime input plan](RUNTIME-INPUTS.md) and runtime-inputs.json freeze the13-package resolver result, eight proposed build prerequisites, hook constraints and the mandatory full stage closure. The boot builder now requires a separately admitted complete object inventory and enforces REQUIRED entries; no runtime asset is inferred from a present directory.
