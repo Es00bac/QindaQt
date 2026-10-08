@@ -135,3 +135,94 @@ Direct injected-policy and actual private-bus alias transition fixtures exercise
 the real engine; their native execution remains pending. The staged consumer
 uses ordinary configured/default cmake build behavior, with no portable source
 hard-coding of the manager's native parallelism settings.
+
+
+## Proposed sender-preserving repair — not implemented
+
+The first native authority positive exposed a production transport defect:
+Qt 6.11.1 QDBusMessage::service() always returns an empty string for reply and
+error messages. The initial helper response checks therefore cannot admit
+valid responses. Incoming method calls still expose the broker-assigned caller.
+
+A proposed reliance on broker requested-reply enforcement was independently
+rejected. The ordinary installed session configuration allows eavesdropping;
+D-Bus 1.16.2 policy.c exempts those allow rules from requested-only filtering.
+The library's pending-call lookup itself matches serial only. Neither a matching
+serial/nonce nor a current name owner establishes who sent such a reply.
+This proposal does not change broker policy.
+
+Use an owning native libdbus transport with explicit sender, reply serial,
+message type/signature and bound pending-request checks. The source package
+already depends on D-Bus through Qt; direct libdbus-1 headers/link metadata must
+be an explicit Portage/build dependency of this module and its static SDK
+consumer. No Keyring private code is imported; its sender-preserving transport
+is an architectural precedent only.
+
+A public RadioServiceSession factory would own two connections to one constructing
+Unix message bus: native transport first, then the main Qt service connection.
+Read the authenticated native server GUID with dbus_connection_get_server_id and
+pin the Qt connection's explicit address to that GUID. The documented D-Bus
+address GUID and actual libdbus authentication check reject a different broker
+incarnation between opens. Admit only a bounded, single Unix address; do not
+guess addresses, fall back to another bus, or transparently reconnect. Failure
+leaves the session unavailable. This owner outlives ResidentBluetoothService and
+the borrowed radio port; its Qt connection remains the public Bluetooth1/2 host.
+The executable composition captures the constructing address once. Startup
+compatibility with activation and deterministic fixtures must be tested before
+adoption.
+
+The separate native caller is not the Bluetooth1 owner. Extend only the new
+helper wire, before deployment, with authorityOwner (the main Qt unique owner)
+and transportCaller (the native unique connection). The main owner records
+these exact facts in the full pending intent before dispatch. The helper requires
+the actual incoming native sender to equal transportCaller, independently resolves
+current Bluetooth1 to authorityOwner, checks same-user/current initiating caller,
+and asks that exact main owner to confirm the entire unexpired issued request.
+The daemon's Current handler still authenticates its incoming helper sender
+and captured helper owner. PID/UID or a caller-supplied owner string alone never
+delegates authority. Nonce history is keyed by issuing authority owner, so
+replacing a transport connection cannot clear unexpired replay protection.
+
+The helper owns its native service connection and a native system-bus query
+connection. Both use real dbus_message_get_sender checks for bus-driver and
+captured unique-service replies; never infer sender from payloads. Maintain
+independent exact serial/pending-call, full request, nonce, deadline, main-owner,
+transport-caller, helper-owner and target-incarnation fences. A forged reply
+that consumes a library pending call is refusal/Uncertain, not a reason to
+reissue the operation. Native peer loss never creates no-write fallback after
+dispatch. The radio port rechecks its borrowed current callback and re-finds
+the pending entry after that callback before publication; callback cancellation
+or reentrancy cannot revive an entry.
+
+Native connection/message/pending-call references are RAII-owned. The public
+SDK exposes no libdbus structs or private Qt headers. Each owner runs on its
+constructing Qt thread; a bounded native socket notifier/pump delivers work
+there. Deferred port completion is posted to a guarded Qt lifetime rather
+than destroying an owner inside libdbus dispatch. Teardown disables notifier
+and callbacks, cancels local pending admission, and closes/unrefs owned native
+connections; it cannot undo an attempted radio write. Parsing and message queues
+remain bounded. No second connection impersonates a lost name or automatically
+reissues a request.
+
+The alternative Qt internalPointer() is public-header-declared but documented
+as internal and implementation-defined, with a borrowed pointer. It would
+avoid delegation and reduce code, but impose a Qt backend/layout/version
+contract and dispatch/lifetime coupling. Prefer the explicit owned transport
+despite additional cohesive collaborators; do not silently cast that pointer.
+
+Required new gates are actual helper/port complete success, a third connection
+forging a reply from the real held request (correct serial and nonce), malformed
+and wrong-nonce responses, duplicate/late responses, same-address/new-broker GUID
+mismatch, wrong raw delegation, caller/main/helper owner loss, cancellation
+during the borrowed callback, and the original authority negatives. A permissive
+ordinary private session bus is the adversarial fixture, not a policy prerequisite.
+Preserve original failed candidates and temporary diagnostics until these
+replacement source and native gates are independently accepted.
+
+Primary implementation evidence was read from official Qt v6.11.1 sources and
+the existing Portage dbus-1.16.2 archive. See
+[Qt message implementation](https://raw.githubusercontent.com/qt/qtbase/v6.11.1/src/dbus/qdbusmessage.cpp),
+[D-Bus connection API](https://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html)
+and [D-Bus specification](https://dbus.freedesktop.org/doc/dbus-specification.html).
+The native source cache records archive/file hashes; this design is not native
+or installed acceptance.
