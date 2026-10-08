@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — root-granted archive2225 observer active on laptop; no VM grant.
+- Status: available — archive2225 qualified and fifth VM plan preserved; no heavy lease, awaiting exact boot grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -269,3 +269,5 @@
 - 2026-10-08T22:22:22.055630+00:00: a8204 source and54da plan frozen; actual logging2/2 andAST3 pass, no archive or fifthVM execution.
 
 - 2026-10-08T22:22:55.935124+00:00: Protected guest/driver root0400 exact pins verified; granted archive observer session56481 started.
+
+- 2026-10-08T22:24:57.993056+00:00: Archive0/21.109s,7208/oneguestparity, initrdfe62da; fifthplan5e84 and manifest6cf2 prospective.
