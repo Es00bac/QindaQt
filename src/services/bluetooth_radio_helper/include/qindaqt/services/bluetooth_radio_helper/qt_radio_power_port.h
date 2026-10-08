@@ -5,13 +5,17 @@
 #include <memory>
 
 namespace QindaQt::BluetoothRadio {
-// Uses only the injected session bus. Helper activation is attempted only for
+// Uses only the injected owning session. Helper activation is attempted only for
 // an explicit observeAndUnblock call, once, never on construction or retry.
 // Exact helper owner and nonce bind every reply; owner loss/timeout after the
 // mutation RPC was sent is Uncertain. No device descriptor crosses this API.
+class RadioServiceSession;
 class QtRadioPowerPort final : public RadioPowerPort {
 public:
+    // Legacy Qt-only composition is a definitive no-write unavailable port.
     explicit QtRadioPowerPort(QDBusConnection connection, QObject *parent = nullptr);
+    // Borrowed prepared owner must outlive this one port; same Qt thread.
+    explicit QtRadioPowerPort(RadioServiceSession &session, QObject *parent = nullptr);
     ~QtRadioPowerPort() override;
     quint64 observeAndUnblock(const QString &bluezOwner, const QString &adapterPath,
         const QString &adapterAddress, const QString &initiatingCaller,

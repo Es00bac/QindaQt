@@ -27,17 +27,21 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" RESULT_VARIABLE
 if(NOT positive EQUAL 0)
     message(FATAL_ERROR "Radio installed header/archive consumer failed")
 endif()
-file(RENAME "${header}" "${header}.withheld")
-execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" --clean-first
-    RESULT_VARIABLE poisoned OUTPUT_VARIABLE poison_out ERROR_VARIABLE poison_err)
-file(RENAME "${header}.withheld" "${header}")
-file(SHA256 "${header}" restored_hash)
-execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" RESULT_VARIABLE restored)
-file(WRITE "${STAGE_ROOT}/header-withheld.log" "${poison_out}${poison_err}")
-if(poisoned EQUAL 0 OR NOT "${poison_out}${poison_err}" MATCHES "qt_radio_power_port.h"
-    OR NOT original STREQUAL restored_hash OR NOT restored EQUAL 0)
-    message(FATAL_ERROR "Radio staged-header poison/restoration did not prove closure")
-endif()
+foreach(header_name IN ITEMS qt_radio_power_port.h radio_service_session.h)
+    set(header "${STAGE_ROOT}/${INSTALL_INCLUDEDIR}/qindaqt/services/bluetooth_radio_helper/${header_name}")
+    file(SHA256 "${header}" original)
+    file(RENAME "${header}" "${header}.withheld")
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" --clean-first
+        RESULT_VARIABLE poisoned OUTPUT_VARIABLE poison_out ERROR_VARIABLE poison_err)
+    file(RENAME "${header}.withheld" "${header}")
+    file(SHA256 "${header}" restored_hash)
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" RESULT_VARIABLE restored)
+    file(WRITE "${STAGE_ROOT}/${header_name}-withheld.log" "${poison_out}${poison_err}")
+    if(poisoned EQUAL 0 OR NOT "${poison_out}${poison_err}" MATCHES "${header_name}"
+        OR NOT original STREQUAL restored_hash OR NOT restored EQUAL 0)
+        message(FATAL_ERROR "Radio staged-header poison/restoration did not prove closure: ${header_name}")
+    endif()
+endforeach()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent-radio-test"
     "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent-radio-test"

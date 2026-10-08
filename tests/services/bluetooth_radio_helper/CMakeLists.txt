@@ -21,7 +21,7 @@ qt_add_executable(qindaqt_bluetooth_radio_authority_tests tst_radio_authority.cp
 target_compile_definitions(qindaqt_bluetooth_radio_authority_tests PRIVATE
     QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
 target_link_libraries(qindaqt_bluetooth_radio_authority_tests PRIVATE
-    qindaqt_bluetooth_radio_authority Qt6::Test)
+    qindaqt_bluetooth_radio_authority Qt6::Test PkgConfig::QINDAQT_RADIO_DBUS)
 qindaqt_enable_warnings(qindaqt_bluetooth_radio_authority_tests)
 add_test(NAME qindaqt.bluetooth-radio-authority COMMAND qindaqt_bluetooth_radio_authority_tests)
 set_tests_properties(qindaqt.bluetooth-radio-authority PROPERTIES
@@ -41,3 +41,15 @@ add_test(NAME qindaqt.bluetooth-radio-staged-install COMMAND "${CMAKE_COMMAND}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed.cmake")
 set_tests_properties(qindaqt.bluetooth-radio-staged-install PROPERTIES
     LABELS "service;bluetooth;radio;package" TIMEOUT 60 RUN_SERIAL TRUE)
+
+foreach(fixture IN ITEMS reply session native_service)
+    qt_add_executable(qindaqt_bluetooth_radio_${fixture}_tests tst_radio_${fixture}.cpp)
+    target_compile_definitions(qindaqt_bluetooth_radio_${fixture}_tests PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
+    target_link_libraries(qindaqt_bluetooth_radio_${fixture}_tests PRIVATE
+        qindaqt_bluetooth_radio_authority Qt6::Test PkgConfig::QINDAQT_RADIO_DBUS)
+    qindaqt_enable_warnings(qindaqt_bluetooth_radio_${fixture}_tests)
+    add_test(NAME qindaqt.bluetooth-radio-${fixture} COMMAND qindaqt_bluetooth_radio_${fixture}_tests)
+    set_tests_properties(qindaqt.bluetooth-radio-${fixture} PROPERTIES
+        LABELS "service;bluetooth;radio;authority;dbus" TIMEOUT 40 RUN_SERIAL TRUE)
+endforeach()

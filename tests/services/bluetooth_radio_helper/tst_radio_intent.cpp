@@ -4,6 +4,7 @@
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusReply>
 #include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
+#include <qindaqt/services/bluetooth_radio_helper/radio_service_session.h>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusVirtualObject>
@@ -93,12 +94,13 @@ private Q_SLOTS:
         RadioOperation operation(authority, platform, [] { return quint64(100); });
         Request original{QString(32, QLatin1Char('a')), bus.connection.baseService(),
             QStringLiteral("/org/bluez/hci0"), QStringLiteral("12:34:56:78:9A:BC"),
-            ownerA.baseService(), 2100};
+            ownerA.baseService(), 2100, ownerA.baseService(), ownerA.baseService()};
         QCOMPARE(operation.execute(ownerA.baseService(), original).disposition,
                  Disposition::VerifiedUnblocked);
         QVERIFY(ownerA.unregisterService(alias)); QVERIFY(ownerB.registerService(alias));
         auto second = original; second.nonce = QString(32, QLatin1Char('b'));
         second.initiatingCaller = ownerB.baseService();
+        second.authorityOwner = ownerB.baseService(); second.transportCaller = ownerB.baseService();
         QCOMPARE(operation.execute(ownerB.baseService(), second).disposition,
                  Disposition::VerifiedUnblocked);
         QVERIFY(ownerB.unregisterService(alias)); QVERIFY(ownerA.registerService(alias));
@@ -110,11 +112,13 @@ private Q_SLOTS:
     void onlyExactIssuedRequestAndCurrentHelperCanQuery() {
         QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start());
         Connections peers(bus.address);
-        auto service = peers.buses[0], helperBus = peers.buses[1], foreign = peers.buses[2];
+        RadioServiceSession session(bus.address); QVERIFY(session.prepared());
+        auto service = session.authorityConnection(), helperBus = peers.buses[1], foreign = peers.buses[2];
+        QVERIFY(service.registerService(QStringLiteral("org.qindaqt.Bluetooth1")));
         Helper helper;
         QVERIFY(helperBus.registerVirtualObject(QString::fromLatin1(kPath), &helper));
         QVERIFY(helperBus.registerService(QString::fromLatin1(kService)));
-        QtRadioPowerPort port(service);
+        QtRadioPowerPort port(session);
         bool live = true;
         const auto id = port.observeAndUnblock(QStringLiteral(":1.90"), QStringLiteral("/org/bluez/hci0"),
             QStringLiteral("12:34:56:78:9A:BC"), foreign.baseService(), [&live] { return live; });
@@ -127,6 +131,10 @@ private Q_SLOTS:
         QVERIFY(!ask(helperBus, service.baseService(), forged));
         forged = helper.issued; forged.initiatingCaller = helperBus.baseService();
         QVERIFY(!ask(helperBus, service.baseService(), forged));
+        forged = helper.issued; forged.transportCaller = helperBus.baseService();
+        QVERIFY(!ask(helperBus, service.baseService(), forged));
+        forged = helper.issued; forged.authorityOwner = helperBus.baseService();
+        QVERIFY(!ask(helperBus, service.baseService(), forged));
         live = false; QVERIFY(!ask(helperBus, service.baseService(), helper.issued));
         live = true; port.cancel(id);
         QVERIFY(!ask(helperBus, service.baseService(), helper.issued));
@@ -134,11 +142,13 @@ private Q_SLOTS:
     }
     void sameUidReplacementHelperCannotReviveIntent() {
         QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start()); Connections peers(bus.address);
-        auto service = peers.buses[0], helperBus = peers.buses[1], replacement = peers.buses[2];
+        RadioServiceSession session(bus.address); QVERIFY(session.prepared());
+        auto service = session.authorityConnection(), helperBus = peers.buses[1], replacement = peers.buses[2];
+        QVERIFY(service.registerService(QStringLiteral("org.qindaqt.Bluetooth1")));
         Helper helper;
         QVERIFY(helperBus.registerVirtualObject(QString::fromLatin1(kPath), &helper));
         QVERIFY(helperBus.registerService(QString::fromLatin1(kService)));
-        QtRadioPowerPort port(service);
+        QtRadioPowerPort port(session);
         QVERIFY(port.observeAndUnblock(QStringLiteral(":1.90"), QStringLiteral("/org/bluez/hci0"),
             QStringLiteral("12:34:56:78:9A:BC"), service.baseService(), [] { return true; }));
         QTRY_VERIFY(helper.received);

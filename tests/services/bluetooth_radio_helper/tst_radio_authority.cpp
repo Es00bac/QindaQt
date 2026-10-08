@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "../bluetooth_bluez_adapter/support/private_bus.h"
-#include "../../../src/services/bluetooth_radio_helper/src/qt_radio_authority_p.h"
+#include "../../../src/services/bluetooth_radio_helper/src/native_radio_authority_p.h"
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusVariant>
 #include <QtDBus/QDBusVirtualObject>
@@ -48,6 +48,8 @@ private Q_SLOTS:
         QTest::newRow("wrong-live-address") << QStringLiteral("address") << false;
         QTest::newRow("changed-issued-expiry") << QStringLiteral("expiry") << false;
         QTest::newRow("revoked-intent") << QStringLiteral("revoked") << false;
+        QTest::newRow("unissued-authority") << QStringLiteral("authority") << false;
+        QTest::newRow("unissued-transport") << QStringLiteral("transport") << false;
     }
     void currentBusOwnerCallerAndExactBluezSelection() {
         QFETCH(QString, change); QFETCH(bool, expected);
@@ -63,7 +65,7 @@ private Q_SLOTS:
         QVERIFY(bluez.registerVirtualObject(QStringLiteral("/org/bluez/hci0"), &adapter));
         intent.issued = {QString(32, QLatin1Char('b')), bluez.baseService(),
             QStringLiteral("/org/bluez/hci0"), adapter.address, daemon.baseService(),
-            boottimeMilliseconds() + kRequestWindowMs};
+            boottimeMilliseconds() + kRequestWindowMs, daemon.baseService(), daemon.baseService()};
         auto request = intent.issued;
         auto sender = daemon.baseService();
         if (change == QLatin1String("sender")) sender = helper.baseService();
@@ -72,38 +74,15 @@ private Q_SLOTS:
         if (change == QLatin1String("address")) adapter.address = QStringLiteral("AA:BB:CC:DD:EE:FF");
         if (change == QLatin1String("expiry")) ++request.deadlineBoottimeMs;
         if (change == QLatin1String("revoked")) intent.allowed = false;
+        if (change == QLatin1String("authority")) request.authorityOwner = helper.baseService();
+        if (change == QLatin1String("transport")) request.transportCaller = helper.baseService();
         // The actual authority uses blocking bus reads on its owning worker;
         // the test event loop services independent fake peer connections.
-        auto answer = std::async(std::launch::async, [helper, sender, request] {
-            QtRadioAuthority authority(helper, helper);
-            const bool admitted = authority.current(sender, request);
-            if (!admitted) {
-                // Diagnostic fixture only: synthetic private peers, no payloads.
-                auto describe = [](const char *label, const QDBusMessage &reply) {
-                    qInfo() << label << "type" << reply.type() << "signature"
-                            << reply.signature() << "sender" << reply.service()
-                            << "error" << reply.errorName();
-                };
-                auto owner = QDBusMessage::createMethodCall(
-                    QStringLiteral("org.freedesktop.DBus"),
-                    QStringLiteral("/org/freedesktop/DBus"),
-                    QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
-                owner << QStringLiteral("org.qindaqt.Bluetooth1");
-                describe("owner", helper.call(owner, QDBus::Block, 250));
-                auto intentQuery = QDBusMessage::createMethodCall(sender,
-                    QString::fromLatin1(kIntentPath), QString::fromLatin1(kIntentInterface),
-                    QStringLiteral("Current"));
-                intentQuery << QVariant::fromValue(request);
-                describe("intent", helper.call(intentQuery, QDBus::Block, 250));
-                auto addressQuery = QDBusMessage::createMethodCall(request.bluezOwner,
-                    request.adapterPath, QStringLiteral("org.freedesktop.DBus.Properties"),
-                    QStringLiteral("Get"));
-                addressQuery << QStringLiteral("org.bluez.Adapter1") << QStringLiteral("Address");
-                describe("address", helper.call(addressQuery, QDBus::Block, 250));
-                qInfo() << "request-valid" << validRequest(request)
-                        << "deadline-current" << (boottimeMilliseconds() < request.deadlineBoottimeMs);
-            }
-            return admitted;
+        auto answer = std::async(std::launch::async, [address = bus.address, sender, request] {
+            NativeRadioWire wire;
+            if (!wire.open(address, false) || !wire.own(QString::fromLatin1(kService))) return false;
+            NativeRadioAuthority authority(wire, wire);
+            return authority.current(sender, request);
         });
         QVERIFY(QTest::qWaitFor([&answer] {
             return answer.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
