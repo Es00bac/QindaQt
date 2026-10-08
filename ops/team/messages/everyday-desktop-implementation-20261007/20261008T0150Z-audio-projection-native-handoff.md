@@ -41,3 +41,6 @@ CTest ran --output-on-failure -j1 with private XDG_RUNTIME_DIR/CONFIG_HOME/STATE
 Logs: .cache/audio-old-build.log, audio-old-regressions.log, audio-final-build.log, audio-final-ctest.log; .cache/audio-focused-build/Testing/Temporary/LastTest.log; .cache/audio-evidence.json contains SHA256s and parsed totals. Documentation logs use .cache/audio-{docs,mkdocs,boundary}.log.
 
 Requested next action: Media independently reviews exact e053 and actual evidence; root runs same reviewed observer with fixed actual mapper, then integrates and repeats owning gates before the separate Portage package/installed controls route. SDK export repair is separately owned by Platform. ED05 recovery source and its pending native tests remain preserved, not abandoned.
+
+## Author availability
+2026-10-08T01:49:41Z — Source and native evidence are frozen and clean. Author is available for immediate same-worker review repair or manager-routed packaging follow-through, holding no resources. Independent review and installed control qualification remain open.
