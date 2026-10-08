@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — readiness sourcecc4f/6fake tests/docs pass; one-object archive2305 plan3e8b awaits root grant; no heavy held.
+- Status: available — corrected rejected archive cpio pin only; repaired981d/3f65 awaits root review, no archive/VM executed.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -295,3 +295,5 @@
 - 2026-10-08T22:51:46.941030+00:00 — SeventhVM failed first10s boot property call; real privatePulse/container/Compositorbaseline reached, noapps. Allownedretirement/inputsqualified. Source-only narrow readiness repair authorized.
 
 - 2026-10-08T22:54:25.947355+00:00 — Frozen readiness-only correction and exactoneobject archiveproposal;6fake controls/AST/docs534/strict0. Seventhactualfailure preserved; no newarchive/guest.
+
+- 2026-10-08T22:55:04.024652+00:00 — Root caught accidental cpioSHA digit substitution in unexecuted archiveplan; fixedone digit, preservedrejectedbytes. Sourcecc4f/tests unchanged, no heavy held.
