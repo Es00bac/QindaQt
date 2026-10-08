@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — Core SDK source prepared; exact old/fixed installed-consumer gates queued for manager compiler lease, no owned runtime process
+- Status: waiting — Core SDK actual old/fixed closure gates qualified and lease released; exact candidate awaits manager independent review/integration
 - Base: a462c415a3678dc8dc96f15bd996abdceea20189
 - Branch: worker/everyday-core-sdk-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -149,3 +149,7 @@
 - 2026-10-08T01:42:15+00:00: Core SDK source candidate prepared: production audio_console.h FILE_SET fix, actual production install/export fixture, independent stage-only linked client, source/host header poison, deletion/restoration gate. Python AST/whitespace and docs530/strict MkDocs pass; compiler and runtime not executed. Manager approved exact own test registration; native lease requested after Astra. Baseline installed laptop failure attributed to manager, not own reproduction.
 
 - 2026-10-08T01:45:38+00:00: Prepared frozen source b6e3b3b331ff925571ac532d1bc2ea53462647a8. Direct type inspection corrected fixture snapshot outputs/inputs; imported include system classification disabled to keep stage before poison. No compiler/configure run; requests next focused lease, then old exact-base failure and corrected install/link/poison/restoration gates. All resources unoccupied; Claude WIP and immutable release bytes unchanged.
+
+- 2026-10-08T01:45:55+00:00: Manager granted sole focused compiler lease after Astra release. Observed native MAKEOPTS -j24 -l24; exact a462 Audio modules git-archived to isolated old source, first baseline gate executing. Fixture Wall/Wextra/Werror only, no stronger warning claim; private nonexistent bus addresses, no host install.
+
+- 2026-10-08T01:47:46+00:00: Direct Core SDK olda462 stage8headers fails isolated consumer1 at missing audio_console poison; corrected realFILE_SET stage9headers passes full driver0,10 child steps with only required negative exit1, restored build/run0. Consumer actual C++20 Wall/Wextra/Werror stage+poison includes, no source fallback. Native MAKEOPTS24/24 observed; all compiler/private fixture resources released. Exact source b6 native-tested, pending manager review; no install/liveAudio claim.
