@@ -1,3 +1,15 @@
+## Manager current routing — 2026-10-08T16:19:23+00:00
+
+| Outcome | Exact current evidence | Next gate / owner |
+| --- | --- | --- |
+| Compact Audio R20 | Signed package75e37f24; native cfdf467a, all seven image gates0, Audio33 steps/30 probes; root four captures inspected | Same Audio reviewer final artifact acceptance, then root Portage-only adoption; R18 remains installed |
+| Android stock runtime | Source pair da559/29cbc independently accepted99b92233, twelve tiny synthetic controls | Platform exact private pinned-image Portage plan; real package/guest/two windows remain unrun |
+| ED05 recovery | f8 storage source repaired; unsafe runner refused by Astra f9bb; author9bec repairs source only | Same Astra exact successor source/plan review, then separately granted ten-row native cohort |
+| Audio gain | Terminal source0e7884 independently acceptedf6ae, fake controls only | Media resource8-only refreeze; fresh actual old-ASan package/Core/UAF/PCM and production gain remain next |
+| Windows two apps | First actual635834 attempt failed before windows; server retirement only passed; diagnosis307ae preserved | Same Platform author bounded child-ledger/subreaper repair after Android package freeze |
+
+Task policy: one heavy cohort, qinda8jobs/load8, CPUquota8/12GiB/no swap/half-core taskset/nice10; laptop4jobs/load4. Global build settings and other projects are untouched. Full scope and TODAY deadline remain.
+
 ## Manager current routing — 2026-10-08T14:27:06+00:00
 
 | Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
