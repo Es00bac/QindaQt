@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — second VM failed at guest libgcc lookup; actual proof preserved and laptop heavy released; narrow loader repair proposed.
+- Status: available — fixed guest GCC loader source and archive2200 plan frozen; static12 roots/143ELF/0missing checked; no resources held.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -249,3 +249,5 @@
 - 2026-10-08T21:51:29.032702+00:00: Actual archive0/21.772s and all7208/oneguest parity qualified; fourthinput105945, secondplan dcd4 pending separate boot grant.
 
 - 2026-10-08T21:54:18.306518+00:00: Actual secondVM1/11.298s, QEMUretired/inputstable; stockinit reachedbinderfs/config thenlxc-info missingloaderpath, existingpinnedGCCruntime located. No thirdboot.
+
+- 2026-10-08T21:56:44.522675+00:00: Froze bc0 source/d494 plan; libgcc alreadypinnedGCC15, readonlyDT_NEEDED closure0missing. No archive/thirdboot.
