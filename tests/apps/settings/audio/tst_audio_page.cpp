@@ -106,8 +106,14 @@ void AudioPageTest::rendersChannelStripsAndVirtualDevices() {
   auto [guard, page] = createPage(QSize(900, 760));
   QVERIFY(page != nullptr);
 
-  // The channel disclosure exists for the six-channel fixture and stays
-  // collapsed until opened; the strip then exposes one fader per channel.
+  // Details opens the advanced controls using a real keyboard action. The
+  // six-channel strip remains deferred until its own disclosure is opened.
+  auto *details = findItem(page, QStringLiteral("audioOutputDetails_12"));
+  QVERIFY(details != nullptr);
+  QVERIFY(details->isVisible());
+  QVERIFY(details->isEnabled());
+  details->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
   auto *channelsToggle =
       findItem(page, QStringLiteral("audioChannelsToggle_12"));
   QVERIFY(channelsToggle != nullptr);
