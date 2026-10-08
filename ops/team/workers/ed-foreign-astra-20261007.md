@@ -7,6 +7,8 @@
 - Resources: manager-authorized sole qinda focused compiler/private-fixture lease; compiler settled pending exact repair review. No host bus/device/radio/services or installed actions.
 ## Updates
 
+- 2026-10-08T04:01:42Z — Actual private diagnostic and official Qt source prove ReplyMessage service() always empty, a production admission blocker. Frozen transport-bound provenance proposal with exact Portage D-Bus broker connection-pair/serial evidence. No guard removal or native retry; source review requested. Resources idle within lease pending manager routing.
+
 - 2026-10-08T03:52:26Z — Strict814 build passed. First main private CTest26/29 exit8: positive authority false, immediate queued-feedback assertion, missing Keyring static plugin in real Settings fixture. Preserve all failures; manager authorized bounded synthetic reply diagnostics and owning fixture corrections. Product admission unchanged; peer review before native continuation.
 
 - 2026-10-08T03:46:48Z — Strict4649 retry exit1 exposes XML raw-string delimiter collision and missing QDBusConnection include in helper service object. Preserve exact failed log/argv; freeze minimal syntax/include repair for Platform recheck. No tests yet.
