@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — Exact manager a895 paused plan ACCEPT; implementation/package/runtime remain stopped.
+- Status: working — Resumed Android runtime-input comparison and exact private-directory access repair only; package/guest phases ungranted.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -201,3 +201,5 @@
 - 2026-10-08T19:03:46.687096+00:00 — Read original audit/desktop/foreign plans against manager0c9e and exact delivered boundaries; preserved independent critical-path review and next3 outcomes. Full scope retained; EOD full completion not evidence-backed. No tests, preparation or implementation resumed.
 
 - 2026-10-08T19:12:34.380503+00:00 — Read only0c9e→a895 desktop/foreign plan and queue-top delta; no material omission, completion overclaim or scope reduction. Verified src/tests/CMake parity0. Preserved exact docs ACCEPT; no automatic resume or resources.
+
+- 2026-10-08T19:47:43.007215+00:00 — Root resumed a20-minute read-only comparison of existing Portage-owned runtime closure versus accepted8 prerequisites. Authorized mode/access repair only inside exact preserved private root; no global/account/library/package/guest action.
