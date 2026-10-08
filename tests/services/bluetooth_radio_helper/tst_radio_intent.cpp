@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "../bluetooth_bluez_adapter/support/private_bus.h"
+#include "../../../src/services/bluetooth_radio_helper/src/radio_operation_p.h"
+#include <QtDBus/QDBusConnectionInterface>
+#include <QtDBus/QDBusReply>
 #include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusVirtualObject>
 #include <QtTest/QTest>
+#include <utility>
 
 using namespace QindaQt::BluetoothRadio;
 namespace {
@@ -43,9 +47,66 @@ bool ask(const QDBusConnection &sender, const QString &owner, const Request &req
         && reply.arguments().size() == 1 && reply.arguments().constFirst().toBool();
 }
 }
+namespace {
+// This owns only the alias-admission seam for the real operation engine.
+// Full Qt authority and complete-intent checks have separate fixtures above.
+class AliasAuthority final : public RadioAuthority {
+public:
+    explicit AliasAuthority(QDBusConnection connection) : bus(std::move(connection)) {}
+    bool current(const QString &sender, const Request &) override {
+        bus.interface()->setTimeout(250);
+        const auto owner = bus.interface()->serviceOwner(QStringLiteral("org.qindaqt.Bluetooth1"));
+        return owner.isValid() && owner.value() == sender;
+    }
+private:
+    QDBusConnection bus;
+};
+class CountedLease final : public RadioLease {
+public:
+    explicit CountedLease(int &count) : writes(count) {}
+    RadioObservation observe() override { return {true, blocked, false}; }
+    RadioWrite unblock(const std::function<bool()> &current) override {
+        if (!current()) return RadioWrite::Denied;
+        ++writes; blocked = false; return RadioWrite::Attempted;
+    }
+private:
+    int &writes;
+    bool blocked = true;
+};
+class CountedPlatform final : public RadioPlatform {
+public:
+    int writes = 0;
+    RadioSelection select(const QString &) override {
+        return {std::make_unique<CountedLease>(writes), {}};
+    }
+};
+}
 class RadioIntentTest : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void relinquishedUniqueOwnerReacquiresWithoutForgettingNonce() {
+        QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start()); Connections peers(bus.address);
+        auto ownerA = peers.buses[0], ownerB = peers.buses[1];
+        const auto alias = QStringLiteral("org.qindaqt.Bluetooth1");
+        QVERIFY(ownerA.registerService(alias));
+        AliasAuthority authority(peers.buses[2]); CountedPlatform platform;
+        RadioOperation operation(authority, platform, [] { return quint64(100); });
+        Request original{QString(32, QLatin1Char('a')), bus.connection.baseService(),
+            QStringLiteral("/org/bluez/hci0"), QStringLiteral("12:34:56:78:9A:BC"),
+            ownerA.baseService(), 2100};
+        QCOMPARE(operation.execute(ownerA.baseService(), original).disposition,
+                 Disposition::VerifiedUnblocked);
+        QVERIFY(ownerA.unregisterService(alias)); QVERIFY(ownerB.registerService(alias));
+        auto second = original; second.nonce = QString(32, QLatin1Char('b'));
+        second.initiatingCaller = ownerB.baseService();
+        QCOMPARE(operation.execute(ownerB.baseService(), second).disposition,
+                 Disposition::VerifiedUnblocked);
+        QVERIFY(ownerB.unregisterService(alias)); QVERIFY(ownerA.registerService(alias));
+        const auto replay = operation.execute(ownerA.baseService(), original);
+        QCOMPARE(replay.reasonCode, QStringLiteral("radio-request-rejected"));
+        QCOMPARE(replay.disposition, Disposition::Refused);
+        QCOMPARE(platform.writes, 2);
+    }
     void onlyExactIssuedRequestAndCurrentHelperCanQuery() {
         QindaQt::Tests::PrivateBus bus; QVERIFY(bus.start());
         Connections peers(bus.address);

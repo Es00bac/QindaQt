@@ -4921,7 +4921,8 @@ assert fixed typed feedback through their public boundaries.
 
 Build the radio helper/client, radio operation/intent/authority tests, BlueZ
 power recovery and existing Bluetooth service/adapter/model/client/protocol
-targets with strict warnings and unchanged -j24 -l24. Run the owning radio,
+targets with strict warnings and the manager's configured native build options.
+Nested staged-consumer builds use ordinary cmake build defaults. Run the owning radio,
 BlueZ, service, Settings and applet rows under private XDG roots with both host
 bus addresses invalid. The radio staged-install row installs the B1 component
 inside the build cache, compiles an installed-only Core/DBus public-port consumer,
@@ -4932,3 +4933,7 @@ Native execution remains pending for this draft. Separately record effective
 helper namespace and RW-open admission before any authorized selected-radio
 write/readback. A successful synthetic suite or read-only namespace probe does
 not close installed control, hardware effects or whole-desktop acceptance.
+
+The radio ledger fixtures retain A's unexpired nonce across actual A→B→A
+well-known alias ownership and refuse a full global ledger without eviction.
+These exercise injected platform writes only, not physical radio access.

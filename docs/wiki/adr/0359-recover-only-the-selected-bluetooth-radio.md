@@ -69,8 +69,10 @@ parent, requiring SYSFS_MAGIC and a unique Bluetooth radio. It neither invents
 a sysfs address attribute nor trusts an IPC rfkill index. /dev/rfkill must be
 character device 10:242. Enumeration and event drains are bounded. Initial ADD
 inventory establishes state; selected deletion/re-add or identity replacement
-retires the lease. A bounded per-owner nonce ledger expires entries only after
+retires the lease. A globally bounded ledger retains each exact (unique owner, nonce) pair across
+well-known alias relinquishment and reacquisition, and expires entries only after
 their deadline, when replay already fails; no old observation is current truth.
+A full ledger refuses new requests rather than evicting unexpired entries.
 Nested helper dispatch is refused before platform calls.
 
 ## Fences and limits
@@ -121,3 +123,15 @@ version or live cause.
 Pairing, trust, records, keys and authorization remain BlueZ-owned. Bluetooth
 audio remains Audio/PipeWire-owned. See [Bluetooth service](../architecture/bluetooth-service.md)
 and [module boundaries](../architecture/module-boundaries.md).
+
+## Source review repair — owner reacquisition
+
+The original source candidate cleared nonce history on admitted owner changes.
+An A→B→A alias transition could therefore forget A's unexpired nonce inside the
+operation engine. Current full-intent and completed-request retirement are
+additional barriers; this was not demonstrated as an end-to-end radio replay.
+The repair retains globally bounded exact-owner/nonce entries until deadline.
+Direct injected-policy and actual private-bus alias transition fixtures exercise
+the real engine; their native execution remains pending. The staged consumer
+uses ordinary configured/default cmake build behavior, with no portable source
+hard-coding of the manager's native parallelism settings.

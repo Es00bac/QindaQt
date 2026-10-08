@@ -23,16 +23,16 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -S "${CONSUMER_SOURCE}" -B "${consume
 if(NOT configured EQUAL 0)
     message(FATAL_ERROR "Radio installed consumer configure failed")
 endif()
-execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" -- -j24 -l24 RESULT_VARIABLE positive)
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" RESULT_VARIABLE positive)
 if(NOT positive EQUAL 0)
     message(FATAL_ERROR "Radio installed header/archive consumer failed")
 endif()
 file(RENAME "${header}" "${header}.withheld")
-execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" --clean-first -- -j24 -l24
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" --clean-first
     RESULT_VARIABLE poisoned OUTPUT_VARIABLE poison_out ERROR_VARIABLE poison_err)
 file(RENAME "${header}.withheld" "${header}")
 file(SHA256 "${header}" restored_hash)
-execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" -- -j24 -l24 RESULT_VARIABLE restored)
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${consumer}" RESULT_VARIABLE restored)
 file(WRITE "${STAGE_ROOT}/header-withheld.log" "${poison_out}${poison_err}")
 if(poisoned EQUAL 0 OR NOT "${poison_out}${poison_err}" MATCHES "qt_radio_power_port.h"
     OR NOT original STREQUAL restored_hash OR NOT restored EQUAL 0)

@@ -12,7 +12,7 @@ inline constexpr auto kInterface = "org.qindaqt.BluetoothRadio1";
 inline constexpr auto kIntentPath = "/org/qindaqt/BluetoothRadioIntent1";
 inline constexpr auto kIntentInterface = "org.qindaqt.BluetoothRadioIntent1";
 inline constexpr quint64 kRequestWindowMs = 2000;
-inline constexpr qsizetype kMaxRequestsPerOwner = 512;
+inline constexpr qsizetype kMaxLiveRequests = 512;
 
 // These values contain selection and correlation, never device-open authority.
 // The helper independently resolves the current service/caller and BlueZ owner,

@@ -11,7 +11,7 @@ find_program(QINDAQT_DBUS_DAEMON_EXECUTABLE NAMES dbus-daemon REQUIRED)
 qt_add_executable(qindaqt_bluetooth_radio_intent_tests tst_radio_intent.cpp)
 target_compile_definitions(qindaqt_bluetooth_radio_intent_tests PRIVATE
     QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DBUS_DAEMON_EXECUTABLE}")
-target_link_libraries(qindaqt_bluetooth_radio_intent_tests PRIVATE QindaQt::BluetoothRadioClient Qt6::Test)
+target_link_libraries(qindaqt_bluetooth_radio_intent_tests PRIVATE qindaqt_bluetooth_radio_authority Qt6::Test)
 qindaqt_enable_warnings(qindaqt_bluetooth_radio_intent_tests)
 add_test(NAME qindaqt.bluetooth-radio-intent COMMAND qindaqt_bluetooth_radio_intent_tests)
 set_tests_properties(qindaqt.bluetooth-radio-intent PROPERTIES
