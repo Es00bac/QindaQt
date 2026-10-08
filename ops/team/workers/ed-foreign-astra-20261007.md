@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: available — exact LXC diagnostic source and archive2225 plan preserved; awaiting one archive grant, no runtime resource held.
+- Status: working — root-granted archive2225 observer active on laptop; no VM grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -267,3 +267,5 @@
 - 2026-10-08T22:20:59.232009+00:00: Fourth VM settled1/23.577s, nested socket/image mounts observed, LXC RUNNING timeout, cleanup qualified; proof d973d5a7 verified9payloads. Root authorized only container DEBUG forwarding source change.
 
 - 2026-10-08T22:22:22.055630+00:00: a8204 source and54da plan frozen; actual logging2/2 andAST3 pass, no archive or fifthVM execution.
+
+- 2026-10-08T22:22:55.935124+00:00: Protected guest/driver root0400 exact pins verified; granted archive observer session56481 started.
