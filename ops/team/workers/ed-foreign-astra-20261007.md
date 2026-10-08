@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: available — exact Bluetooth 762 source review/native lease pending; no compiler or device resources.
+- Status: available — exact Bluetooth owner/nonce repair frozen for same-reviewer recheck; native lease pending.
 - Outcome: review synchronous privacy, native proof lifetime/reentrancy and startup ordering; preserve actual Bluetooth partial counterfactual and queued ED05.
 - Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
 - Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
 - Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
 - Resources: source-only, no compiler, private runtime, host radio/clipboard or installation. Root retains native lease.
 ## Updates
+
+- 2026-10-08T03:25:03Z — Verified/frozen source repair: globally bounded owner/nonce retention and A/B/A policy/private-bus fixtures; portable staged builds restored. Docs531/strict16.38s/radio boundary/diff pass, all new native tests unrun. Available for Platform exact recheck; no resources held.
+
+- 2026-10-08T03:22:08Z — Claimed Platform's exact762 blocking source repairs: retain unexpired owner/nonce pairs across alias owner changes, add direct A/B/A engine and private-bus negatives, remove staged child hard-coded native options. Original762 remains immutable; no compiler, private bus or radio execution.
 
 - 2026-10-08T03:18:17Z — Available: Bluetooth 762 frozen/clean/pushed, manager requested no rebase until Platform exact review. Bounded independent Audio gain/mono/trim routing trace corroborated Media source finding only. No native resources; next work is exact review repair or explicit manager native dispatch.
 

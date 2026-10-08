@@ -2,6 +2,7 @@
 #pragma once
 #include "radio_platform_p.h"
 #include <QtCore/QHash>
+#include <QtCore/QPair>
 #include <functional>
 
 namespace QindaQt::BluetoothRadio {
@@ -23,7 +24,8 @@ private:
     RadioAuthority &m_authority;
     RadioPlatform &m_platform;
     std::function<quint64()> m_clock;
-    QString m_owner;
-    QHash<QString, quint64> m_seen;
+    // Unique owners may relinquish and reacquire an alias without exiting.
+    // Never forget an unexpired issued nonce merely because another owner acts.
+    QHash<QPair<QString, QString>, quint64> m_seen;
 };
 } // namespace QindaQt::BluetoothRadio

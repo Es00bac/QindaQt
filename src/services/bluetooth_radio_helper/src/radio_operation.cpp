@@ -22,19 +22,20 @@ Result RadioOperation::execute(const QString &sender, const Request &request) {
         return reply(Disposition::Refused, "radio-request-rejected");
     if (!admitted(sender, request))
         return reply(Disposition::Refused, "radio-not-authorized");
-    if (m_owner != sender) { m_owner = sender; m_seen.clear(); }
     const auto now = m_clock();
     for (auto it = m_seen.begin(); it != m_seen.end();) {
         if (it.value() <= now) it = m_seen.erase(it);
         else ++it;
     }
-    if (m_seen.contains(request.nonce))
+    const auto key = qMakePair(sender, request.nonce);
+    if (m_seen.contains(key))
         return reply(Disposition::Refused, "radio-request-rejected");
-    if (m_seen.size() >= kMaxRequestsPerOwner)
+    if (m_seen.size() >= kMaxLiveRequests)
         return reply(Disposition::Refused, "radio-busy");
-    // Record before platform calls. A duplicated nonce never repeats a write
-    // or returns an old "unblocked" observation as current authority.
-    m_seen.insert(request.nonce, request.deadlineBoottimeMs);
+    // Record before platform calls and retain across A/B/A alias transitions.
+    // A global bound refuses new work rather than evicting unexpired authority.
+    // A repeated owner/nonce never repeats a write or returns stale observation.
+    m_seen.insert(key, request.deadlineBoottimeMs);
     auto selection = m_platform.select(request.adapterPath);
     if (!admitted(sender, request))
         return reply(Disposition::Refused, "radio-not-authorized");
