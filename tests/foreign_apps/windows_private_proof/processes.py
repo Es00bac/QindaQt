@@ -99,9 +99,35 @@ def admit_driver(value):
         first=next(v for v in launches if v["app"]==app["app"])
         if any(app.get(k)!=first.get(k) for k in ["pid","starttime"]):
             raise RuntimeError("application lifetime retirement mismatch")
+    domains=value.get("lifecycleDomains",[])
+    if len(domains)!=2 or {d.get("domain") for d in domains}!={"app-a","app-b"}:
+        raise RuntimeError("two causal domains absent")
+    if len({d.get("nonce") for d in domains})!=2 or any(not isinstance(d.get("nonce"),str) or len(d["nonce"])!=64 for d in domains):
+        raise RuntimeError("independent domain generations absent")
+    owners=[d.get("supervisor",{}) for d in domains]
+    if any(not o.get("pid") or not o.get("starttime") for o in owners) or len({o["pid"] for o in owners})!=2:
+        raise RuntimeError("independent held domain lifetimes absent")
+    for domain in domains:
+        if any(domain.get(k)!=expected for k,expected in {"qualified":True,"supervisorExit":0,
+                "supervisorReaped":True,"supervisorPidfdDead":True}.items()):
+            raise RuntimeError("domain supervisor retirement absent")
+        retired=domain.get("retirement",{})
+        matchedServer=next(v for v in stops if v["app"]==domain["domain"])
+        matchedApp=next(v for v in apps if v["app"]==domain["domain"])
+        if any(retired.get("server",{}).get(k)!=matchedServer.get(k) for k in
+                ["pid","starttime","prefix","qualified","exit","pidfdDead","reaped","signal","heldLockReleased","currentLockSame","replacementOwnerAbsent"]):
+            raise RuntimeError("domain server receipt join refused")
+        if any(retired.get("app",{}).get(k)!=matchedApp.get(k) for k in
+                ["pid","starttime","exit","reaped","pidfdDead"]):
+            raise RuntimeError("domain application receipt join refused")
+        child=retired.get("children",{})
+        if retired.get("qualified") is not True or any(child.get(k)!=expected for k,expected in {
+                "qualified":True,"subreaperChecked":True,"directReaped":2,
+                "kernelECHILD":True,"adoptedSignals":0}.items()):
+            raise RuntimeError("kernel terminal child retirement absent")
     children=value.get("childrenRetirement",{})
     if any(children.get(k)!=expected for k,expected in {
-        "qualified":True,"subreaperChecked":True,"directReaped":4,
-        "unknownSurvivors":False}.items()) or value.get("subreaperChecked") is not True:
-        raise RuntimeError("complete subreaper retirement absent")
+            "qualified":True,"kernelECHILDRequired":True,"perPrefixDomains":2,
+            "adoptedSignals":0,"unknownSurvivors":False}.items()) or value.get("subreaperChecked") is not True:
+        raise RuntimeError("complete causal domain retirement absent")
     return True

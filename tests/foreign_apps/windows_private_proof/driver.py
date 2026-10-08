@@ -3,41 +3,10 @@
 """Private compositor exit-with-session child, trusted Wine built-ins only."""
 import json,os,subprocess,time
 from pathlib import Path
-from processes import identity,live_children,settle,wait
+from processes import identity,wait
 from x11 import X11
-from owned_child import OwnedChild
-from owned_server import OwnedServer
-from child_ledger import ChildLedger
-ROOT=Path("/fixture")
-LOADER="/usr/lib/wine-proton-11.0.2/bin/wine"
-SERVER="/usr/lib/wine-proton-11.0.2/bin/wineserver"
-PE="/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/"
-# Each app receives only these fixed inputs plus nested display/auth created here.
-def wine_environment(name):
-    env={k:os.environ[k] for k in ["PATH","LANG","LC_ALL","DISPLAY","XDG_RUNTIME_DIR"] if k in os.environ}
-    authority=os.environ.get("XAUTHORITY")
-    # AGENT-GUARD: KWin's internal-Xwayland path exports exact empty authority.
-    # Omit only unset/empty: Wine sees its own private HOME, never host auth.
-    if authority is not None and authority!="":
-        if authority.isspace():
-            raise RuntimeError("Xauthority outside own sandbox")
-        auth=Path(authority).resolve()
-        if not (str(auth).startswith("/fixture/") or str(auth).startswith("/tmp/")):
-            raise RuntimeError("Xauthority outside own sandbox")
-        env["XAUTHORITY"]=str(auth)
-    home=ROOT/name/"home"
-    env.update(HOME=str(home),USER="fixture",LOGNAME="fixture",WINEPREFIX=str(ROOT/name/"prefix"),WINEARCH="win64",
-               XDG_CONFIG_HOME=str(home/"config"),XDG_DATA_HOME=str(home/"data"),
-               XDG_CACHE_HOME=str(home/"cache"),XDG_STATE_HOME=str(home/"state"),
-               TMPDIR="/tmp",WINEDEBUG="-all",
-               WINEDLLOVERRIDES="winemenubuilder.exe=d;mscoree,mshtml=d;winepulse.drv,winealsa.drv=d;winewayland.drv=d")
-    return env
-
-def authority_state():
-    # Bounded original state only; never log auth pathname or cookie contents.
-    value=os.environ.get("XAUTHORITY")
-    return {"present":value is not None,"exactEmpty":value=="",
-            "whitespaceOnly":bool(value) and value.isspace(),"cwd":os.getcwd()[:256]}
+from prefix_domain import PrefixDomain
+from wine_inputs import ROOT,LOADER,SERVER,PE,wine_environment,authority_state
 
 def require_driver_time(evidence,deadline):
     remaining=deadline-time.monotonic()
@@ -73,13 +42,12 @@ def publish_driver_result(evidence,deadline,path):
 def main():
     evidence={"trustedFixturesOnly":True,"prefixesAreNotPerAppSandbox":True,"authenticatedBadge":False,"steps":[],"prefixesRetained":True}
     evidence["xauthorityInput"]=authority_state()
-    apps=[];servers=[];serverlogs=[];x=None;ledger=None
+    apps=[];domains=[];x=None
     deadline=time.monotonic()+110
     def checkpoint():
         require_driver_time(evidence,deadline)
-        if ledger:ledger.checkpoint()
-        for server in servers:
-            if server.ready:server.guard()
+        for domain in domains:
+            if domain.retired is None:domain.checkpoint()
     def bounded_wait(description,predicate,seconds=15):
         def probe():
             checkpoint();value=predicate();checkpoint();return value
@@ -88,8 +56,7 @@ def main():
         if not os.environ.get("DISPLAY") or os.environ.get("DBUS_SESSION_BUS_ADDRESS","").find("/fixture/")<0:
             raise RuntimeError("private nested display/bus missing")
         if Path("/dev/dri").exists() or Path("/home/cabewse").exists():raise RuntimeError("host resource visible")
-        ledger=ChildLedger()
-        evidence["subreaperChecked"]=True
+        evidence["subreaperChecked"]=False
         def connect_x11():
             try:return X11()
             except RuntimeError as error:
@@ -114,33 +81,22 @@ def main():
             return result
         evidence["before"]=snapshot()
         for name,fixture in [("app-a","notepad.exe"),("app-b","wordpad.exe")]:
-            env=wine_environment(name)
-            for directory in [Path(env["HOME"]),Path(env["WINEPREFIX"]),*(Path(env[k]) for k in ["XDG_CONFIG_HOME","XDG_DATA_HOME","XDG_CACHE_HOME","XDG_STATE_HOME"])]:
-                directory.mkdir(parents=True,exist_ok=True)
             checkpoint()
-            serverlog=(ROOT/(name+"-server.log")).open("wb");serverlogs.append(serverlog)
-            server=OwnedServer(Path(env["WINEPREFIX"]),SERVER,env,serverlog,deadline)
-            servers.append(server);ledger.register(server.child,name+" server")
-            readiness=server.start(monitor=checkpoint)
-            evidence.setdefault("serverReadiness",[]).append({"app":name,**readiness,
-                "pid":server.child.process.pid,"starttime":server.child.initial["starttime"]})
-            checkpoint()
-            log=(ROOT/(name+".log")).open("wb")
-            checkpoint()
-            owner=OwnedChild([LOADER,PE+fixture],env,log)
-            try:ledger.register(owner,name+" app")
-            except Exception:
-                owner.contain();owner.close();log.close();raise
-            evidence.setdefault("appLaunch",[]).append({"app":name,
-                "pid":owner.process.pid,"starttime":owner.initial["starttime"]})
-            apps.append({"name":name,"process":owner.process,"owner":owner,
-                "environment":env,"known":{},"log":log,"fixture":fixture})
+            domain=PrefixDomain(name,deadline);domains.append(domain)
+            ready=domain.startup
+            evidence.setdefault("serverReadiness",[]).append({"app":name,**ready["serverReadiness"]})
+            evidence.setdefault("appLaunch",[]).append({"app":name,**ready["appLaunch"]})
+            apps.append({"name":name,"domain":domain,"fixture":fixture,
+                "environment":wine_environment(name),"known":{}})
+        evidence["subreaperChecked"]=len(domains)==2 and all(d.startup["subreaperChecked"] is True for d in domains)
         def pairs():
             results=[]
             for app in apps:
-                app["known"].update(live_children([app["process"].pid]))
-                alive={pid:value for pid,value in app["known"].items()
-                       if identity(pid) and identity(pid)["starttime"]==value["starttime"]}
+                observed=app["domain"].checkpoint()["members"]
+                alive={}
+                for value in observed:
+                    now=identity(value["pid"])
+                    if now and now["starttime"]==value["starttime"]:alive[value["pid"]]=value
                 candidates=[]
                 for window in x.windows():
                     pid=x.local_pid(window)
@@ -180,42 +136,27 @@ def main():
         # Fixed fixture exceptions only; no RPC payload or arbitrary argv logging.
         evidence["failure"]=str(error)[:256] if isinstance(error,RuntimeError) else "fixture-operation-failed"
     finally:
-        evidence["serverRetirement"]=[]
-        for index,server in enumerate(servers):
-            name="app-a" if index==0 else "app-b"
-            try:
-                # Success requires orderly exact initial lifetime retirement, not
-                # a successful namespace kill or an already-dead initial server.
-                result=server.retire()
-                evidence["serverRetirement"].append({"app":name,**result})
-            except Exception as error:
-                evidence.setdefault("uncertainCleanup",[]).append(name+" server")
-                evidence["serverRetirement"].append({"app":name,"qualified":False,
-                    "errorType":type(error).__name__,"containment":server.contain()})
-            finally:server.close()
-        for app in apps:
-            try:
-                code=app["process"].wait(timeout=min(3,require_driver_time(evidence,deadline)))
-                require_driver_time(evidence,deadline)
-                app["owner"].reaped=True
-                if code!=0 or not app["owner"].dead():raise RuntimeError("application retirement refused")
-                evidence.setdefault("appRetirement",[]).append({"app":app["name"],
-                    "pid":app["process"].pid,"starttime":app["owner"].initial["starttime"],
-                    "exit":code,"reaped":True,"pidfdDead":True})
-            except Exception:
-                evidence.setdefault("uncertainCleanup",[]).append(app["name"]+" app")
-                app["owner"].contain()
-        if ledger:
+        evidence["serverRetirement"]=[];evidence["appRetirement"]=[]
+        evidence["lifecycleDomains"]=[]
+        for domain in domains:
             try:
                 require_driver_time(evidence,deadline)
-                evidence["childrenRetirement"]=ledger.final()
+                result=domain.retire()
+                evidence["lifecycleDomains"].append(result)
+                evidence["serverRetirement"].append({"app":domain.name,**result["retirement"]["server"]})
+                evidence["appRetirement"].append({"app":domain.name,**result["retirement"]["app"]})
                 require_driver_time(evidence,deadline)
             except Exception as error:
-                evidence.setdefault("uncertainCleanup",[]).append("child-ledger")
-                evidence["childrenRetirement"]={"qualified":False,"errorType":type(error).__name__}
-            finally:ledger.close()
-        for app in apps:app["owner"].close();app["log"].close()
-        for log in serverlogs:log.close()
+                evidence.setdefault("uncertainCleanup",[]).append(domain.name+" domain")
+                evidence["lifecycleDomains"].append({"domain":domain.name,"qualified":False,
+                    "errorType":type(error).__name__,"refusal":str(error)[:128] if isinstance(error,RuntimeError) else "domain-cleanup-failed",
+                    "observedRetirement":domain.retired,"containment":domain.contain()})
+            finally:domain.close()
+        qualified=len(domains)==2 and len(evidence["lifecycleDomains"])==2 and all(
+            v.get("qualified") is True for v in evidence["lifecycleDomains"])
+        evidence["childrenRetirement"]={"qualified":qualified,
+            "kernelECHILDRequired":True,"perPrefixDomains":len(domains),
+            "adoptedSignals":0,"unknownSurvivors":False if qualified else None}
         if x:
             try:x.close()
             except Exception:evidence.setdefault("uncertainCleanup",[]).append("X11")

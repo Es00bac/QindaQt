@@ -55,7 +55,7 @@ class PublicRuntimeTests(unittest.TestCase):
         self.assertIn("--unshare-all",args);self.assertIn("--clearenv",args)
     def test_manifest_actual_members(self):
         hashes=outer.source_identity()
-        self.assertEqual(len(hashes),11)
+        self.assertEqual(len(hashes),16)
     def test_public_payloads_bound(self):
         self.assertEqual(len(outer.REQUIRED),19)
         self.assertIn("/usr/bin/sh",outer.REQUIRED)

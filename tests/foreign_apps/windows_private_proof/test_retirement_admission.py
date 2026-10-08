@@ -11,7 +11,7 @@ def positive():
             'prefixIdentity':[1,i+1,os.getuid(),1],'serverDirectory':[2,i+1,os.getuid(),1],
             'lock':[3,i+1,os.getuid(),1],'socket':[4,i+1,os.getuid(),1],
             'peerPid':100+i,'peerUid':os.getuid()})
-    return {'passed':True,'deadlineQualified':True,'clients':[{'application':r['app'],'fixedProgram':'notepad.exe' if i==0 else 'wordpad.exe',
+    value={'passed':True,'deadlineQualified':True,'clients':[{'application':r['app'],'fixedProgram':'notepad.exe' if i==0 else 'wordpad.exe',
         'normalWindowType':True,'fixedProgramArgumentObserved':True,'xid':str(i+1),
         'xresLocalPid':10+i,'prefix':r['prefix'],'starttime':10+i} for i,r in enumerate(rows)],
         'steps':[{'stage':s} for s in ['resize-a','close-a','resize-b','close-b']],
@@ -20,8 +20,31 @@ def positive():
             'signal':'SIGINT','heldLockReleased':True,'currentLockSame':True,'replacementOwnerAbsent':True} for r in rows],
         'appLaunch':[{'app':r['app'],'pid':10+i,'starttime':10+i} for i,r in enumerate(rows)],
         'appRetirement':[{'app':r['app'],'pid':10+i,'starttime':10+i,'exit':0,'reaped':True,'pidfdDead':True} for i,r in enumerate(rows)],
-        'childrenRetirement':{'qualified':True,'subreaperChecked':True,'directReaped':4,'unknownSurvivors':False},'subreaperChecked':True}
+        'childrenRetirement':{'qualified':True,'kernelECHILDRequired':True,'perPrefixDomains':2,'adoptedSignals':0,'unknownSurvivors':False},'subreaperChecked':True}
+    value['lifecycleDomains']=[{'domain':app,'nonce':str(i)*64,
+        'supervisor':{'pid':200+i,'starttime':30+i,'parent':1},'qualified':True,
+        'supervisorExit':0,'supervisorReaped':True,'supervisorPidfdDead':True,
+        'retirement':{'qualified':True,'server':dict(value['serverRetirement'][i]),
+                     'app':dict(value['appRetirement'][i]),
+                     'children':{'qualified':True,'subreaperChecked':True,
+                                 'directReaped':2,'kernelECHILD':True,'adoptedSignals':0}}}
+        for i,app in enumerate(['app-a','app-b'])]
+    return value
 class Admission(unittest.TestCase):
+    def test_domain_missing_replayed_or_mixed(self):
+        for change in ["missing","nonce","owner","kernel","signal","server","app"]:
+            v=positive()
+            if change=="missing":v.pop("lifecycleDomains")
+            else:
+                d=v["lifecycleDomains"][1]
+                if change=="nonce":d["nonce"]=v["lifecycleDomains"][0]["nonce"]
+                elif change=="owner":d["supervisor"]=v["lifecycleDomains"][0]["supervisor"]
+                elif change=="kernel":d["retirement"]["children"]["kernelECHILD"]=False
+                elif change=="signal":d["retirement"]["children"]["adoptedSignals"]=1
+                elif change=="server":d["retirement"]["server"]["pid"]+=1
+                else:d["retirement"]["app"]["starttime"]+=1
+            with self.subTest(change=change):
+                with self.assertRaises(RuntimeError):admit_driver(v)
     def test_deadline_fact_required(self):
         v=positive();v.pop('deadlineQualified')
         with self.assertRaises(RuntimeError):admit_driver(v)

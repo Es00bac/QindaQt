@@ -30,7 +30,7 @@ def command(root,phase):
 
 def source_identity():
     hashes=json.loads((HERE/"source-sha256.json").read_text())
-    if not isinstance(hashes,dict) or set(hashes)!={"outer.py","inside.py","driver.py","processes.py","x11.py","scenario.json","readonly-plan.json","owned_child.py","server_files.py","owned_server.py","child_ledger.py"}:
+    if not isinstance(hashes,dict) or set(hashes)!={"outer.py","inside.py","driver.py","processes.py","x11.py","scenario.json","readonly-plan.json","owned_child.py","server_files.py","owned_server.py","child_ledger.py","domain_ledger.py","domain_protocol.py","prefix_worker.py","prefix_domain.py","wine_inputs.py"}:
         raise RuntimeError("exact source manifest members absent")
     for name,digest in hashes.items():
         if hashlib.sha256((HERE/name).read_bytes()).hexdigest()!=digest:
