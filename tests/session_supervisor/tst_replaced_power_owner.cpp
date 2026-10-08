@@ -95,10 +95,10 @@ private Q_SLOTS:
                 while (wait.elapsed() < 3000
                        && !bus.interface()->isServiceRegistered(Power).value())
                     QThread::msleep(10);
-                const auto pid = bus.interface()->servicePid(Power);
-                changedPid = pid.isValid()
-                    && pid.value() == static_cast<uint>(replacementChild.processId())
-                    && pid.value() != static_cast<uint>(QCoreApplication::applicationPid());
+                const auto replacementPid = bus.interface()->servicePid(Power);
+                changedPid = replacementPid.isValid()
+                    && replacementPid.value() == static_cast<uint>(replacementChild.processId())
+                    && replacementPid.value() != static_cast<uint>(QCoreApplication::applicationPid());
             }
             auto witness = std::make_unique<ModeledWitness>(bus);
             witness->scenario = scenario; witness->signalCount = &signalCount;

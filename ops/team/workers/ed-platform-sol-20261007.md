@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — conditional replaced Power1 owner source candidate ready for independent review/native lease; no owned compiler/runtime process
+- Status: working — freezing authorized test-only Power fixture shadow rename after actual laptop strict failure; native continuation awaits independent source recheck
 - Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
 - Branch: worker/everyday-power-startup-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -159,3 +159,5 @@
 - 2026-10-08T02:30:35+00:00: Manager chose retire-only closed-list extension, no unconditional Power refresh. Authored pidfd user/PID/starttime/deleted-executable proof across acquisition and exact unique-owner/PID/identity recheck; Private alwaysno signal. ADR0360Proposed and0094 consequences preserve historical0025 and actual shell-beforeSession1 limit. Focused modeled identity/owner negatives plus actual owned-child pidfd fixtures prepared; docs531 strict/shape/whitespace pass, no native run or completion claim. Awaiting exact source review and explicit lease.
 
 - 2026-10-08T02:40:23+00:00: Reopened exactbbe805 source at manager review; removed tautological desktopCanContinue assertion and renamed fixture to actual bounded return. No production change/native run. Scope now bounded helper return plus retained owner only, not full startup proof. R17 exact98/b128 independently awaitsrecipeacceptance/buildlease; all own compiler/runtime resources unoccupied.
+
+- 2026-10-08T03:46:26.855738+00:00 — Authorize/freeze only test local pid→replacementPid and its three uses in changed-owner-PID fixture; predicates/assertions and production remain identical5d94. Original laptop actual strict362/366 EXIT1/zero tests preserved0778d3e9b. No incremental compile before root recheck.
