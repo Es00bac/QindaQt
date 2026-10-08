@@ -29,7 +29,8 @@ def prepare(destination, source):
         with p.open("x") as stream: stream.write(body)
         p.chmod(0o644)
     for name, target in (("guest-init.sh", "init"), ("guest.py", "proof/guest.py"),
-                         ("windows.py", "proof/windows.py"), ("scenario.json", "proof/scenario.json")):
+                         ("windows.py", "proof/windows.py"), ("frame_capture.py", "proof/frame_capture.py"),
+                         ("interaction.py", "proof/interaction.py"), ("scenario.json", "proof/scenario.json")):
         fd = os.open(source/name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
         try:
             body = os.read(fd, 131073)

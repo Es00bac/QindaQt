@@ -224,7 +224,7 @@ def main(run_root, plan_sha):
             raise ValueError("plan-domain")
         required_sources = {"copy_stage.py", "boot_plan.py", "stage_inventory.py",
                             "prepare_overlay.py", "guest-init.sh", "guest.py",
-                            "windows.py", "scenario.json"}
+                            "windows.py", "frame_capture.py", "interaction.py", "scenario.json"}
         if not required_sources <= {parts(n)[-1] for n in proposal["sourcePins"]}:
             raise ValueError("incomplete-source-pins")
         for name, digest in proposal["sourcePins"].items():
