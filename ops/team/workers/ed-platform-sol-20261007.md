@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: available — Windows f1 source repairs frozen for same-reviewer safety recheck; no resources held.
+- Status: available — Media private-bus RCA handed off; Windows9850 source safety recheck pending; no resources held.
 - Base: exact0fccd54fe7707391b0abd24032a4c7443414fee3; fixture staged from9721; reviewed lifetime contract15cae66f
 - Branch: worker/everyday-windows-owned-server-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -309,3 +309,5 @@
 - 2026-10-08T18:21:48+00:00 — Claimed exact f1 source repair of Astra17d blockers; generation tests remain unrun pending same-reviewer safety recheck.
 
 - 2026-10-08T18:22:40+00:00 — Froze parent-incarnation edge admission and independently continuing synthetic cleanup; AST/diff only, all generation tests unrun.
+
+- 2026-10-08T18:26:20+00:00 — Read-only Media saved-environment/Portage incremental RCA establishes missing negative ENV_UNSET override; no rerun or implementation.
