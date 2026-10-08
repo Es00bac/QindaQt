@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Deliver independently accepted R18 through Portage and qualify the isolated Viewer successor while maintaining full-plan priorities.
+- Status: working — Qualify Viewer text/search, prepare audio image/lifecycle cohorts and close foreign-runtime prerequisites after verified R18 adoption.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -94,3 +94,5 @@
 - 2026-10-08T08:10:21+00:00 — Exact R18 artifact850/fd93 accepted; root113-payload laptop rehash passes, R17 remains installed. Imported immutable artifact and native-lock d9 authority receipts without changing peer boards. Actual Viewer f971 full native strict build fails on two test-loop copies; own251 tests-only repair pushed, Media same-reviewer check and eight native CTests next. Full remaining estimate50workingdays/range30–80 incorporates existing source/tests, no ED completion percentage from seven unrelated ledger rows. Root laptop compiler/private offscreen and future Portage adoption lanes serialized; agents read-only estimation/source review, no host actions.
 
 - 2026-10-08T08:22:04+00:00 — R18 installed through Portage0/20.36s; all2321files+4symlinks exact signed image/VDB, world/profile unchanged. Root e95 installed21-payload proof and e300 Viewer10-payload native failure verified on both hosts. Viewer251 strict7-target0/7.875s, actual8 CTests3pass5fail before focused key behavior; public action empty shortcut and long-PDF fixture causal diagnosis assigned same Media reviewer source-only. Root compiler/Portage processes settled; current shell kept running, installed helper/physical/next-login UI gates open. Full estimate50days/range30–80 and original goal remain active.
+
+- 2026-10-08T08:51:52+00:00 — Previous goal turn made concrete progress: R18 installed/imageVDB verified2321+4/worldprofile unchanged. Root5ef source acceptedd083, actualstrict7build0/49.974s and8CTests4pass4fail; realPoppler cap/+1 nowpasses, QMLpublicFlexwrap literal blocksremaining4UI/CLI. Originalfailure preserved. Windows freshv7preflight root7source12payload/retiredidentity verified; singleexecute failsprivateXKBbeforeapps/settledb3. Platformv8 source03 suppliespublic/binshclosure, reviewpending. RootASancontrol explicitPortage reachedconfigure and failedcompiler-sanity, raw2b49 preserved; Mediaactualsource/log diagnosis, noimageorASanredclaim. AstraownedAndroid0362/apksig/sourcecorrespondence packet, source/static only. Rootlaptopnative andqindapackage jobssettled; nohostsession/audio/GPU actions, fullgoalactive.
