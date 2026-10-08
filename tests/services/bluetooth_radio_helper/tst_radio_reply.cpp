@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "../bluetooth_bluez_adapter/support/private_bus.h"
+#include "../../../src/services/bluetooth_radio_helper/src/native_radio_wire_p.h"
+#include "../../../src/services/bluetooth_radio_helper/src/native_radio_codec_p.h"
 #include <qindaqt/services/bluetooth_radio_helper/qt_radio_power_port.h>
 #include <qindaqt/services/bluetooth_radio_helper/radio_service_session.h>
 #include <QtDBus/QDBusVirtualObject>
@@ -67,6 +69,41 @@ Result result(const QSignalSpy &spy) { return qvariant_cast<Result>(spy.constFir
 class RadioReplyTest : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void actualPendingReplyPreservesAndChecksSender_data() {
+        QTest::addColumn<bool>("foreignSender");
+        QTest::newRow("legitimate-peer") << false;
+        QTest::newRow("foreign-correct-serial-and-nonce") << true;
+    }
+    void actualPendingReplyPreservesAndChecksSender() {
+        QFETCH(bool, foreignSender);
+        Fixture f; QVERIFY(f.start());
+        NativeRadioWire caller; QVERIFY(caller.open(f.bus.address));
+        const Request issued{QString(32, QLatin1Char('c')), QStringLiteral(":1.90"),
+            QStringLiteral("/org/bluez/hci0"), QStringLiteral("12:34:56:78:9A:BC"),
+            f.session->authorityConnection().baseService(), boottimeMilliseconds() + kRequestWindowMs,
+            f.session->authorityConnection().baseService(), caller.uniqueOwner()};
+        auto request = nativeMethod(f.helperBus.baseService(), kPath, kInterface, "ObserveAndUnblock");
+        QVERIFY(appendNativeRequest(request.get(), issued));
+        auto pending = caller.send(std::move(request), 1500); QVERIFY(pending);
+        QTRY_VERIFY(f.helper.received);
+        QCOMPARE(f.helper.pending.service(), caller.uniqueOwner());
+        QCOMPARE(f.helper.issued, issued);
+        auto &responder = foreignSender ? f.foreign : f.helperBus;
+        QVERIFY(responder.send(f.reply()));
+        QTRY_VERIFY_WITH_TIMEOUT(pending->completed(), 2000);
+        auto reply = pending->take(); QVERIFY(reply);
+        // A timeout/local error cannot satisfy this witness: inspect the real
+        // returned frame before testing authority. The pending slot consumed
+        // the held call serial, and the complete expected nonce/result remains.
+        QCOMPARE(dbus_message_get_type(reply.get()), DBUS_MESSAGE_TYPE_METHOD_RETURN);
+        const char *sender = dbus_message_get_sender(reply.get()); QVERIFY(sender);
+        QCOMPARE(QString::fromUtf8(sender), responder.baseService());
+        QVERIFY(dbus_message_get_reply_serial(reply.get()) != 0);
+        Result decoded; QVERIFY(readNativeResult(reply.get(), &decoded));
+        QCOMPARE(decoded.nonce, issued.nonce);
+        QCOMPARE(decoded.disposition, Disposition::VerifiedUnblocked);
+        QCOMPARE(pending->fromExpectedPeer(reply.get()), !foreignSender);
+    }
     void exactNativeSenderCompletesIssuedDelegationOnce() {
         Fixture f; QVERIFY(f.start()); QSignalSpy done(f.port.get(), &RadioPowerPort::finished);
         QVERIFY(f.begin()); QTRY_VERIFY(f.helper.received);
@@ -116,10 +153,14 @@ private Q_SLOTS:
     }
     void cancellationInsideAdmissionCannotRevivePending() {
         Fixture f; QVERIFY(f.start()); QSignalSpy done(f.port.get(), &RadioPowerPort::finished);
-        bool cancelNow = false; quint64 id = 0;
-        id = f.begin([&] { if (cancelNow) f.port->cancel(id); return true; });
+        bool cancelNow = false, cancellationObserved = false; quint64 id = 0;
+        id = f.begin([&] {
+            if (cancelNow) { f.port->cancel(id); cancellationObserved = true; }
+            return true;
+        });
         QVERIFY(id); QTRY_VERIFY(f.helper.received); cancelNow = true;
         QVERIFY(f.helperBus.send(f.reply()));
+        QTRY_VERIFY(cancellationObserved);
         QTest::qWait(100); QCOMPARE(done.size(), 0);
     }
     void ownerDestructionInsideAdmissionDoesNotUseRetiredPort() {
