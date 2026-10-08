@@ -22,6 +22,7 @@ private Q_SLOTS:
         snapshot.streams[0].applicationName =
             QStringLiteral("A long application name <b>literal</b> that must elide");
         snapshot.streams[0].volumeKnown = known;
+        snapshot.streams[0].canSetVolume = known;
         snapshot.streams[0].volume = level;
         FakeAudioTransport transport;
         Audio::AudioClient client(&transport);
