@@ -239,7 +239,7 @@ def main(run_root, plan_sha):
             raise ValueError("inventory-pin")
         inventory = json.loads(body)
         if (inventory["host"] != "qinda-top" or inventory["resourceProfile"] != "laptop"
-                or inventory["issues"] or len(inventory["objects"]) != 6726):
+                or inventory["issues"] or len(inventory["objects"]) != 6730):
             raise ValueError("inventory-domain")
         source_fd = os.open("/", DIRECTORY)
         vdb_fd = os.open("/var/db/pkg", DIRECTORY)

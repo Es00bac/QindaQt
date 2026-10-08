@@ -138,3 +138,20 @@ Current-source reads and synthetic controls are not input materialization.
 The fixed expected hashes and VDB witnesses survive copy normalization, and
 the generated complete stage is checked by existing stage_inventory and
 boot_plan before any separately granted archive or guest operation.
+
+The first actual stage using the predecessor inventory (6726 objects) failed final stage
+admission after copying653,337,381 regular bytes: libgbinder.so.1 targeted an
+omitted intermediate libgbinder.so.1.1 link. That failed stage is retained.
+The corrected read-only collector uses input_links.chain to retain every
+VDB-owned hop (maximum40, explicit cycle/public-root/type/version refusal)
+rather than Path.resolve() collapsing directly to the terminal ELF. Its fresh
+inventory adds exactly four intermediate symlinks and preserves every original
+regular-file record, byte total and172 package witnesses. A Linux doubled
+leading slash is canonicalized before explicit usr-merge mapping; unowned
+fallback resolution has been removed. No admission guard is relaxed.
+
+The owning copier changes only its fixed expected inventory count6726->6730.
+The new manifest, proof and fresh protected-stage plan require independent
+review and one new grant. The existing partial stage must not be reused or
+patched in place. This closes an input-selection source defect, not actual
+stage or guest qualification.
