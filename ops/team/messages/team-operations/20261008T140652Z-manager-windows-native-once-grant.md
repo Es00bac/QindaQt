@@ -1,0 +1,6 @@
+# Exact private Windows native grant
+
+- Time: 2026-10-08T14:06:52+00:00
+- Accepted635 source/synthetic80/ce49 and preflight2d4. Root full-read outer/preflight and rehashed11 source/19 payloads. Source-derived processes.pyc exactly reproduces accepted source (88db); initial admission guard ran no native process and is preserved.
+- Exactly one ["/usr/bin/python3", "/home/cabewse/work_SPaC3/container-wm.worktrees/everyday-windows-owned-server-20261008/.cache/windows-proof-source-v10-repaired/outer.py", "--execute-approved", "--output", "/home/cabewse/work_SPaC3/container-wm.worktrees/everyday-windows-owned-server-20261008/.cache/windows-proof-runs", "--accepted-preflight", "/home/cabewse/work_SPaC3/container-wm.worktrees/everyday-windows-owned-server-20261008/.cache/windows-proof-runs/private-e2l8w0t9/outer-evidence.json", "--reviewed-preflight-sha256", "093a8885d7bee2fd83eef747c03e72ddaa6c6841cca84c888f6651934dff3f4e"] invocation; consumes preflight093a. Source/namespace/environment150s/owned cleanup unchanged.
+- Root private-runtime lease; no compiler/Portage/host audio/bus/device/session/install. Old failures/prefixes retained; first actual failure stops/no retry. Rendering/input/production authority and full ED remain unqualified.

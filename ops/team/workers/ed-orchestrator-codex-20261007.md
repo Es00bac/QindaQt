@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Preserve verified compact Audio integration and prepare corrected R20 signed delivery; route fresh gain-package and Windows qualification while all whole-plan gates remain active.
+- Status: working — Execute one independently admitted private Windows lifecycle fixture while corrected R20 and fresh old-only audio package plans receive independent source review.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -142,3 +142,5 @@
 - 2026-10-08T13:44:10+00:00 — Read full9c5feb and e85 independent acceptance, all99 Audio raw hashes/fullLastTest and100 safe proof members. Integrating only five accepted Audio product/test/wiki paths plus immutable replies; peer live records are preserved. Root reserves compiler/private-QML lane for strict owning integrated7/28/30 rerun. Corrected R20 and live adoption remain next; Media fresh old-only diagnostic preparation stays source-only, Windows native ungranted.
 
 - 2026-10-08T13:49:37+00:00 — Actual manager7993 native configure0/45.056s, strict four-target build0/14.221s, exact registry7, CTest7/7/0/21.334s and full Qt28/0/0/0 plus30 probes. Every owning input unchanged; staged27 files/23QML rehashed/source equal, metadata restored/no.withheld. First docs534/strict/diff pass; final annotations next. Root lease released; fresh R20 preparation is next, no package/install yet.
+
+- 2026-10-08T14:06:52+00:00 — Audio98342 qualified; root grants one frozen635 Windows150s execute-approved after current11 source/19 payload hashes and preflight093a match. Initial extra-membership guard stopped before any native call on generated processes.pyc; pure recompilation proves byte-for-byte88db source equality without executing/importing module or changing frozen copy. Root owns private-native lease; no retry, host network/audio/bus/session/Portage/install. R20 and Media plans remain source-only.
