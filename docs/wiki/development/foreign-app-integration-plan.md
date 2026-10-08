@@ -124,9 +124,31 @@ runtime-app-to-window association. Those are design work, not merely icon paint.
 | Appearance and accessibility | Use a restrained green/blue icon badge, edge or underline through semantic theme tokens. Also expose “Android application” or “Windows application” in tooltip/details and accessible description. Preserve focus/selection/error colors; origin is not conveyed by color alone. Test dark/light/high-contrast and color-vision cases. |
 | Launch and failure | Start the necessary runtime on demand with visible progress, bounded timeout and plain recovery. An unavailable runtime, unsupported architecture or failed app does not leave a permanent spinner or false running icon. |
 | Files and links | Open supported file types/URLs through chosen defaults and bounded host/guest path mapping; provide explicit file import/export and recoverable errors. No requirement to locate an Android container path or Wine drive mapping manually. |
-| Input and media | Keyboard shortcuts, mouse, touch, IME, clipboard, audio and scale behave predictably. Integrate notifications and portal-style permissions where the runtime can support them, with explicit limits where it cannot. |
+| Input and media | Keyboard shortcuts, mouse, touch, IME, clipboard and scale behave predictably. Actual Android and Windows playback joins the PipeWire graph observed by Audio1 with stable app identity, per-app level/mute and the user's chosen mixer buses and outputs alongside native streams. Integrate notifications and portal-style permissions where the runtime can support them, with explicit limits where it cannot. |
 | Management | App details show origin, runtime/prefix, version and compatibility status. Provide graphical install/remove and runtime settings; keep app data on uninstall unless deletion is explicitly selected. |
 | Terminal and agents | Stable launch/list/status identifiers and structured outcomes through a public adapter. Origin and current capabilities are available to agents; native-looking windows do not imply a semantic document provider exists. |
+
+### Audio1 acceptance for foreign applications
+
+ED-24 uses a real audio-producing application on each platform. A stock
+Calculator/Clock or Notepad/WordPad launch cannot qualify audio by itself, and
+the private Pulse socket used to start an isolated Android test guest is not a
+desktop audio route. The Windows runner and Android runtime adapter must expose
+each playback stream, with its authenticated application identity, in the same
+PipeWire graph that Audio1 observes. A user can set that stream's level and
+mute through Audio1 and route it through the configured mixer buses to one or
+more chosen outputs without bypassing native applications.
+
+Acceptance records both Audio1 state/readback and an actual signal witness at
+the selected outputs. Exercise simultaneous native and foreign playback,
+independent per-app controls, a changed default device, output disconnect and
+reconnect, and a fullscreen app. Preserve a user's explicit routing rather
+than silently returning a stream to the default sink. Microphone/capture and
+communications features need separate permission and routing evidence; an
+output-only proof does not qualify them. If Android needs a host audio bridge,
+record its process, identity and lifetime contract in a reviewed ADR with the
+implementation; an isolated guest-only server cannot count as the Audio1
+integration.
 
 Green/blue denotes execution origin, not trust or permission. An arbitrary
 application cannot gain stronger authority by supplying a desktop key, title
@@ -176,7 +198,7 @@ alone does not complete a runtime or app journey.
 | ED-21 — Android application lifecycle | Platform runtime adapter; ED-20 | Graphical setup/registration/launch/stop/remove; launch from ordinary Applications; runtime cold/warm/restart cases; isolate failure to the correct app; preserve app data. No Android-home-screen step required for normal app launch. | Sol 6.1 default; Sonnet for bounded UI. Opus only for difficult compositor/runtime faults. |
 | ED-22 — Windows application lifecycle | QindaLutris/public runner and Platform; ED-20 | Register a non-game app, pin its Wine/Proton choice and prefix, launch from Applications, run two apps independently, handle child windows and remove a registration without losing another app or silently deleting data. Retain existing game-runner checks. | Sol 6.1 default; independent Sol review, Opus for prefix/data-loss or privilege design. |
 | ED-23 — integrated green/blue application presentation | Catalog + launcher + Applications + tasks/container chrome; ED-20 and test adapters, then ED-21/22 | One stable identity across search/pin/running state; green Android and blue Windows badges; keyboard/AT names; no duplicates or generic runtime grouping; mixed native/Android/Windows container resize/detach at representative scales. | Sol 6.1 shared types/identity; Sonnet/Luna tightly specified visual bindings and fixtures; Sol review. |
-| ED-24 — files/input/permissions and compatibility qualification | Adapter owners plus portals/terminal/agent consumers; ED-21–23 | One complete real-app journey per platform: launch, resize, type/IME, clipboard, open/save file, audio, notification, minimize/restore, close/relaunch. Then multi-monitor, runtime failure, lock/suspend and permission revocation. Record unsupported features per tested app. | Sol 6.1/Sonnet integration; Luna matrix/evidence; Opus only new trust or difficult lifecycle defects. |
+| ED-24 — files/input/permissions and compatibility qualification | Adapter owners plus portals/terminal/agent consumers; ED-21–23 | One complete real-app journey per platform: launch, resize, type/IME, clipboard, open/save file, Audio1-visible app playback with independent gain/mute and configured bus/output signal, notification, minimize/restore, close/relaunch. Then simultaneous native playback, default/output reconnect, fullscreen, multi-monitor, runtime failure, lock/suspend and permission revocation. Record capture and unsupported features per tested app. | Sol 6.1/Sonnet integration; Luna matrix/evidence; Opus only new trust or difficult lifecycle defects. |
 
 Run a small private fixture matrix before physical trials; measure idle CPU,
 memory, battery impact, startup and cleanup on qinda and the laptop. Runtime

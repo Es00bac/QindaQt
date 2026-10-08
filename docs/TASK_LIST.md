@@ -1,3 +1,32 @@
+## Current foreign-app Audio1 acceptance and R23 delivery — 2026-10-08T22:36:17.754819+00:00
+
+The owner requires Android and Windows application audio to use QindaQt's Audio1
+control and observation boundary, with real identified playback streams in the
+same PipeWire graph as native applications. ED-24 now requires public per-app
+level/mute readback and actual signal through configured mixer buses/outputs,
+including simultaneous native playback, device changes and reconnect. Silent
+Calculator/Clock and Notepad/WordPad feasibility fixtures, and the Android
+guest's private startup Pulse socket, cannot qualify this audio outcome.
+Microphone/capture needs separate permission and routing proof. The
+[foreign-app integration plan](wiki/development/foreign-app-integration-plan.md#audio1-acceptance-for-foreign-applications)
+holds the exact gates; no ED-24 completion credit is recorded.
+
+Reviewed R23 desktop source metadata is on qinda hub main7c73464fc; overlay
+recipe on masterfe46200. The signed Portage build is active under8CPU/12GiB
+limits; no desktop R23 artifact, image gate or laptop installation has passed.
+Gabbee-r6 signed artifact25fc928a is independently verified and copied to the
+laptop, but paired adoption has not occurred. Installed laptop versions remain
+desktopR20/providerR5.
+
+Six private stock Android boots progressively reached actual LXC container
+setup; the sixth stopped on stock Waydroid's missing private Pulse socket.
+No Android app window is qualified. Windows reached two genuine Wine app
+windows in an earlier run, but input failed peer-focus admission; later
+diagnostics isolated an unrelated second-child executable mismatch before
+typing. No Windows ordinary app journey or public runner is qualified. All
+ED-01–24, full mixer, accessibility, administration and newcomer tasks remain
+required. Historical checkpoints follow below.
+
 ## Current Power source milestone and combined release — 2026-10-08T21:58:07+00:00
 
 Peripheral Power source276151/candidatec12 is integrated with source/test parity38/38 and independent source/native acceptancebc722/5e6b. Manager strict Release19targets build0/60.89s; owning22/22 CTest/193Qt pass with zero failed/skipped/blacklisted. The applet keeps its declared fatal-QML-warning gate. Earlier manager configuration failure and an added global-fatal abort on the existing disconnected-bus QFileSystemWatcher warning are retained; the supported owning registry passes. New independent64-row battery inventory/nonce receipts and compact scrollable popup preserve old Power1 wire, laptop aggregation and critical actions. Shell composition/full production package and actual installed peripheral readings remain next. Voice/Files are already accepted; combine in newR23 with signed Gabbee-r6. R20/providerR5 remain installed. R21/R22 archives stay immutable and unbuilt; full original remaining scope remains open.
