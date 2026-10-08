@@ -38,21 +38,31 @@ single-line names and separate fader/readout/mute; the Settings page is denser.
 Prior 915/435 and failed unknown-fixture evidence remain separate.
 
 The compact repair is integrated at 5858bccdf82808a74a6bab358d8e6f08c7ac256a.
-The manager strict 28-target build passes; actual owning 33/33 CTests report
-185/0/0/0 Qt and four profile/resolution rows report 88/0/0/0. Both native lanes
-are released. R18 uses this confirmed runtime freeze. Initial exact recipe
-14e4406/overlay af4e8ed passed source review aca238, but its actual private
-Portage build stopped at dependency resolution before compilation or signing:
-the declared dev-libs/dbus atom does not exist. Failure receipt 4fe2a58ac and
-the original build log/status/argv are preserved. Gentoo sys-apps/dbus supplies
-the required public headers and library. Exact corrected recipe ea14088c and
-overlay a829b04f pass actual private pretend resolution, proposing only R18.
-Independent superseding review 7c2f2e99 accepts the exact minimal repair and
-resolver evidence. Root also verifies mirror SHA256 a1b82d26 and unchanged
-runtime/archive. Signed build and artifact qualification are next; no R18
-artifact or installed change follows from source acceptance.
+The manager strict28-target build, actual owning33/185 and profile-resolution4/88
+gates all pass. Exact runtime remains the R18 freeze. The initial dependency
+resolver failure4fe2a58ac on nonexistent dev-libs/dbus is preserved; corrected
+ea14088c/overlaya829b04f and same-reviewer7c2f acceptance are integrated59a1.
+Platform's exact850af828 handoff and independent Astra fd93c266 acceptance now
+establish the privately signed R18 artifact:61,491,200bytes,
+SHA256 cd9e36329c5f13c97d510d71aec1f6ebd991c77cca79b90eafe354dfb24f6c2d.
+Actual required-signature verification, all2321regular files/four links,
+SDK closure/poison/restoration, Network12, eleven profiles and normal/2x package
+preview gates pass. Root independently rehashes the788,716-byte113-payload proof
+bundle on the laptop. R18 is not installed; R17 remains current. Laptop Portage
+adoption, effective installed helper sandbox, ordinary startup and physical
+controls remain separate. Native-lock source cross-checkd9 establishes no
+equivalent Bluetooth reply-sender defect: lock state comes from a genuine-owner
+nonce-bound signal, while a void reply alone cannot supply state.
 No compact UI or newer core repair is installed yet. The generic Settings
 action does not claim an Audio-specific route.
+
+Root Viewer repair is isolated at exactbase59a1. Same Media reviewer accepted
+65742ddc and tests-onlyf971d884 source. Full-project native configure succeeds
+with the documented /usr/lib64/libexec layout. The first strict seven-target
+build stops on two QString loop-copy warnings; minimal tests-only successor
+25123fd24 uses const references, preserving all production and assertions.
+Its exact review, incremental strict build and eight owning CTest rows are
+next; no native keyboard or installed Viewer pass is claimed.
 
 Media's c17fd9 fixture repair, de491fa stage/decomposition declaration and
 Portage overlay b489a5f8 loopback cleanup have independent source acceptance.

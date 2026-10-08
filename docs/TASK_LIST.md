@@ -1,3 +1,22 @@
+## Current exact artifact and native continuation — 2026-10-08
+
+R17 remains installed. Runtime5858 compact Audio and newer Clipboard/Power/
+Bluetooth fixes are packaged in signed R18 cd9e3632, independently accepted by
+fd93c266 from exact author850af828. Root verifies all113 indexed raw payloads
+on the laptop. Portage adoption and installed/physical qualification remain;
+the package build is no longer pending. Native lock authority source cross-check
+d9 establishes no equivalent Qt reply-sender defect and does not add runtime
+evidence.
+
+Root Viewer full configure passes; first strict native build stops on two
+test-loop warnings. Source-only25123fd24 preserves the failure and changes only
+two QString references; same-reviewer recheck and actual seven-target/eight-row
+qualification are pending. Full audio gain/processing, ED01–24 required journeys,
+both foreign app platforms and informative real provider feeds remain open.
+Best remaining estimate50workingdays, plausible30–80, immediate core/UI1–3.
+This incorporates existing source/test work; release numbers and worker activity
+are not plan completion or a valid ED percentage.
+
 ## Active everyday delivery — 2026-10-08
 
 Installed R17 restores public Audio inventory/control; the owner confirms
