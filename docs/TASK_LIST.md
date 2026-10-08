@@ -1,28 +1,13 @@
-## Reviewed Audio recovery and core audit — 2026-10-08
+## Active everyday delivery — 2026-10-08
 
-## 2026-10-08T03:10:09+00:00 — Core service recovery and full mixer acceptance
-
-Clipboard candidate afa345097f005a8d500b19b0a47e39f34c47ee26 is integrated after
-independent final source/evidence acceptance 95dba92a. The author's strict
-22/22 CTests and 172 Qt checks passed, with immutable original Host and late-first
-observer failures and staged-header poison/restoration controls. ADR0358 is
-Accepted. Integrated native rerun and installed ordinary first-Session1 startup
-remain pending; no clipboard capture or user contents were accessed.
-
-R17 private signed Portage build exited 0. The actual 61,296,640-byte artifact has
-SHA256 82aac2e81f8683fe9dc25bb645c91fd6405ce5c02ed40bff601c91d7e25c1f49.
-Signature/image consumer qualification is active; laptop installation and live
-Audio1 readiness remain pending. Its frozen runtime source remains 5b7f5b5910;
-this later Clipboard integration is outside that artifact.
-
-The owner requires the original Voicemeeter-class Linux mixer: simultaneous
-devices, strip-to-many-bus routing, per-app levels, physical controls, games and
-fullscreen playback, and usable desktop presentation. ADR0123/0173/0227 and the
-parity reference are the existing design. Media audits source and installed
-qualification gaps without touching host presets or routing. Automatic bus
-bindings follow defaults; explicit pins and per-stream targets are distinct
-contracts. Default speaker selection alone is not complete mixer acceptance.
-The broader everyday, foreign-app and AI usage program remains active.
+InstalledR17 restores public Audio inventory/control; the owner confirms Settings
+device discovery and reports unusably large/non-scrolling Audio popup and sparse
+Settings layout. The compact UI is an active Platform packet. Integrated
+Clipboard22/172 and Power6/56 native checks pass; package/startup journeys remain.
+Bluetooth native sender recovery and real console gain/quiet startup are active
+bounded implementation packets. See [current exact evidence](HANDOFF.md).
+The full ED01–24/Android/Windows/AI/mixer scope below remains required; no whole
+milestone is completed by these slices.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

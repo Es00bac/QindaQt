@@ -1,28 +1,40 @@
-## Reviewed Audio recovery and core audit — 2026-10-08
+## Installed R17 and verified core repairs — 2026-10-08
 
-## 2026-10-08T03:10:09+00:00 — Core service recovery and full mixer acceptance
+R17 is installed through Portage on the laptop. Root independently verified its
+signed61,296,640-byte artifact82aac2e81f8683fe9dc25bb645c91fd6405ce5c02ed40bff601c91d7e25c1f49
+and all2313 installed objects plus4symlinks. World intent and the saved profile
+are preserved. Restarting only Audio1 produced Ready schema14 with8outputs,
+5inputs,24streams and8console strips/buses. Both a real Bluetooth volume change
+and guarded restoration passed with requested readback. The owner now confirms
+devices appear in Audio Settings, but reports oversized/non-scrolling Audio
+popup controls and wasted Settings space. GUI volume usability is still open.
+Sanitized installed proof:81,920bytes/25members/SHA2562862f5bdcdbb29ede9f13607ac7e2efa13926d67aa6450b30c8602e65586f3d0,
+preserved on qinda. R17 runtime source remains5b7f5b5910; later repairs are outside
+that immutable image.
 
-Clipboard candidate afa345097f005a8d500b19b0a47e39f34c47ee26 is integrated after
-independent final source/evidence acceptance 95dba92a. The author's strict
-22/22 CTests and 172 Qt checks passed, with immutable original Host and late-first
-observer failures and staged-header poison/restoration controls. ADR0358 is
-Accepted. Integrated native rerun and installed ordinary first-Session1 startup
-remain pending; no clipboard capture or user contents were accessed.
+Clipboard afa345/ADR0358 is integrated and manager strict owning22/22 CTests,
+172Qt checks passed with zero fail/skip/blacklist. Power c7e2/ADR0360 has exact
+independent source/raw-evidence acceptance and manager strict six-target build,
+6/6 CTests and56Qt checks passed. Their next gate is signed delivery and ordinary
+installed startup; neither source gate proves the full physical journey.
+Power raw14-member proof8f2feef4dd5e25a02ecf93d91ac4d0bcb21b5b5c0bc1d5812e90fdff7c9927df
+is preserved on qinda; all11 indexed digests match. Earlier failures are retained.
 
-R17 private signed Portage build exited 0. The actual 61,296,640-byte artifact has
-SHA256 82aac2e81f8683fe9dc25bb645c91fd6405ce5c02ed40bff601c91d7e25c1f49.
-Signature/image consumer qualification is active; laptop installation and live
-Audio1 readiness remain pending. Its frozen runtime source remains 5b7f5b5910;
-this later Clipboard integration is outside that artifact.
+Bluetooth helper native testing remains NeedsFix: impossible Qt reply.service
+checks and permissive actual session-bus reply policy require the independently
+reviewed88c3 native sender/GUID/issued-caller contract. No installed permanent
+Bluetooth recovery or new radio action is claimed. Media implements bounded
+Audio gain/admission/quiet-start repair under Proposed ADR0361; the full audit
+also leaves Mono/trim, processing truth, UI, multi-device and other normative
+Voicemeeter-class capabilities required. Platform owns the compact Audio popup
+and Settings layout on isolated f2bb source, after its same-reviewer BT contract
+acceptance348041. Root owns live devices, services, installation and integration.
 
-The owner requires the original Voicemeeter-class Linux mixer: simultaneous
-devices, strip-to-many-bus routing, per-app levels, physical controls, games and
-fullscreen playback, and usable desktop presentation. ADR0123/0173/0227 and the
-parity reference are the existing design. Media audits source and installed
-qualification gaps without touching host presets or routing. Automatic bus
-bindings follow defaults; explicit pins and per-stream targets are distinct
-contracts. Default speaker selection alone is not complete mixer acceptance.
-The broader everyday, foreign-app and AI usage program remains active.
+All ED01–24, Android/Windows, scoped agent, actual provider usage and newcomer
+journeys remain active. Reviewed source/test slices count as progress, not whole
+end-to-end completion. Planning estimate: best10workingweeks, range6–16weeks for
+the complete requested scope; immediate core/UI work1–3workingdays. These are
+estimates with hardware/runtime uncertainty, not acceptance evidence.
 
 ## Urgent Audio release and live speaker — 2026-10-08T02:56:58+00:00
 

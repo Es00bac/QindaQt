@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — urgent r17 exact source/recipe candidate ready for manager review; signed build-only lease pending, no compiler/runtime process
+- Status: working — authoring bounded scrollable Audio popup presentation at exact f2bb; no compiler or native lease.
 - Base: 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac
 - Branch: worker/everyday-core-release-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -157,3 +157,5 @@
 - 2026-10-08T02:33:48+00:00: Created fresh desktop5b7f/overlay24b R17 worktrees; copied immutableR16 recipe additively and selected accepted Audio+SDK sourcecandidate only. Reproducible archive allGitblobs/linkbytes/defaulttar modesverified. Initial verifier wrongly expected0644 instead of gitarchive0664; exactfailure preserved and corrected mode rule, no archive content failure. Root integratednative stillpending, no Portage/compiler/install action; Powerbbe805 preservedseparately.
 
 - 2026-10-08T02:38:55+00:00: R17 runtime5b7f freeze confirmed by manager integrated Audio24/221Qt+SDK and Printing/Copier26/157Qt. Exact overlayb128176 preserved; source archive39,276,265bytes SHA256bbb3bc47..., 9626Gitblobs/defaulttar modes verified, two recuts equal. Metadata declarations matchr16, release7/7/fork/tree/bash/530docs strict/whitespace0. Newrecipe/newDIST mirror exact; inherited historical Manifest differences preserved. No artifact/install; signed private Portage build awaits exact recipe review and lease after Media.
+
+- 2026-10-08T04:14:04.695992+00:00 — Claimed isolated everyday-audio-popup-20261008 at exactf2bb8c4d52e50815c74e2a0c66f143cb24e9fe42. User actualR17 popup oversized/no scroll; source has fixed420/max620 and implicit ScrollView wrapping without screen bound/focus reveal. Inspecting controls/fixture wheel interaction before narrow presentation change; backend/console gain/protocol untouched. Bluetooth88 contractreview348 preserved separately.

@@ -343,3 +343,14 @@ No host clipboard or selection content was inspected/captured. Independent
 native-evidence acceptance, manager integrated rerun and ordinary installed
 fresh-login/capture qualification remain open. These are bounded source and
 private synthetic-fixture gates, not a whole desktop completion claim.
+
+## Native startup integration evidence — 2026-10-08
+
+The independently accepted native startup candidate afa345097f005a8d500b19b0a47e39f34c47ee26
+is integrated under Accepted ADR0358. The manager's strict20-target build and
+the exact22 owning CTests passed; raw results contain172Qt passes and zero
+failure/skip/blacklist. Ignored evidence is .cache/clipboard-integrated-20261008.
+This confirms the bounded first-Session1 observer and synchronous privacy
+fixtures on integrated source. R17 predates this repair; installed ordinary
+fresh-session startup, capture and history behavior remain separate gates.
+No user clipboard contents were collected for this verification.

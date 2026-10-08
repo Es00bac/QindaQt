@@ -147,3 +147,16 @@ caches desktop-scoped environment or routing state at startup, or presents a
 demonstrated incompatible package-upgrade ABI that requires the same
 treatment; or systemd/D-Bus gains a native reload-environment-into-running-
 service primitive that makes the explicit restart list unnecessary.
+
+## Amendment 2026-10-08: Conditional replaced Power owner retirement
+
+A manager-observed Power1 process retained a deleted old executable after a
+package replacement and fresh login. [ADR-0360](0360-retire-replaced-power-owner-at-session-entry.md)
+adds Power1 only to the conditional replaced-activation list, preserving the
+fixed resident restart list. Exact same-user held process lifetime, current
+unique-owner/PID and raw installed Power executable deleted-marker proof are
+required; failures grant no signal. Settings/portal retirement shares the
+pidfd lifetime guard. Healthy Power owners, private sessions and preferences
+remain untouched. Retirement failures are bounded and startup continues.
+This extends demonstrated package-version retirement, not ADR-0025's
+historical session arbiter or a general Power restart policy.
