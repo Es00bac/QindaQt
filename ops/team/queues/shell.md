@@ -1,3 +1,12 @@
+## Current Shell delivery gates — 2026-10-08T14:27:06+00:00
+
+R18 remains installed and its AI icon/popup and Audio device inventory are
+owner-confirmed. Source compact Devices/Mixer and complete Audio QML
+installation are integrated/independently qualified. R20 source/recipe is
+accepted7baf; signed package/image-only appearance/artifact/adoption gates
+remain next. Fresh Claude/other-provider feeds, full mixer, accessibility,
+physical controls and remaining ED/foreign journeys remain required.
+
 ## Current Shell gates — 2026-10-08
 
 The installed AI usage icon opens; informative Claude and other provider feeds

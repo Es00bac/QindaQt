@@ -161,6 +161,46 @@ Portage installation are separate gates. R18 remains installed; do not restart
 the owner's session. Physical audio, full mixer, provider feeds and all remaining
 ED/Android/Windows journeys remain open.
 
+### October 8 corrected Audio module delivery: r20
+
+Desktop revision 0.1.0_pre20261002-r20 freezes the qualified manager runtime
+`98342aa820576c792669ae8a33d878e5336f8296`. The Audio module now installs all
+23 declared QML files, including eleven console inputs, at the relative paths
+in its generated qmldir. This repairs r19's flattened and incomplete disk
+installation. Immutable r19 remains a retained NEEDS_FIX artifact and is not
+an installed or accepted fallback for this defect.
+
+The manager's strict four-target build and seven owning CTests passed:
+28 Qt cases, zero failure/skip/blacklist, and 30 staged compiled/disk/poison/
+restoration probes. All 27 staged files were rehashed; all 23 QML inputs matched Git source.
+The original qmldir metadata was restored and no withheld files remained. Independent private-native review also inspected
+normal/2x full Audio Devices/Mixer frames using the real token/theme/icon
+bootstrap and natural page layout. These qualify source and private staging,
+not the next package or hardware controls.
+
+The reproducible Git archive plus gzip-n contains 9,837 tracked blobs
+(32 executable), 39,571,486 bytes, SHA256
+`e7fcd57058041ecee8ade4851448bca672762be64ab01fd8fc6d1edc2d30c4d6`.
+Two cuts match and every blob/mode is checked. Additive mirrored r20 recipes
+and their exact new DIST row preserve historical recipes and Manifest prefixes.
+Dependencies and build/install policy remain identical to r19, including
+explicit sys-apps/dbus build/runtime closure, fork r6/ABI6.6.6.1, lock-PAM>=1
+and native power exclusivity OFF.
+
+After exact source/recipe review and a separate lease, qualify a new private
+signed Portage artifact. Retain all existing Audio/Radio/AgentUsage public SDK
+and named-header poison/restoration gates, helper/unit/descriptor checks
+without activation, compositor ABI, profile/catalog and Network compiled/disk
+fallback closure, and actual image-only Viewer behavior. The separate Audio
+image helper must use installed public SDKs and image themes/icons, exact
+public non-QindaQt dependency inventory, and no source/private Audio QML or
+ambient QindaQt rescue. SettingsAppearance is not an installed SDK. Inspect
+actual compiled and forced-disk Devices/Mixer at normal/2x with the public
+bootstrap, all declared-file poisons and restoration; a module-presence
+precheck is not a dynamic import failure. Artifact review and authorized
+Portage adoption remain separate. No source preparation changes host services,
+volume, devices, world/profile or installed files.
+
 ## Build and qualify
 
 Use the exact qindaqt-kwin development package the manifest pins. A fresh build root

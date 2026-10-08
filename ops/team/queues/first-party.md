@@ -1,3 +1,14 @@
+## Manager current routing — 2026-10-08T14:27:06+00:00
+
+| Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
+| --- | --- | --- | --- |
+| Compact Audio R20 | Platform0ae/overlay322, runtime98342; exact source/archive Accepted7baf | Audio reviewer; private signed build then concrete image-only Audio helper and artifact review | Build grant follows root release/docs gates; R18 installed, R19 rejected |
+| Audio gain admission | Media45db/e7a9/57786; actual36 accepted e85, c10 NeedsFix084 | Same Astra; exact cooperative cancellation/deadline source successor | Source-only fake controls; no old package/image/Core/UAF/PCM or real-child grant |
+| Windows owned lifecycle | Platform635 first native1/4.306s; both server retirements qualified | Astra read-only actual child-ledger diagnosis, then same author repair | Native lease released; app/child cleanup unqualified, no retry or whole compatibility claim |
+
+Full provider, mixer, physical and remaining ED/foreign journeys stay open.
+Historical sections below preserve their original evidence boundaries.
+
 ## Manager current routing — 2026-10-08T13:49:37+00:00
 
 | Outcome | Owner / exact boundary | Reviewer / next executable gate | Collision / help |
