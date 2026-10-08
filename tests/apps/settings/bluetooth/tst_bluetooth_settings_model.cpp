@@ -219,7 +219,7 @@ void BluetoothSettingsModelTest::powerRefusalShowsFixedFeedbackWithoutOptimism()
   result.status = OperationStatus::Rejected;
   result.reasonCode = QStringLiteral("radio-hardware-blocked");
   fixture.transport.finishOperation(submission, result);
-  QVERIFY(fixture.model.errorText().contains(QStringLiteral("hardware switch")));
+  QTRY_VERIFY(fixture.model.errorText().contains(QStringLiteral("hardware switch")));
   QVERIFY(fixture.model.adapters().constFirst().toMap().value(QStringLiteral("powered")).toBool());
 }
 
