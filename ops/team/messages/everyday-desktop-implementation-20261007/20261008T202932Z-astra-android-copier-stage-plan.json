@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "kind": "protected-laptop-stage-proposal-not-executed",
+  "sourceCommit": "source-tree-pinned-by-sourcePins; see owning exact handoff commit",
+  "host": "qinda-top",
+  "root": "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z",
+  "rootMode": "0700",
+  "owner": "root:root",
+  "resourceProfile": "laptop",
+  "limits": {
+    "CPUQuota": "400%",
+    "CPUAffinity": "0-7",
+    "MemoryMax": 5368709120,
+    "MemorySwapMax": 0,
+    "TasksMax": 256,
+    "Nice": 10,
+    "RuntimeMaxSec": 120,
+    "TimeoutStopSec": 5,
+    "jobs": 4,
+    "load": 4
+  },
+  "inputInventory": {
+    "path": ".cache/android-laptop-inputs-20261008/inventory.json",
+    "sha256": "6031e7f6008aec83f208a0660a4f145d958bcb1b82ab8d24f0a7a7d3d99585b4",
+    "bytes": 4171260,
+    "objects": 6726,
+    "regularBytes": 653337381,
+    "owners": 172
+  },
+  "proof": {
+    "path": ".cache/android-laptop-inputs-20261008/proof.tar.gz",
+    "sha256": "19b5acf222e9a708143266cfeaca6596fb4cb60d7ebc37204cfba9b175b5f0c5"
+  },
+  "sourcePins": {
+    "tools/foreign-runtime/android-stock-proof/README.md": "c5dabd4a952aa7c21733f1697007686c6b43d9c8bb24d626adcd5f72b4871454",
+    "tools/foreign-runtime/android-stock-proof/RUNTIME-INPUTS.md": "c12e8beec6feff1a79375e09c90e4f95078ec2b96bdc5a641dd9f6a4a89be7ea",
+    "tools/foreign-runtime/android-stock-proof/boot_plan.py": "6c378966529a0c8e53890c3b99ca3f97f14b2d83650268f685654c13eb49a485",
+    "tools/foreign-runtime/android-stock-proof/copy_stage.py": "a5448622ebea1fd3e97e8d52cd116a5eacac25259b8f70e2990e4543f6c5dd00",
+    "tools/foreign-runtime/android-stock-proof/guest-init.sh": "b12a17cfe8bb3c3783c611a33adffc4edef61c7f03711b8b1edb1a65497f6346",
+    "tools/foreign-runtime/android-stock-proof/guest.py": "13c6da6500787a28408dc515c284dd35898c343ef8d814fdf2c4c5c0f8a5209f",
+    "tools/foreign-runtime/android-stock-proof/laptop-inputs.json": "7fae29996690d5d79f9a46eca763c81d909d5a689e8d0d383a48c129b8197e7e",
+    "tools/foreign-runtime/android-stock-proof/prepare_overlay.py": "3dfa3075dcdf853c87f5c56053e56bafe9773aa0cb4a26f2fa3c3f32cf09ad0a",
+    "tools/foreign-runtime/android-stock-proof/run_vm.py": "4bbb8c9a3836554c78f3f627a74a4101edb4134e40fd30c8a5c0612a8c09a4b5",
+    "tools/foreign-runtime/android-stock-proof/runtime-inputs.json": "f7b0b9c32e50e4b29496a73df6753910e934b41997d68c1adb7226584c98c5a2",
+    "tools/foreign-runtime/android-stock-proof/scenario.json": "b1dcb1e2850b463884ea4106523dc0a3efa7d05dbf99d0e186bbf41bcb3539d2",
+    "tools/foreign-runtime/android-stock-proof/stage_inventory.py": "8f3d1cddee2ece44415a1ed80b1645964ebf4ee0575bed4b444941f6de043d47",
+    "tools/foreign-runtime/android-stock-proof/test_boot_plan.py": "bc3b52dfd28aa4976d112f79aea6e1e2caaf1d66ee504ea3ee911b07af3d8d4c",
+    "tools/foreign-runtime/android-stock-proof/test_copy_stage.py": "e0c1846bf03446fec7916e148aadb54102bca29bea8833a99edd731b501cbf9c",
+    "tools/foreign-runtime/android-stock-proof/test_stage_inventory.py": "b3c26ae180d1183d7da7556b82fce7ac506f657028b1f0c37b59047cc642eb33",
+    "tools/foreign-runtime/android-stock-proof/test_vm_plan.py": "4b475dfbeff6efc4078acacbc369273497a21231c41786f4f4fe9fee09f93b25",
+    "tools/foreign-runtime/android-stock-proof/vm_plan.py": "0dde453a7ed2051db7fdb0c3ab71a0da647cdd007ac45a58f409a7363f857deb",
+    "tools/foreign-runtime/android-stock-proof/windows.py": "0ca5e11bc840e30cc2517c6df550c22835c1e5a40293d06aa26605a56905d788"
+  },
+  "stage": "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z/stage",
+  "protectedInputs": "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z/inputs",
+  "result": "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z/stage-result.json",
+  "proposedExistingArgv": [
+    [
+      "/usr/bin/python3",
+      "-B",
+      "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z/inputs/source/copy_stage.py",
+      "/var/tmp/qindaqt-android-laptop-stage-20261008T2025Z",
+      "EXACT_ADJACENT_PLAN_SHA256"
+    ]
+  ],
+  "copyStep": "copy_stage.py now implements the previously missing bounded copier; source-only, never run on actual input.",
+  "archiveAuthorized": false,
+  "guestAuthorized": false,
+  "executed": false,
+  "environment": {
+    "PATH": "/usr/bin:/bin",
+    "LANG": "C.UTF-8",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "invocationPolicy": "manager supplies actual plan SHA256 in final argv; root protects all inputs before Python imports; no automatic stage grant"
+}

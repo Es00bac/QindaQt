@@ -130,3 +130,11 @@ unqualified. The first collector variants and their usr-merge/native-ABI/GI
 selection corrections are preserved; zero final static issues is not runtime
 success. The actual protected stage must pin generated overlay sources and
 use the existing `boot_plan.plan`/`stage_inventory.admit` gate unchanged.
+
+The laptop protected stage now has a narrow owning copy_stage.py source.
+It consumes the exact installed-input inventory plus separately protected
+helper/plan pins; the manager must admit this candidate before a stage grant.
+Current-source reads and synthetic controls are not input materialization.
+The fixed expected hashes and VDB witnesses survive copy normalization, and
+the generated complete stage is checked by existing stage_inventory and
+boot_plan before any separately granted archive or guest operation.
