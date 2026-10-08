@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — isolated Core SDK public Audio header export repair and staged consumer preparation; no compiler/native lease
+- Status: waiting — Core SDK source prepared; exact old/fixed installed-consumer gates queued for manager compiler lease, no owned runtime process
 - Base: a462c415a3678dc8dc96f15bd996abdceea20189
 - Branch: worker/everyday-core-sdk-20261008
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -147,3 +147,5 @@
 - 2026-10-08T01:38:20+00:00: Claimed Core SDK at exact a462 in new isolated worktree; Claude three WIP files preserved elsewhere. Confirmed existing public audio_console.h omitted from production FILE_SET. Static287 service-header/278 include-edge audit finds only three unresolved edges to that same header. Preparing actual production FILE_SET stage and isolated consumer/header poison gate; Astra owns Audio implementation and compiler lease.
 
 - 2026-10-08T01:42:15+00:00: Core SDK source candidate prepared: production audio_console.h FILE_SET fix, actual production install/export fixture, independent stage-only linked client, source/host header poison, deletion/restoration gate. Python AST/whitespace and docs530/strict MkDocs pass; compiler and runtime not executed. Manager approved exact own test registration; native lease requested after Astra. Baseline installed laptop failure attributed to manager, not own reproduction.
+
+- 2026-10-08T01:45:38+00:00: Prepared frozen source b6e3b3b331ff925571ac532d1bc2ea53462647a8. Direct type inspection corrected fixture snapshot outputs/inputs; imported include system classification disabled to keep stage before poison. No compiler/configure run; requests next focused lease, then old exact-base failure and corrected install/link/poison/restoration gates. All resources unoccupied; Claude WIP and immutable release bytes unchanged.
