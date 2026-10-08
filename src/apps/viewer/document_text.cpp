@@ -39,6 +39,11 @@ TextSearchResult DocumentRenderer::find(
     TextSearchResult result;
     result.revision = request.revision;
     const auto current = [&] { return latestSearch->load() == request.revision; };
+    const auto cancelled = [&] {
+        TextSearchResult value;
+        value.revision = request.revision;
+        return value;
+    };
     if (!current()) return result;
     if (request.query.isEmpty() || request.query.size() > MaxSearchQuery) {
         result.status = TextSearchStatus::Limit;
@@ -75,11 +80,11 @@ TextSearchResult DocumentRenderer::find(
     };
     const int visits = std::min(pages, MaxSearchPages);
     for (int visit = 0; visit < visits; ++visit) {
-        if (!current()) return TextSearchResult{request.revision};
+        if (!current()) return cancelled();
         const qint64 delta = request.backward ? -static_cast<qint64>(visit) : visit;
         const int page = static_cast<int>((static_cast<qint64>(firstPage) + delta + pages) % pages);
         auto text = pageText(page);
-        if (!current()) return TextSearchResult{request.revision};
+        if (!current()) return cancelled();
         if (!text.available) {
             result.status = TextSearchStatus::Limit;
             result.error = text.error;

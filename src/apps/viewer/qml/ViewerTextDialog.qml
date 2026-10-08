@@ -11,9 +11,27 @@ Tk.Dialog {
     subtitle: qsTr("Page %1 of %2 · Select text and use Ctrl+C to copy.")
         .arg(viewerModel.page + 1).arg(viewerModel.pageCount)
     dialogWidth: Tk.Theme.size.dialogWidth * 1.5
-    primaryText: qsTr("Close")
+    // AGENT-CONTRACT: Search owns Return/Enter. Gate Dialog's public primary
+    // action and supply an explicit Close through its public footer slot.
+    primaryText: ""
+    primaryEnabled: false
     secondaryText: ""
     property string appliedMatch: ""
+    footer: Tk.Box {
+        padding: Tk.Theme.space.md
+        paddingTop: Tk.Theme.space.sm
+        borderTop: Tk.Theme.size.border
+        borderColor: Tk.Theme.color.divider
+        Tk.Flex {
+            direction: Tk.Flex.Row
+            justify: Tk.Flex.End
+            Tk.Button {
+                objectName: "viewerTextClose"
+                text: qsTr("Close")
+                onClicked: dialog.close()
+            }
+        }
+    }
     onOpened: {
         appliedMatch = ""
         query.forceActiveFocus(Qt.ShortcutFocusReason)
@@ -80,14 +98,14 @@ Tk.Dialog {
             Tk.Button {
                 objectName: "viewerFindPrevious"
                 text: qsTr("Previous")
-                enabled: query.text.length > 0 && !dialog.viewerModel.busy
+                available: query.text.length > 0 && !dialog.viewerModel.busy
                     && !dialog.viewerModel.searchBusy
                 onClicked: dialog.viewerModel.find(query.text, true, matchCase.checked)
             }
             Tk.Button {
                 objectName: "viewerFindNext"
                 text: qsTr("Next")
-                enabled: query.text.length > 0 && !dialog.viewerModel.busy
+                available: query.text.length > 0 && !dialog.viewerModel.busy
                     && !dialog.viewerModel.searchBusy
                 onClicked: dialog.viewerModel.find(query.text, false, matchCase.checked)
             }
@@ -142,7 +160,7 @@ Tk.Dialog {
         Tk.Button {
             objectName: "viewerCopyText"
             text: qsTr("Copy selection")
-            enabled: pageText.selectedText.length > 0
+            available: pageText.selectedText.length > 0
             onClicked: pageText.copy()
         }
     }

@@ -137,7 +137,7 @@ Tk.AppWindow {
         Tk.Button {
             objectName: "findTextButton"
             text: qsTr("Find text…")
-            enabled: viewer.ready && viewer.pdf && viewer.textAllowed && !viewer.busy
+            available: viewer.ready && viewer.pdf && viewer.textAllowed && !viewer.busy
             tooltip: viewer.pdf && !viewer.textAllowed
                 ? qsTr("This PDF does not allow text copying.")
                 : qsTr("Find and select PDF text (Ctrl+F)")
