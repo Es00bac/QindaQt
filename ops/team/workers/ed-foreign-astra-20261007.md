@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — observing granted archive2200 on laptop4CPU5GiB/120s; mechanical-only driver delta verified; no VM.
+- Status: available — loader archive2200 qualified; laptop heavy released; exact third VM plan frozen awaiting root grant.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -253,3 +253,5 @@
 - 2026-10-08T21:56:44.522675+00:00: Froze bc0 source/d494 plan; libgcc alreadypinnedGCC15, readonlyDT_NEEDED closure0missing. No archive/thirdboot.
 
 - 2026-10-08T21:59:29.770292+00:00: Root granted d494 once; protected loaderguest9886 and driveree48 checked, observer running.
+
+- 2026-10-08T22:00:42.822431+00:00: Actual2200archive0/20.608s, oneguest parity and allpinsstable; fourth240f01/plane0bc, no thirdboot.
