@@ -749,10 +749,23 @@ D-Bus call is bounded and best-effort; a missing unit or transport failure is
 logged and does not stop the session. See
 [ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md).
 
-Right after that refresh the supervisor retires any D-Bus-activated Settings1
-or QindaQt portal owner whose executable an update has replaced
+Right after that refresh the supervisor retires any D-Bus-activated Settings1,
+Power1 or QindaQt portal owner whose executable an update has replaced
 (`retireReplacedActivationOwners`); an up-to-date owner is left alone and the
-next call activates the installed binary (ADR-0094, 2026-09-28 amendment).
+next ordinary client activation addresses the installed binary (ADR-0094,
+2026-09-28 amendment and [ADR-0360](../adr/0360-retire-replaced-power-owner-at-session-entry.md)).
+Power additionally requires the exact compiled installed executable path and
+deleted marker. The same-user process lifetime is held by a pidfd, with
+matching user/starttime/executable observations across acquisition and current
+unique-owner/PID/identity rechecks immediately before signal. Failed queries
+grant no signal; there is no bare PID signal fallback. Private scope never
+signals. Unretired owners time out within the bounded wait and startup continues.
+This does not add Power to unconditional unit refresh or mutate its preferences.
+
+The shell child starts before Session1 registration. Its Power client may
+request activation then; native lock runtime's Power client starts after
+Session1-backed composition. Replaced-owner retirement does not claim stricter
+post-Session1 activation ordering or new multi-session arbitration.
 Before that refresh it also probes PipeWire with one bounded client round trip
 and restarts the PipeWire stack only when the daemon does not answer.
 

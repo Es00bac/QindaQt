@@ -311,3 +311,14 @@ do not turn a two-machine pass into a general hardware claim. Capture failures
 and terminal rescues as bugs. Update owning wiki pages and installed receipts
 with each accepted slice. Feature-ledger progress advances only from integrated
 behavior and evidence; this audit and its assignments add none.
+
+## Installed core recovery and current acceptance — 2026-10-08
+
+InstalledR17 restores Audio inventory and a real default-volume roundtrip;
+the owner confirms device discovery in Settings and reports popup overflow/no
+scroll plus excessive Settings spacing. Compact presentation and full real
+console processing remain active required repairs. Integrated Clipboard22/172
+and Power6/56 focused native gates pass; their installed startup checks remain.
+Neither Android nor Windows has passed a complete app journey. The
+current source record in `docs/HANDOFF.md` separates exact current evidence, active owners and
+remaining full-plan gates. No whole ED outcome is closed by these bounded slices.
