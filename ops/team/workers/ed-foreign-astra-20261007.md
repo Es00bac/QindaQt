@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — implement authorized inventory-to-stage copier and dummy controls; no real stage or guest action.
+- Status: available — Android copier546 source frozen for Platform review; available for exact repairs and Voice credential implementation review. No stage/guest lease.
 - Outcome: concrete capped Portage transaction with explicit library/ABI/PAM/account effects and preservation.
 - Base: 37f1be1a9297ccf7f79d6c08daa586227c90710b.
 - Branch: worker/everyday-android-stock-runtime-20261008; isolated author tree.
@@ -217,3 +217,5 @@
 - 2026-10-08T20:24:17.934116+00:00 — Preserved exact protected-stage proposal with current helper/inventory pins, missing narrow copier explicitly identified; no stage/archive/runtime. Voicec54 design SOURCE ACCEPT with bounded I/O/current-owner implementation gates.
 
 - 2026-10-08T20:26:26.357828+00:00 — Root authorized narrow copier source. Preserve fixed inventory/source/VDB and directory authority; disposable synthetic controls only.
+
+- 2026-10-08T20:31:19.655767+00:00 — Frozen copier546:43 dummy controls0/AST12/diff0/strictdocs7.91s0. Original fixture error retained; no actual stage/archive/guest or package action. Exact plan e03efd handed off for independent review.
