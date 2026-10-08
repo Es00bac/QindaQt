@@ -4,8 +4,9 @@
 import argparse,hashlib,json,os,signal,subprocess,tempfile,time
 from pathlib import Path
 from processes import identity,settle,admit_driver
+from prefix_domain import supervisor_interpreter
 HERE=Path(__file__).resolve().parent
-REQUIRED=["/usr/bin/bwrap","/usr/bin/python3","/usr/bin/qindaqt-wm","/usr/bin/qindaqt-kwin","/usr/bin/Xwayland",
+REQUIRED=["/usr/bin/bwrap","/usr/bin/python3",supervisor_interpreter(),"/usr/bin/qindaqt-wm","/usr/bin/qindaqt-kwin","/usr/bin/Xwayland",
 "/usr/lib/wine-proton-11.0.2/bin/wine","/usr/lib/wine-proton-11.0.2/bin/wineserver",
 "/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/notepad.exe","/usr/lib/wine-proton-11.0.2/wine/x86_64-windows/wordpad.exe",
 "/usr/bin/sh","/usr/bin/xkbcomp","/usr/share/xkeyboard-config-2/rules/evdev",
@@ -24,6 +25,7 @@ def command(root,phase):
           "--proc","/proc","--dev","/dev","--tmpfs","/tmp","--dir","/run","--dir","/home",
           "--ro-bind",str(HERE),"/source","--bind",str(root),"/fixture","--chdir","/fixture"]
     env=dict(ENV)
+    env["FIXTURE_PYTHON"]=supervisor_interpreter()
     env["HOST_NET_NS"]=str(os.stat("/proc/self/ns/net").st_ino);env["HOST_PID_NS"]=str(os.stat("/proc/self/ns/pid").st_ino)
     for k,v in env.items():args+=["--setenv",k,v]
     return args+["--","/usr/bin/python3","/source/inside.py",phase]
