@@ -17,6 +17,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/audio_protocol/audio_console.h
             include/qindaqt/services/audio_protocol/audio_dbus.h
             include/qindaqt/services/audio_protocol/audio_gain.h
             include/qindaqt/services/audio_protocol/audio_limits.h
