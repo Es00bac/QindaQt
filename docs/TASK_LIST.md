@@ -1,12 +1,12 @@
 ## Active everyday delivery — 2026-10-08
 
 Installed R17 restores public Audio inventory/control; the owner confirms
-Settings device discovery and the AI popup opening. Compact Audio candidate
-91530dc passes 31/31 owning CTests and 171 Qt checks, but root's fresh owner-scale
-image exposes application-row overlap. Exact repair 65f8826 and regression
-control c75dea4 have independent source acceptance d7e22764; old/fixed native
-qualification and root image acceptance remain;
-the compact popup and Settings page are not installed.
+Settings device discovery and the AI popup opening. Compact b0210bd/00c427f is
+independently source-accepted and root visually accepted at owner scale.
+Integrated runtime freeze 5858bcc passes strict 28-target build, 33/33 owning
+CTests with 185 Qt checks and four profile/resolution rows with 88 Qt checks.
+The compact popup and Settings page are not installed. R18 source14e4406 and
+overlay af4e8ed are prepared for exact review before a signed build.
 
 Integrated Clipboard 22/172, Power 6/56 and Bluetooth 40/282 gates pass.
 Bluetooth source 3040022/7686226 is integrated at 3b4275ace with independently
@@ -16,7 +16,8 @@ Signed delivery remains the next core gate.
 
 Media's c17fd9/de491fa and overlay b489a5f8 have source acceptance. Package-image
 admission, lifecycle/ASan, Portage qualification and working mixer processing
-remain required. Display Preview's possible lock-quorum mismatch awaits a
+remain required. Source-only image/lifecycle ec1cef36 is accepted after the
+992 newline repair; production gain remains unwired. Display Preview's possible lock-quorum mismatch awaits a
 private native-positive reproduction. See [current exact evidence](HANDOFF.md).
 
 The full ED01–24, Android/Windows, actual AI provider feeds, mixer and newcomer

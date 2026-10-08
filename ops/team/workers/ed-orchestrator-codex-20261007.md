@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Preserve verified Bluetooth integration, review compact Audio repair, and prepare the next core delivery while full-plan work continues.
+- Status: working — Preserve compact Audio37/273 acceptance and review the immutable R18 core delivery while full-plan work continues.
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -80,3 +80,7 @@
 - 2026-10-08T06:08:09+00:00 — Current checkpoint records integrated strict Bluetooth 40/40 and 282 Qt checks, Accepted ADR0359 and pending installed helper/radio gates. Compact915 passes31/171 but root owner image rejects application overlap; exact65f/c75 awaits independent review and old/fixed proof. Gain c17/de491/b489 source acceptance is separate from pending image/lifecycle/Portage and production gain. No native resource held, R17 unchanged, full scope/ETA remains.
 
 - 2026-10-08T06:09:33+00:00 — Astra source ACCEPT d7e22764 for exact65f received and read; root inspects actual mapped-bounds/accessibility regression. Grant sole laptop bounded old c75 focused2 then fixed65f owning33 and fresh owner capture at32/16; no package/session grant. qinda native lane remains released.
+
+- 2026-10-08T06:32:29+00:00 — Independently verifies all45 Audio raw payloads on both hosts and701389-byte/47-member archive9e0ebf1; old168 header-only2 negatives and fixedb02133/185 pass. Root actual owner-pixel and Settings visual ACCEPT. Author-only receipt EOF repair00c preserves src/tests; exact worker-board bytes resolve sole merge conflict, integration5858bcc. Root holds sole qinda24/24 strict owning+profile/resolution gate; laptop released, Media992 source-only Astra review. R17 unchanged.
+
+- 2026-10-08T06:46:23+00:00 — Integrated5858 actual strict28 build0; owning33/185 andprofile-resolution4/88 pass, all zero fail/skip/blacklist. qinda native lane released; confirmedR18freeze5858 and routed exact14/af recipe review to Astra. Root45-payload/archive/pixel acceptance preserved. Mediaec1 source acceptance and Displaycb8 finding imported verbatim, runtime/host gates open. InstalledR17 unchanged; full goal/ETA unchanged.

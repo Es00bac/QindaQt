@@ -26,20 +26,31 @@ fixtures do not qualify the installed helper sandbox or physical radio.
 These three repairs still require signed delivery and ordinary installed use.
 
 The owner reports oversized, non-scrolling Audio controls and wasted Settings
-space. Compact candidate 91530dc passes its strict 23-target build, 31/31
-owning CTests and 171 Qt checks. Root verifies all 39 indexed proof payloads.
-The Settings page is visibly denser. A fresh 1536×864 logical owner screen at
-1.25 scale produced a 360×480 popup; root verifies all eight indexed capture
-payloads but rejects the application row's wrapped names and overlapping
-percentage/slider. Exact source repair 65f8826 and old-production/new-regression
-control c75dea4 have independent source acceptance d7e22764; the bounded
-old/fixed laptop gate and root image decision remain open.
-No compact UI is installed. The generic Settings action does not claim an
-Audio-specific route.
+space. Exact compact b0210bd/receipt-only 00c427f is accepted after independent
+Astra source review, paired valid old/fixed regressions and root fresh pixel
+review. The old 168 control fails only both header rows (12 Qt pass, two fail);
+known outer bounds and unknown-state cases pass. Fixed source passes 33/33
+CTests and 185 Qt checks. Root independently verifies all 45 indexed payloads
+on both hosts and the 701,389-byte, 47-member archive, SHA256
+9e0ebf1324fec971725192cea3e6e588f49b12a45a16bbfdbc2bd94821c1b512.
+The fresh 1536×864 logical screen at 1.25 scale produces a 360×480 popup with
+single-line names and separate fader/readout/mute; the Settings page is denser.
+Prior 915/435 and failed unknown-fixture evidence remain separate.
+
+The compact repair is integrated at 5858bccdf82808a74a6bab358d8e6f08c7ac256a.
+The manager strict 28-target build passes; actual owning 33/33 CTests report
+185/0/0/0 Qt and four profile/resolution rows report 88/0/0/0. Both native lanes
+are released. R18 uses this confirmed runtime freeze; exact source recipe
+14e4406/overlay af4e8ed await independent acceptance and a signed build.
+The new recipe declares direct dev-libs/dbus build/runtime dependencies.
+No compact UI or newer core repair is installed yet. The generic Settings
+action does not claim an Audio-specific route.
 
 Media's c17fd9 fixture repair, de491fa stage/decomposition declaration and
 Portage overlay b489a5f8 loopback cleanup have independent source acceptance.
-The pre-load package/image guard, private lifecycle/ASan qualification,
+Image/lifecycle diagnostic ec1cef36 has source-only acceptance after the
+literal-newline test repair; production guard/gain remains unwired. The
+pre-load package/image guard, private lifecycle/ASan qualification,
 Portage build and actual loaded-module identity remain open. Production
 borrowed-Core gain is disabled. Full strip/send/bus gain, Mono/trim, processing
 truth, routing UI and the other normative Voicemeeter-class capabilities remain
@@ -59,8 +70,8 @@ manager estimates with runtime/hardware uncertainty, not acceptance evidence
 or a percentage. Candidate activity adds no feature-ledger credit.
 
 The read-only Display observation shows split Compositor/ScreenSaver owners
-while a legacy Preview monitor expects one owner. A private native-positive
-reproduction remains required; no display transaction, lock or sleep was
+while a legacy Preview monitor expects one owner. Astra source finding cb8b502 confirms the legacy private fixture also masks
+this topology. A private native-positive reproduction remains required; no display transaction, lock or sleep was
 attempted. The zero-byte rfkill RW-open probe proves transient access only.
 Observation proof: 10,240 bytes, four members, SHA256
 d6674c655588f1f3fd7e223b3cd207244a83ff08728188700b9e5351a5042e32.

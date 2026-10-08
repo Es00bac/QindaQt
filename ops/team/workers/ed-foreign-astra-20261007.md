@@ -1,11 +1,19 @@
 # ED foreign application architecture
-- Status: available — exact compact Audio65f SOURCE ACCEPT; no resources held, reserved for Media module-provenance and ASan/Portage recipe review.
-- Outcome: qualify selected-adapter Bluetooth recovery through strict production build, private authority/lifetime fixtures and staged SDK gates; installed radio qualification remains separate.
-- Base: Bluetooth 5b7f5b5910e262a4bf2be2326bc92fc97af4e2ac; Clipboard author decb2afc5c9fa7478cd26ce3a9dbc5adb9dd3e51.
-- Branch: worker/everyday-bluetooth-recovery-20261008; worktree everyday-bluetooth-recovery-20261008.
-- Ownership: approved Bluetooth backend/service/helper/tests/docs and fixed consumer diagnostics; independent Clipboard review; own records. Main Bluetooth unit/drop-ins untouched.
+- Status: available — exact ec1 Audio image/lifecycle source review handed off; ready for bounded qualification findings or next manager-routed hard packet.
+- Outcome: independently review Audio image/lifecycle/Portage qualification before any execution; production gain remains separate.
+- Base: exact99295b5df3c20f63086050b1332a9d6cd95badc4; prior accepted de491/c17 and overlay b489.
+- Branch: review/everyday-audio-image-astra-20261008; isolated matching review worktree.
+- Ownership: own review receipts and stable board only; Media owns all product/test/recipe repairs.
 - Resources: none; all qinda compiler/private-bus/offscreen resources released after Bluetooth304 gates. Next Audio/overlay review is source-only.
 ## Updates
+
+- 2026-10-08T06:43:24Z — Exactec1 source-only ACCEPT after full992 review and independently proven newline-only repair; d096 receipt descendant has identical product/test/recipe/wiki bytes. AST5/docs532/strict/diff0. No compiler/Core/package/native/host action; all runtime/production gain gates remain open. Own review handoff pushed to explicit qinda hub, no resource lease.
+
+- 2026-10-08T06:40:03Z — Full exact992 source review complete: one literal backslash-n declaration syntax blocker confirmed by author; no other blocking source finding. Five Python AST parses pass without executing recipes; docs gate running. Native, package, actual ASan and production wiring remain unqualified.
+
+- 2026-10-08T06:33:05Z — Claimed exact99295b5 in fresh isolated review checkout after explicit hub fetch. Reading all receipt/loader/Portage/group and native failure fixtures; literal backslash-n outside string in Core fixture is concrete source blocker, no compiler reproduction. No native/Core/Portage/host action authorized; author owns repairs.
+
+- 2026-10-08T06:21:36Z — Claimed/read exact762084b7 Display safety in fresh isolated hub checkout. Legacy three-name same-owner quorum conflicts with observed native split topology; source inference only, no host preview/lock/sleep or executable reproduction. Public writer/attachment/native monitor contracts and existing fixture read; bounded repair/reproduction receipt handed off. No product/test edits or native resources.
 
 - 2026-10-08T06:07:06Z — Exact65f source ACCEPT: whole production controlc75 equals915, whole tests equals65f. Layout-only production change preserves wheel/held/grant/known/identity paths; actual rectangle/accessibility regression meaningful. Docs/strict/diff0. No native or image acceptance; root retains those gates. Available for Media hard trust/recipe review.
 
