@@ -12,6 +12,21 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
+## October 8 implementation progress
+
+Android candidatesc05d9c16/23ab470 and independent source reviewd97ea819
+establish bounded input inspection and a Portage-owned public AOSP signature
+verifier recipe with15 pure checks. Actual Java/package/signature execution,
+resolved image source/license correspondence, guest startup and authenticated
+window identity remain open. No Android app-window success is claimed.
+
+Windows v7 reached the real private native Xwayland startup and failed XKB
+readiness before application execution. Independently source-accepted v8
+03af625/f98936ec supplies the missing synthetic public /bin alias without
+mounting host private data. Fresh preflight and one separately granted bounded
+two-app attempt are next. The failure and source repair are progress; neither
+complete compatibility journey nor green/blue presentation is delivered.
+
 ## Existing foundation and remaining work
 
 The audited laptop has Waydroid `1.6.3`, Wine Proton `11.0.2`, GE-Proton `11.6`
@@ -94,9 +109,11 @@ default. Start with appropriately licensed test apps and record exact artifacts.
 
 ## Bounded work packets
 
-All rows are proposed/unclaimed; no candidate, reviewer, worktree or active
-coding assignment exists. Dispatch uses a fresh exact hub base as specified in
-the [main plan](everyday-desktop-plan.md#proposed-work-packets).
+The table preserves the original planning packets. Current candidates,
+reviewers, worktrees and next gates are recorded in docs/TASK_LIST.md and the
+delivery queues. Dispatch uses a fresh exact hub base as specified in the
+[main plan](everyday-desktop-plan.md#proposed-work-packets); source acceptance
+alone does not complete a runtime or app journey.
 
 | Packet | Owner and dependencies | Acceptance | Model allocation |
 | --- | --- | --- | --- |
