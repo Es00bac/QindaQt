@@ -68,3 +68,11 @@ compatibility contract and contained interoperability evidence exist. Revisit
 the process boundary only if a future security design provides equivalent
 payload isolation, exact-owner fencing, and purge guarantees without granting
 shell presentation code clipboard authority.
+
+## Native composition proposal
+
+[ADR-0358](0358-authenticate-native-clipboard-privacy-at-use.md) replaces
+this decision's native-session lock composition with live public ordinary
+attachment and targeted native receipts. Volatile ownership, explicit consent,
+private Clipboard1, generation fencing and payload isolation remain required.
+The accepted source contract does not establish installed fresh-login or real selection acceptance.

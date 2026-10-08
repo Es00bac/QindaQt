@@ -1,0 +1,9 @@
+# Manager Clipboard integration and Power source recheck
+
+- Manager time: 2026-10-08T03:10:09+00:00; previous exact manager base d9643acb7b0221739c3504412b43ba4e4ca8deaf.
+- Integrated candidate: afa345097f005a8d500b19b0a47e39f34c47ee26. Different-author exact final source/native evidence acceptance95dba92a directly read; its immutable receipt is imported unchanged. All candidate changes merged without conflicts. Author22/22 CTests172Qt and original regression/SDK controls remain author evidence, not an integrated rerun claim.
+- ADR0358 is Accepted as architecture/source. Manager next gate: strict integrated Clipboard/attachment/lock22 registry, then installed ordinary startup. No physical clipboard capture, contents, new live service action or package claim.
+- Final Power candidate5d94d3b9b02585698a8729615f241f292a489717 source recheck: actual diff from previously inspected bbe805 changes only the bounded-return test and own records. Removed tautological full-startup assertion; no new production bytes. No further source blocking finding. ACCEPT source for focused native qualification only; no native/integration/install acceptance.
+- Actual R17 Portage build settled0 and artifact82aac2e81 has61,296,640bytes. Platform actual package gates remain active, root install not yet started. Frozen artifact source5b7f excludes this Clipboard repair and future Power/Bluetooth source.
+- Owner full audio scope remains the original public Audio1 mixer over PipeWire, including simultaneous outputs and per-app routing plus hardware/desktop/UI acceptance. Source-only audit is active. Defaults/automatic bus bindings/explicit pins/per-stream routes must be qualified independently.
+- Resource: no manager compiler/runtime lease used for this merge. Platform keeps sole qinda image qualification lease; root owns host recovery, other agents source-only.

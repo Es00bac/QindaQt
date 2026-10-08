@@ -30,6 +30,14 @@ public:
         std::unique_ptr<ClipboardWayland::ClipboardWaylandAdapter> adapter,
         const QDBusConnection &connection, QString serviceName = {},
         quint64 epochSeed = 0, QObject *parent = nullptr);
+    // Strict production composition: borrowed admission captures outlive this
+    // service (and therefore its host). All calls/callbacks stay on this Qt
+    // thread. Empty admission fails closed. No wire/schema version changes;
+    // existing source overload is retained for explicit legacy/test gates.
+    ResidentClipboardService(
+        std::unique_ptr<ClipboardWayland::ClipboardWaylandAdapter> adapter,
+        const QDBusConnection &connection, QString serviceName, quint64 epochSeed,
+        PrivacyAdmission admission, QObject *parent = nullptr);
     ~ResidentClipboardService() override;
     [[nodiscard]] ServiceStartStatus start();
     void stop();
