@@ -20,7 +20,7 @@ void exerciseFocusedSearchKeys(QQuickWindow *window,
     auto *dialog = window->findChild<QObject *>(QStringLiteral("viewerTextDialog"));
     auto *area = window->findChild<QQuickItem *>(QStringLiteral("viewerPageText"));
     QVERIFY(dialog && area);
-    for (const auto name : {QStringLiteral("viewerFindPrevious"),
+    for (const auto &name : {QStringLiteral("viewerFindPrevious"),
                             QStringLiteral("viewerFindNext"),
                             QStringLiteral("viewerCopyText")}) {
         auto *button = window->findChild<QQuickItem *>(name);
@@ -100,7 +100,7 @@ void ViewerTextUiTest::selectionSearchKeyboardAndLayouts()
     QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
                      copy->mapToScene(QPointF(copy->width()/2, copy->height()/2)).toPoint());
     QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("BETA"));
-    for (const auto name : {QStringLiteral("viewerFindPrevious"),
+    for (const auto &name : {QStringLiteral("viewerFindPrevious"),
                             QStringLiteral("viewerFindNext"),
                             QStringLiteral("viewerCopyText")}) {
         auto *button = window->findChild<QQuickItem *>(name);
