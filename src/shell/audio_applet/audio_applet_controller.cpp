@@ -86,6 +86,7 @@ AudioAppletController::AudioAppletController(AudioClient *client,
     , m_readGranted(audioReadGranted)
     , m_controlGranted(audioReadGranted && audioControlGranted)
 {
+    initializePopupGeometry();
     // AGENT-GUARD: The controller is presentation-only. It must never start,
     // stop, or parent the client; shell composition owns the client lifetime,
     // and taking ownership here would couple panel teardown to transport
