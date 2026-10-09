@@ -34,6 +34,17 @@ public:
   static ApplicationCatalog build(const QVector<SourceDocument> &documents,
                                   ApplicationVisibility visibility);
 
+  // Merges a complete managed registration snapshot into ordinary catalog
+  // browsing. The caller must obtain it from its admitted runtime/recipe
+  // owner; this pure function validates shape, never provenance. All XDG
+  // claims mask matching managed IDs, including Hidden/invalid documents.
+  // Malformed/duplicate/over-limit snapshots contribute no managed rows.
+  // Static consumers must rebuild after the appended public value fields.
+  static ApplicationCatalog build(
+      const QVector<SourceDocument> &documents,
+      const QVector<ManagedApplicationRegistration> &registrations,
+      ApplicationVisibility visibility = ApplicationVisibility::MenuEntries);
+
   // Case-insensitive display-name order, then case-insensitive id, then
   // exact id; consumers may rely on this order being stable for identical
   // input.

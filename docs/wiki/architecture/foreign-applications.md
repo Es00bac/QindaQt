@@ -6,6 +6,24 @@ It is not an implemented Android/Windows desktop service. The
 [delivery plan](../development/foreign-app-integration-plan.md) owns the visible
 green Android / blue Windows requirements and ED-21–24 acceptance.
 
+## Implemented catalog values boundary
+
+[ADR-0368](../adr/0368-merge-managed-applications-without-desktop-key-authority.md)
+implements the dependency-ready catalog values subset only. Launcher L0 and
+the neutral ApplicationCatalog scanner can explicitly merge a complete supplied
+Android/Windows registration snapshot into native category/search/pin values.
+Canonical origin/UUID IDs survive recipe/name changes; launch intents carry
+exact registration revision and recipe digest with no executable command.
+Native XDG overrides, including hidden or malformed claims, mask matching
+managed IDs without inheriting their origin/route. Invalid snapshots or
+indeterminate native inspection withhold managed rows atomically.
+
+The caller still owns recipe/materialization verification and admitted producer
+authentication. There is no runtime registration source, wire/persistence,
+QindaTK manager, managed dispatcher or green/blue token renderer in this slice.
+Live window/process association, container journeys and Audio1 remain separate
+open gates. Catalog metadata grants no running-surface or process authority.
+
 ## Existing boundaries and proposed ownership
 
 ApplicationCatalog already scans bounded XDG entries for launcher and File

@@ -88,6 +88,8 @@ QString standaloneLimitation(const ScannedApplication &application,
         return QStringLiteral(
             "Starts through D-Bus activation: open it from a docked window or a "
             "workspace picker");
+    case LaunchSupport::ManagedRuntime:
+        return QStringLiteral("Managed application launch is not available in this browser yet");
     case LaunchSupport::Unsupported:
         break;
     }

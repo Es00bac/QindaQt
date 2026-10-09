@@ -1,3 +1,7 @@
+## Integrated shared managed-app catalog — 2026-10-09T00:24:00+00:00
+
+The independently source-reviewed Android/Windows catalog candidate 07f798 adds stable origin-qualified IDs, revision/digest launch bindings, native override masking and fail-closed managed launch preparation. Its focused build and 12 CTests passed; two legacy consumer translation units remain for release compilation. It does not yet launch an app, present QindaTK management, bind a live window, tile/tab, or route Audio1. WindowsRunner and QindaTK product slices follow this public seam; no whole ED-20–24 completion or feature weight is claimed.
+
 ## Fast integration and verification directive — 2026-10-09T00:15:00+00:00
 
 The owner directed shorter, product-first Android/Windows delivery. Current

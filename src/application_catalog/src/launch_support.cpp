@@ -2,6 +2,7 @@
 #include "qindaqt/application_catalog/launch_support.h"
 
 #include "qindaqt/shell_launcher/launch_execution.h"
+#include "qindaqt/application_catalog/application_directory_scan.h"
 
 namespace QindaQt::ApplicationCatalog {
 
@@ -35,6 +36,34 @@ LaunchPreparation planApplicationLaunch(const QString &documentText,
     }
     return {LaunchSupport::ProcessSpawn, plan.plan->program,
             plan.plan->arguments, {}, plan.plan->fileArguments};
+}
+
+LaunchPreparation planApplicationLaunch(const ScannedApplication &application,
+                                        const QString &actionId,
+                                        const QStringList &localFiles)
+{
+    if (!application.entry.managedBinding) {
+        return planApplicationLaunch(application.documentText, actionId,
+                                     application.entry.name, application.desktopFilePath,
+                                     localFiles);
+    }
+    const auto &binding = *application.entry.managedBinding;
+    // AGENT-GUARD: Managed rows never gain an Exec escape hatch, including a
+    // stale/raw document accidentally retained by a later merge consumer.
+    if (!QindaQt::ShellLauncher::isValidManagedApplicationBinding(binding)
+        || QindaQt::ShellLauncher::managedApplicationEntryId(binding) != application.entry.id
+        || !application.documentText.isEmpty() || !application.desktopFilePath.isEmpty()) {
+        return {LaunchSupport::Unsupported, {}, {},
+                QStringLiteral("managed application catalog binding is unusable")};
+    }
+    if (!actionId.isEmpty() || !localFiles.isEmpty()) {
+        return {LaunchSupport::Unsupported, {}, {},
+                QStringLiteral("managed application file or action handoff is unavailable")};
+    }
+    LaunchPreparation preparation;
+    preparation.support = LaunchSupport::ManagedRuntime;
+    preparation.managedBinding = binding;
+    return preparation;
 }
 
 QStringList terminalCommandLine(const QStringList &terminalCommandPrefix,

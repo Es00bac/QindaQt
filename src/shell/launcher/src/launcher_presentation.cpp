@@ -20,6 +20,12 @@ PresentationItem LauncherPresentationModel::itemFor(const ApplicationEntry &entr
   else
     item.accessibleDescription = entry.name;
   item.pinned = pinned;
+  if (entry.managedBinding) {
+    item.origin = entry.managedBinding->origin;
+    const QString platform = item.origin == ApplicationOrigin::Android
+        ? QStringLiteral("Android application") : QStringLiteral("Windows application");
+    item.accessibleDescription = platform + QStringLiteral(". ") + item.accessibleDescription;
+  }
   return item;
 }
 

@@ -114,6 +114,62 @@ ApplicationCatalog ApplicationCatalog::build(
   return catalog;
 }
 
+ApplicationCatalog ApplicationCatalog::build(
+    const QVector<SourceDocument> &documents,
+    const QVector<ManagedApplicationRegistration> &registrations,
+    ApplicationVisibility visibility)
+{
+  ApplicationCatalog catalog = build(documents, visibility);
+  if (registrations.isEmpty())
+    return catalog;
+  QString error;
+  if (!validateManagedApplications(registrations, &error)) {
+    catalog.addDiagnostic({DiagnosticKind::InvalidManagedSnapshot, {}, error});
+    return catalog;
+  }
+  // AGENT-GUARD: Incomplete XDG inspection cannot establish that no user
+  // override masks a managed ID. Never resurrect an unseen lower source.
+  if (documents.size() > Bounds::maxSourceDocuments
+      || std::any_of(catalog.m_diagnostics.cbegin(), catalog.m_diagnostics.cend(),
+                     [](const CatalogDiagnostic &diagnostic) {
+                       return diagnostic.kind == DiagnosticKind::EntryLimitReached
+                           || diagnostic.kind == DiagnosticKind::SourceLimitReached;
+                     })) {
+    catalog.addDiagnostic({DiagnosticKind::InvalidManagedSnapshot, {},
+                           QStringLiteral("managed rows withheld after incomplete XDG inspection")});
+    return catalog;
+  }
+  QSet<QString> claimedIds;
+  for (const auto &document : documents) {
+    if (Bounds::isValidEntryId(document.sourceId))
+      claimedIds.insert(document.sourceId);
+  }
+  QVector<ApplicationEntry> managedEntries;
+  for (const auto &registration : registrations) {
+    const QString id = managedApplicationEntryId(registration.binding);
+    if (claimedIds.contains(id))
+      continue;
+    ApplicationEntry entry;
+    entry.id = id;
+    entry.name = registration.name;
+    entry.genericName = registration.genericName;
+    entry.comment = registration.comment;
+    entry.iconName = registration.iconName;
+    entry.categories = registration.categories;
+    entry.keywords = registration.keywords;
+    entry.managedBinding = registration.binding;
+    managedEntries.append(entry);
+  }
+  if (catalog.m_entries.size() + managedEntries.size() > Bounds::maxVisibleEntries) {
+    catalog.addDiagnostic({DiagnosticKind::InvalidManagedSnapshot, {},
+                           QStringLiteral("combined catalog exceeds its entry ceiling")});
+    return catalog;
+  }
+  catalog.m_entries += managedEntries;
+  std::sort(catalog.m_entries.begin(), catalog.m_entries.end(), displayLessThan);
+  return catalog;
+}
+
 std::optional<ApplicationEntry> ApplicationCatalog::entry(
     const QString &entryId) const
 {
@@ -135,6 +191,7 @@ LaunchIntentResult ApplicationCatalog::makeLaunchIntent(
   intent.entryId = source->id;
   intent.displayName = source->name;
   intent.iconName = source->iconName;
+  intent.managedBinding = source->managedBinding;
   if (!actionId.isEmpty()) {
     const auto action = std::find_if(source->actions.cbegin(), source->actions.cend(),
                                      [&actionId](const DesktopEntryAction &candidate) {

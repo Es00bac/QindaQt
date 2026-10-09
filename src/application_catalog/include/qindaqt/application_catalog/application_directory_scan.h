@@ -13,9 +13,13 @@ using QindaQt::ShellLauncher::ApplicationEntry;
 using QindaQt::ShellLauncher::ApplicationVisibility;
 using QindaQt::ShellLauncher::CatalogDiagnostic;
 
+using QindaQt::ShellLauncher::ManagedApplicationRegistration;
+
 // One installed, catalog-validated application plus the raw document the
 // scanner retained for it. The document text is the exact input that produced
 // the entry, so execution-key extraction always plans from validated bytes
+// for native entries. Managed entries have no document or executable path;
+// their typed binding routes only through the admitted runtime owner.
 // (the same contract the shell launcher's execution adapter relies on).
 struct ScannedApplication final
 {
@@ -62,6 +66,18 @@ struct DirectoryScan final
 // these static-library APIs require recompilation after public value changes.
 [[nodiscard]] DirectoryScan scanApplicationDirectories(
     const QStringList &dataRoots, ApplicationVisibility visibility,
+    QString *error = nullptr);
+
+// Adds a complete caller-supplied managed registration snapshot through the
+// same pure catalog merge as the launcher. The caller owns authentication and
+// recipe/materialization verification; scanning itself grants no provenance.
+// Any indeterminate filesystem inspection withholds managed rows, because an
+// unreadable higher-precedence override cannot be proved absent. Native rows
+// remain usable. Returned values own their data and borrow no source objects.
+[[nodiscard]] DirectoryScan scanApplicationDirectories(
+    const QStringList &dataRoots,
+    const QVector<ManagedApplicationRegistration> &registrations,
+    ApplicationVisibility visibility = ApplicationVisibility::MenuEntries,
     QString *error = nullptr);
 
 } // namespace QindaQt::ApplicationCatalog

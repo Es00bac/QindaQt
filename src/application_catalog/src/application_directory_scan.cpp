@@ -271,6 +271,14 @@ DirectoryScan scanApplicationDirectories(const QStringList &dataRoots,
                                          ApplicationVisibility visibility,
                                          QString *error)
 {
+    return scanApplicationDirectories(dataRoots, {}, visibility, error);
+}
+
+DirectoryScan scanApplicationDirectories(
+    const QStringList &dataRoots,
+    const QVector<ManagedApplicationRegistration> &registrations,
+    ApplicationVisibility visibility, QString *error)
+{
     if (dataRoots.isEmpty()) {
         if (error) {
             *error = QStringLiteral("application scan requires at least one data root");
@@ -296,17 +304,34 @@ DirectoryScan scanApplicationDirectories(const QStringList &dataRoots,
         scanRoot(context, root, &remainingFiles, &ceilingHit);
     }
 
-    const auto catalog = ApplicationCatalog::build(documents, visibility);
+    const bool completeScan = scan.diagnostics.isEmpty() && !scan.diagnosticsTruncated;
+    const auto catalog = completeScan
+        ? ApplicationCatalog::build(documents, registrations, visibility)
+        : ApplicationCatalog::build(documents, visibility);
+    if (!completeScan && !registrations.isEmpty()) {
+        addDiagnostic(context, {},
+                      QStringLiteral("managed rows withheld after incomplete application scan"));
+    }
     scan.applications.reserve(catalog.entries().size());
     for (const auto &entry : catalog.entries()) {
         const auto document = documentsBySourceId.constFind(entry.id);
+        if (entry.managedBinding) {
+            scan.applications.append(ScannedApplication{entry, {}, {}});
+            continue;
+        }
         if (document == documentsBySourceId.cend()) {
             continue;
         }
         scan.applications.append(
             ScannedApplication{entry, document->first, document->second});
     }
-    scan.diagnostics.append(catalog.diagnostics());
+    for (const auto &diagnostic : catalog.diagnostics()) {
+        if (scan.diagnostics.size() >= maxDiagnostics) {
+            scan.diagnosticsTruncated = true;
+            break;
+        }
+        scan.diagnostics.append(diagnostic);
+    }
     scan.diagnosticsTruncated = scan.diagnosticsTruncated
         || catalog.diagnosticsTruncated();
     return scan;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/shell_launcher/managed_applications.h"
+
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -45,6 +47,8 @@ struct ApplicationEntry {
   QStringList categories;
   QStringList keywords;
   QVector<DesktopEntryAction> actions;
+  // Only supplied managed registrations populate this; desktop text never does.
+  std::optional<ManagedApplicationBinding> managedBinding = std::nullopt;
 
   friend bool operator==(const ApplicationEntry &,
                          const ApplicationEntry &) = default;
@@ -63,6 +67,7 @@ enum class DiagnosticKind {
   DuplicateEntryId,
   SourceLimitReached,
   EntryLimitReached,
+  InvalidManagedSnapshot,
 };
 
 struct CatalogDiagnostic {
@@ -84,6 +89,8 @@ struct LaunchIntent {
   QString actionId;
   QString displayName;
   QString iconName;
+  // A managed route contains no Exec. Dispatch only through the runtime owner.
+  std::optional<ManagedApplicationBinding> managedBinding = std::nullopt;
 
   friend bool operator==(const LaunchIntent &, const LaunchIntent &) = default;
 };

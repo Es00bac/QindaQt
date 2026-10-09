@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/shell_launcher/managed_applications.h"
+
+#include <optional>
+
 #include <QString>
 #include <QStringList>
 
@@ -9,6 +13,8 @@ struct ExecPlan;
 }
 
 namespace QindaQt::ApplicationCatalog {
+
+struct ScannedApplication;
 
 // How an application's validated document can be started. ProcessSpawn means
 // the caller may execute the planned argv directly; DbusActivatable requires
@@ -20,6 +26,7 @@ enum class LaunchSupport {
     DbusActivatable,
     TerminalRequired,
     Unsupported,
+    ManagedRuntime,
 };
 
 struct LaunchPreparation final
@@ -31,6 +38,9 @@ struct LaunchPreparation final
     // ADR-0269: how many of the planned localFiles the argv carries (see
     // ExecPlan::fileArguments): 0, 1 (%f/%u) or all of them (%F/%U).
     qsizetype fileArguments = 0;
+    // ManagedRuntime supplies only this binding. Program/argv remain empty;
+    // the runtime owner rechecks revision/digest and resolves its own recipe.
+    std::optional<QindaQt::ShellLauncher::ManagedApplicationBinding> managedBinding = std::nullopt;
 
     [[nodiscard]] bool spawnable() const noexcept
     {
@@ -51,6 +61,14 @@ struct LaunchPreparation final
 [[nodiscard]] LaunchPreparation planApplicationLaunch(
     const QString &documentText, const QString &actionId,
     const QString &displayName, const QString &desktopFilePath,
+    const QStringList &localFiles = {});
+
+// Plans a complete catalog row without confusing managed routing with native
+// Exec execution. ManagedRuntime is not spawnable; until a qualified file/
+// action handoff exists, managed localFiles/actions are truthfully refused.
+// This function is pure and grants no runtime/process/window authority.
+[[nodiscard]] LaunchPreparation planApplicationLaunch(
+    const ScannedApplication &application, const QString &actionId = {},
     const QStringList &localFiles = {});
 
 // The single Exec argument vector for launching a terminal-required

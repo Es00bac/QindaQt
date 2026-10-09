@@ -43,6 +43,8 @@ struct PresentationItem {
   // the future QML adapter cannot invent a divergent accessible taxonomy.
   AccessibleRole accessibleRole = AccessibleRole::ListItem;
   bool pinned = false;
+  // Catalog origin is display-only; it cannot classify a running window.
+  ApplicationOrigin origin = ApplicationOrigin::Native;
 
   friend bool operator==(const PresentationItem &,
                          const PresentationItem &) = default;

@@ -62,6 +62,9 @@ DesktopLaunchPlan planDesktopGameLaunch(const DesktopDiscovery &discovery,
   case ApplicationCatalog::LaunchSupport::DbusActivatable:
     plan.reason = QStringLiteral("the game needs D-Bus activation");
     return plan;
+  case ApplicationCatalog::LaunchSupport::ManagedRuntime:
+    plan.reason = QStringLiteral("managed application launch requires its runtime owner");
+    return plan;
   case ApplicationCatalog::LaunchSupport::Unsupported:
     plan.reason = prepared.message.isEmpty()
                       ? QStringLiteral("the entry has no usable command")

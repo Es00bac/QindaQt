@@ -408,3 +408,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0364: Configure Voice credentials through provider-owned secure storage](0364-configure-voice-credentials-through-provider-owned-secure-storage.md) — Accepted; same-owner optional extension, secure reload and effective fallback truth.
 
 - [ADR-0365: Publish peripheral batteries through Power1 receipts](0365-publish-peripheral-batteries-through-power1-receipts.md) — Accepted; separate inventory preserves system-battery policy and authenticates sender-bound nonce receipts.
+
+- [ADR-0368: Merge managed applications without desktop-key authority](0368-merge-managed-applications-without-desktop-key-authority.md) — Accepted catalog values only; runtime producer/dispatch remains open.

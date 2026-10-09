@@ -457,3 +457,48 @@ that handoff. Existing local-file expansion remains unchanged. The independent
 [ApplicationUriOpener service](../architecture/portal-foundation.md) uses this
 pure grammar for configured native scheme handlers and owns execution/FD
 lifetime. The Launcher model gains no process, GUI or transport dependency.
+
+## Managed application catalog values
+
+[ADR-0368](../adr/0368-merge-managed-applications-without-desktop-key-authority.md)
+adds a complete supplied-registration overload to the pure catalog. It accepts
+Android/Windows registration UUID, positive revision and exact recipe digest,
+plus bounded display/category/search fields. IDs use the stable
+`qindaqt.managed.android.<uuid>` / `qindaqt.managed.windows.<uuid>` namespaces.
+A recipe update or rename changes the binding/display values without changing
+the identity users pin. Desktop text cannot create a managed binding.
+
+Every ordinary XDG claim masks a matching managed ID, even when hidden,
+NoDisplay or malformed. A visible override is native and loses the managed
+launch/origin attachment. Invalid/duplicate/over-limit managed snapshots add
+no managed rows; native rows remain usable. Incomplete native source inspection
+also withholds managed rows. The apps-side scanner exposes the same explicit
+merge and withholds managed rows on an indeterminate filesystem scan.
+
+Managed entries use ordinary categories, search, pins/recents and presentation
+order. `PresentationItem.origin` distinguishes their supplied platform, and
+accessible descriptions include Android/Windows application independently of
+color. `LaunchIntent.managedBinding` carries the exact revision/digest route,
+without command line or runtime authority. The neutral whole-row planner
+returns non-spawnable `ManagedRuntime` with empty program/argv; stale native
+text and unsupported managed file/actions refuse.
+
+The current shell scanner/composition does not yet receive an admitted runtime
+registration source or dispatcher. QindaTK manager, actual green/blue rendering,
+registered app launches and authenticated per-window/container origin remain
+next gates. Catalog origin must never be used to classify an existing surface
+through its title, app_id or StartupWMClass.
+
+The short focused source gate is:
+
+```sh
+cmake -S tests/application_catalog -B build/application-catalog -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DQINDAQT_ENABLE_STRICT_WARNINGS=ON
+cmake --build build/application-catalog -j2
+ctest --test-dir build/application-catalog --timeout 10 --output-on-failure
+```
+
+It includes three managed catalog/launch/scan gates and the ordinary native
+catalog/parser/category/search/pin/presentation regressions. Fixtures contain
+only synthetic registration values and temporary XDG roots; no guest or Wine
+process is started and no authenticated producer is claimed.

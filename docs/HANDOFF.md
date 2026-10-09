@@ -1,3 +1,7 @@
+## Shared catalog integration boundary — 2026-10-09T00:24:00+00:00
+
+Exact managed catalog source 07f798 and author handoff c5507f are integrated after independent source review. It provides canonical Android/Windows registration IDs and pure launch bindings; it does not authenticate a runtime producer or produce live app/window/audio behavior. The owner focused compile, 12/12 CTests/145 Qt cases and docs538 passed. Two legacy enum consumers are source-inspected but await release compilation. QindaTK manager, WindowsRunner and Audio1 slices are active; no long VM/package rerun is planned.
+
 ## Current product-first execution boundary — 2026-10-09T00:15:00+00:00
 
 The owner stopped Astra/ultra work and long repeated private tests. Sol/max

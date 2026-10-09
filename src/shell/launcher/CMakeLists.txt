@@ -9,6 +9,7 @@ target_sources(
     qindaqt_shell_launcher
     PRIVATE
         src/application_catalog.cpp
+        src/managed_applications.cpp
         src/desktop_entry_parser.cpp
         src/launch_execution.cpp
         src/launcher_category_model.cpp
@@ -20,6 +21,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/shell_launcher/application_catalog.h
+            include/qindaqt/shell_launcher/managed_applications.h
             include/qindaqt/shell_launcher/desktop_entry_parser.h
             include/qindaqt/shell_launcher/launch_execution.h
             include/qindaqt/shell_launcher/launcher_bounds.h
