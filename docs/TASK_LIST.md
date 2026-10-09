@@ -1,3 +1,7 @@
+## Installed Android Applications setup component — 2026-10-09T05:39:00+00:00
+
+Reviewed source fe01fd6 and QindaGentoo recipe a30007f ship a separate package-owned Android setup manager and private native collector without rebuilding R24. The immutable source archive SHA-256 3a561a46… produced a signed gpkg SHA-256 323bb922… after one resource-capped build and six-second warm continuation. Full signature, embedded recipe and component-only image passed on qinda and laptop. Normal laptop Portage installed one binary in 11.763 s; the manager, collector, visible setup desktop entry and fixed recipe match package hashes, and a 150-ms offscreen manager startup passed. QindaPortage r4 is a runtime dependency; the menu entry is visible only in this focused component. The helper reports Unavailable/no app rows and never starts Waydroid without qualified guest image/package/task evidence. No Android application launch, QindaQt tile/tab or Audio1 is claimed.
+
 ## File Manager .exe double-click accepted — 2026-10-09T05:08:00+00:00
 
 The owner double-clicked Wine's Portage-installed Notepad PE in File Manager and confirmed the installed WindowsRunner setup window opened. In the earlier same-handler temporary-profile check, pressing Run opened a visible Notepad window. Thus basic File Manager PE dispatch and one concrete program startup work on R24 plus WindowsRunner-r1. Installer completion, save/relaunch, blue managed app identity, tile/tab, per-app Audio1 playback and Windows Global Menu remain open.
