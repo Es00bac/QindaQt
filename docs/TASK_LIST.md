@@ -1,3 +1,7 @@
+## Android setup and USB package boundary — 2026-10-09T02:18:00+00:00
+
+Reviewed Android menu gate 71ef7a6 and closed QindaPortage setup source 01e2fca are integrated. The hidden Android Applications binary can open package planning for fixed runtime/images atoms; it has no admitted registration/runtime producer or real Android app/window/audio journey. USB Removable Media R3 source and signed package SHA-256 71c19400… provide the /Devices exporter missing from installed R2. Portage refuses R3 alone because desktop R23 has an exact R2 PDEPEND. A dependency-only R24 desktop package and paired R24/R3 adoption are next. No physical Eject or installed R3 is claimed.
+
 ## Windows .exe File Manager source route — 2026-10-09T00:58:00+00:00
 
 Reviewed source4e622 adds real PE/header admission, held file identity and a public File Manager double-click/Open With route that preserves user defaults and never falls back after uncertain Windows dispatch. Five focused CTests/79 Qt cases pass; no actual Windows process launches because the production Windows port and first-run profile handler are still absent. Next: package-owned setup/profile and transactionally fenced process adapter, compiled MIME/desktop handler only when it exists, then one short ordinary .exe journey. File Manager GUI inspection must remain responsive; no installed support or ED-22 completion is claimed.

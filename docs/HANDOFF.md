@@ -1,3 +1,7 @@
+## Android setup and Removable Media release dependency — 2026-10-09T02:18:00+00:00
+
+Android menu gate 71ef7a6 and fixed QindaPortage setup handoff 01e2fca are integrated after independent manager source review. The app remains NoDisplay with a null runtime port: native package selection is planning only. An admitted runtime producer, QindaQt window association and Audio1 remain. Removable Media R3 source and signed gpkg SHA-256 71c19400… pass full signature and embedded-recipe checks on qinda and laptop. Binary-only Portage pretend exposes desktop R23's exact R2 PDEPEND, so the manager rejected a forced install. Reviewed QindaGentoo R24 overlay 54edaba changes only that dependency, preserving R23 source bytes. A bounded signed R24 build and normal paired Portage adoption follow. The mounted USB drive has not been operated on.
+
 ## Windows .exe File Manager source boundary — 2026-10-09T00:58:00+00:00
 
 Windows PE/File Manager source4e622 and handoff199ce are integrated after independent review. Bounded file/header admission and double-click/Open With public routing compile and focused tests pass. The default production Windows port is null, so the installed File Manager still has no new .exe behavior; real first-run setup, profile/receipt, process adapter, desktop handler and GUI-thread-safe inspection remain the next code outcome. No Wine app/Global Menu/Audio1 claim follows.
