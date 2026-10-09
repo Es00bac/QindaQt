@@ -1,4 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# This owning route configures only the static launch/value closure and the
+# concrete handler; a component package never configures the desktop graph.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    cmake_minimum_required(VERSION 3.25)
+    project(QindaQtWindowsProgramRunner LANGUAGES CXX)
+    include(GNUInstallDirs)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake")
+    include(QindaQtCompiler)
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+    qt_standard_project_setup(REQUIRES 6.11)
+    set(QINDAQT_LAUNCHER_PURE_ONLY ON)
+    add_subdirectory("../../shell/launcher" "${CMAKE_BINARY_DIR}/src/shell/launcher")
+    add_subdirectory("../../windows_runner" "${CMAKE_BINARY_DIR}/src/windows_runner")
+endif()
+
 find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets Concurrent)
 qt_add_library(qindaqt_windows_handler_support STATIC runtime.cpp profile.cpp runtime.h)
 target_link_libraries(qindaqt_windows_handler_support PUBLIC QindaQt::WindowsRunner Qt6::Core)

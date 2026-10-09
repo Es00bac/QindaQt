@@ -48,6 +48,9 @@ option(QINDAQT_BUILD_ANDROID_MANAGER "Build the QindaTK Android Applications man
 # its own --component SystemMonitor. A desktop package built from this tree
 # installs every component, so the two collide on /usr/bin unless one of them
 # turns this off. Leave it ON for the standalone package.
+# The separate component owns the handler executable/desktop; future desktop
+# recipes disable this to preserve Portage file ownership.
+option(QINDAQT_BUILD_WINDOWS_RUNNER "Build the local Windows program handler" ON)
 option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
 option(QINDAQT_BUILD_REMOVABLE_MEDIA "Build the removable-media desktop application" ON)
 # AGENT-GUARD: media-plugins/obs-qindaqt installs this libobs module from its
