@@ -50,7 +50,7 @@ qt_add_executable(
 )
 target_link_libraries(
     qindaqt_session_safety_private_bus_tests
-    PRIVATE QindaQt::DisplayRuntime Qt6::Core Qt6::DBus Qt6::Test
+    PRIVATE QindaQt::DisplayRuntime QindaQt::CompositorNames Qt6::Core Qt6::DBus Qt6::Test
 )
 target_compile_definitions(
     qindaqt_session_safety_private_bus_tests

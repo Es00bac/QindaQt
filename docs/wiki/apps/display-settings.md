@@ -1,6 +1,9 @@
 # QindaQt Settings — Display route
 
 `qindaqt-settings --page display` is the first-party Display settings surface.
+Apply uses Display1's authenticated native compositor lock state. An unlocked
+native session permits position, scale, and rotation previews even though its
+ScreenSaver compatibility facades are owned by the session supervisor.
 It is a modular route within the `qindaqt-settings` Qt Quick application,
 composed beside Notifications and Appearance. The domain module
 `src/apps/settings/display` owns validated display draft values, the reactive

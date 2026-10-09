@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/services/display_runtime/session_safety_port.h>
+#include <qindaqt/compositor_names/compositor_names.h>
 
 #include "../display_service/support/private_bus_test_support.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtDBus/QDBusAbstractAdaptor>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusContext>
+#include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusUnixFileDescriptor>
 #include <QtTest/QTest>
 
 #include <unistd.h>
+#include <utility>
 
 using namespace QindaQt;
 using namespace QindaQt::DisplayRuntime;
@@ -19,49 +23,44 @@ using namespace QindaQt::DisplayService::TestSupport;
 namespace
 {
 
-class ScreenSaverBackend final : public QObject
+class NativeLockBackend final : public QObject, protected QDBusContext
 {
     Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.NativeLock1")
 
 public:
-    bool active = false;
-};
-
-class FreedesktopScreenSaverAdaptor final : public QDBusAbstractAdaptor
-{
-    Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.ScreenSaver")
-
-public:
-    explicit FreedesktopScreenSaverAdaptor(ScreenSaverBackend *backend)
-        : QDBusAbstractAdaptor(backend)
-        , m_backend(backend)
+    explicit NativeLockBackend(QDBusConnection connection)
+        : m_connection(std::move(connection))
     {
+    }
+
+    void setLocked(bool locked, bool protectedPresentation)
+    {
+        m_locked = locked;
+        m_protected = protectedPresentation;
+        Q_EMIT lockedChanged(locked);
+        Q_EMIT protectedChanged(protectedPresentation);
     }
 
 public Q_SLOTS:
-    bool GetActive() const { return m_backend->active; }
-
-Q_SIGNALS:
-    void ActiveChanged(bool active);
-
-private:
-    ScreenSaverBackend *m_backend;
-};
-
-class KdeScreenSaverAdaptor final : public QDBusAbstractAdaptor
-{
-    Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.screensaver")
-
-public:
-    explicit KdeScreenSaverAdaptor(ScreenSaverBackend *backend)
-        : QDBusAbstractAdaptor(backend)
+    void RequestStateWithReceipt(const QString &nonce)
     {
+        auto receipt = QDBusMessage::createTargetedSignal(
+            message().service(), QString(CompositorNames::nativeLockPath),
+            QString(CompositorNames::nativeLockInterface),
+            QStringLiteral("stateReceipt"));
+        receipt << nonce << m_locked << m_protected;
+        m_connection.send(receipt);
     }
 
 Q_SIGNALS:
-    void AboutToLock();
+    void lockedChanged(bool locked);
+    void protectedChanged(bool protectedPresentation);
+
+private:
+    QDBusConnection m_connection;
+    bool m_locked = false;
+    bool m_protected = false;
 };
 
 class LogindBackend final : public QObject
@@ -128,14 +127,6 @@ public:
     int prepareCount = 0;
 };
 
-bool registerScreenSaverNames(QDBusConnection &connection)
-{
-    return connection.registerService(QStringLiteral("org.qindaqt.Compositor"))
-        && connection.registerService(
-            QStringLiteral("org.freedesktop.ScreenSaver"))
-        && connection.registerService(QStringLiteral("org.kde.screensaver"));
-}
-
 } // namespace
 
 class SessionSafetyPrivateBusTest final : public QObject
@@ -171,16 +162,19 @@ void SessionSafetyPrivateBusTest::
     QVERIFY(logindOwner.isConnected());
     QVERIFY(sessionClient.isConnected());
     QVERIFY(systemClient.isConnected());
-    QVERIFY(registerScreenSaverNames(lockOwner));
+    QVERIFY(lockOwner.registerService(QString(CompositorNames::service)));
+    // Native sessions own the compatibility facades separately; they cannot
+    // participate in authentication of the compositor's lock receipt.
+    QVERIFY(logindOwner.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));
+    QVERIFY(logindOwner.registerService(QStringLiteral("org.kde.screensaver")));
     QVERIFY(logindOwner.registerService(
         QStringLiteral("org.freedesktop.login1")));
 
-    ScreenSaverBackend screenSaver;
-    auto *freedesktop = new FreedesktopScreenSaverAdaptor(&screenSaver);
-    auto *kde = new KdeScreenSaverAdaptor(&screenSaver);
-    QVERIFY(lockOwner.registerObject(QStringLiteral("/ScreenSaver"),
-                                     &screenSaver,
-                                     QDBusConnection::ExportAdaptors));
+    NativeLockBackend nativeLock(lockOwner);
+    QVERIFY(lockOwner.registerObject(QString(CompositorNames::nativeLockPath),
+                                     &nativeLock,
+                                     QDBusConnection::ExportAllSlots
+                                         | QDBusConnection::ExportAllSignals));
     LogindBackend logind;
     auto *logindAdaptor = new LogindAdaptor(&logind);
     QVERIFY(logindOwner.registerObject(QStringLiteral("/org/freedesktop/login1"),
@@ -203,7 +197,7 @@ void SessionSafetyPrivateBusTest::
                           QStringLiteral("recover display preview before sleep"),
                           QStringLiteral("delay")}));
 
-    // A different expected PID must never inherit the same three-name quorum.
+    // A different kernel peer PID must never inherit the native lock receipt.
     auto wrongPidSafety = makeQtSessionSafetyPort(sessionClient, systemClient);
     RecordingObserver wrongPidObserver;
     wrongPidSafety->setObserver(&wrongPidObserver);
@@ -214,15 +208,13 @@ void SessionSafetyPrivateBusTest::
              DisplayTransaction::SafetyState::Unknown);
     wrongPidSafety->stop();
 
-    Q_EMIT kde->AboutToLock();
+    nativeLock.setLocked(true, false);
     QTRY_COMPARE_WITH_TIMEOUT(safety->currentSafety(),
                               DisplayTransaction::SafetyState::Locked, 5'000);
-    screenSaver.active = true;
-    Q_EMIT freedesktop->ActiveChanged(true);
+    nativeLock.setLocked(true, true);
     QTRY_COMPARE_WITH_TIMEOUT(safety->currentSafety(),
                               DisplayTransaction::SafetyState::Locked, 5'000);
-    screenSaver.active = false;
-    Q_EMIT freedesktop->ActiveChanged(false);
+    nativeLock.setLocked(false, false);
     QTRY_COMPARE_WITH_TIMEOUT(safety->currentSafety(),
                               DisplayTransaction::SafetyState::Safe, 5'000);
 
@@ -249,7 +241,7 @@ void SessionSafetyPrivateBusTest::
     QVERIFY(!safety->delayHeld());
 
     safety->stop();
-    lockOwner.unregisterObject(QStringLiteral("/ScreenSaver"));
+    lockOwner.unregisterObject(QString(CompositorNames::nativeLockPath));
     logindOwner.unregisterObject(QStringLiteral("/org/freedesktop/login1"));
     QDBusConnection::disconnectFromBus(systemName);
     QDBusConnection::disconnectFromBus(sessionName);

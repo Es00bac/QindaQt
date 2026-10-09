@@ -2,8 +2,8 @@
 
 #include <qindaqt/services/display_runtime/session_safety_port.h>
 
-#include <qindaqt/services/session_lock_state/qt_session_lock_transport.h>
-#include <qindaqt/services/session_lock_state/session_lock_state_monitor.h>
+#include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
+#include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 
 #include <QtCore/QPointer>
 #include <QtDBus/QDBusConnectionInterface>
@@ -28,8 +28,8 @@ constexpr auto kLogindPath = "/org/freedesktop/login1";
 constexpr auto kLogindInterface = "org.freedesktop.login1.Manager";
 
 using Services::SessionLockState::LockState;
-using Services::SessionLockState::QtSessionLockTransport;
-using Services::SessionLockState::SessionLockStateMonitor;
+using Services::SessionLockState::QtNativeLockTransport;
+using Services::SessionLockState::NativeLockStateMonitor;
 
 bool validUniqueOwner(const QString &owner)
 {
@@ -78,15 +78,20 @@ public:
         m_running = true;
         m_failed = false;
         ++m_generation;
-        m_lockTransport = std::make_unique<QtSessionLockTransport>(
+        m_lockTransport = std::make_unique<QtNativeLockTransport>(
             m_sessionConnection, this);
-        m_lockMonitor = std::make_unique<SessionLockStateMonitor>(
-            *m_lockTransport, expectedCompositorProcessId,
-            Services::SessionLockState::SessionLockRetryPolicy{}, this);
-        QObject::connect(m_lockMonitor.get(), &SessionLockStateMonitor::stateChanged,
+        // AGENT-CONTRACT: Native lock receipts must come from the compositor
+        // identified by the writer's kernel Wayland peer, not the session-owned
+        // ScreenSaver facades (see architecture/display-service.md).
+        m_lockMonitor = std::make_unique<NativeLockStateMonitor>(
+            *m_lockTransport,
+            [expectedCompositorProcessId](const QString &, const quint64 pid) {
+                return pid == static_cast<quint64>(expectedCompositorProcessId);
+            }, this);
+        QObject::connect(m_lockMonitor.get(), &NativeLockStateMonitor::stateChanged,
                          this, [this](const LockState) { updateSafety(); });
         QObject::connect(m_lockTransport.get(),
-                         &QtSessionLockTransport::transportLost, this,
+                         &QtNativeLockTransport::lost, this,
                          [this] { fail(QStringLiteral("session-bus-lost")); });
         QString lockError;
         if (!m_lockMonitor->start(&lockError)) {
@@ -339,8 +344,8 @@ private:
 
     QDBusConnection m_sessionConnection;
     QDBusConnection m_systemConnection;
-    std::unique_ptr<QtSessionLockTransport> m_lockTransport;
-    std::unique_ptr<SessionLockStateMonitor> m_lockMonitor;
+    std::unique_ptr<QtNativeLockTransport> m_lockTransport;
+    std::unique_ptr<NativeLockStateMonitor> m_lockMonitor;
     std::unique_ptr<QDBusServiceWatcher> m_logindWatcher;
     QDBusUnixFileDescriptor m_delayDescriptor;
     SessionSafetyObserver *m_observer = nullptr;

@@ -227,7 +227,14 @@ opens.
 
 After a valid absent/loaded result, D4 opens its private Wayland connection and
 derives a positive compositor PID with Linux `SO_PEERCRED`. D6 gives only that
-PID to the accepted three-name session-lock monitor. It independently binds
+PID to the existing native lock receipt monitor. The bus daemon must resolve
+the native compositor owner's PID to that kernel peer before an unlocked
+receipt can admit Apply. The session-owned ScreenSaver compatibility facades
+are separate processes and do not participate in this check; requiring their
+owners to match the compositor leaves every display preview falsely blocked
+as `locked` in a native session. This uses the existing
+[native lock observation](../adr/0304-native-lock-observation-and-service-policy.md)
+boundary. It independently binds
 one exact logind owner, subscribes to that unique sender's `PrepareForSleep`,
 and obtains `Inhibit("sleep", ..., "delay")`. The resident D-Bus service starts
 only after the delay descriptor is held. Its D1 safety becomes `Safe` only
@@ -506,7 +513,8 @@ only explicitly named connections to its own bus. They prove exact-owner
 asynchronous inventory reads, replacement and stale-reply fences, dirty-read
 coalescing, stop suppression, resident name/object registration, typed
 unavailable errors, `Changed`, deadline fire/re-arm, 500 ms settle, D5 recovery,
-authenticated lock/logind delay lifetime, suspend, owner loss, and teardown.
+authenticated native lock/logind delay lifetime, separate ScreenSaver facade
+owners, a mismatched compositor PID, suspend, owner loss, and teardown.
 They do not open a compositor or display and are not KWin output-management
 evidence.
 
