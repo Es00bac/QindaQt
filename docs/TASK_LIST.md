@@ -1,6 +1,6 @@
 ## Windows .exe handler source — 2026-10-09T02:39:00+00:00
 
-Reviewed source c981526/98844ce adds a concrete Windows Program Runner: a responsive first-run chooser, per-program retained Wine profile, checked Portage Wine/bwrap payloads, and one fenced process submission. Owner focused strict builds (35.619 s initial, 10.893 s changed target), one CTest/seven Qt cases and strict docs passed. No real Wine application or installed .exe journey is claimed yet. R23 File Manager's generic MIME and IncludeNoDisplay Open With paths can use a separately packaged handler, so a small Portage component and one bounded ordinary launch are next; no full desktop rebuild is needed.
+Reviewed source c981526/98844ce adds a concrete Windows Program Runner: a responsive first-run chooser, per-program retained Wine profile, checked Portage Wine/bwrap payloads, and one fenced process submission. Owner focused strict builds (35.619 s initial, 10.893 s changed target), one CTest/seven Qt cases and strict docs passed. No real Wine application or installed .exe journey is claimed yet. R23 File Manager's generic MIME and IncludeNoDisplay Open With paths can use a separately packaged handler, and the standalone source route 4e85cb1 compiled/staged its own two files in 33.005 s. A small Portage component and one bounded ordinary launch are next; no full desktop rebuild is needed.
 
 ## Android setup and USB package boundary — 2026-10-09T02:18:00+00:00
 
