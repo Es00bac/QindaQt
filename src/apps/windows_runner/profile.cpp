@@ -110,7 +110,9 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
         return refused(QStringLiteral("This Windows profile is busy. Close its program before changing or reopening it."), root);
     }
     // The same open-file-description lock is inherited by the bwrap supervisor
-    // through slot8. Receipt/profile changes cannot race the checked dispatch.
+    // through bubblewrap --sync-fd8. Payload descriptors are consumed by its
+    // --ro-bind-fd mounts, so closing them after setup preserves the pinned
+    // inode view. Receipt/profile changes cannot race the checked dispatch.
     struct Lock final { int fd; ~Lock() { ::close(fd); } } heldLock{lock};
     const QString receiptPath = root + QStringLiteral("/registration.json");
     QJsonObject previous;
@@ -225,11 +227,11 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
     QStringList arguments{QStringLiteral("--new-session"), QStringLiteral("--unshare-user"),
         QStringLiteral("--unshare-ipc"), QStringLiteral("--unshare-uts"),
         QStringLiteral("--bind"), QStringLiteral("/"), QStringLiteral("/"),
-        QStringLiteral("--ro-bind"), QStringLiteral("/proc/self/fd/3"), canonical,
-        QStringLiteral("--ro-bind"), QStringLiteral("/proc/self/fd/4"), runtime->preloader->path,
-        QStringLiteral("--ro-bind"), QStringLiteral("/proc/self/fd/5"), runtime->loader->path,
-        QStringLiteral("--ro-bind"), QStringLiteral("/proc/self/fd/6"), runtime->server->path,
-        QStringLiteral("--preserve-fds"), QStringLiteral("6"),
+        QStringLiteral("--ro-bind-fd"), QStringLiteral("3"), canonical,
+        QStringLiteral("--ro-bind-fd"), QStringLiteral("4"), runtime->preloader->path,
+        QStringLiteral("--ro-bind-fd"), QStringLiteral("5"), runtime->loader->path,
+        QStringLiteral("--ro-bind-fd"), QStringLiteral("6"), runtime->server->path,
+        QStringLiteral("--sync-fd"), QStringLiteral("8"),
         QStringLiteral("--chdir"), QFileInfo(canonical).absolutePath()};
     const QProcessEnvironment environment = guestEnvironment(session, root, *runtime);
     arguments.append(QStringLiteral("--clearenv"));

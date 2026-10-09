@@ -47,6 +47,9 @@ private slots:
             const QVector<int> &descriptors, int &pid) {
             ++submissions; pid = 123;
             if (descriptors.size() != 6 || arguments.constLast() != f.program.program->canonicalPath()) { return EINVAL; }
+            if (arguments.contains(QStringLiteral("--preserve-fds"))
+                || arguments.count(QStringLiteral("--ro-bind-fd")) != 4
+                || arguments.value(arguments.indexOf(QStringLiteral("--sync-fd")) + 1) != QStringLiteral("8")) { return EINVAL; }
             if (environment.value(QStringLiteral("WINEPREFIX")).isEmpty()
                 || environment.contains(QStringLiteral("LD_PRELOAD")) || environment.contains(QStringLiteral("PYTHONPATH"))) { return EINVAL; }
             return 0;
