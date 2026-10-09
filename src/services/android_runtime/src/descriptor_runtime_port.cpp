@@ -28,6 +28,7 @@ public:
     PacketChannel channel;
     QByteArray key;
     RuntimeSnapshot current;
+    bool authenticated=false;
     QHash<QString,Remembered> ledger;
     QSet<QString> retiredAttachments;
     std::unique_ptr<QSocketNotifier> input;
@@ -37,7 +38,7 @@ public:
     void revoke(const QString &reason) {
         if (input) input->setEnabled(false);
         if (lifetime) lifetime->setEnabled(false);
-        channel.close(); current={};
+        channel.close(); current={}; authenticated=false;
         // Mark everything before signals: consumers may reenter and mutate.
         QVector<LaunchResult> outcomes;
         for (auto it=ledger.begin();it!=ledger.end();++it) {
@@ -95,6 +96,7 @@ public:
             if (received.state!=ReadPacket::Received) { revoke(QStringLiteral("Android producer channel was lost or rejected")); return; }
             const auto packet=decodePacket(received.bytes);
             if (!packet || packet->channelKey!=key) { revoke(QStringLiteral("Android producer packet was rejected")); return; }
+            authenticated=true;
             if (packet->kind==PacketKind::Snapshot) { publish(std::get<RuntimeSnapshot>(packet->value)); }
             else if (packet->kind==PacketKind::Result) {
                 const auto result=std::get<LaunchResult>(packet->value);
@@ -122,6 +124,11 @@ DescriptorRuntimePort::DescriptorRuntimePort(int socket,int pidfd,int executable
 }
 DescriptorRuntimePort::~DescriptorRuntimePort()=default;
 bool DescriptorRuntimePort::producerLive() const { return d->channel.live(); }
+std::optional<AuthenticatedProducerPeer> DescriptorRuntimePort::authenticatedPeer() const
+{
+    if (!d->authenticated || !producerLive()) return std::nullopt;
+    return AuthenticatedProducerPeer{d->channel.peerPid(),d->channel.peerUid()};
+}
 RuntimeSnapshot DescriptorRuntimePort::snapshot() const { return producerLive()?d->current:RuntimeSnapshot{}; }
 void DescriptorRuntimePort::requestRefresh()
 {

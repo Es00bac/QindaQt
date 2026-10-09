@@ -172,3 +172,29 @@ operations; same-ID requests never replay and a retired attachment cannot return
 Owned-fork tests demonstrate kernel credentials/lifetime on inert synthetic
 publishers, not running Android apps. Supervisor/verified guest collector and
 renderer/window admission are the next concrete product layers.
+
+## Native renderer evidence boundary
+
+[ADR-0373](../adr/0373-separate-android-renderer-origin-from-guest-app-identity.md)
+adds `QindaQt::AndroidRendererEvidence`, a display-free compositor boundary for
+fresh native Wayland kernel PID/window-incarnation facts and trusted renderer
+role evidence. Its descriptor adapter accepts only an already qualified producer
+that is itself the native renderer. A separate app-catalog broker's credentials
+cannot classify another process's windows. No title/app_id/argv matching is used.
+
+The copied result identifies the host platform/runtime/renderer, with no AppKey,
+package, guest UID, task, surface mapping, stop permission or app window count.
+The private port must have authenticated a packet and retain its exact live
+pidfd/executable; runtime attachment/status and the process fence are rechecked
+on observation. Death or replacement withdraws evidence before queued callbacks.
+A refused or unavailable result remains unknown. Consumers must observe fresh
+and never reuse a cached result as app authority.
+
+The short focused checks use inert owned forks and verify credential admission,
+non-native and mismatched provider/PID refusal, process death and runtime
+withdrawal/replacement. They do not launch Android or claim a guest window.
+Existing KWin registry/publisher, supervisor and production composition are not
+wired by this isolated source slice. The next product gate is a separately
+admitted renderer bootstrap plus authenticated guest package/task/surface
+association, followed by exact ordinary-window publication and mixed native/
+Android container coverage. The hidden management entry remains gated.

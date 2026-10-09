@@ -12,6 +12,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory("../../../src/shell/launcher" "${CMAKE_BINARY_DIR}/src/shell/launcher")
     add_subdirectory("../../../src/application_catalog" "${CMAKE_BINARY_DIR}/src/application_catalog")
     add_subdirectory("../../../src/services/android_runtime" "${CMAKE_BINARY_DIR}/src/services/android_runtime")
+    include("../../../src/compositor/kwin/android_renderer_evidence.cmake")
     set(QINDAQT_ANDROID_MANAGER_MODEL_ONLY ON)
     add_subdirectory("../../../src/apps/android_manager" "${CMAKE_BINARY_DIR}/src/apps/android_manager")
     add_subdirectory("../../apps/android_manager" "${CMAKE_BINARY_DIR}/app-compatibility")
@@ -25,3 +26,12 @@ foreach(part IN ITEMS protocol descriptor_channel)
     set_tests_properties(android-runtime.${part} PROPERTIES TIMEOUT 10
         ENVIRONMENT_MODIFICATION "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
 endforeach()
+
+qt_add_executable(qindaqt_android_runtime_renderer_evidence_tests tst_renderer_evidence.cpp)
+target_link_libraries(qindaqt_android_runtime_renderer_evidence_tests
+    PRIVATE QindaQt::AndroidRendererEvidence Qt6::Test)
+target_compile_definitions(qindaqt_android_runtime_renderer_evidence_tests PRIVATE _GNU_SOURCE)
+qindaqt_enable_warnings(qindaqt_android_runtime_renderer_evidence_tests)
+add_test(NAME android-runtime.renderer-evidence COMMAND qindaqt_android_runtime_renderer_evidence_tests)
+set_tests_properties(android-runtime.renderer-evidence PROPERTIES TIMEOUT 10
+    ENVIRONMENT_MODIFICATION "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:")

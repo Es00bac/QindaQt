@@ -4,6 +4,11 @@
 #include "qindaqt/services/android_runtime/protocol.h"
 #include <memory>
 namespace QindaQt::Services::AndroidRuntime {
+struct AuthenticatedProducerPeer {
+    qint64 processId = 0;
+    quint32 userId = 0;
+};
+
 // Owning private-descriptor RuntimePort. Caller transfers three distinct FDs:
 // private seqpacket socket, lifetime pidfd held from supervised birth, and the
 // already verified native producer executable object. Caller has admitted its
@@ -23,6 +28,10 @@ public:
     void requestRefresh() override;
     LaunchSubmission requestLaunch(const LaunchRequest &request) override;
     [[nodiscard]] bool producerLive() const;
+    // Present only after a valid credential/key packet and while the pinned
+    // process still lives. This is host process identity, never renderer role
+    // or guest app/task identity; role admission remains trusted bootstrap.
+    [[nodiscard]] std::optional<AuthenticatedProducerPeer> authenticatedPeer() const;
 private:
     class Private;
     std::unique_ptr<Private> d;

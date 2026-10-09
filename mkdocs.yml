@@ -573,3 +573,4 @@ nav:
       - "0370: Admit user-selected Windows programs through leased PE files": adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md
       - "0371: Android package setup through QindaPortage": adr/0371-delegate-android-package-setup-to-qindaportage.md
       - "0372: Private Android producer kernel lifetimes": adr/0372-bind-private-android-producers-to-kernel-lifetimes.md
+      - "0373: Android renderer origin and guest identity": adr/0373-separate-android-renderer-origin-from-guest-app-identity.md

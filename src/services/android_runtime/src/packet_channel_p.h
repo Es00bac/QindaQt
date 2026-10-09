@@ -17,6 +17,8 @@ public:
     bool live() const;
     int socketFd() const { return m_socket; }
     int lifetimeFd() const { return m_lifetime; }
+    int peerPid() const { return m_pid; }
+    unsigned peerUid() const { return m_uid; }
     ReadPacket read();
     bool write(const QByteArray &bytes);
     void close();

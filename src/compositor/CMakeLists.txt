@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+# The private Android transport is absent from the legacy bridge-only configure.
+# Keep the renderer admission boundary available only with its actual port.
+if(TARGET QindaQt::AndroidRuntime)
+    include(kwin/android_renderer_evidence.cmake)
+endif()
+
 add_library(qindaqt_compositor_bridge STATIC)
 add_library(QindaQt::CompositorBridge ALIAS qindaqt_compositor_bridge)
 

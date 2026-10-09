@@ -13,6 +13,12 @@
 
 namespace QindaQt::Services::AndroidRuntime {
 namespace {
+bool endpointConnected(int fd)
+{
+    pollfd endpoint{fd,POLLRDHUP,0};
+    return ::poll(&endpoint,1,0)>=0
+        && (endpoint.revents&(POLLRDHUP|POLLHUP|POLLERR|POLLNVAL))==0;
+}
 bool pidfdMatches(int fd,int pid)
 {
     std::array<char,64> target{};
@@ -78,7 +84,9 @@ void PacketChannel::close()
 }
 bool PacketChannel::live() const
 {
-    if (!m_valid) return false;
+    // AGENT-GUARD: a still-live renderer can close its private endpoint.
+    // Cached origin must withdraw before the queued socket notifier too.
+    if (!m_valid || !endpointConnected(m_socket)) return false;
     pollfd lifetime{m_lifetime,POLLIN,0};
     // Every getter/send/read rechecks the held lifetime, before queued Qt
     // death notification. A reused numeric PID never replaces this pidfd.
@@ -92,7 +100,7 @@ bool PacketChannel::live() const
         && current.st_size==m_pin.st_size && current.st_mode==m_pin.st_mode
         && current.st_mtim.tv_sec==m_pin.st_mtim.tv_sec && current.st_mtim.tv_nsec==m_pin.st_mtim.tv_nsec
         && current.st_ctim.tv_sec==m_pin.st_ctim.tv_sec && current.st_ctim.tv_nsec==m_pin.st_ctim.tv_nsec
-        && ::poll(&lifetime,1,0)==0;
+        && ::poll(&lifetime,1,0)==0 && endpointConnected(m_socket);
 }
 ReadPacket PacketChannel::read()
 {

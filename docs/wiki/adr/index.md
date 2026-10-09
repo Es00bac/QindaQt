@@ -421,3 +421,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0371: Delegate Android package setup to QindaPortage](0371-delegate-android-package-setup-to-qindaportage.md) — Accepted closed graphical planning handoff; no guest authority.
 
 - [ADR-0372: Bind private Android producers to kernel lifetimes](0372-bind-private-android-producers-to-kernel-lifetimes.md) — Accepted protocol/transport only; guest/supervisor/compositor admission remains separate.
+
+- [ADR-0373: Separate Android renderer origin from guest app identity](0373-separate-android-renderer-origin-from-guest-app-identity.md) — Accepted renderer evidence boundary only; production/bootstrap and guest association remain gated.
