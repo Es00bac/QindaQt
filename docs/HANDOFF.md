@@ -1,3 +1,7 @@
+## Owner-confirmed File Manager PE dispatch — 2026-10-09T05:08:00+00:00
+
+The owner double-clicked Portage-installed Wine Notepad.exe in File Manager and saw WindowsRunner's setup window. Separately, the owner pressed Run in an installed WindowsRunner temporary-profile fixture and saw Notepad's window; the capped unit exited successfully and left no test process. These observations close the basic File Manager-to-handler-to-program path. Document save/relaunch, installer flow, managed app identity/tile/tab, Audio1 routing and standard HMENU Global Menu remain unqualified. No external executable or unowned profile was used.
+
 ## Android split renderer/source boundary — 2026-10-09T04:57:00+00:00
 
 Exact Android source candidate 29de757 (author handoff pending) is integrated as 952c318 after independent manager review. ADR0374 distinguishes a held native renderer pidfd/executable lifetime from the authenticated collector and joins both only for the current runtime attachment. The compositor-only native peer extractor reads a live managed WaylandWindow internalId/kernel wl_client PID, never title/app_id/X11 client claims. Existing registry/publisher/supervisor files remain untouched, and the result carries no Android package/task/surface or app-control authority. Owner focused native KWin-header compile0/31.930s,3/3 suites/23 Qt methods0/1.16s and strict docs5500 passed. No installed runtime, guest app, QindaQt tile/tab or Audio1 proof follows from this source. Trusted bootstrap/renderer admission and guest collector remain the next product gates.

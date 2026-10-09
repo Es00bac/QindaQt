@@ -1,3 +1,7 @@
+## File Manager .exe double-click accepted — 2026-10-09T05:08:00+00:00
+
+The owner double-clicked Wine's Portage-installed Notepad PE in File Manager and confirmed the installed WindowsRunner setup window opened. In the earlier same-handler temporary-profile check, pressing Run opened a visible Notepad window. Thus basic File Manager PE dispatch and one concrete program startup work on R24 plus WindowsRunner-r1. Installer completion, save/relaunch, blue managed app identity, tile/tab, per-app Audio1 playback and Windows Global Menu remain open.
+
 ## Android separate-renderer lifetime source — 2026-10-09T04:57:00+00:00
 
 Reviewed source 952c318 adds HeldRendererLifetime and a RuntimeRendererBinding for a broker/collector distinct from its native Wayland renderer. Shared pidfd/executable checks fence death, exec replacement and PID reuse synchronously; a KWin-only helper extracts a live managed WaylandWindow internal ID and kernel PID into the existing ADR0373 evidence gate. It does not patch the compositor registry or publish a guest app owner. Owner focused compile against installed QindaQtKWin 6.6.6.1 passed in 31.930 s; three suites/23 Qt methods passed in 1.16 s, with strict docs 550 pages. Trusted bootstrap and authenticated package/task/surface collection, real Android app launch, tiling/tabs and Audio1 remain open; installed R24 contains none of this source.
