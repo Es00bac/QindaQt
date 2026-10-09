@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/android_manager/application_controller.h"
 #include "native_setup_port.h"
+#include "qindaqt/services/android_runtime/native_bootstrap.h"
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -20,11 +21,12 @@ int main(int argc, char **argv)
     parser.addOption({QStringLiteral("smoke"), QStringLiteral("Open briefly and exit for verification")});
     parser.process(application);
 
-    // AGENT-GUARD: No admitted production registration/runtime port exists
-    // yet. Null is honest unavailable; never substitute stock app names or
-    // start waydroid from QML/main to make this window appear functional.
+    // AGENT-GUARD: native helper admission never supplies qualified guest facts.
+    // Missing package/session/recipe stays unavailable; no ambient guest starts.
+    QindaQt::Services::AndroidRuntime::NativeRuntimeBootstrap bootstrap;
+    static_cast<void>(bootstrap.start());
     auto setupPort = QindaQt::AndroidManager::createNativeSetupPort();
-    QindaQt::AndroidManager::ApplicationController manager(nullptr, nullptr, 30000, setupPort.get());
+    QindaQt::AndroidManager::ApplicationController manager(bootstrap.port(), nullptr, 30000, setupPort.get(), bootstrap.error());
     QQmlApplicationEngine engine;
     engine.setInitialProperties({{QStringLiteral("manager"), QVariant::fromValue(&manager)}});
     engine.loadFromModule(QStringLiteral("QindaQt.AndroidApplications"), QStringLiteral("Main"));

@@ -30,7 +30,7 @@ class ApplicationController final : public QObject {
 public:
     explicit ApplicationController(RuntimePort *port = nullptr,
                                    QObject *parent = nullptr, int launchTimeoutMs = 30000,
-                                   SetupPort *setupPort = nullptr);
+                                   SetupPort *setupPort = nullptr, QString unavailableReason = {});
     [[nodiscard]] QVariantList applications() const;
     [[nodiscard]] int queryLimit() const;
     [[nodiscard]] QString query() const { return m_query; }

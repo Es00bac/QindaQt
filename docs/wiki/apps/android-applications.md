@@ -3,28 +3,26 @@
 Android Applications is an ordinary QindaTK desktop window for browsing supplied
 Android registrations, reading current availability and requesting launches.
 Its native desktop entry is `org.qindaqt.AndroidApplications`; it is a management
-utility, not a replacement generic entry for every guest application. The entry
-currently has `NoDisplay=true` while the executable injects a null port, so the
-next desktop package cannot advertise a dead-end management app. The binary
-remains available for source/UI qualification. Enable menu discovery only after
-an admitted setup/runtime composition offers actionable setup or recovery.
+and setup utility. The ordinary full-desktop entry stays `NoDisplay=true`.
+A focused Portage component may expose its generated setup entry only with the
+QindaPortage runtime dependency. Setup/status is actionable while guest apps
+remain Unavailable; helper startup never implies Android apps run.
 [The shared catalog](../shell/launcher.md#managed-application-catalog-values)
 owns stable Android/Windows identities. The management boundary is recorded in
 [ADR-0369](../adr/0369-manage-android-applications-through-a-borrowed-runtime-port.md).
 
 ## Current implementation boundary
 
-The application, Qt Core controller and public borrowed `RuntimePort` exist in
-`src/apps/android_manager`. The production executable currently has no admitted
-Android registration/runtime adapter and injects a null port. It shows Android
-support unavailable, with no fabricated stock application rows or enabled
-launch/refresh actions. A separate borrowed SetupPort now offers runtime/image
-package selection in QindaPortage when its protected installed executable is
-available. The native menu entry remains hidden until actionable production
-setup/runtime composition is qualified. The owning adapter, materialization, package
-updates/removal, data preservation workflows, real per-app icon provider,
-registered launch execution and runtime recovery remain subsequent slices.
-No Waydroid process is started by this application or its tests.
+The QindaTK app/controller borrow the public AndroidRuntime protocol port.
+The production executable now starts the fixed package-owned collector only
+after protected executable/recipe and current Session1 process admission,
+then injects its credential-admitted port. Missing package/session context
+keeps a null port with plain recovery feedback. The helper itself reports
+Unavailable with no guest rows until qualified image/package/task facts exist.
+A separate SetupPort offers Runtime/Images package selection in QindaPortage.
+Materialization, update/removal/data preservation, app icons, actual registered
+launch execution and runtime recovery remain subsequent slices. No Waydroid
+process is started by this application or its tests.
 
 A supplied port owns source authentication, packaged recipe/materialization
 verification, current-session/attachment freshness and actual runtime facts.
@@ -142,9 +140,9 @@ setup targets, unavailable/refused software-manager dispatch and owner loss
 produce plain feedback. Accepted GUI dispatch is only a handoff and is never
 Android Ready/Running, package materialization or a mapped window.
 
-The desktop entry remains `NoDisplay=true`: the runtime/registration port is still
-null and no installed end-to-end setup/runtime journey is qualified yet. Manual
-opening now has an actionable package-selection route where QindaPortage exists.
+The ordinary desktop entry remains `NoDisplay=true`. ADR-0375 adds the concrete
+native helper and permits a focused dependency-qualified setup menu entry;
+qualified guest registrations and Android launches remain unavailable.
 The three short gates include closed target/refusal/owner-loss/no-fake-registration
 controls plus actual offscreen setup-button input. They use an injected native
 planning port and never launch QindaPortage or a guest during verification.
@@ -162,7 +160,7 @@ A trusted supervisor must first admit the installed native executable and its
 session/runtime/recipe context. This transport proves the provisioned process
 and its current lifetime; it does not collect guest signing identity, task/
 surface ownership or window evidence. The production management composition is
-still null-runtime and its desktop entry remains hidden. No public fd/PID argv
+now uses ADR-0375 admission with null fallback; guest facts stay unavailable. No public fd/PID argv
 option or automatic helper start is exposed.
 
 Packet size/field/array bounds and exact version/direction are enforced before
@@ -197,7 +195,7 @@ Existing KWin registry/publisher, supervisor and production composition are not
 wired by this isolated source slice. The next product gate is a separately
 admitted renderer bootstrap plus authenticated guest package/task/surface
 association, followed by exact ordinary-window publication and mixed native/
-Android container coverage. The hidden management entry remains gated.
+Android container coverage. The focused native setup entry is separately gated by its QindaPortage dependency.
 
 ## Separate collector and renderer lifetime
 
@@ -222,4 +220,40 @@ count or control permission. Existing registry/publisher/supervisor do not call
 the helper yet. Trusted production bootstrap, verified materialization and
 an authenticated guest package/task/surface collector remain the next product
 gates before normal window identity, green badge and mixed native/Android
-QindaQt containers. The management entry remains hidden/null-runtime.
+QindaQt containers. ADR-0375 connects only the conservative native helper; guest and renderer facts remain unavailable.
+
+## Package-owned native bootstrap and component
+
+[ADR-0375](../adr/0375-bootstrap-the-package-owned-android-collector.md) supplies
+the actual fixed collector executable/recipe and current Session1 code/lifetime
+admission. The manager creates private descriptors/key, starts the pinned helper
+and injects its port only after a valid kernel-credential packet. Its copied
+status stays Unavailable/no apps. Parent/context/recipe loss fences getters and
+requests; only the explicitly owned child is retired. No guest polling or
+activation is performed. Unchanged refresh observations deduplicate naturally.
+
+Package using the product CMake root, never the tests or full desktop tree:
+
+```sh
+cmake -S src/apps/android_manager/component -B build/android-component -G Ninja \
+  -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBEXECDIR=libexec \
+  -DQINDAQT_ANDROID_SETUP_MENU_ENABLED=ON
+cmake --build build/android-component -j2
+DESTDIR="$PWD/build/android-component-stage" cmake --install build/android-component \
+  --component AndroidApplications --prefix /usr
+```
+
+The visible setup option requires the focused Portage package to RDEPEND on
+`app-portage/qindaportage` and QindaTK. Full-desktop builds retain their hidden
+entry and separate file ownership; component package adoption must not replace
+paths owned by an installed desktop image. The exact four installed files are
+`bin/qindaqt-android-applications`, `libexec/qindaqt/qindaqt-android-collector`,
+`share/applications/org.qindaqt.AndroidApplications.desktop` and
+`share/qindaqt/android-runtime/collector.json` beneath `/usr`.
+
+Short source checks execute the real built native helper with private sealed
+records, verify recipe identity and untrusted/public-mode refusal, and inject the
+admitted copied port into the controller without guest rows. Source staging is
+not a system/package install. Signed Portage adoption and a real native setup
+menu journey remain installed gates; Android app/window/container/audio proof
+remains beyond this conservative helper version.

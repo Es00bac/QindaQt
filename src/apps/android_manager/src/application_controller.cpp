@@ -23,7 +23,7 @@ QString stateIdentity(ApplicationState state)
 }
 }
 
-ApplicationController::ApplicationController(RuntimePort *port, QObject *parent, int launchTimeoutMs, SetupPort *setupPort)
+ApplicationController::ApplicationController(RuntimePort *port, QObject *parent, int launchTimeoutMs, SetupPort *setupPort, QString unavailableReason)
     : QObject(parent), m_port(port), m_setupPort(setupPort)
 {
     m_deadline.setSingleShot(true);
@@ -39,7 +39,7 @@ ApplicationController::ApplicationController(RuntimePort *port, QObject *parent,
     } else {
         m_setupPort.clear();
     }
-    if (!port) return;
+    if (!port) { if (validRuntimeMessage(unavailableReason)) m_snapshot.message=std::move(unavailableReason); return; }
     if (port->thread() != thread()) {
         m_port.clear();
         withdraw(tr("Android support is unavailable on this window's thread."));

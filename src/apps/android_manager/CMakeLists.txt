@@ -30,9 +30,22 @@ qt_add_qml_module(qindaqt-android-applications
     URI QindaQt.AndroidApplications VERSION 1.0 RESOURCE_PREFIX /qt/qml
     QML_FILES qml/Main.qml)
 target_link_libraries(qindaqt-android-applications PRIVATE QindaQt::AndroidManager
-    qindaqt_android_manager_native_setup QindaTK::qindatk Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+    qindaqt_android_manager_native_setup QindaQt::AndroidNativeBootstrap QindaTK::qindatk Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 qindaqt_enable_warnings(qindaqt-android-applications)
 
 install(TARGETS qindaqt-android-applications RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT AndroidApplications)
-install(FILES org.qindaqt.AndroidApplications.desktop
+# AGENT-CONTRACT: visible setup is only for the focused Portage component
+# which RDEPENDs on app-portage/qindaportage. Ordinary desktop builds stay hidden.
+option(QINDAQT_ANDROID_SETUP_MENU_ENABLED "Expose the dependency-qualified Android setup menu" OFF)
+set(android_desktop_entry "${CMAKE_CURRENT_SOURCE_DIR}/org.qindaqt.AndroidApplications.desktop")
+if(QINDAQT_ANDROID_SETUP_MENU_ENABLED)
+    file(READ "${android_desktop_entry}" android_setup_desktop)
+    string(REPLACE "NoDisplay=true\n" "" android_setup_desktop "${android_setup_desktop}")
+    string(REPLACE "# AGENT-GUARD: Keep hidden until the production setup/runtime port is actionable."
+        "# AGENT-CONTRACT: Setup menu requires app-portage/qindaportage; helper readiness is not guest readiness."
+        android_setup_desktop "${android_setup_desktop}")
+    set(android_desktop_entry "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.AndroidApplications.desktop")
+    file(GENERATE OUTPUT "${android_desktop_entry}" CONTENT "${android_setup_desktop}")
+endif()
+install(FILES "${android_desktop_entry}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications" COMPONENT AndroidApplications)

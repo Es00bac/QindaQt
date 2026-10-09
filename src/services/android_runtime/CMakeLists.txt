@@ -28,3 +28,26 @@ set_target_properties(qindaqt_android_runtime PROPERTIES POSITION_INDEPENDENT_CO
 qindaqt_enable_warnings(qindaqt_android_runtime)
 install(TARGETS qindaqt_android_runtime_protocol qindaqt_android_runtime EXPORT QindaQtTargets
     FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+option(QINDAQT_BUILD_ANDROID_NATIVE_COLLECTOR "Build the package-owned Android collector/bootstrap" ON)
+if(QINDAQT_BUILD_ANDROID_NATIVE_COLLECTOR)
+    find_package(Qt6 6.11 REQUIRED COMPONENTS DBus)
+    qt_add_library(qindaqt_android_native_bootstrap STATIC
+        src/collector_process.cpp src/collector_process_p.h src/collector_recipe_p.h
+        src/protected_collector_file.cpp src/protected_collector_file_p.h src/native_bootstrap.cpp)
+    add_library(QindaQt::AndroidNativeBootstrap ALIAS qindaqt_android_native_bootstrap)
+    target_sources(qindaqt_android_native_bootstrap PUBLIC FILE_SET HEADERS BASE_DIRS include FILES
+        include/qindaqt/services/android_runtime/native_bootstrap.h)
+    target_include_directories(qindaqt_android_native_bootstrap PRIVATE src)
+    target_link_libraries(qindaqt_android_native_bootstrap PUBLIC QindaQt::AndroidRuntime PRIVATE Qt6::DBus)
+    target_compile_definitions(qindaqt_android_native_bootstrap PRIVATE _GNU_SOURCE)
+    qindaqt_enable_warnings(qindaqt_android_native_bootstrap)
+    qt_add_executable(qindaqt-android-collector src/collector_main.cpp)
+    target_link_libraries(qindaqt-android-collector PRIVATE QindaQt::AndroidRuntime)
+    target_compile_definitions(qindaqt-android-collector PRIVATE _GNU_SOURCE)
+    qindaqt_enable_warnings(qindaqt-android-collector)
+    install(TARGETS qindaqt-android-collector RUNTIME DESTINATION "libexec/qindaqt" COMPONENT AndroidApplications)
+    install(FILES data/collector.json DESTINATION "${CMAKE_INSTALL_DATADIR}/qindaqt/android-runtime" COMPONENT AndroidApplications)
+    install(TARGETS qindaqt_android_native_bootstrap EXPORT QindaQtTargets
+        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+endif()

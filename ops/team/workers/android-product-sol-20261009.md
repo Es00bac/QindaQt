@@ -3,9 +3,9 @@
 - Identity: Codex collaboration worker android-product-sol-20261009; manager requested Sol max. No independent runtime provider/model observation is available to this worker.
 - Role: Android Applications identity and public catalog/launcher slice.
 - Status: working — implementing native renderer/window evidence seam without guest app association.
-- Base: 4e57be42d9758b06f60c4d0aa480b170a742ff41
-- Branch: worker/android-renderer-peer-lifetime-sol-20261009
-- Worktree: ~/work_SPaC3/container-wm-android-renderer-lifetime-sol-20261009
+- Base: 1b5a3058dd5a1e689ebfbdb035a06b7c5b28be6b
+- Branch: worker/android-native-bootstrap-sol-20261009
+- Worktree: ~/work_SPaC3/container-wm-android-bootstrap-sol-20261009
 - Ownership: src/services/android_runtime/**, focused android runtime/manager tests and primary Android wiki; compositor new android_* only after interface coordination.
 - Resources: all split-renderer compile/smoke/docs units settled; no VM, package, guest or full compositor build.
 
@@ -56,3 +56,7 @@
 - 2026-10-09T04:47:15+00:00 — Renderer candidate independently integrated on accepted4e57be42. Claimed exact-base isolated native peer/split-lifetime worktree. Own only new KWin android_native_window_peer pair, Android runtime lifetime/observer and focused tests with smallest additive target seams. No registry/publisher/supervisor implementation edit; no guest app identity inference.
 
 - 2026-10-09T04:54:49+00:00 — New native peer object compiled against exact installed KWin6.6.6.1 plus lifetime/evidence/descriptor targets: exit0,31.930s/774.2MiB/zero swap. Three focused suites passed3/3 in1.16s,23 Qt methods/0fail/0skip,including distinct collector/renderer PIDs and immediate channel/death loss. Strict docs gate exit0,550 documents/navigation,9.112s/162.5MiB. No existing registry/publisher/supervisor call added; all units settled. Freezing exact split-lifetime source for independent review.
+
+- 2026-10-09T05:03:31+00:00 — Claimed concrete native collector/bootstrap vertical slice on accepted1b5a3058. Actual fixed package helper and recipe, private key/descriptors, verified Session1 executable/lifetime, manager injection only after credential packet. Missing guest facts remain Unavailable/no rows; no ambient guest activation. No generic public supervisor seam or existing supervisor edits.
+
+- 2026-10-09T05:28:05+00:00 — Concrete native helper/main composition compiled after one cleanup indentation warning (initial32.858s/740MiB, causal continuation14.613s/771.8MiB). Private helper admission succeeded; initial smoke1/2 failed only an unchanged-snapshot signal assumption. Fixture-only compile3.886s/454.6MiB and affected helper case3/3 Qt methods/26ms passed; other5 behaviors and manager17Qt passed in initial smoke. Both original receipts retained. Exact four-file component stage passed675ms/33.9MiB including corrected visible setup comment. Strict docs exit0,551 documents/navigation,16.537s/168.4MiB. All units settled; freezing exact source immediately for manager Portage lane.
