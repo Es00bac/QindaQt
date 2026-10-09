@@ -1,3 +1,7 @@
+## Windows handler bwrap compatibility — 2026-10-09T03:20:00+00:00
+
+Causal source c7da959 replaces unsupported bubblewrap --preserve-fds with installed 0.11.2 options --ro-bind-fd and --sync-fd. The changed target and focused source check pass in 9.034 s. The first private Wine attempt submitted the real backend but bwrap exited on the unsupported option; the one authorized retry stopped earlier when its private display missed an 8-second readiness deadline. Neither produced a visible Notepad window, so installed .exe behavior remains unqualified. A separate focused WindowsRunner Portage component -r1 is the next release candidate; do not claim working Wine, File Manager defaults, Audio1 or HMENU yet.
+
 ## Installed USB File Manager service pair — 2026-10-09T03:12:00+00:00
 
 Signed desktop R24 and Removable Media R3 were adopted together through normal binary-only Portage in 25.358 s. R24's image matches all 2,622 reviewed R23 paths; its recipe changes only the exact media post-dependency. R3 supplies the /Devices inventory absent in R2. Package signatures/embedded recipes passed on both hosts, installed VDB has R24+R3, and world/profile hashes are unchanged. The installed R3 private-session synthetic /Devices check passed; the session supervisor refreshed only its old R2 child, and the live D-Bus /Devices interface now answers GetSnapshot. The USB drive is currently unplugged, so physical hot-plug sidebar population and Eject remain unqualified; no storage operation was submitted.
