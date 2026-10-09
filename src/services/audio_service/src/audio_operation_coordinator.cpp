@@ -191,6 +191,12 @@ OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &re
     // completes synchronously instead of waiting on a graph round trip, which
     // is what makes a fader feel attached to the sound.
     if (isConsoleOperation(request.kind)) {
+        // AGENT-CONTRACT: AudioClient fences handle-targeting pin operations
+        // to their admission revision. Our own synchronous republish advances
+        // only observed lineage; using it as initiation makes an applied pin
+        // appear malformed/uncertain at the public client.
+        const quint64 initiatingEpoch = m_snapshot.epoch;
+        const quint64 initiatingRevision = m_snapshot.revision;
         const QString rejection = validateRequest(request);
         if (!rejection.isEmpty()) {
             return {.pending = false,
@@ -302,9 +308,12 @@ OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &re
         // retained graph now rather than waiting for the next publication.
         autoBindConsole(m_snapshot);
         republishConsole();
+        OperationResult result = immediate(request, OperationStatus::Succeeded, {});
+        result.initiatingEpoch = initiatingEpoch;
+        result.initiatingRevision = initiatingRevision;
         return {.pending = false,
                 .operationId = 0,
-                .immediateResult = immediate(request, OperationStatus::Succeeded, {})};
+                .immediateResult = result};
     }
 
     const QString rejection = validateRequest(request);

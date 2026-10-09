@@ -12,6 +12,8 @@
 
 #include <optional>
 
+namespace QindaQt::Audio { class ConsoleSendAdmission; }
+
 namespace QindaQt::Audio::WirePlumberGraph
 {
 
@@ -41,7 +43,8 @@ struct NodeLookup {
 [[nodiscard]] BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                                         WpPlugin *defaultNodes, quint64 epoch,
                                         quint64 revision, Capabilities capabilities,
-                                        const LatencyPolicy::Ranges &latencyRanges);
+                                        const LatencyPolicy::Ranges &latencyRanges,
+                                        const ConsoleSendAdmission *sends = nullptr);
 [[nodiscard]] std::optional<NodeLookup> findNode(WpObjectManager *manager,
                                                  quint64 serial);
 // Finds a node by its `node.name`. The console's send loopbacks are addressed

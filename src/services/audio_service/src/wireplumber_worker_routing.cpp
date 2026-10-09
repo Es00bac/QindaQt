@@ -3,6 +3,7 @@
 #include "wireplumber_graph_p.h"
 #include "wireplumber_routing_p.h"
 #include "wireplumber_worker_p.h"
+#include "wireplumber_send_image_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_gain.h>
 
@@ -33,6 +34,17 @@ QString WirePlumberWorker::nodeNameForHandle(const Handle &handle) const
 void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges)
 {
     m_declaredRouting = edges;
+    if (ConsoleSendImage::enabled()) {
+        if (m_core != nullptr && m_manager != nullptr) {
+            m_ownedSends.reconcile(edges, sendRuntime());
+        }
+        return;
+    }
+    applyLegacyRouting(edges);
+}
+
+void WirePlumberWorker::applyLegacyRouting(const QList<BackendRoutingEdge> &edges)
+{
     if (m_core == nullptr || m_manager == nullptr) {
         return;
     }
@@ -96,6 +108,7 @@ void WirePlumberWorker::applyRoutingOnWorker(const QList<BackendRoutingEdge> &ed
 
 void WirePlumberWorker::applySendVolumes()
 {
+    if (ConsoleSendImage::enabled()) return;
     if (m_mixer == nullptr || m_manager == nullptr) {
         return;
     }
@@ -147,6 +160,7 @@ void WirePlumberWorker::applySendVolumes()
 
 void WirePlumberWorker::unloadAllRouting()
 {
+    m_ownedSends.stop(sendRuntime());
     // Take the map first: each destroy fires the module's destroy event, which
     // would otherwise erase from the map being walked.
     std::unordered_map<std::string, LoadedModule> loaded;

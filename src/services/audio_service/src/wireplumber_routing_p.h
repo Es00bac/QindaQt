@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include <qindaqt/services/audio_service/audio_backend.h>
-
 #include <QtCore/QByteArray>
-#include <QtCore/QHash>
 #include <QtCore/QString>
 
 namespace QindaQt::Audio
 {
+
+struct SendModuleDeclaration;
 
 // AGENT-CONTRACT: builds the PipeWire arguments for one console send
 // (ADR-0173). Pure string construction, separated from the worker so the
@@ -21,13 +20,14 @@ namespace QindaQt::Audio
 // is what gives every matrix cell an independent gain. A plain port link cannot
 // carry a gain, which is why links are not used here.
 
-// Deterministic node name for one send, so a restart can recognise the
-// loopbacks it previously created instead of duplicating them.
+// Deterministic address for one send. This does not grant ownership or revive
+// a former instance; ADR0361 additionally pins actual producer/object serials.
 [[nodiscard]] QString routingNodeName(const QString &stripId, const QString &busId);
 
 // The module argument string. `sourceNodeName` and `targetNodeName` are the
-// PipeWire node names of the strip's and the bus's devices; `linear` is the
-// send's gain already converted out of decibels.
+// PipeWire node names of the strip's and the bus's devices. Legacy linear is
+// not included in these arguments; the old worker separately writes volume.
+// Only ownedRoutingModuleArguments proposes initial quiet/headroom Props.
 //
 // AGENT-GUARD: node names reach PipeWire inside a JSON-ish argument. They are
 // quoted and rejected if they contain a quote or backslash, because a crafted
@@ -44,5 +44,12 @@ namespace QindaQt::Audio
 
 // True when a node name is safe to embed in a module argument.
 [[nodiscard]] bool routingNameIsEmbeddable(const QString &nodeName);
+
+// ADR0361 variant: exact instance roles plus candidate initial quiet/headroom
+// Props. Actual first-PCM/restore acceptance is mandatory before runtime use.
+[[nodiscard]] QByteArray ownedRoutingModuleArguments(
+    const SendModuleDeclaration &declaration, const QString &stripId,
+    const QString &busId, const QString &sourceNodeName,
+    const QString &targetNodeName, bool sourceIsSink);
 
 } // namespace QindaQt::Audio

@@ -5,6 +5,7 @@
 #include <qindaqt/services/audio_service/audio_backend.h>
 
 #include "latency_policy_p.h"
+#include "console_send_reconciler_p.h"
 #include "wireplumber_meters_p.h"
 #include "wireplumber_recorder_p.h"
 #include "wireplumber_vban_p.h"
@@ -104,6 +105,8 @@ private:
     // Diffs the declared routing against the loopback modules this worker has
     // loaded, then loads and unloads exactly the difference.
     void applyRoutingOnWorker(const QList<BackendRoutingEdge> &edges);
+    void applyLegacyRouting(const QList<BackendRoutingEdge> &edges);
+    [[nodiscard]] ConsoleSendRuntime sendRuntime();
     void unloadAllRouting();
     // Rebuilds the meter capture streams to match the declaration, and starts
     // or stops the poll timer according to whether anything is metered.
@@ -236,6 +239,7 @@ private:
     };
     // Loopback modules this worker loaded, keyed by the send's node name.
     std::unordered_map<std::string, LoadedModule> m_routingModules;
+    ConsoleSendReconciler m_ownedSends;
     std::unordered_map<std::string, LoadedModule> m_vbanRouteModules;
     QList<BackendRoutingEdge> m_declaredRouting;
     QList<BackendMeterTarget> m_declaredMetering;

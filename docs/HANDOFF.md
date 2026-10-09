@@ -1,3 +1,7 @@
+## Audio1 guarded source boundary — 2026-10-09T00:37:00+00:00
+
+Source1184 plus10258 is integrated as a default-OFF Audio1 send-gain and output-routing path after manager review; the previous e000 prerequisite's audio product/test bytes match1184 exactly. Owner strict focused compile and50 Qt checks passed; fixed PipeWire package/image, real PCM and installed user controls remain open. ADR0361 is Proposed. The optional long experiment is OFF and is not a coding gate.
+
 ## WindowsRunner source integration boundary — 2026-10-09T00:28:00+00:00
 
 WindowsRunner candidate67a8 and Windows-only docs successor983 are integrated as source-only public ports after independent manager review. Owner focused build0/13.166s,2/2 CTests/44Qt and docs535 passed; manager resolved additive ADR/nav/module rows with the Android catalog. A future process adapter must make Refused side-effect-free, map uncertain dispatch to OutcomeUnknown and hold a current registration/profile transaction lease at actual spawn. No real Windows launch, blue window identity, Global Menu or Audio1 is claimed.

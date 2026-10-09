@@ -80,6 +80,11 @@ public:
         // applies it: every send out of the strip is panned identically.
         double pan = 0.0;
 
+        // Separate stages preserve independent bottom-stop silence and
+        // headroom. gainDb remains the matrix send value for source callers.
+        double stripGainDb = 0.0;
+        double busGainDb = 0.0;
+
         friend bool operator==(const RoutingEdge &, const RoutingEdge &) = default;
     };
     [[nodiscard]] QList<RoutingEdge> routing() const;

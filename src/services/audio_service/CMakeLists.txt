@@ -9,6 +9,31 @@ pkg_check_modules(WirePlumber REQUIRED IMPORTED_TARGET wireplumber-0.5>=0.5)
 # expose module loading (ADR-0173).
 pkg_check_modules(PipeWire REQUIRED IMPORTED_TARGET libpipewire-0.3>=1.0)
 
+# ADR0361: release tooling owns these pins after independent dependency
+# qualification. Ordinary builds retain the existing isolated-client route;
+# no runtime preference or environment can turn on borrowed-Core sends.
+option(QINDAQT_AUDIO_ADMITTED_SENDS "Enable qualified owned console sends" OFF)
+foreach(pin IN ITEMS PIPEWIRE_ATOM CORE_FILE CORE_SHA256 MODULE_FILE MODULE_SHA256)
+    set(QINDAQT_AUDIO_SEND_${pin} "" CACHE STRING "Release-owned Audio1 send ${pin}")
+endforeach()
+if(QINDAQT_AUDIO_ADMITTED_SENDS)
+    if(NOT QINDAQT_AUDIO_SEND_PIPEWIRE_ATOM STREQUAL "=media-video/pipewire-1.6.8-r1::qindaqt")
+        message(FATAL_ERROR "Admitted sends require exact qualified PipeWire1.6.8-r1::qindaqt")
+    endif()
+    foreach(pin IN ITEMS CORE_FILE MODULE_FILE)
+        if(NOT QINDAQT_AUDIO_SEND_${pin} MATCHES "^/[a-zA-Z0-9_./+-]+$")
+            message(FATAL_ERROR "Admitted sends require a canonical release ${pin}")
+        endif()
+    endforeach()
+    foreach(pin IN ITEMS CORE_SHA256 MODULE_SHA256)
+        string(LENGTH "${QINDAQT_AUDIO_SEND_${pin}}" digest_length)
+        if(NOT digest_length EQUAL 64 OR NOT QINDAQT_AUDIO_SEND_${pin} MATCHES "^[0-9a-f]+$")
+            message(FATAL_ERROR "Admitted sends require a release SHA256 ${pin}")
+        endif()
+    endforeach()
+endif()
+configure_file(src/wireplumber_send_policy.h.in wireplumber_send_policy.h @ONLY)
+
 # The recorder (ADR-0184) writes FLAC and WAV through libsndfile.
 pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
 
@@ -25,6 +50,7 @@ target_sources(
         src/audio_service_object_p.h
         src/resident_audio_service.cpp
         src/audio_console_operations.cpp
+        src/audio_console_binding.cpp
         src/audio_vban_operations.cpp
         src/audio_latency_operations.cpp
         src/latency_policy.cpp
@@ -36,11 +62,25 @@ target_sources(
         src/console_endpoints.cpp
         src/console_endpoints_p.h
         src/console_model.cpp
+        src/console_document.cpp
+        src/console_routing_gain.cpp
+        src/console_routing_gain_p.h
+        src/console_send_admission.cpp
+        src/console_send_admission_p.h
+        src/console_send_reconciler.cpp
+        src/console_send_reconciler_p.h
+        src/wireplumber_send_nodes.cpp
+        src/wireplumber_send_nodes_p.h
+        src/wireplumber_context_core.cpp
+        src/wireplumber_context_core_p.h
+        src/wireplumber_send_image.cpp
+        src/wireplumber_send_image_p.h
         src/console_store.cpp
         src/macro_store.cpp
         src/preset_store.cpp
         src/wireplumber_audio_backend.cpp
         src/wireplumber_graph.cpp
+        src/wireplumber_graph_lookup.cpp
         src/wireplumber_volume.cpp
         src/wireplumber_volume_p.h
         src/wireplumber_meters.cpp
@@ -51,6 +91,7 @@ target_sources(
         src/wireplumber_routing_p.h
         src/wireplumber_graph_p.h
         src/wireplumber_worker.cpp
+        src/wireplumber_worker_core.cpp
         src/wireplumber_worker_endpoints.cpp
         src/wireplumber_worker_metering.cpp
         src/wireplumber_worker_modules.cpp
@@ -66,6 +107,7 @@ target_sources(
         src/wireplumber_recorder_p.h
         src/wireplumber_worker_operations.cpp
         src/wireplumber_worker_routing.cpp
+        src/wireplumber_worker_owned_sends.cpp
         src/wireplumber_worker_p.h
     PUBLIC
         FILE_SET HEADERS
@@ -85,8 +127,9 @@ target_sources(
 target_link_libraries(
     qindaqt_audio_service
     PUBLIC QindaQt::AudioProtocol Qt6::Core Qt6::DBus
-    PRIVATE PkgConfig::WirePlumber PkgConfig::PipeWire PkgConfig::SNDFILE Threads::Threads
+    PRIVATE PkgConfig::WirePlumber PkgConfig::PipeWire PkgConfig::SNDFILE Threads::Threads ${CMAKE_DL_LIBS}
 )
+target_include_directories(qindaqt_audio_service PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_features(qindaqt_audio_service PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_audio_service PRIVATE QT_NO_KEYWORDS)
 set_target_properties(qindaqt_audio_service PROPERTIES CXX_EXTENSIONS OFF)

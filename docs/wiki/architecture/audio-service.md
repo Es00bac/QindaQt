@@ -45,6 +45,121 @@ The Qt/GLib ownership decision is recorded in
 direction is recorded in
 [ADR-0123](../adr/0123-voicemeeter-class-audio-graph-on-pipewire.md).
 
+## Console gain repair qualification
+
+The October 8 full source audit found that the legacy worker omitted saved
+strip/bus faders and sent linear send amplitudes to a cubic mixer. Configured
+operation success confirms console state, not measured DSP. The gain,
+actual producer/object admission and scoped loopback load are described in
+[ADR-0361](../adr/0361-guard-owned-send-gain-and-producer-lifetime.md).
+
+The production worker now has a guarded send path through the private
+`ConsoleSendReconciler`. It resolves each configured strip and bus to their
+current source/output or processing endpoints, then creates one initially
+muted loopback per matrix cell. The worker's actual connected client ID and
+daemon-global serial, fresh module token, both stream roles, serials and local
+proxy identities admit a send. Only its pinned playback node receives the
+independent strip × send × bus amplitudes, stereo balance and the inverse
+cubic mixer conversion. Refused setters retire the module. Retargeting quiets
+the old admitted node and waits for deferred module destruction before loading
+the replacement, so a deferred unload cannot double a cell.
+
+`QINDAQT_AUDIO_ADMITTED_SENDS` defaults OFF. Release tooling may enable it only
+after qualifying exact `=media-video/pipewire-1.6.8-r1::qindaqt` and pinning its
+canonical Core/module paths and SHA256 bytes. The running guard checks that
+Portage package revision/repository, WirePlumber0.5.15/PipeWire1.6.8, the actual
+mapped Core image, the pre-entry module directory and the actual loaded module
+mapping. Missing or changed proof refuses the new route. The default build
+retains the legacy separate-client route; this source slice installs nothing
+and enables no borrowed-Core code on the unchanged host dependency.
+
+Short owning fixtures exercise the actual policy collaborator's gain,
+admission, setter refusal, replacement and teardown paths without opening a
+graph. A separate fresh private D-Bus Audio1 server/client round trip moves
+three injected application streams into their independent virtual strips,
+pins two outputs, reads back faders/sends and feeds the declared routes into
+that collaborator. Native, Android and Windows application labels are
+synthetic test data. They do not qualify those runtimes, actual loopback Props,
+PCM, physical devices or a gain-enabled installed session.
+
+Pin operations preserve their admission epoch/revision before synchronous
+console publication. The newer snapshot is the observed lineage, so an applied
+`SetBusTarget` or `SetStripSource` does not return its own changed revision as
+the initiating revision and become `malformed-result` at the public client.
+Clients retain the exact initiating-revision fence for handle targets; a
+subsequent pin uses the previous operation's confirmed snapshot readback.
+
+The new opt-in private experiment has separate process, graph/lifetime and
+synthetic PCM collaborators. It tests actual Props and captured frames, not
+only module arguments. The native experiment has not been executed; its
+dependency/lifetime and PCM qualification remain separate from the short
+graph-free policy and private-bus fixtures.
+Ordinary graph validation and normalized device/app controls are unchanged.
+The exact package-image diagnostic has a configure-pinned Portage/gpkg receipt,
+pre-exec loader environment and actual Core/module mapping proof; missing or
+changed proof prevents private startup/load. The required production image
+guard and borrowed-Core worker are still not enabled. The source-only recipe
+has old/fixed ASan and normal test/release variants, and retains raw failure
+logs, package payload comparison and actual lifecycle/PCM gates. The first
+actual old ASan cohort failed during compiler sanity initialization; no module
+lifetime control ran. Its source-only recipe repair removes the preload
+sandbox only in private ASan modes and separates protected admitted inputs
+from Portage's independent writable cache. Strict artifact/image admission,
+normal signing and production gain status remain unchanged. The repaired
+exacte704 helpers passed31 controls/six AST checks. A later original ASan cohort
+completed configure/compile and returned51 upstream observations:45OK,
+5LeakSanitizer FAIL and1context TIMEOUT, with no image or module control.
+Its bounded RCA preserves source-accounting explanations as inference.
+A source-only old-specific policy now permits a separately reviewed/granted
+diagnostic image after complete failed-suite evidence, with explicit opt-in
+and schema2 diagnosticOnly/upstreamTests=failed. Default and all fixed/normal
+failed-suite behavior still refuse. Complete raw registry/results/phase/
+cleanup/final-input proof and actual post-ENV_UNSET private bus values are
+required. The existing failed lab lacks that session-address proof and is not
+admitted or resumed. Only the admitted original install/package uses noauto;
+no test rerun, .tested fabrication, suppression or production gain is enabled.
+The final85 pure controls/21 AST parses passed. The separate Qt-only strict
+receipt fixture compiled the test and three actual parsers against Qt Core/Test
+and passed 36 checks, with no failure, skip or blacklisting. Its complete-suite
+records are synthetic validation data, not actual package/upstream evidence.
+Native image/ASan/lifecycle/PCM gates remain uncompiled/unexecuted. See
+`tests/services/audio_service/console_gain_experiment/README.md`
+and ADR0361 for the exact bounded acceptance matrix.
+
+The declaration packet carries separate stripGainDb and
+busGainDb from ConsoleModel through the coordinator, preserving gainDb as the
+matrix send value. Its unchanged-operation regression requires strip/bus
+faders to republish a backend route; typed rows retain independent stages,
+mute/solo/pan and the existing persistence schema. The guarded worker consumes
+those fields; the default legacy route still does not apply the new stages.
+
+The implementation is decomposed by responsibility: console_document.cpp
+owns the unchanged document codec, audio_console_binding.cpp owns unchanged
+default/pin binding policy, and wireplumber_worker_core.cpp owns Core/component
+load and teardown. Thread/task lifecycle remains in wireplumber_worker.cpp.
+The edited production files remain below the 500-nonblank-line review boundary.
+A tiny reconnect callback adapter replaces its former translation-unit-local
+task wrapper; actual stop/reconnect gates remain required.
+Public console sinks/sources must remain available when only exact owned
+internal send streams are excluded. Production integration, public-operation
+old/fixed regressions, two-output/bus-processing PCM and installed SDK gates
+remain required; physical audio and full console parity are separate.
+
+The prospective package dispatcher has an optional borrowed cooperative
+cancellation boundary in its owning process runner and constructor-visible
+recipe composition. Signal handlers only latch requests; owned acquisition,
+reservation checks, cleanup/reaping and first/secondary-error preservation
+remain inside the runner. Separate attempted-build and final-evidence budgets
+cover final pin/index/result-write work. An on-disk snapshot cannot claim final
+success; post-write terminal evidence and the manager's held successful process
+settlement are both required. The pure injected controls launch no fixture
+child/send no OS signal and do not qualify package, Core, lifecycle or DSP
+behavior. See the owning repository file
+`tests/services/audio_service/console_gain_experiment/README.md`
+for the lifetime/deadline/publication contract. Original c10 source rejection
+and actual failed 51 remain preserved; production gain enablement remains a
+separately qualified release boundary.
+
 ## Module shape
 
 | Module | Responsibility | Boundary |
@@ -361,3 +476,14 @@ backend. Device and stream rows cover contraction, expansion, unknown and
 sparse indexed readings, unordered dictionaries and absent maps. The private
 PipeWire runtime and latency fixtures validate every observed snapshot, not
 only row presence. These gates do not establish physical-device usability.
+
+
+The later root old-ASan diagnostic also completed51 rows (45OK/5FAIL/1TIMEOUT)
+but refused both-private-bus admission: the saved EAPI environment still unset
+the session address. Portage ENV_UNSET is incremental, so omitting a positive
+name from the task override did not remove its profile entry. The bounded
+source repair explicitly negates only both locally constructed bus names,
+checks read-only effective Portage expansion before phases, and checks the
+three saved EAPI values before/after the test without sourcing shell code.
+Every actual Meson row remains subject to the existing strict address gate.
+Neither failed lab is resumed or admitted by this source change.

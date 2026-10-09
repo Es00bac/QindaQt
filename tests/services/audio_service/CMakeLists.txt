@@ -134,6 +134,51 @@ qindaqt_enable_warnings(qindaqt_audio_channel_projection_tests)
 add_test(NAME qindaqt.audio-channel-projection COMMAND qindaqt_audio_channel_projection_tests)
 set_tests_properties(qindaqt.audio-channel-projection PROPERTIES LABELS "audio;service;pure")
 
+# ADR0361 private math and producer/instance/serial admission are separate
+# failure modes. These do not open a graph or claim startup/PCM qualification.
+foreach(row IN ITEMS routing_gain send_admission send_reconciler)
+    qt_add_executable(qindaqt_audio_console_${row}_tests tst_console_${row}.cpp)
+    target_include_directories(qindaqt_audio_console_${row}_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+    target_link_libraries(qindaqt_audio_console_${row}_tests PRIVATE
+        QindaQt::AudioService Qt6::Test)
+    qindaqt_enable_warnings(qindaqt_audio_console_${row}_tests)
+    add_test(NAME qindaqt.audio-console-${row} COMMAND qindaqt_audio_console_${row}_tests)
+    set_tests_properties(qindaqt.audio-console-${row} PROPERTIES LABELS "audio;service;pure")
+endforeach()
+
+# Public Audio1 server/client round trip with graph-free admitted send policy.
+# Only a fresh private D-Bus daemon is started; no PipeWire or host graph access.
+qt_add_executable(qindaqt_audio_console_send_public_tests tst_console_send_public.cpp)
+target_include_directories(qindaqt_audio_console_send_public_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+target_link_libraries(qindaqt_audio_console_send_public_tests PRIVATE
+    QindaQt::AudioService QindaQt::AudioClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_audio_console_send_public_tests)
+add_test(NAME qindaqt.audio-console-send-public COMMAND qindaqt_audio_console_send_public_tests)
+set_tests_properties(qindaqt.audio-console-send-public PROPERTIES
+    LABELS "audio;service;private-bus" TIMEOUT 20 RUN_SERIAL TRUE)
+
+# The existing operation regression stays old-API-compatible; the separate
+# declaration contract uses the new stage fields and pure codec/coordinator.
+foreach(row IN ITEMS gain_republication gain_declaration)
+    qt_add_executable(qindaqt_audio_console_${row}_tests tst_console_${row}.cpp)
+    target_link_libraries(qindaqt_audio_console_${row}_tests PRIVATE
+        QindaQt::AudioService Qt6::Test)
+    qindaqt_enable_warnings(qindaqt_audio_console_${row}_tests)
+    add_test(NAME qindaqt.audio-console-${row} COMMAND qindaqt_audio_console_${row}_tests)
+    set_tests_properties(qindaqt.audio-console-${row} PROPERTIES LABELS "audio;service;pure")
+endforeach()
+
+# Source-authorable prospective native contract; opt in only when the manager
+# grants the private experiment lane. It does not require pw-cat or touch host
+# hardware and must not silently run in ordinary package/plugin gate jobs.
+option(QINDAQT_ENABLE_AUDIO_GAIN_EXPERIMENT "Build private console gain experiment" OFF)
+if(QINDAQT_ENABLE_AUDIO_GAIN_EXPERIMENT)
+    set(QINDAQT_AUDIO_GAIN_SOURCE_ROOT "${CMAKE_SOURCE_DIR}")
+    include("${CMAKE_CURRENT_LIST_DIR}/console_gain_experiment/targets.cmake")
+endif()
+
 # AGENT-GUARD: This defaults ON for broad build jobs. The pinned native plugin
 # lane disables only these process-launching rows because Gentoo's official
 # binhost has no PipeWire `extra` variant providing pw-cat.

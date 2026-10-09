@@ -1,3 +1,7 @@
+## Guarded Audio1 send source — 2026-10-09T00:37:00+00:00
+
+Exact Audio1 prerequisite1184 (byte-equal product/test source to previously accepted e000) and guarded send source10258 are accepted for integration. Independent strip/send/bus gain and configured-output reconciliation compile behind a default-OFF fixed PipeWire image gate; focused public Audio1 pin/readback and failure-mode tests pass. This is no audible PCM or installed mixer claim. Fixed PipeWire r1 Portage qualification, actual graph/PCM, mono/channel-trim and Android/Windows streams remain.
+
 ## Integrated WindowsRunner core — 2026-10-09T00:28:00+00:00
 
 WindowsRunner source67a8 is being integrated as a QtCore planning/coordinator seam with literal Wine/UMU plans, revision/recipe recheck and one-dispatch truth. Its owning short build,2 CTests/44 Qt checks and docs passed. The concrete catalog bridge, checked payload/process adapter, ordinary Notepad/WordPad journey, blue live window identity, Global Menu and Audio1 remain unimplemented. Do not count a working Windows app or ED-22 completion.

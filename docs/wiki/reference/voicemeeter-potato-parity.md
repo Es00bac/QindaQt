@@ -18,6 +18,23 @@ with DSP written here.
 Status values: **done** (shipped and tested), **partial**, **planned** (designed,
 not built), **gap** (no design yet).
 
+## Current source qualification
+
+The October 8 audit traced persisted strip/bus faders that do not enter routing
+and send amplitudes sent directly to a cubic mixer. Their configured model
+echoes do not establish actual gain. The prospective private gain/ownership
+experiment in [ADR-0361](../adr/0361-guard-owned-send-gain-and-producer-lifetime.md)
+remains unexecuted for actual dependency/lifetime/PCM qualification.
+Separate strip/send/bus stage declarations reach the coordinator/backend
+boundary; the default legacy path still ignores those stages. A new default-OFF
+qualified worker path now admits exact producer/module/node identities,
+applies independent stage amplitudes through the inverse cubic mixer law and
+waits for old module destruction before retargeting a cell. Short injected
+policy/private-Audio1-bus fixtures are separate from audible qualification.
+Mono and per-channel trim also lack a worker path and remain required work.
+Historical **done** rows below must not be read as physical-device, full mixer,
+application/game or installed fresh-login qualification.
+
 ## 1. Channel strips — inputs
 
 Potato has **5 hardware input strips + 3 virtual input strips**. Every strip
@@ -28,15 +45,15 @@ carries the whole processing chain below.
 | 5 hardware input strips | `Strip` with `StripKind::HardwareInput`, following a capture device | **done** |
 | 3 virtual input strips (VAIO / AUX / VAIO3) | `Strip` with `StripKind::VirtualInput` over managed null sinks, so each application gets its own fader | **done** |
 | Per-strip device selection | Automatic by default ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)); a per-strip and per-bus pin by device name, persisted, with a picker in Settings ([ADR-0178](../adr/0178-a-pin-is-a-name-not-a-handle.md)) | **done** |
-| Fader with dB readout | `Strip::gainDb`, one gain law ([ADR-0171](../adr/0171-one-gain-law-for-the-audio-console.md)) | **done** |
+| Fader with dB readout | `Strip::gainDb` and one gain law; persisted/control UI exists, actual routing gain repair pending ADR-0361 | partial |
 | Mute | `Strip::muted` | **done** |
 | Solo | `Strip::soloed` + published `Console::soloActive` | **done** |
-| Mono | `Strip::mono` | **done** |
+| Mono | `Strip::mono` is persisted; no worker consumption yet | gap |
 | Pan / Intellipan | `Strip::pan` applied as balance on every send's two playback channels ([ADR-0177](../adr/0177-pan-is-balance-on-the-send.md)); the 2D Intellipan axis for surround buses is not built | partial |
 | Per-channel gain/trim | `Strip::channelTrimDb` | planned |
 | Level meters (per strip) | Real dBFS peak + RMS from a `pw_stream` capture per bound strip, streamed on the `Levels` signal ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) with a falling peak marker | **done** |
 | Bus assignment A1–A5, B1–B3 | `Strip::sends`, one `MatrixSend` per bus | **done** |
-| Per-send gain | `MatrixSend::gainDb` — the matrix is not just on/off; realised as the loopback's volume | **done** |
+| Per-send gain | `MatrixSend::gainDb` reaches loopback volume; inverse cubic scale and independent stage/PCM qualification pending ADR-0361 | partial |
 | Gate | swh `gate` in the strip's filter-chain; threshold, attack, hold, release, range ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
 | Denoiser | RNNoise (`noise_suppressor_mono`) first in the strip chain, voice-activity threshold dial ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** |
 | Compressor | swh `sc4m`; threshold, ratio, attack, release, knee, makeup ([ADR-0179](../adr/0179-the-rack-is-one-value-per-strip.md)) | **done** |
@@ -58,8 +75,8 @@ Potato has **5 physical buses (A1–A5) + 3 virtual buses (B1–B3)**.
 | 5 physical buses | `Bus` with `BusKind::Physical` driving a real sink | **done** |
 | 3 virtual buses | `Bus` with `BusKind::Virtual` as managed null sinks other apps record from | **done** |
 | Per-bus device selection | `SetBusTarget` | planned |
-| Fader with dB readout | `Bus::gainDb` | **done** |
-| Mute / Mono | `Bus::muted`, `Bus::mono` | **done** |
+| Fader with dB readout | `Bus::gainDb` is persisted; actual routing gain repair pending ADR-0361 | partial |
+| Mute / Mono | Mute participates in send audibility; Mono is persisted without worker consumption | partial |
 | Level meters | Real dBFS peak + RMS, read from the bus device's monitor ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)) | **done** |
 | Bus EQ | Three-band equalizer per physical bus, one per channel, in the bus chain ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)) | **done** |
 | Bus modes | Stereo subset: normal, swap, left-to-both, right-to-both, as the bus chain's output mapping ([ADR-0180](../adr/0180-a-bus-has-a-rack-too-and-a-strip-hears-clean.md)); surround upmixes not modelled | partial |
@@ -147,3 +164,17 @@ What is emphatically not here yet: the player half of the recorder, VBAN's
 non-audio sub-protocols, and the surround bus modes.
 
 This page exists so that distance is visible rather than implied.
+
+## Gain dependency qualification status
+
+Independent stage declarations now enter the guarded product worker; its
+release policy defaults OFF pending exact qualified PipeWire1.6.8-r1::qindaqt
+and pinned actual Core/module images. The package-image/lifecycle experiment
+remains unexecuted. The private diagnostic requires exact reviewed
+Portage source/image and a full gpkg payload round trip, with required signature
+for normal images. Original-red ASan, patched owned/borrowed cleanup, initial
+quiet PCM/headroom/public endpoints and production/SDK/installed gates have not
+run. See [ADR-0361](../adr/0361-guard-owned-send-gain-and-producer-lifetime.md).
+The short private Audio1 test's native/Android/Windows app labels are injected
+streams, not qualification of those runtimes. This does not enable gain on the
+unchanged host dependency or complete mixer parity.

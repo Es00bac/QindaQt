@@ -29,9 +29,9 @@ void WirePlumberRoutingTests::sendNamesAreDeterministicAndManaged()
                                          QStringLiteral("bus.a2"));
     QCOMPARE(name, routingNodeName(QStringLiteral("strip.hw.1"),
                                    QStringLiteral("bus.a2")));
-    // AGENT-GUARD: the managed prefix is what marks a node QindaQt may destroy.
-    // A send loopback must carry it, or the service could not clean up its own
-    // routing without risking a foreign node.
+    // The address stays deterministic and managed-shaped for compatibility.
+    // ADR0361 requires actual producer/instance/serial proof for send authority;
+    // this name/prefix assertion is not a destruction or gain admission test.
     QVERIFY(name.startsWith(QString::fromLatin1(kVirtualDeviceNamePrefix)));
     QVERIFY(name.contains(QStringLiteral("strip.hw.1")));
     QVERIFY(name.contains(QStringLiteral("bus.a2")));

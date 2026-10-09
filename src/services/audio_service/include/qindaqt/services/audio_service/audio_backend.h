@@ -49,6 +49,15 @@ struct BackendRoutingEdge {
     // to silence, so unmuting is instant instead of a graph rebuild.
     bool audible = true;
 
+    // ADR0361: independent console stages, not a sum clamped to one fader.
+    // Defaults preserve source aggregate construction; the rebuilt static SDK
+    // changes layout and makes no binary ABI promise. The backend fails an
+    // invalid private declaration quiet in the dependency-qualified owned-send
+    // path; configured stage/readback truth does not attest running DSP. The
+    // borrowed-Core path defaults OFF until the release image is qualified.
+    double stripGainDb = 0.0;
+    double busGainDb = 0.0;
+
     friend bool operator==(const BackendRoutingEdge &,
                            const BackendRoutingEdge &) = default;
 };

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+cmake_minimum_required(VERSION 3.25)
+project(QindaQtConsoleGainExperiment LANGUAGES CXX)
+get_filename_component(QINDAQT_AUDIO_GAIN_SOURCE_ROOT
+    "${CMAKE_CURRENT_LIST_DIR}/../../../.." ABSOLUTE)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOMOC ON)
+set(QINDAQT_ENABLE_STRICT_WARNINGS ON)
+set(QINDAQT_OBS_BRIDGE_STANDALONE ON)
+include(GNUInstallDirs)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test)
+include(${QINDAQT_AUDIO_GAIN_SOURCE_ROOT}/cmake/QindaQtCompiler.cmake)
+add_subdirectory(${QINDAQT_AUDIO_GAIN_SOURCE_ROOT}/src/services/audio_protocol audio_protocol)
+enable_testing()
+include(${CMAKE_CURRENT_LIST_DIR}/targets.cmake)

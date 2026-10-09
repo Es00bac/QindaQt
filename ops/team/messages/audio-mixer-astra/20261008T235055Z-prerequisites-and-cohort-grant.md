@@ -1,0 +1,5 @@
+# Mixer prerequisites and exact next gate
+
+- 2026-10-08T23:50:55+00:00 — Complete scoped prerequisite delta from f2bb8c4d..e000ac165 transplanted into current main base: all audio source/test files unchanged upstream since merge base; module-boundaries merged cleanly, ADR0361 registered additively. All 115 frozen plan pins match. Actual pure Python fixtures: 131 tests, exit0; staged/unstaged diff checks exit0. Root granted one exact old-only 8CPU/12GiB cohort; final preflight found 35,457,187,840 available bytes (>17,179,869,184 required), sudo probe exit0. Native/build/PCM remains unrun.
+
+Scope: cumulative existing source only, not new gain implementation or production enablement. Original Media plan remains frozen at SHA256 131c07463b422a93e03cff227a09a5251833a2208151f040cde41a64f2dfa2f5. Heavy gate uses that original exact source, not a repinned transplant. Need independent review of scoped transplant before integration; runtime evidence cannot qualify production gain still unwired.

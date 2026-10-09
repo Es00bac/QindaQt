@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "wireplumber_graph_p.h"
+#include "console_send_admission_p.h"
 #include "wireplumber_latency_p.h"
 #include "wireplumber_volume_p.h"
 
@@ -275,7 +276,8 @@ WpMetadata *defaultMetadata(WpObjectManager *manager)
 BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                           WpPlugin *defaultNodes, const quint64 epoch,
                           const quint64 revision, const Capabilities capabilities,
-                          const LatencyPolicy::Ranges &latencyRanges)
+                          const LatencyPolicy::Ranges &latencyRanges,
+                          const ConsoleSendAdmission *sends)
 {
     BuildResult result;
     result.snapshot.schemaVersion = kSchemaVersion;
@@ -313,6 +315,14 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
         const bool playback = isPlaybackClass(mediaClass);
         const bool capture = isCaptureClass(mediaClass);
         if (!output && !input && !playback && !capture) {
+            g_value_unset(&value);
+            continue;
+        }
+        // ADR0361: internal sends have amplitude headroom outside public
+        // normalized volume. Only exact producer/module/object admission hides
+        // these stream halves; public sink/source endpoints always remain.
+        if ((playback || capture) && sends != nullptr
+            && sends->excludes(*serial, reinterpret_cast<quintptr>(node))) {
             g_value_unset(&value);
             continue;
         }
@@ -363,18 +373,28 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
 
     constexpr qsizetype maxObservedLinks = kMaxStreams * 8;
     qsizetype observedLinks = 0;
+    qsizetype internalLinks = 0;
+    constexpr qsizetype maxInternalLinks = kMaxStrips * kMaxBuses * 4;
     WpIterator *links = wp_object_manager_new_filtered_iterator(manager, WP_TYPE_LINK, nullptr);
     while (wp_iterator_next(links, &value)) {
-        if (observedLinks >= maxObservedLinks) {
-            result.truncatedOrMalformed = true;
-            g_value_unset(&value);
-            break;
-        }
-        ++observedLinks;
         auto *link = WP_LINK(g_value_get_object(&value));
         guint32 outputNode = 0;
         guint32 inputNode = 0;
         wp_link_get_linked_object_ids(link, &outputNode, nullptr, &inputNode, nullptr);
+        const bool internal = sends != nullptr
+            && (sends->excludesBoundId(outputNode) || sends->excludesBoundId(inputNode));
+        qsizetype &count = internal ? internalLinks : observedLinks;
+        const qsizetype maximum = internal ? maxInternalLinks : maxObservedLinks;
+        if (count >= maximum) {
+            result.truncatedOrMalformed = true;
+            g_value_unset(&value);
+            break;
+        }
+        ++count;
+        if (internal) {
+            g_value_unset(&value);
+            continue;
+        }
         const quint64 outputSerial = boundToSerial.value(outputNode, 0);
         const quint64 inputSerial = boundToSerial.value(inputNode, 0);
         for (Stream &stream : result.snapshot.streams) {
@@ -446,39 +466,6 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
     return result;
 }
 
-std::optional<NodeLookup> findNodeByName(WpObjectManager *manager,
-                                         const QString &nodeName)
-{
-    if (manager == nullptr || nodeName.isEmpty()) {
-        return std::nullopt;
-    }
-    const QByteArray wanted = nodeName.toUtf8();
-    WpIterator *iterator = wp_object_manager_new_filtered_iterator(
-        manager, WP_TYPE_NODE, nullptr);
-    GValue value = G_VALUE_INIT;
-    while (wp_iterator_next(iterator, &value)) {
-        auto *node = WP_NODE(g_value_get_object(&value));
-        const gchar *name = wp_pipewire_object_get_property(
-            WP_PIPEWIRE_OBJECT(node), PW_KEY_NODE_NAME);
-        if (name != nullptr && wanted == name) {
-            NodeLookup result;
-            result.node = WP_NODE(g_object_ref(node));
-            result.boundId = wp_proxy_get_bound_id(WP_PROXY(node));
-            const gchar *mediaClass = wp_pipewire_object_get_property(
-                WP_PIPEWIRE_OBJECT(node), PW_KEY_MEDIA_CLASS);
-            result.mediaClass =
-                QString::fromLatin1(mediaClass == nullptr ? "" : mediaClass);
-            result.nodeName = QString::fromUtf8(name);
-            g_value_unset(&value);
-            wp_iterator_unref(iterator);
-            return result;
-        }
-        g_value_unset(&value);
-    }
-    wp_iterator_unref(iterator);
-    return std::nullopt;
-}
-
 std::optional<NodeLookup> findNode(WpObjectManager *manager, const quint64 serial)
 {
     if (manager == nullptr || serial == 0) {
@@ -509,25 +496,5 @@ std::optional<NodeLookup> findNode(WpObjectManager *manager, const quint64 seria
     return std::nullopt;
 }
 
-QStringList nodeNamesWithPrefix(WpObjectManager *manager, const QString &prefix)
-{
-    QStringList names;
-    if (manager == nullptr || prefix.isEmpty()) {
-        return names;
-    }
-    const QByteArray wanted = prefix.toUtf8();
-    WpIterator *iterator = wp_object_manager_new_filtered_iterator(manager, WP_TYPE_NODE, nullptr);
-    GValue value = G_VALUE_INIT;
-    while (wp_iterator_next(iterator, &value)) {
-        auto *node = WP_PIPEWIRE_OBJECT(g_value_get_object(&value));
-        const gchar *name = wp_pipewire_object_get_property(node, PW_KEY_NODE_NAME);
-        if (name != nullptr && g_str_has_prefix(name, wanted.constData())) {
-            names.append(QString::fromUtf8(name));
-        }
-        g_value_unset(&value);
-    }
-    wp_iterator_unref(iterator);
-    return names;
-}
 
 } // namespace QindaQt::Audio::WirePlumberGraph
