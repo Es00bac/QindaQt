@@ -2,7 +2,7 @@
 
 - Identity: Codex collaboration worker android-product-sol-20261009; manager requested Sol max. No independent runtime provider/model observation is available to this worker.
 - Role: Android Applications identity and public catalog/launcher slice.
-- Status: working — gating the null-port release entry and implementing actionable Android setup/runtime composition.
+- Status: working — handing the short-verified Android QindaPortage setup slice to independent review.
 - Base: 42299ecbbffae4ecfc6f8060314c8e6bd04eb515
 - Branch: worker/android-runtime-setup-sol-20261009
 - Worktree: ~/work_SPaC3/container-wm-android-runtime-setup-sol-20261009
@@ -32,3 +32,9 @@
 - 2026-10-09T00:46:29+00:00 — Handed exact manager sourcecfd13c61ec57b11498c434cc55c6c6756592b1c3 for independent review/integration with all23 paths, bounded native/UI/docs gates, preserved test-only failures and explicit null-backend caveat. Concrete help offer: verified recipe/materialization-to-port adapter or qualified compositor consumer mapping after accepted base/interface assignment. No resource unit remains.
 
 - 2026-10-09T00:58:38+00:00 — Manager sourcecfd/952 independently accepted/integrated42299ecbb. Claimed separate runtime/setup branch from that exact base. Gated null-port native menu entry with NoDisplay and recorded actual installed stock interface hashes/side effects. Existing QindaPortage CLI has --page/--select with preview/approval retained. No main-branch admitted guest recipe/materializer producer exists yet; no such authority is fabricated. No runtime/package/resource action.
+
+- 2026-10-09T01:06:18+00:00 — Code-first setup slice written: borrowed SetupPort with closed Runtime/Images selection, fixed QindaPortage --page/--select dispatcher, separate native adapter/env guard, QindaTK setup buttons and null guest registration retained. Added focused accepted/refused/owner-loss/no-Running and actual offscreen setup-action cases. Native entry remains NoDisplay. No QindaPortage, Waydroid, helper, package or VM was executed. ADR0371 reserved by manager.
+
+- 2026-10-09T01:07:40+00:00 — Manager granted one2CPU/2GiB/120s SetupPort/native adapter build plus <=30s three-gate smoke while4CPU/5GiB package cohort continues. Starting only that source-focused unit; no QindaPortage/Waydroid/helper execution or install.
+
+- 2026-10-09T01:16:43+00:00 — Setup build exit0,33.455s/999.3MiB/0swap; three-gate smoke3/3 in0.94s,23Qt cases0fail/skip/blacklist; strict docs/link exit0,544documents,9.122s/165.7MiB. Compact420px updated UI capture visually checked. All units settled. Native selector is fixed package planning only; no actual QindaPortage/Waydroid/helper, install, VM, guest registration/window or audio execution.

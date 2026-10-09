@@ -25,10 +25,34 @@ void load(QQmlApplicationEngine &engine, ApplicationController &controller)
 class AndroidManagerUiTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void setupSelectionIsActionableWithoutFakeRegistration();
     void unavailableWindowIsHonest();
     void registeredRowsExposeOriginAndFencedLaunch();
     void ownerLossClearsTheRows();
 };
+void AndroidManagerUiTest::setupSelectionIsActionableWithoutFakeRegistration()
+{
+    FakeSetupPort setup;
+    ApplicationController controller(nullptr, nullptr, 30000, &setup);
+    QQmlApplicationEngine engine;
+    load(engine, controller);
+    QVERIFY(!engine.rootObjects().isEmpty());
+    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    QVERIFY(window);
+    QTest::qWait(50);
+    auto *button = window->findChild<QQuickItem *>(QStringLiteral("androidRuntimeSetup"));
+    QVERIFY(button && button->isEnabled());
+    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
+                     button->mapToScene(QPointF(button->width()/2, button->height()/2)).toPoint());
+    QCOMPARE(setup.selections, (QVector<SetupTarget>{SetupTarget::Runtime}));
+    QCOMPARE(controller.runtimeState(), QStringLiteral("unavailable"));
+    QVERIFY(controller.applications().isEmpty());
+    auto *message = window->findChild<QObject *>(QStringLiteral("androidSetupMessage"));
+    QVERIFY(message && !message->property("text").toString().isEmpty());
+    setup.setAvailable(false);
+    QTRY_VERIFY_WITH_TIMEOUT(!button->isEnabled(), 500);
+}
+
 void AndroidManagerUiTest::unavailableWindowIsHonest()
 {
     ApplicationController controller;

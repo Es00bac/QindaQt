@@ -23,8 +23,8 @@ QString stateIdentity(ApplicationState state)
 }
 }
 
-ApplicationController::ApplicationController(RuntimePort *port, QObject *parent, int launchTimeoutMs)
-    : QObject(parent), m_port(port)
+ApplicationController::ApplicationController(RuntimePort *port, QObject *parent, int launchTimeoutMs, SetupPort *setupPort)
+    : QObject(parent), m_port(port), m_setupPort(setupPort)
 {
     m_deadline.setSingleShot(true);
     m_deadline.setInterval(qBound(1, launchTimeoutMs, 30000));
@@ -33,6 +33,12 @@ ApplicationController::ApplicationController(RuntimePort *port, QObject *parent,
         m_lastError = tr("The launch outcome could not be confirmed. Refresh before trying again.");
         Q_EMIT changed();
     });
+    if (setupPort && setupPort->thread() == thread()) {
+        connect(setupPort, &SetupPort::availabilityChanged, this, &ApplicationController::changed);
+        connect(setupPort, &QObject::destroyed, this, [this] { m_setupPort.clear(); Q_EMIT changed(); });
+    } else {
+        m_setupPort.clear();
+    }
     if (!port) return;
     if (port->thread() != thread()) {
         m_port.clear();
@@ -71,6 +77,32 @@ QString ApplicationController::runtimeMessage() const
     case RuntimeState::Unavailable: return tr("Android support is unavailable. Applications will appear after Android is set up and connected.");
     }
     return {};
+}
+
+bool ApplicationController::canSetup() const
+{
+    return m_setupPort && !m_pending && m_setupPort->available();
+}
+bool ApplicationController::setupRuntime() { return openSetup(SetupTarget::Runtime); }
+bool ApplicationController::setupImages() { return openSetup(SetupTarget::Images); }
+bool ApplicationController::openSetup(SetupTarget target)
+{
+    if (!canSetup()) {
+        m_lastError = tr("Software Manager setup is unavailable.");
+        Q_EMIT changed();
+        return false;
+    }
+    const auto outcome = m_setupPort->openSelection(target);
+    if (outcome.accepted()) {
+        m_setupMessage = validRuntimeMessage(outcome.message) ? outcome.message : tr("Setup request sent to Software Manager.");
+        m_lastError.clear();
+    } else {
+        m_setupMessage.clear();
+        m_lastError = validRuntimeMessage(outcome.message) && !outcome.message.isEmpty()
+            ? outcome.message : tr("Software Manager refused the setup request.");
+    }
+    Q_EMIT changed();
+    return outcome.accepted();
 }
 
 void ApplicationController::withdraw(QString error)

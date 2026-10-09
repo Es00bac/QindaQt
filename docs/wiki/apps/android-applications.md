@@ -18,7 +18,10 @@ The application, Qt Core controller and public borrowed `RuntimePort` exist in
 `src/apps/android_manager`. The production executable currently has no admitted
 Android registration/runtime adapter and injects a null port. It shows Android
 support unavailable, with no fabricated stock application rows or enabled
-launch/refresh actions. The owning adapter, setup/materialization, package
+launch/refresh actions. A separate borrowed SetupPort now offers runtime/image
+package selection in QindaPortage when its protected installed executable is
+available. The native menu entry remains hidden until actionable production
+setup/runtime composition is qualified. The owning adapter, materialization, package
 updates/removal, data preservation workflows, real per-app icon provider,
 registered launch execution and runtime recovery remain subsequent slices.
 No Waydroid process is started by this application or its tests.
@@ -47,7 +50,8 @@ catalog builder/search ranker, so names, keywords, sort and stable UUID identiti
 stay consistent with ordinary Applications values.
 
 The QindaTK window offers search, Refresh, runtime status/feedback and per-app
-Launch. Each supplied Android registration has a green toolkit semantic tint
+Launch, plus Runtime/Images package setup selection through the independent
+SetupPort. Accepted setup handoff changes neither runtime nor registration truth. Each supplied Android registration has a green toolkit semantic tint
 and explicit Android text/accessible description, separate from selection,
 error and runtime status. This badge describes catalog origin only. It cannot
 classify a running window from a title, app_id, alias or PID. The window keeps
@@ -120,3 +124,27 @@ for this inspection. QindaPortage's current native `--page packages --select
 <category/name>` handoff can open a package selection without using its separate
 `--ask` model action; its own GUI retains plan preview/approval. That native
 handoff does not install or materialize an Android app by itself.
+
+## Graphical package setup handoff
+
+[ADR-0371](../adr/0371-delegate-android-package-setup-to-qindaportage.md) adds a
+separate borrowed SetupPort. Runtime and Images are closed enum targets, not
+arbitrary atoms/URLs or managed launch commands. The existing QindaPortage GUI
+opens its Packages page with the fixed runtime/image package selected. Its
+preview, user approval and privileged helper remain installation authority;
+no --ask model request, automatic apply or Waydroid command is sent.
+
+The production composition owns a dedicated native setup adapter before the
+controller and checks only the fixed protected Software Manager executable.
+Process/filesystem reach is confined to that target. Session/display/locale
+values are forwarded without loader and model-development overrides. Unknown
+setup targets, unavailable/refused software-manager dispatch and owner loss
+produce plain feedback. Accepted GUI dispatch is only a handoff and is never
+Android Ready/Running, package materialization or a mapped window.
+
+The desktop entry remains `NoDisplay=true`: the runtime/registration port is still
+null and no installed end-to-end setup/runtime journey is qualified yet. Manual
+opening now has an actionable package-selection route where QindaPortage exists.
+The three short gates include closed target/refusal/owner-loss/no-fake-registration
+controls plus actual offscreen setup-button input. They use an injected native
+planning port and never launch QindaPortage or a guest during verification.

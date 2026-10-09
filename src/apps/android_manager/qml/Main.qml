@@ -37,6 +37,22 @@ Tk.AppWindow {
             Accessible.name: qsTr("Search Android applications")
             onSearched: text => window.manager.query = text
         }
+        Tk.Button {
+            objectName: "androidRuntimeSetup"
+            text: qsTr("Set up runtime")
+            iconName: "package"
+            enabled: window.manager.canSetup
+            tooltip: qsTr("Review the Android runtime package in QindaPortage")
+            onClicked: window.manager.setupRuntime()
+        }
+        Tk.Button {
+            objectName: "androidImagesSetup"
+            text: qsTr("Set up images")
+            iconName: "package"
+            enabled: window.manager.canSetup
+            tooltip: qsTr("Review the packaged Android images in QindaPortage")
+            onClicked: window.manager.setupImages()
+        }
         Tk.Spacer {}
         Tk.Button {
             objectName: "androidRefresh"
@@ -80,6 +96,14 @@ Tk.AppWindow {
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
             Accessible.role: Accessible.AlertMessage
+        }
+        Tk.Label {
+            objectName: "androidSetupMessage"
+            visible: text.length > 0
+            text: window.manager.setupMessage
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+            Accessible.role: Accessible.StatusBar
         }
         ListView {
             id: applications

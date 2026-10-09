@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/android_manager/application_controller.h"
+#include "native_setup_port.h"
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -22,7 +23,8 @@ int main(int argc, char **argv)
     // AGENT-GUARD: No admitted production registration/runtime port exists
     // yet. Null is honest unavailable; never substitute stock app names or
     // start waydroid from QML/main to make this window appear functional.
-    QindaQt::AndroidManager::ApplicationController manager;
+    auto setupPort = QindaQt::AndroidManager::createNativeSetupPort();
+    QindaQt::AndroidManager::ApplicationController manager(nullptr, nullptr, 30000, setupPort.get());
     QQmlApplicationEngine engine;
     engine.setInitialProperties({{QStringLiteral("manager"), QVariant::fromValue(&manager)}});
     engine.loadFromModule(QStringLiteral("QindaQt.AndroidApplications"), QStringLiteral("Main"));

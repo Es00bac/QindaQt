@@ -29,6 +29,15 @@ inline QString entryId(const RuntimeSnapshot &snapshot, qsizetype index = 0)
 {
     return QindaQt::ShellLauncher::managedApplicationEntryId(snapshot.registrations.at(index).binding);
 }
+class FakeSetupPort final : public SetupPort {
+public:
+    bool present = true;
+    QVector<SetupTarget> selections;
+    SetupOutcome outcome{SetupOutcomeCode::Accepted, QStringLiteral("Synthetic package planning accepted")};
+    bool available() const override { return present; }
+    SetupOutcome openSelection(SetupTarget target) override { selections.append(target); return outcome; }
+    void setAvailable(bool available) { present = available; Q_EMIT availabilityChanged(); }
+};
 class FakePort final : public RuntimePort {
 public:
     RuntimeSnapshot current = readySnapshot();

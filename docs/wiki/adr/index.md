@@ -415,3 +415,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0369: Manage Android applications through a borrowed runtime port](0369-manage-android-applications-through-a-borrowed-runtime-port.md) — Accepted UI/public port only; production adapter remains unavailable.
 - [ADR-0370: Admit user-selected Windows programs through leased PE files](0370-admit-user-selected-windows-programs-through-leased-pe-files.md)
+
+- [ADR-0371: Delegate Android package setup to QindaPortage](0371-delegate-android-package-setup-to-qindaportage.md) — Accepted closed graphical planning handoff; no guest authority.

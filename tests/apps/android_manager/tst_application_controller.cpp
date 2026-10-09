@@ -7,6 +7,9 @@ using namespace QindaQt::AndroidManager::TestSupport;
 class ApplicationControllerTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void setupSelectionUsesOnlyTheTwoOwnerCliTargets();
+    void setupAcceptanceNeverCreatesRegistrationOrRunning();
+    void unavailableSetupAndDestroyedOwnerRefuse();
     void missingBackendIsUnavailable();
     void inventorySearchUsesStableRegisteredIdentity();
     void launchUsesExactRevisionAndNeverInventsRunning();
@@ -20,6 +23,48 @@ private Q_SLOTS:
     void destroyedPortWithdrawsAuthority();
     void runningWithoutWindowCountStaysIndependent();
 };
+
+void ApplicationControllerTest::setupSelectionUsesOnlyTheTwoOwnerCliTargets()
+{
+    const auto runtime = softwareSetupArguments(SetupTarget::Runtime);
+    const auto images = softwareSetupArguments(SetupTarget::Images);
+    QVERIFY(runtime && images);
+    QCOMPARE(*runtime, (QStringList{QStringLiteral("--page"), QStringLiteral("packages"),
+        QStringLiteral("--select"), QStringLiteral("app-containers/waydroid")}));
+    QCOMPARE(*images, (QStringList{QStringLiteral("--page"), QStringLiteral("packages"),
+        QStringLiteral("--select"), QStringLiteral("app-containers/waydroid-vanilla-images")}));
+    QVERIFY(!softwareSetupArguments(static_cast<SetupTarget>(99)));
+    QVERIFY(!runtime->contains(QStringLiteral("--ask")));
+}
+void ApplicationControllerTest::setupAcceptanceNeverCreatesRegistrationOrRunning()
+{
+    FakeSetupPort setup;
+    ApplicationController controller(nullptr, nullptr, 30000, &setup);
+    QVERIFY(controller.canSetup());
+    QVERIFY(controller.setupRuntime());
+    QVERIFY(controller.setupImages());
+    QCOMPARE(setup.selections, (QVector<SetupTarget>{SetupTarget::Runtime, SetupTarget::Images}));
+    QVERIFY(!controller.setupMessage().isEmpty());
+    QCOMPARE(controller.runtimeState(), QStringLiteral("unavailable"));
+    QVERIFY(controller.applications().isEmpty());
+    QVERIFY(!controller.busy());
+    setup.outcome = {SetupOutcomeCode::Failed, QStringLiteral("Synthetic refusal")};
+    QVERIFY(!controller.setupRuntime());
+    QCOMPARE(controller.lastError(), QStringLiteral("Synthetic refusal"));
+    QCOMPARE(setup.selections.size(), 3);
+}
+void ApplicationControllerTest::unavailableSetupAndDestroyedOwnerRefuse()
+{
+    auto *setup = new FakeSetupPort;
+    ApplicationController controller(nullptr, nullptr, 30000, setup);
+    setup->setAvailable(false);
+    QVERIFY(!controller.canSetup());
+    QVERIFY(!controller.setupRuntime());
+    QVERIFY(setup->selections.isEmpty());
+    delete setup;
+    QVERIFY(!controller.canSetup());
+    QVERIFY(!controller.setupImages());
+}
 
 void ApplicationControllerTest::missingBackendIsUnavailable()
 {
