@@ -1,3 +1,7 @@
+## Display Apply native lock repair — 2026-10-09T17:55:48+00:00
+
+Exact independently accepted source `927039197` changes only the private Display1 safety adapter from the legacy ScreenSaver owner quorum to the existing native compositor receipt monitor, authenticated by the writer's kernel peer PID. The laptop baseline accepted Stage but rejected Preview as `locked` while Lock1 reported unlocked. Focused build and CTest pass 8/8; wiki links/navigation (551 documents) and strict MkDocs pass. A private two-output native compositor applies position, 125% scale and 90° rotation, keeps the layout on Confirm and restores it on Cancel. Cold fixture startup must finish before invoking the existing 1.5-second native receipt request. Signed Portage R25 retains all 2,622 R23/R24 image paths and changes only Display1 plus its private runtime archive; full signature and image parity pass. Laptop installation and live position smoke are the next gate.
+
 ## Android setup menu user acceptance and release retention — 2026-10-09T05:46:00+00:00
 
 The owner confirmed the installed Android Applications entry appears in the app menu and its setup/status window opens. This qualifies component menu/startup presentation, not guest app launch; the package-owned collector still returns Unavailable/no rows until guest package/task evidence exists. The four signed R24/R3/WindowsRunner/Android component gpkg artifacts were hash-verified and retained in ignored release caches on qinda and qinda-top for rollback; installation remains Portage-owned.
