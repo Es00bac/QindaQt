@@ -1,3 +1,7 @@
+## Windows .exe File Manager source route — 2026-10-09T00:58:00+00:00
+
+Reviewed source4e622 adds real PE/header admission, held file identity and a public File Manager double-click/Open With route that preserves user defaults and never falls back after uncertain Windows dispatch. Five focused CTests/79 Qt cases pass; no actual Windows process launches because the production Windows port and first-run profile handler are still absent. Next: package-owned setup/profile and transactionally fenced process adapter, compiled MIME/desktop handler only when it exists, then one short ordinary .exe journey. File Manager GUI inspection must remain responsive; no installed support or ED-22 completion is claimed.
+
 ## Removable Media R3 source for File Manager USB — 2026-10-09T00:54:00+00:00
 
 The mounted USB drive is visible to the system, but installed Removable Media r2 exposes only Activate while File Manager R23 expects the public /Devices inventory and Eject actions. Reviewed source5266 and QindaGentoo r3 recipe4b586 provide the matching exporter and R23 dependency floor. Short production helper compile and synthetic export smoke passed; optional standalone tests were not completed. One Portage package build, image check, installation and fresh-login sidebar observation remain before ED-04 physical completion. The user's mounted drive has not been operated on.

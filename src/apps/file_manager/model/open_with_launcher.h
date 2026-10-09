@@ -29,14 +29,18 @@ using DetachedStarter =
 // runs inside the desktop's terminal prefix (QQ_Term's `qqterm -e`, the shell
 // launcher's own policy); a D-Bus-activatable or unplannable entry is refused
 // with a typed LaunchFailed. Success means every planned process started;
-// their later exits are not observed. Stateless apart from its two seams.
+// their later exits are not observed. An optional borrowed public Windows
+// executable-open port applies current explicit-handler policy, PE admission
+// and profile/setup ownership; its selected route never falls back after a
+// submission or uncertain outcome. The port outlives this launcher.
 class OpenWithLauncher final {
 public:
   // At most this many files per request, bounding the process count and
   // leaving room under the launcher grammar's 64-argument ceiling.
   static constexpr int maximumFiles = 32;
 
-  OpenWithLauncher(DetachedStarter start, QStringList terminalCommandPrefix);
+  OpenWithLauncher(DetachedStarter start, QStringList terminalCommandPrefix,
+                   QindaQt::WindowsRunner::WindowsExecutableOpenPort *windows = nullptr);
 
   [[nodiscard]] LaunchResult launch(
       const QindaQt::ApplicationCatalog::ScannedApplication &application,
@@ -49,6 +53,7 @@ public:
 private:
   DetachedStarter m_start;
   QStringList m_terminalPrefix;
+  QindaQt::WindowsRunner::WindowsExecutableOpenPort *m_windows;
 };
 
 } // namespace QindaQt::Apps::FileManager

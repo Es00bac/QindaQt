@@ -238,6 +238,10 @@ untracked prefixes and configuration are preserved and labelled accurately.
 An unmanaged executable does not become managed merely by registering its
 current hash.
 
+## Explicitly selected local Windows programs
+
+The owner additionally requires valid local `.exe` files to open from File Manager through an existing Wine/Proton profile or visible first-run setup. The separate [leased PE/file-open boundary](windows-runner.md#user-selected-local-windows-programs), owned by [ADR-0370](../adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md), uses user-file receipts rather than claiming a Portage guest recipe. Packaged recipe materialization above remains separate; runtime/host software installation still belongs to Portage. Source format/identity inspection and injected double-click/Open With routes now exist. Concrete setup/profile/receipt/process composition and installed handler delivery remain required, so no real `.exe` journey is yet qualified.
+
 ## Catalog, presentation and permissions
 
 Managed IDs occupy an adapter-owned namespace and survive relaunch/upgrade;

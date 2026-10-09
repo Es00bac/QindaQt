@@ -94,7 +94,12 @@ public:
   // handler becomes a typed LaunchError instead of throwing, blocking, or
   // executing an arbitrary command. File Manager owns no MIME database,
   // handler list, or launched-process lifetime, and neither does this seam.
-  [[nodiscard]] static LaunchResult launchLocalFile(const QString &absolutePath);
+  // An optional current-session Windows port adds PE/file-identity admission,
+  // chosen-profile launch and visible first-run setup through the public runner.
+  // The borrowed port outlives the call. Deliberate native defaults are kept;
+  // failure/unknown Windows dispatch never falls back or replays.
+  [[nodiscard]] static LaunchResult launchLocalFile(const QString &absolutePath,
+      QindaQt::WindowsRunner::WindowsExecutableOpenPort *windows = nullptr);
 
   // Absolute qindaqt-file-manager candidates in trial order: the running
   // application's sibling binary (the shell and File Manager install into one

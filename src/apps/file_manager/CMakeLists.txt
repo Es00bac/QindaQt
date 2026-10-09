@@ -46,7 +46,7 @@ target_include_directories(
     qindaqt_file_manager_desktop_boundary PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_link_libraries(
-    qindaqt_file_manager_desktop_boundary PUBLIC Qt6::Core Qt6::Gui
+    qindaqt_file_manager_desktop_boundary PUBLIC Qt6::Core Qt6::Gui QindaQt::WindowsRunner
 )
 target_compile_features(qindaqt_file_manager_desktop_boundary PUBLIC cxx_std_20)
 set_target_properties(

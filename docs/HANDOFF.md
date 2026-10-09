@@ -1,3 +1,7 @@
+## Windows .exe File Manager source boundary — 2026-10-09T00:58:00+00:00
+
+Windows PE/File Manager source4e622 and handoff199ce are integrated after independent review. Bounded file/header admission and double-click/Open With public routing compile and focused tests pass. The default production Windows port is null, so the installed File Manager still has no new .exe behavior; real first-run setup, profile/receipt, process adapter, desktop handler and GUI-thread-safe inspection remain the next code outcome. No Wine app/Global Menu/Audio1 claim follows.
+
 ## File Manager USB package mismatch — 2026-10-09T00:54:00+00:00
 
 R23 File Manager contains the device sidebar/Eject UI, but separately installed Removable Media r2 pins pre-exporter source and presents only Activate, so the live /Devices endpoint is absent. Source5266 and overlay r3 recipe4b586 are accepted for one component Portage build. Reduced production compile and synthetic unique-owner /Devices smoke passed; optional standalone test compilation timed out with four steps left. No installed R3, fresh-login sidebar or physical Eject result is claimed.

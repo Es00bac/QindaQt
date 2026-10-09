@@ -18,8 +18,9 @@ ListingResult FileBoundary::listLocalFolder(const QString &absolutePath) {
   return LocalDirectoryLister().list(absolutePath);
 }
 
-LaunchResult FileBoundary::launchLocalFile(const QString &absolutePath) {
-  return DesktopFileLauncher().launch(absolutePath);
+LaunchResult FileBoundary::launchLocalFile(const QString &absolutePath,
+    QindaQt::WindowsRunner::WindowsExecutableOpenPort *windows) {
+  return DesktopFileLauncher(windows).launch(absolutePath);
 }
 
 QStringList FileBoundary::fileManagerProgramCandidates() {

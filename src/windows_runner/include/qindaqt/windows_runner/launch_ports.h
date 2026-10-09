@@ -47,6 +47,11 @@ public:
     // the lease's checked handles for dispatch, never reopen untrusted paths.
     // ProtonUmu must use the exact leased Steam Runtime/Proton tuple with runtime
     // downloads disabled. Until that adapter exists it must return Refused.
+    // At dispatch, transactionally recheck current registration/profile authority
+    // with their owner and hold that authority through submission. The core
+    // copied recheck alone cannot close the final update/removal race.
+    // Refused means no spawn or operational side effect; any uncertainty after
+    // submission is OutcomeUnknown, never Refused and never a reason to replay.
     // Accepted means startup submitted, not Running or a qualified window.
     [[nodiscard]] virtual LaunchDispatch submit(const WindowsLaunchPlan &plan,
                                                 WindowsPayloadLease &lease) = 0;

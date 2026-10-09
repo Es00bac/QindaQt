@@ -13,8 +13,8 @@ A Windows binding contains a canonical non-null lowercase registration UUID,
 a positive registration revision and a 64-character lowercase recipe SHA-256.
 The stable Applications ID is `qindaqt.managed.windows.<UUID>`; a relaunch or
 recipe revision retains this ID. The runner's compact Windows-only binding is
-independent of catalog parsing. A catalog adapter must admit the public typed
-Windows origin before conversion; a desktop file, executable name or window
+independent of catalog parsing. Its public catalog bridge admits the typed
+Windows origin before conversion and reuses the current-recipe/payload gate; a desktop file, executable name or window
 class cannot mint that origin.
 
 The registration port returns a copied admitted recipe and materialization
@@ -57,12 +57,22 @@ termination. Data and peer applications remain intact on all refusal paths.
 Per-app close/relaunch and compositor association use the separate
 [foreign runtime lifecycle contract](foreign-applications.md).
 
+## User-selected local Windows programs
+
+The public `catalog_binding.h` bridge consumes the shared typed Windows binding and keeps Android/native origins out of this runner. The distinct `executable_file.h`/`executable_open.h` boundary admits a user-selected local PE program without manufacturing Portage guest-recipe provenance; [ADR-0370](../adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md) records this owner-requested extension.
+
+The inspector reads at most8KiB of bounded DOS/PE/COFF/optional/section headers, accepts supported executable architectures and desktop subsystems, and refuses DOS stubs, DLLs, scripts, bad offsets and incomplete data. Its lease retains the exact descriptor and device/inode/size/mtime/ctime. Both File Manager double-click and Open With use the shared route, preserving current native user defaults and an explicitly chosen native handler. A Windows choice never falls back after submission or uncertainty.
+
+The injected setup/profile port owns the file lease, real visible first-run setup and per-app prefix/data. It must record user-file provenance, distinguish portable/installer choice explicitly, and transactionally hold current registration/profile authority through actual dispatch. Refused/default fallback means no operational side effect; any post-submission uncertainty is OutcomeUnknown. The core copied recheck cannot close that final race by itself.
+
+This source slice implements format/identity admission and both route adapters. Concrete profile/receipt persistence, visible setup, process launching and a compiled packaged MIME handler remain subsequent work; the injected source smoke does not start Wine. File format admission alone never grants a blue window association, file grant, Audio1 control or menu export.
+
 ## Delivery and acceptance boundary
 
 This slice implements the public planning/coordinator target, installed public
 headers and deterministic focused tests with injected ports. Production
 Portage recipe loading, stable-handle payload adapters, a real Wine/umu process
-adapter and the catalog/session dispatch composition remain subsequent slices.
+adapter and session dispatch composition remain subsequent slices.
 The Proton process adapter must refuse until it can demonstrate that the leased
 Steam Runtime/Proton tuple is exactly the one it executes.
 

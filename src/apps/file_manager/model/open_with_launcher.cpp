@@ -2,8 +2,10 @@
 #include "open_with_launcher.h"
 
 #include "qindaqt/application_catalog/launch_support.h"
+#include <qindaqt/windows_runner/executable_open.h>
 
 #include <QProcess>
+#include <QCryptographicHash>
 
 #include <utility>
 
@@ -28,8 +30,10 @@ using QindaQt::ApplicationCatalog::ScannedApplication;
 
 } // namespace
 
-OpenWithLauncher::OpenWithLauncher(DetachedStarter start, QStringList terminalCommandPrefix)
-    : m_start(std::move(start)), m_terminalPrefix(std::move(terminalCommandPrefix)) {}
+OpenWithLauncher::OpenWithLauncher(DetachedStarter start, QStringList terminalCommandPrefix,
+    QindaQt::WindowsRunner::WindowsExecutableOpenPort *windows)
+    : m_start(std::move(start)), m_terminalPrefix(std::move(terminalCommandPrefix)),
+      m_windows(windows) {}
 
 DetachedStarter OpenWithLauncher::processStarter() {
   return [](const QString &program, const QStringList &arguments) {
@@ -57,6 +61,23 @@ LaunchResult OpenWithLauncher::launch(const ScannedApplication &application,
       return validation;
     }
     files.append(canonical);
+  }
+  if (m_windows) {
+    const QindaQt::WindowsRunner::WindowsExecutableOpenRequest request{
+        QindaQt::WindowsRunner::ExecutableOpenMode::OpenWith, application.entry.id,
+        QString::fromLatin1(QCryptographicHash::hash(application.documentText.toUtf8(),
+            QCryptographicHash::Sha256).toHex())};
+    if (files.size() != 1 && m_windows->handlesRequest(files.constFirst(), request)) {
+      return refused(QStringLiteral("Open one Windows program at a time to preserve its profile."));
+    }
+    if (files.size() == 1) {
+      const auto routed = QindaQt::WindowsRunner::routeWindowsExecutableOpen(
+          files.constFirst(), request, *m_windows);
+      if (routed.disposition
+          != QindaQt::WindowsRunner::ExecutableOpenDisposition::UseDesktopHandler) {
+        return windowsExecutableLaunchResult(routed);
+      }
+    }
   }
   const LaunchPreparation all = plan(application, files);
   QList<LaunchPreparation> launches{all};

@@ -414,3 +414,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0368: Merge managed applications without desktop-key authority](0368-merge-managed-applications-without-desktop-key-authority.md) — Accepted catalog values only; runtime producer/dispatch remains open.
 
 - [ADR-0369: Manage Android applications through a borrowed runtime port](0369-manage-android-applications-through-a-borrowed-runtime-port.md) — Accepted UI/public port only; production adapter remains unavailable.
+- [ADR-0370: Admit user-selected Windows programs through leased PE files](0370-admit-user-selected-windows-programs-through-leased-pe-files.md)

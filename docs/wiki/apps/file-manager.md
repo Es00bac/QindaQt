@@ -1954,3 +1954,9 @@ settled successfully in219.029seconds with3.5GiB peak memory. Accepted ADR0363
 records the integrated contract. Author Debug composed evidence and its original
 failures remain preserved separately. This is source integration, not installed
 ED06 completion. Package delivery, physical journeys and symlink Copy remain open.
+
+## Local Windows executable opening boundary
+
+Double-click and Open With now support an optional public [WindowsRunner](../architecture/windows-runner.md#user-selected-local-windows-programs) executable-open port, shared with `Desktop::FileBoundary::launchLocalFile`. It preserves a deliberately chosen native default/Open With handler. A Windows route inspects the actual MZ/PE headers and keeps an open file-identity lease; a renamed script or `.exe` extension alone cannot be launched through that route. Source outcomes distinguish Starting, real visible SetupOpened and OutcomeUnknown, with no default fallback or automatic replay after Windows submission.
+
+Unknown selected programs use a separate user-file receipt/profile workflow under [ADR-0370](../adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md), retaining per-app prefix/data and distinguishing installer/portable choice explicitly. The focused double-click/Open With smoke uses injected ports and header-format fixtures. Concrete visible setup, profile/receipt persistence, process dispatch and the compiled packaged MIME handler are still required; default composition does not yet provide that Windows port. No installed `.exe` journey is qualified by this source gate.

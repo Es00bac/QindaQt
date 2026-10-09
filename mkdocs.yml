@@ -568,3 +568,4 @@ nav:
       - "0366: Coordinate ordinary Windows launches through public ports": adr/0366-coordinate-ordinary-windows-launches-through-public-ports.md
       - "0368: Managed application catalog routing": adr/0368-merge-managed-applications-without-desktop-key-authority.md
       - "0369: Android management through a borrowed runtime port": adr/0369-manage-android-applications-through-a-borrowed-runtime-port.md
+      - "0370: Admit user-selected Windows programs through leased PE files": adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md
