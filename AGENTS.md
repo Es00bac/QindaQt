@@ -103,20 +103,24 @@ truth is [Task list](docs/TASK_LIST.md), the current integration boundary is in
 - `ops/team/workers/<name>.md` describes one stable employee identity and its
   genuine current state. `working` requires a live process doing the named
   outcome; an assignment, timestamp, or completed handoff is not liveness.
-- Every GPT, Claude, GLM, or other worker must maintain its own live-board
+- Every GPT, Claude, GLM, or other worker maintains its own live-board
   record with the exact plain `- Status: working — ...` field, a literal
-  `## Updates` heading, and ISO-8601 update bullets. Refresh at claim, midpoint
-  or material finding, help request/offer, verification, handoff, and status
-  transition. A working claim expires after 30 minutes; the manager does not
-  repair another worker's record or accept a malformed/stale handoff.
+  `## Updates` heading, and ISO-8601 update bullets. Refresh at claim,
+  material finding, handoff, and status transition. A short slice needs no
+  routine midpoint or duplicate test-progress message. A working claim expires
+  after 30 minutes; the manager does not repair another worker's record or
+  accept a malformed/stale handoff.
 - Candidate handoffs name one exact commit, changed paths, tests with exit
   status/counts, remaining bounded caveats, and the requested next action.
-- A different worker reviews the exact candidate commit before high-confidence
-  integration. The implementer repairs blocking findings in the same worktree;
-  the reviewer rechecks the repaired commit rather than approving prose.
-- The manager integrates an accepted commit, reruns the affected gates on the
-  integrated tree, updates the wiki/task state in the same integration, and
-  retires a worktree only after its commit is preserved.
+- A different worker reviews the exact candidate commit for process authority,
+  persistence, public ABI, privileged actions, package recipes, or release
+  integration. For reversible isolated UI, pure-model, and documentation slices,
+  the manager may review the exact diff and focused evidence directly. Reviewers
+  do not repeat an unchanged full build. Blocking findings return to the same
+  implementer; review of a repair checks that defect and its affected boundary.
+- The manager integrates an accepted commit, runs only the affected focused
+  combined-tree check, updates wiki/task state, and retires a worktree only after
+  its commit is preserved. Unchanged broad suites wait for a release candidate.
 - Three stable workgroup managers own the Shell, Platform, and First-party
   delivery queues under `ops/team/queues/`. They keep exact candidate,
   reviewer, next-gate, collision, resource, and help state current. The Program
@@ -146,12 +150,23 @@ The complete delivery loop and queue contract are in
 
 ## Verification
 
-Build and run focused tests for every changed module, then run the broadest
-available suite appropriate to the change. Model mutations require invariant and
-round-trip tests; shell changes require profile/resolution coverage; compositor
-and display changes require the nested scenarios described in the
-[testing harness](docs/wiki/development/testing-harness.md). Report commands run
-and any unavailable coverage at handoff.
+During implementation, compile only touched targets and run the smallest
+meaningful check of the changed behavior. Default focused tests should finish
+within 30 seconds; stop or split a test that runs beyond 60 seconds. Do not
+repeat full suites, VM boots, package-image matrices, or clean rebuilds after
+each small edit. Investigate a failure once, change its cause, then rerun the
+affected check.
+
+At a releasable milestone, run one short end-to-end smoke for the new user
+journey and one signed Portage build/install when delivery requires it. Select
+additional checks only for a concrete risk the focused evidence cannot cover;
+do not make a long private test a prerequisite to writing product code.
+Model invariants and round trips, shell profile/scale behavior, and relevant
+nested compositor cases still need evidence, but may use short deterministic
+fixtures from the [testing harness](docs/wiki/development/testing-harness.md).
+If necessary coverage cannot fit a bounded run, report the gap truthfully
+instead of looping or claiming completion. Record commands, counts, and limits
+at handoff.
 
 ## Milestone commits
 

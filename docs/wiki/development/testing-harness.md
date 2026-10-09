@@ -1,5 +1,16 @@
 # Development and testing harness
 
+## Select a short gate
+
+The scenarios below are a menu of relevant checks, not a per-edit checklist.
+First write the product behavior, then compile touched targets and run the
+smallest deterministic case that can fail for that change. Routine tests target
+30 seconds and stop at 60; split or defer longer scenarios. Do not repeat
+full package, nested VM, screenshot matrix, or device suites for unchanged
+code. One contained end-to-end journey belongs at the releasable milestone,
+with its exact limits and incomplete coverage reported. Existing safety
+boundaries for host input, buses, files and devices remain mandatory.
+
 QindaQt development must not modify or replace the developer's active desktop.
 `qindaqt-dev-session` launches with isolated XDG config/data/cache/runtime
 directories and a private D-Bus session. A failed nested run can therefore be

@@ -1,3 +1,13 @@
+## Fast integration and verification directive — 2026-10-09T00:15:00+00:00
+
+The owner directed shorter, product-first Android/Windows delivery. Current
+work writes shared managed-app identity and launch binding, public runtime
+adapters, and QindaQt/QindaTK window/tile/tab presentation before more private
+VM loops. Android fixed-size fallback and real Audio1 remain acceptance gates.
+Routine checks target 30 seconds and stop at 60; build touched targets, then
+perform one release-candidate package build when code is ready. Historical
+long test plans below remain evidence, not standing instructions to rerun.
+
 ## Current delivery state — 2026-10-08T23:50:00+00:00
 
 R23 desktop and Gabbee R6 are installed through paired, signed Portage

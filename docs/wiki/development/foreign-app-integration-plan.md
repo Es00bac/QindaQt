@@ -12,6 +12,44 @@ highlight**. Otherwise they participate in the desktop like ordinary apps.
 This is part of the [everyday desktop plan](everyday-desktop-plan.md), not an
 implemented feature or an assertion of universal application compatibility.
 
+## QindaQt-hosted desktop delivery — October 8, 18:15 MDT
+
+The desired experience is Samsung DeX-like app usability inside **QindaQt**,
+not a second Android desktop. QindaTK presents setup, installation, app
+management, status and recoverable errors. An Android app supplies its own
+content; QindaQt supplies the window container, focus, minimize/maximize,
+tiling, grouping, tabs, task switcher and detach. Two Android apps must tile
+and tab with a native app while preserving their individual identity and
+lifecycle. Windows apps use the same container and catalog contracts. The
+green Android and blue Windows origin cues supplement accessible names and
+never replace them.
+
+Support resizable Android apps as ordinary desktop windows. For an app that
+only supports a fixed size or aspect ratio, preserve its content geometry in
+a bounded window and explain the limit; do not stretch pixels or claim freeform
+support. Unsupported apps get an explicit reason and recovery path.
+[Samsung's DeX guide](https://developer.samsung.com/samsung-dex/how-it-works.html)
+makes this three-way distinction. Public
+[AOSP Android 17 framework](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1),
+[Launcher3 source](https://android.googlesource.com/platform/packages/apps/Launcher3/+/refs/tags/android-17.0.0_r1),
+and [desktop-windowing guidance](https://source.android.com/docs/core/display/desktop-windowing)
+supply compatibility cases for resize, keyboard/pointer, multi-instance and
+window mode. No Google-published repository specifically identified as
+Aluminium OS was verified; these public sources are comparisons, not a
+separate shell to transplant.
+
+Ship product code in dependency order: one managed-app registration and
+revision-bound launch identity shared by Android and Windows; a small runtime
+adapter for each platform; authenticated app-window association through the
+ordinary QindaQt container API; QindaTK management and mixed native/foreign
+tile-tab presentation; then files, clipboard, notifications and actual Audio1
+streams. A private Waydroid or Wine window is feasibility evidence only.
+During coding, compile touched targets and use a short focused test (30-second
+target, 60-second stop); do not repeat cold VM boots or package/image gates
+before these product interfaces exist. Run one bounded end-to-end user journey
+and one signed Portage build when a releasable slice is frozen. Preserve
+unmet identity, audio and input claims explicitly.
+
 ## Current runtime evidence — October 8, 17:50 MDT
 
 The eleventh isolated stock Waydroid guest passed two simultaneous

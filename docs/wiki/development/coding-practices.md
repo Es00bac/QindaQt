@@ -50,6 +50,13 @@ Never use markers to excuse poor factoring or duplicate documentation verbatim.
 
 ## Verification by change type
 
+Choose only the rows affected by the current slice. During coding, use the
+smallest deterministic check that exercises its contract (30-second target,
+60-second stop); build touched targets once after the code stabilizes. The
+larger matrix is a release selection guide, not a list to rerun after every
+edit. Preserve direct evidence for high-risk boundaries and state unavailable
+coverage honestly.
+
 | Change | Minimum evidence |
 | --- | --- |
 | Pure model mutation | Unit/property tests for valid and invalid transitions, plus round-trip persistence where applicable |

@@ -37,11 +37,13 @@ standards remain QindaQt-specific.
    the owned worktree.
 4. The worker hands off one immutable candidate commit with changed paths,
    commands and exit status/counts, caveats, and the requested next action.
-5. A different worker attacks that exact commit. A real defect goes directly
-   to the implementer with its reproduction; the same reviewer remains
-   assigned to the repaired descendant.
-6. The Program Manager integrates a passing candidate immediately, reruns the
-   affected combined-tree gates, and only then reconciles the outcome ledger.
+5. An independent reviewer checks exact high-risk authority, persistence,
+   public ABI, package, and release candidates; the manager can review a
+   reversible isolated slice directly. A real defect goes to the implementer
+   with its reproduction; repair review stays on that defect.
+6. The Program Manager integrates a passing candidate immediately, runs the
+   smallest affected combined-tree check, and reconciles the outcome ledger.
+   Broad unchanged suites wait for a releasable milestone.
 7. After handoff or review, the worker reads the queue and peer threads, claims
    the next compatible outcome or offers concrete help. No accepted result
    waits for managerial ceremony and no live capacity waits for invented
@@ -50,15 +52,12 @@ standards remain QindaQt-specific.
 The manager repeats: set a clear outcome, watch real evidence, remove an
 obstacle, connect peers, integrate finished work, refill safe capacity.
 
-Before starting a long integration or documentation gate, and again before a
-checkpoint report, the Program Manager reads the latest authored handoff or
-verdict for every executing lane and services all completed outcomes in one
-pass. A completed reviewer is returned to its preserved compatible
-implementation session before the manager waits on long gates; a stale ledger
-label never keeps an accepted candidate queued or a worker idle. Each lane has
-one concrete executable successor rather than a reservation for an unpublished
-candidate, and an active implementation is not repeatedly preempted merely to
-make board labels look current.
+Before an integration gate, the Program Manager services completed handoffs
+and verdicts together. Keep the gate short and directly tied to changed
+behavior; do not delay product code for repeated private-package or VM proof.
+A stale ledger label never keeps an accepted candidate queued or a worker idle.
+Each lane has a concrete next product outcome, and active implementation is
+not preempted to polish board labels.
 
 A blocking review finding must demonstrate a product defect, a consequential
 violation of an accepted contract, or invalid required verification. Optional
@@ -69,12 +68,13 @@ unchanged broad audit without evidence of wider impact. A failed mandatory
 gate receives one bounded causal investigation before retry, and an identical
 long retry requires a changed hypothesis or input.
 
-Long integration gates run asynchronously with one published session identifier
-and one exact integration boundary. The Program Manager does not stop, restart,
-or duplicate that gate merely to await it; after recording the retained session,
-the manager ends a bounded checkpoint so queued candidate, verdict, failure, and
-capacity events can be serviced. A later checkpoint resumes that same session
-before recording the gate result.
+Routine development checks have a 30-second target and a 60-second stop
+boundary. Replace a longer test with a focused deterministic case or defer a
+single necessary physical/package acceptance to the release candidate.
+Do not start or repeat multi-minute private VM or package gates while product
+interfaces remain unwritten. A release build may take longer than a test;
+run it once for a frozen candidate, retain its result, and keep other coding
+lanes moving instead of rebuilding for each source edit.
 
 Candidate handoffs, review results, stopped working processes, and live idle
 capacity with backlog use a separate event path with a scan interval of at most
@@ -138,9 +138,9 @@ serialized when their namespaces could collide.
 Compatible CMake configurations may share a task-scoped `ccache` directory
 through explicit C and C++ compiler launchers. Keep compiler-content checking
 and normal header validation enabled; do not use sloppiness, ignored headers,
-hard links, or copied mutable build roots. Preserve one warm integration build
-per compatible configuration, while every worker and reviewer retains its own
-source and build tree and still runs the required independent gates.
+hard links, or copied mutable build roots. Reuse one warm integration build;
+workers compile only touched targets, and reviewers inspect exact source and
+focused evidence without duplicating a full build.
 
 Interactive worker processes require a direct terminal. Do not pipe an
 interactive Codex or Claude process through `tee` or another stdout relay:

@@ -1,3 +1,15 @@
+## Current product-first execution boundary — 2026-10-09T00:15:00+00:00
+
+The owner stopped Astra/ultra work and long repeated private tests. Sol/max
+workers now implement shared Android/Windows registration, a public Windows
+runner, and guarded Audio1 routing in isolated qinda worktrees. The approved
+Android VM has exited; the Windows private diagnostic was stopped after nine
+seconds and will not be repeated as a coding prerequisite. R23/R6 remains
+installed but has no normal Android application support. The current
+verification policy in AGENTS.md is short focused checks during development,
+one contained user journey and one signed Portage build at a releasable
+milestone; retain truthful gaps and the half-system reserve.
+
 ## Installed R23/R6 and current acceptance boundary — 2026-10-08T23:50:00+00:00
 
 The signed desktop R23 package (SHA256 5e04a27e…) and Gabbee R6 package

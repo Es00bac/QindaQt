@@ -1,3 +1,32 @@
+## Fast Android and Windows delivery order — October 8, 18:15 MDT
+
+The owner requires a DeX-like result hosted by QindaQt: Android app content
+uses ordinary QindaQt windows and container tabs/tiling alongside native
+apps; QindaTK owns setup, status, errors and app management. Windows apps
+share the same desktop catalog and container path. A fixed-size Android
+app keeps its aspect and reports its compatibility limit instead of being
+stretched. Public [AOSP desktop-windowing guidance](https://source.android.com/docs/core/display/desktop-windowing)
+and [Samsung DeX app guidance](https://developer.samsung.com/samsung-dex/how-it-works.html)
+inform behavior tests; no verified public Google repository specifically
+identified as Aluminium OS was found.
+
+Implement in this order: (1) one typed managed-app registration and stable
+launch identity shared by Android and Windows; (2) small runtime adapters
+that launch a registered app and report lifecycle errors; (3) authenticated
+window-to-app binding so QindaQt tiling, tabs, task switching and QindaTK
+presentation work with native apps; (4) files, clipboard, input and Audio1
+routing through existing public boundaries. Deliver an independently useful
+vertical slice as soon as its code and focused checks pass. A private
+Waydroid/Wine feasibility fixture is diagnostic, not a prerequisite for
+writing this product code or evidence of installed support.
+
+Compile only changed targets and use a 30-second focused test target with a
+60-second stop. Run at most one short end-to-end smoke for a releasable slice
+and one signed Portage build for a frozen release candidate. No repeated
+cold VM boots, full suite sweeps or package-image reruns while core integration
+interfaces are still being written. Keep the half-system resource reserve
+and report any acceptance gap without claiming success.
+
 ## Installed R23/R6 checkpoint — October 8, 17:50 MDT
 
 Desktop R23 and Gabbee R6 passed independent signed-package and image
