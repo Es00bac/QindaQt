@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Windows Program Runner
+GenericName=Wine profile and Windows program setup
+Comment=Open a Windows program in its own Wine profile
+Exec=qindaqt-windows-runner %f
+Icon=folder-wine
+Terminal=false
+NoDisplay=true
+Categories=System;Utility;
+MimeType=application/vnd.microsoft.portable-executable;application/x-ms-dos-executable;application/x-msdownload;

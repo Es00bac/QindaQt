@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets Concurrent)
+qt_add_library(qindaqt_windows_handler_support STATIC runtime.cpp profile.cpp runtime.h)
+target_link_libraries(qindaqt_windows_handler_support PUBLIC QindaQt::WindowsRunner Qt6::Core)
+target_compile_features(qindaqt_windows_handler_support PUBLIC cxx_std_20)
+set_target_properties(qindaqt_windows_handler_support PROPERTIES CXX_EXTENSIONS OFF)
+qindaqt_enable_warnings(qindaqt_windows_handler_support)
+qt_add_executable(qindaqt-windows-runner main.cpp)
+target_link_libraries(qindaqt-windows-runner PRIVATE qindaqt_windows_handler_support Qt6::Widgets Qt6::Concurrent)
+qindaqt_enable_warnings(qindaqt-windows-runner)
+install(TARGETS qindaqt-windows-runner RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT WindowsRunner)
+install(FILES org.qindaqt.WindowsRunner.desktop DESTINATION "${CMAKE_INSTALL_DATADIR}/applications" COMPONENT WindowsRunner)

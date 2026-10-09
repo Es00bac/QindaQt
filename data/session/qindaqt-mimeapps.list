@@ -24,3 +24,6 @@ video/x-msvideo=org.qindaqt.QQMpv.desktop;
 audio/mpeg=org.qindaqt.QQMpv.desktop;
 audio/flac=org.qindaqt.QQMpv.desktop;
 audio/ogg=org.qindaqt.QQMpv.desktop;
+application/vnd.microsoft.portable-executable=org.qindaqt.WindowsRunner.desktop;
+application/x-ms-dos-executable=org.qindaqt.WindowsRunner.desktop;
+application/x-msdownload=org.qindaqt.WindowsRunner.desktop;
