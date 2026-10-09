@@ -7,7 +7,7 @@ namespace QindaQt::Services::AndroidRuntime {
 struct ReadPacket { enum State { Empty, Received, Lost, Rejected } state=Empty; QByteArray bytes; };
 // Owns all three descriptors; never stops/kills the producer. Expected identity came
 // from trusted supervised bootstrap. This verifies transport/lifetime only,
-// not executable, installed recipe, guest identity or mapped-window authority.
+// not installed-code attestation, recipe, guest identity or mapped-window authority.
 class PacketChannel final {
 public:
     PacketChannel(int socketFd,int lifetimeFd,int executableFd,int expectedPid,unsigned expectedUid);

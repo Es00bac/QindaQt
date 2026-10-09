@@ -35,3 +35,26 @@ qindaqt_enable_warnings(qindaqt_android_runtime_renderer_evidence_tests)
 add_test(NAME android-runtime.renderer-evidence COMMAND qindaqt_android_runtime_renderer_evidence_tests)
 set_tests_properties(android-runtime.renderer-evidence PROPERTIES TIMEOUT 10
     ENVIRONMENT_MODIFICATION "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
+
+qt_add_executable(qindaqt_android_runtime_renderer_lifetime_tests tst_renderer_lifetime.cpp)
+target_link_libraries(qindaqt_android_runtime_renderer_lifetime_tests PRIVATE QindaQt::AndroidRuntime Qt6::Test)
+target_compile_definitions(qindaqt_android_runtime_renderer_lifetime_tests PRIVATE _GNU_SOURCE)
+qindaqt_enable_warnings(qindaqt_android_runtime_renderer_lifetime_tests)
+add_test(NAME android-runtime.renderer-lifetime COMMAND qindaqt_android_runtime_renderer_lifetime_tests)
+set_tests_properties(android-runtime.renderer-lifetime PROPERTIES TIMEOUT 10
+    ENVIRONMENT_MODIFICATION "DBUS_SESSION_BUS_ADDRESS=unset:;DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
+
+# Compile only the new native extraction object against the release-matched
+# installed KWin headers. This does not build/start the plugin or a compositor.
+option(QINDAQT_TEST_ANDROID_KWIN_PEER "Compile the Android native KWin peer object" OFF)
+if(QINDAQT_TEST_ANDROID_KWIN_PEER)
+    find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Widgets)
+    include("../../../src/compositor/cmake/QindaQtKWinAbi.cmake")
+    qindaqt_resolve_kwin_abi("${CMAKE_CURRENT_LIST_DIR}/../../../compositor/upstream/kwin.json" _android_peer_kwin_abi)
+    find_package(QindaQtKWin ${_android_peer_kwin_abi} EXACT REQUIRED CONFIG)
+    add_library(qindaqt_android_native_window_peer_compile OBJECT
+        "../../../src/compositor/kwin/android_native_window_peer.cpp")
+    target_link_libraries(qindaqt_android_native_window_peer_compile
+        PRIVATE QindaQt::AndroidRendererEvidence QindaQtKWin::kwin Qt6::Widgets)
+    qindaqt_enable_warnings(qindaqt_android_native_window_peer_compile)
+endif()

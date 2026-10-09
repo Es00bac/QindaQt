@@ -574,3 +574,4 @@ nav:
       - "0371: Android package setup through QindaPortage": adr/0371-delegate-android-package-setup-to-qindaportage.md
       - "0372: Private Android producer kernel lifetimes": adr/0372-bind-private-android-producers-to-kernel-lifetimes.md
       - "0373: Android renderer origin and guest identity": adr/0373-separate-android-renderer-origin-from-guest-app-identity.md
+      - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md

@@ -423,3 +423,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0372: Bind private Android producers to kernel lifetimes](0372-bind-private-android-producers-to-kernel-lifetimes.md) — Accepted protocol/transport only; guest/supervisor/compositor admission remains separate.
 
 - [ADR-0373: Separate Android renderer origin from guest app identity](0373-separate-android-renderer-origin-from-guest-app-identity.md) — Accepted renderer evidence boundary only; production/bootstrap and guest association remain gated.
+
+- [ADR-0374: Bind separate Android renderers to held lifetimes](0374-bind-separate-android-renderers-to-held-lifetimes.md) — Accepted split collector/renderer lifetime and native extraction only; live bootstrap/guest association stay gated.

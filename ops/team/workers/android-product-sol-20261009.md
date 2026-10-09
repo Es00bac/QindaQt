@@ -3,11 +3,11 @@
 - Identity: Codex collaboration worker android-product-sol-20261009; manager requested Sol max. No independent runtime provider/model observation is available to this worker.
 - Role: Android Applications identity and public catalog/launcher slice.
 - Status: working — implementing native renderer/window evidence seam without guest app association.
-- Base: 00aad665c664c5642a565223194926a3698c0cb6
-- Branch: worker/android-renderer-evidence-sol-20261009
-- Worktree: ~/work_SPaC3/container-wm-android-renderer-sol-20261009
+- Base: 4e57be42d9758b06f60c4d0aa480b170a742ff41
+- Branch: worker/android-renderer-peer-lifetime-sol-20261009
+- Worktree: ~/work_SPaC3/container-wm-android-renderer-lifetime-sol-20261009
 - Ownership: src/services/android_runtime/**, focused android runtime/manager tests and primary Android wiki; compositor new android_* only after interface coordination.
-- Resources: all focused units settled; no VM, package, guest or full compositor build.
+- Resources: all split-renderer compile/smoke/docs units settled; no VM, package, guest or full compositor build.
 
 ## Updates
 
@@ -52,3 +52,7 @@
 - 2026-10-09T04:38:14+00:00 — Focused renderer/transport compile exit0 in24.180s,723MiB peak/zero swap; two CTest gates passed in0.68s (14 Qt methods,0 failures/skips). Small lane released to Portal. Concrete platform-only evidence target is native-only/exact PID/runtime/lifetime fenced; no registry/publisher or guest app authority. ADR0373/wiki written, pending routed docs check and exact source handoff.
 
 - 2026-10-09T04:41:23+00:00 — Self-review found still-live peer socket close could retain copied evidence until Qt notification; manager-approved minimal HUP/RDHUP fence now checks before/after executable observation. No-event-loop owned-fork regression passed. Warm compile exit0,8.391s/457.6MiB; two suites exit0,2/2 in0.72s,15 Qt methods/0fail/0skip. Prior receipts preserved. Strict MkDocs/link gate exit0,548 documents/navigation,8.983s/162MiB. All units settled; freezing exact source for independent review.
+
+- 2026-10-09T04:47:15+00:00 — Renderer candidate independently integrated on accepted4e57be42. Claimed exact-base isolated native peer/split-lifetime worktree. Own only new KWin android_native_window_peer pair, Android runtime lifetime/observer and focused tests with smallest additive target seams. No registry/publisher/supervisor implementation edit; no guest app identity inference.
+
+- 2026-10-09T04:54:49+00:00 — New native peer object compiled against exact installed KWin6.6.6.1 plus lifetime/evidence/descriptor targets: exit0,31.930s/774.2MiB/zero swap. Three focused suites passed3/3 in1.16s,23 Qt methods/0fail/0skip,including distinct collector/renderer PIDs and immediate channel/death loss. Strict docs gate exit0,550 documents/navigation,9.112s/162.5MiB. No existing registry/publisher/supervisor call added; all units settled. Freezing exact split-lifetime source for independent review.

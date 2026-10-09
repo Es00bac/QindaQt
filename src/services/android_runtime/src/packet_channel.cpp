@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "packet_channel_p.h"
+#include "process_lifetime_p.h"
 #include "qindaqt/services/android_runtime/descriptors.h"
-#include <QFile>
 #include <array>
 #include <cerrno>
 #include <cstring>
@@ -18,23 +18,6 @@ bool endpointConnected(int fd)
     pollfd endpoint{fd,POLLRDHUP,0};
     return ::poll(&endpoint,1,0)>=0
         && (endpoint.revents&(POLLRDHUP|POLLHUP|POLLERR|POLLNVAL))==0;
-}
-bool pidfdMatches(int fd,int pid)
-{
-    std::array<char,64> target{};
-    const auto path=QStringLiteral("/proc/self/fd/%1").arg(fd).toLocal8Bit();
-    const auto size=::readlink(path.constData(),target.data(),target.size());
-    if (size!=18 || QByteArray(target.data(),size)!=QByteArrayLiteral("anon_inode:[pidfd]")) return false;
-    QFile info(QStringLiteral("/proc/self/fdinfo/%1").arg(fd));
-    if (!info.open(QIODevice::ReadOnly)) return false;
-    const auto bytes=info.read(4097); if (bytes.size()>4096) return false;
-    for (const auto &line:bytes.split('\n')) {
-        if (line.startsWith("Pid:")) {
-            bool ok=false; const int actual=line.mid(4).trimmed().toInt(&ok);
-            return ok && actual==pid;
-        }
-    }
-    return false;
 }
 bool configure(int fd) {
     const int enabled=1;
@@ -69,8 +52,8 @@ PacketChannel::PacketChannel(int socketFd,int lifetimeFd,int executableFd,int ex
     int type=0; socklen_t size=sizeof(type);
     m_valid=m_socket>=0 && m_lifetime>=0 && m_pid>0
         && ::getsockopt(m_socket,SOL_SOCKET,SO_TYPE,&type,&size)==0 && type==SOCK_SEQPACKET
-        && configure(m_socket) && pidfdMatches(m_lifetime,m_pid)
-        && m_executable>=0 && ::fstat(m_executable,&m_pin)==0 && S_ISREG(m_pin.st_mode);
+        && configure(m_socket) && ProcessLifetime::pidfdMatches(m_lifetime,m_pid)
+        && ProcessLifetime::pinExecutable(m_executable,m_pin);
     if (!m_valid) close();
 }
 PacketChannel::~PacketChannel() { close(); }
@@ -87,20 +70,7 @@ bool PacketChannel::live() const
     // AGENT-GUARD: a still-live renderer can close its private endpoint.
     // Cached origin must withdraw before the queued socket notifier too.
     if (!m_valid || !endpointConnected(m_socket)) return false;
-    pollfd lifetime{m_lifetime,POLLIN,0};
-    // Every getter/send/read rechecks the held lifetime, before queued Qt
-    // death notification. A reused numeric PID never replaces this pidfd.
-    if (::poll(&lifetime,1,0)!=0) return false;
-    const auto path=QStringLiteral("/proc/%1/exe").arg(m_pid).toLocal8Bit();
-    const int executable=::open(path.constData(),O_PATH|O_CLOEXEC);
-    if (executable<0) return false;
-    struct stat current{}; const bool observed=::fstat(executable,&current)==0;
-    ::close(executable);
-    return observed && current.st_dev==m_pin.st_dev && current.st_ino==m_pin.st_ino
-        && current.st_size==m_pin.st_size && current.st_mode==m_pin.st_mode
-        && current.st_mtim.tv_sec==m_pin.st_mtim.tv_sec && current.st_mtim.tv_nsec==m_pin.st_mtim.tv_nsec
-        && current.st_ctim.tv_sec==m_pin.st_ctim.tv_sec && current.st_ctim.tv_nsec==m_pin.st_ctim.tv_nsec
-        && ::poll(&lifetime,1,0)==0 && endpointConnected(m_socket);
+    return ProcessLifetime::live(m_lifetime,m_pid,m_pin) && endpointConnected(m_socket);
 }
 ReadPacket PacketChannel::read()
 {

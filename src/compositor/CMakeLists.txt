@@ -447,6 +447,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinsceneadapter.h
             kwin/layoutgeometry.cpp
             kwin/layoutgeometry.h
+            kwin/android_native_window_peer.cpp
+            kwin/android_native_window_peer.h
             kwin/main.cpp
             kwin/managedwindowregistry.cpp
             kwin/managedwindowregistry.h
@@ -466,6 +468,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_compositor
         PRIVATE
             QindaQt::CompositorBridge
+            QindaQt::AndroidRendererEvidence
             QindaQt::DecorationPainter
             QindaQt::CompositorShellActions
             QindaQt::Hybrid

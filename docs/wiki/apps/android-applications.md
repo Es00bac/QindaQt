@@ -198,3 +198,28 @@ wired by this isolated source slice. The next product gate is a separately
 admitted renderer bootstrap plus authenticated guest package/task/surface
 association, followed by exact ordinary-window publication and mixed native/
 Android container coverage. The hidden management entry remains gated.
+
+## Separate collector and renderer lifetime
+
+[ADR-0374](../adr/0374-bind-separate-android-renderers-to-held-lifetimes.md) adds
+an AndroidRuntime holder for an independently admitted renderer pidfd/executable
+object and a copied observer joining it to the current authenticated collector
+runtime attachment. The two processes can have different host PIDs; collector
+inventory never substitutes its PID for a window's native kernel client PID.
+Both process fences are rechecked on observation. Renderer death/exec change,
+collector channel/death/exec loss or runtime withdrawal/replacement returns
+unknown; an observed renderer loss permanently retires its holder.
+
+The new KWin-only peer helper reads only a live non-internal managed native
+WaylandWindow incarnation and wl_client kernel PID, and passes the split binding
+through the existing public evidence gate. It retains no window pointer and
+uses no title/app_id/PID-property match. The isolated native object is compiled
+against the exact installed KWin release; no live compositor is started by the
+focused tests.
+
+The result still has no guest AppKey, package, UID, task, surface mapping, app
+count or control permission. Existing registry/publisher/supervisor do not call
+the helper yet. Trusted production bootstrap, verified materialization and
+an authenticated guest package/task/surface collector remain the next product
+gates before normal window identity, green badge and mixed native/Android
+QindaQt containers. The management entry remains hidden/null-runtime.
