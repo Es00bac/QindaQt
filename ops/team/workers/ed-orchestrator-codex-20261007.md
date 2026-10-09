@@ -2,12 +2,13 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Pair R24 desktop with R3 removable media, integrate Android setup, and coordinate Android/Windows runtime work.
+- Status: working — Qualify live R24/R3 USB behavior and deliver Android/Windows runtime components with bounded Portage builds.
 - Worktree: ~/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
 ## Updates
 
+- 2026-10-09T03:12:00+00:00 — Fully signed R24/R3 pair installed normally in25.358s, both package signatures/embedded recipes and R24 2622-path image parity pass. VDB/dependency/world/profile correct. Installed R3 synthetic private Devices check passes; refreshed only supervised old R2 helper, live /Devices/GetSnapshot responds. USB absent, so physical sidebar/Eject pending; no device action. Windows standalone handler source is integrated, component-r1 candidate awaits overlay integration; Android producer source/focused tests pass, independent review next.
 - 2026-10-09T02:56:00+00:00 — Accepted Windows standalone component source7d6 and integrated4e85 after reviewed 2-file stage/33.005s focused build; separate Portage ebuild remains candidate, no installed .exe claim. USB R24 signed-image repack third short attempt failed because helper set BINPKG_GPG_DIR rather than Portage actual BINPKG_GPG_VERIFY_GPG_HOME. Independently proved empty private public keyring fails and trusted public-only keyring passes full signature; exact one-key repair pending.
 - 2026-10-09T02:39:00+00:00 — Independently reviewed Windows concrete-handler source0f/7d, integrated c981/988; owner two strict focused target builds,1CTest/7Qt and strict docs pass. No real Wine or installed .exe claim; R23 generic MIME/OpenWith route supports a separately packaged component. R24 cold build stopped after 5262-action estimate; reviewed signed-R23 image repack e3e with exact2622-path ledger, awaiting documented successor/short package build.
 - 2026-10-09T02:17:00+00:00 — Reviewed Android 6d/e50 and integrated 71ef/01e2; R3 signed gpkg verifies on qinda and laptop. R23 exact R2 PDEPEND blocks standalone R3; reviewed R24 overlay54ed as dependency-only, synced both hosts. One bounded signed R24 build and paired normal Portage adoption next; no physical USB action.

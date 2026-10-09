@@ -1,3 +1,7 @@
+## Installed USB File Manager service pair — 2026-10-09T03:12:00+00:00
+
+Signed desktop R24 and Removable Media R3 were adopted together through normal binary-only Portage in 25.358 s. R24's image matches all 2,622 reviewed R23 paths; its recipe changes only the exact media post-dependency. R3 supplies the /Devices inventory absent in R2. Package signatures/embedded recipes passed on both hosts, installed VDB has R24+R3, and world/profile hashes are unchanged. The installed R3 private-session synthetic /Devices check passed; the session supervisor refreshed only its old R2 child, and the live D-Bus /Devices interface now answers GetSnapshot. The USB drive is currently unplugged, so physical hot-plug sidebar population and Eject remain unqualified; no storage operation was submitted.
+
 ## Windows .exe handler source — 2026-10-09T02:39:00+00:00
 
 Reviewed source c981526/98844ce adds a concrete Windows Program Runner: a responsive first-run chooser, per-program retained Wine profile, checked Portage Wine/bwrap payloads, and one fenced process submission. Owner focused strict builds (35.619 s initial, 10.893 s changed target), one CTest/seven Qt cases and strict docs passed. No real Wine application or installed .exe journey is claimed yet. R23 File Manager's generic MIME and IncludeNoDisplay Open With paths can use a separately packaged handler, and the standalone source route 4e85cb1 compiled/staged its own two files in 33.005 s. A small Portage component and one bounded ordinary launch are next; no full desktop rebuild is needed.
