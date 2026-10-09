@@ -1,3 +1,7 @@
+## WindowsRunner source integration boundary — 2026-10-09T00:28:00+00:00
+
+WindowsRunner candidate67a8 and Windows-only docs successor983 are integrated as source-only public ports after independent manager review. Owner focused build0/13.166s,2/2 CTests/44Qt and docs535 passed; manager resolved additive ADR/nav/module rows with the Android catalog. A future process adapter must make Refused side-effect-free, map uncertain dispatch to OutcomeUnknown and hold a current registration/profile transaction lease at actual spawn. No real Windows launch, blue window identity, Global Menu or Audio1 is claimed.
+
 ## Shared catalog integration boundary — 2026-10-09T00:24:00+00:00
 
 Exact managed catalog source 07f798 and author handoff c5507f are integrated after independent source review. It provides canonical Android/Windows registration IDs and pure launch bindings; it does not authenticate a runtime producer or produce live app/window/audio behavior. The owner focused compile, 12/12 CTests/145 Qt cases and docs538 passed. Two legacy enum consumers are source-inspected but await release compilation. QindaTK manager, WindowsRunner and Audio1 slices are active; no long VM/package rerun is planned.

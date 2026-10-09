@@ -49,6 +49,7 @@ nav:
       - Module boundaries: architecture/module-boundaries.md
       - Application window management: architecture/application-window-management.md
       - Foreign application identity and lifecycle: architecture/foreign-applications.md
+      - Public Windows application runner: architecture/windows-runner.md
       - Scoped desktop-agent context: architecture/desktop-agent-context.md
       - Native semantic window management: architecture/window-management-commands.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
@@ -562,4 +563,5 @@ nav:
       - '0362: Compact Audio device details': adr/0362-present-audio-devices-with-two-lines-and-disclosed-details.md
       - '0363: Per-volume Trash admission': adr/0363-admit-per-volume-trash-without-following-payload-links.md
       - "0364: Provider-owned secure Voice credentials": adr/0364-configure-voice-credentials-through-provider-owned-secure-storage.md
+      - "0366: Coordinate ordinary Windows launches through public ports": adr/0366-coordinate-ordinary-windows-launches-through-public-ports.md
       - "0368: Managed application catalog routing": adr/0368-merge-managed-applications-without-desktop-key-authority.md

@@ -49,8 +49,19 @@ Wine prefix or launch services outside the tracked scope.
 | Compositor and shell | Window incarnation/evidence; normal grouping, focus, resize and member-origin rendering | Guessing process authority or killing shared runtimes |
 | QindaPortage | Preview/authorize/apply package plans via existing privileged boundary | Opening a user's prefix as root or inferring guest installation success |
 
-These are proposed boundaries, not existing exported CMake targets. Changes to
-the [module registry](module-boundaries.md) occur with the implementing slice.
+These remain proposed service/adapter boundaries; the WindowsRunner core below
+is now a public target. Changes to the
+[module registry](module-boundaries.md) occur with the implementing slice.
+
+## Public WindowsRunner core
+
+`QindaQt::WindowsRunner` now provides the Qt Core
+[ordinary Windows launch coordinator](windows-runner.md): stable registration
+identity, strict literal Wine/umu plans, current-recipe rechecks and checked
+payload-lease dispatch ports. This source slice uses injected ports; installed
+recipe/profile loading, stable-handle process adapters and catalog/session
+composition remain required. It qualifies no ordinary Windows app journey,
+authenticated blue window identity, Audio1 or HMENU Global Menu capability.
 
 ## Typed values and bounds
 

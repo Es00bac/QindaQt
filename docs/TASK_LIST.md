@@ -1,3 +1,7 @@
+## Integrated WindowsRunner core — 2026-10-09T00:28:00+00:00
+
+WindowsRunner source67a8 is being integrated as a QtCore planning/coordinator seam with literal Wine/UMU plans, revision/recipe recheck and one-dispatch truth. Its owning short build,2 CTests/44 Qt checks and docs passed. The concrete catalog bridge, checked payload/process adapter, ordinary Notepad/WordPad journey, blue live window identity, Global Menu and Audio1 remain unimplemented. Do not count a working Windows app or ED-22 completion.
+
 ## Integrated shared managed-app catalog — 2026-10-09T00:24:00+00:00
 
 The independently source-reviewed Android/Windows catalog candidate 07f798 adds stable origin-qualified IDs, revision/digest launch bindings, native override masking and fail-closed managed launch preparation. Its focused build and 12 CTests passed; two legacy consumer translation units remain for release compilation. It does not yet launch an app, present QindaTK management, bind a live window, tile/tab, or route Audio1. WindowsRunner and QindaTK product slices follow this public seam; no whole ED-20–24 completion or feature weight is claimed.

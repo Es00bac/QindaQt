@@ -409,4 +409,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0365: Publish peripheral batteries through Power1 receipts](0365-publish-peripheral-batteries-through-power1-receipts.md) — Accepted; separate inventory preserves system-battery policy and authenticates sender-bound nonce receipts.
 
+- [ADR-0366: Coordinate ordinary Windows launches through public ports](0366-coordinate-ordinary-windows-launches-through-public-ports.md)
 - [ADR-0368: Merge managed applications without desktop-key authority](0368-merge-managed-applications-without-desktop-key-authority.md) — Accepted catalog values only; runtime producer/dispatch remains open.
