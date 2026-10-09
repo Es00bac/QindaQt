@@ -3,7 +3,11 @@
 Android Applications is an ordinary QindaTK desktop window for browsing supplied
 Android registrations, reading current availability and requesting launches.
 Its native desktop entry is `org.qindaqt.AndroidApplications`; it is a management
-utility, not a replacement generic entry for every guest application.
+utility, not a replacement generic entry for every guest application. The entry
+currently has `NoDisplay=true` while the executable injects a null port, so the
+next desktop package cannot advertise a dead-end management app. The binary
+remains available for source/UI qualification. Enable menu discovery only after
+an admitted setup/runtime composition offers actionable setup or recovery.
 [The shared catalog](../shell/launcher.md#managed-application-catalog-values)
 owns stable Android/Windows identities. The management boundary is recorded in
 [ADR-0369](../adr/0369-manage-android-applications-through-a-borrowed-runtime-port.md).
@@ -88,3 +92,31 @@ offscreen software rendering and fatal Qt warnings. UI captures show explicitly
 synthetic registration values, not running Android apps. Test item lookup uses
 the visual child tree and observes fresh delegates after ListView polish;
 QObject ownership and a retained pre-rebuild row are not display authority.
+
+## Installed stock runtime interface findings
+
+Source-only inspection of laptop `app-containers/waydroid-1.6.3` found that
+`tools/actions/app_manager.py::list` calls container Unfreeze/Freeze around
+`IPlatform.getAppsInfo`. It is not an observational polling API and must not
+back automatic status refresh. Its launch path can start a session and alter
+active-app/immersive properties. A Binder launch transaction's acknowledgement
+is not Running, a mapped surface or an application-window ownership proof.
+
+`IPlatform.getAppsInfo` supplies label/package/action/component/category fields;
+it supplies no signer, UID, task or surface mapping. Registration needs separately
+verified package/materialization truth; live app/window facts need the admitted
+runtime/producer. Unknown process/window counts must remain unknown.
+
+The exact inspected packaged source SHA-256 values were:
+
+| File beneath `/usr/lib/waydroid` | SHA-256 |
+| --- | --- |
+| `tools/actions/app_manager.py` | `8b4f4e5db8ff74514f69687215d1a5c00c9e163c20798b9d44b9004f618ddd8e` |
+| `tools/interfaces/IPlatform.py` | `e9016076ba33ec811534ffd64851be43b009b8f83c6e03c044d8cecb19607d49` |
+| `tools/actions/session_manager.py` | `9ae4b0d8cda39b16b534e178b16461e277fbf9741e9f043202d8609749d33dba` |
+
+No Waydroid command, live Binder call, session start, mount or installation ran
+for this inspection. QindaPortage's current native `--page packages --select
+<category/name>` handoff can open a package selection without using its separate
+`--ask` model action; its own GUI retains plan preview/approval. That native
+handoff does not install or materialize an Android app by itself.

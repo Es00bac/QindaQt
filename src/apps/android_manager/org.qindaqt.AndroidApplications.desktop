@@ -1,5 +1,7 @@
 [Desktop Entry]
 Type=Application
+# AGENT-GUARD: Keep hidden until the production setup/runtime port is actionable.
+NoDisplay=true
 Name=Android Applications
 Comment=Manage Android application availability and launches
 Exec=qindaqt-android-applications

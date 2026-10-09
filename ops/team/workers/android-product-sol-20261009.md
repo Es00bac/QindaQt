@@ -2,10 +2,10 @@
 
 - Identity: Codex collaboration worker android-product-sol-20261009; manager requested Sol max. No independent runtime provider/model observation is available to this worker.
 - Role: Android Applications identity and public catalog/launcher slice.
-- Status: working — handing exact QindaTK manager candidate to independent review and reading the next Android adapter boundary.
-- Base: 42f7ec9e791091119aea45e123380f8994511417
-- Branch: worker/android-manager-sol-20261009
-- Worktree: ~/work_SPaC3/container-wm-android-manager-sol-20261009
+- Status: working — gating the null-port release entry and implementing actionable Android setup/runtime composition.
+- Base: 42299ecbbffae4ecfc6f8060314c8e6bd04eb515
+- Branch: worker/android-runtime-setup-sol-20261009
+- Worktree: ~/work_SPaC3/container-wm-android-runtime-setup-sol-20261009
 - Ownership: src/apps/android_manager/**, focused tests, desktop entry/additive registries and primary Android manager wiki. Shared foreign architecture stays with Windows owner.
 - Resources: no VM, package, host runtime or heavy compiler run. Small focused source tests only.
 
@@ -30,3 +30,5 @@
 - 2026-10-09T00:45:20+00:00 — Final targeted synthetic-row case passed3 Qt methods/0fail/0skip in0.678s after fresh visual lookup/polish; both initial failures retained. Actual compact420px synthetic capture visually checked (green Android labels, pending launch, readable status). Strict docs/link gate exit0,540 documents,14.970s/171.3MiB. All resource units settled and small slot released to USB per latest manager routing. Production adapter remains null/unavailable; no real Android launch/window/audio claim.
 
 - 2026-10-09T00:46:29+00:00 — Handed exact manager sourcecfd13c61ec57b11498c434cc55c6c6756592b1c3 for independent review/integration with all23 paths, bounded native/UI/docs gates, preserved test-only failures and explicit null-backend caveat. Concrete help offer: verified recipe/materialization-to-port adapter or qualified compositor consumer mapping after accepted base/interface assignment. No resource unit remains.
+
+- 2026-10-09T00:58:38+00:00 — Manager sourcecfd/952 independently accepted/integrated42299ecbb. Claimed separate runtime/setup branch from that exact base. Gated null-port native menu entry with NoDisplay and recorded actual installed stock interface hashes/side effects. Existing QindaPortage CLI has --page/--select with preview/approval retained. No main-branch admitted guest recipe/materializer producer exists yet; no such authority is fabricated. No runtime/package/resource action.
