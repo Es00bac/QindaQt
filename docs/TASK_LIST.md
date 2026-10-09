@@ -1,3 +1,7 @@
+## Removable Media R3 source for File Manager USB — 2026-10-09T00:54:00+00:00
+
+The mounted USB drive is visible to the system, but installed Removable Media r2 exposes only Activate while File Manager R23 expects the public /Devices inventory and Eject actions. Reviewed source5266 and QindaGentoo r3 recipe4b586 provide the matching exporter and R23 dependency floor. Short production helper compile and synthetic export smoke passed; optional standalone tests were not completed. One Portage package build, image check, installation and fresh-login sidebar observation remain before ED-04 physical completion. The user's mounted drive has not been operated on.
+
 ## QindaTK Android manager source — 2026-10-09T00:48:00+00:00
 
 The independently reviewed QindaTK Android Applications manager cfd13c is integrated as a truthful status/search/launch UI over a borrowed runtime port. It does not connect to stock Waydroid yet: default production state is unavailable, and no Android app is launched or associated with a QindaQt window. Owner focused build, controller and compact UI checks plus strict docs passed. A desktop release must connect an admitted setup/runtime port or hide/omit the currently visible entry to avoid a dead end. Next: admitted registration/materialization/runtime adapter, normal catalog launch, DeX-like mixed native tile/tab, files/input/clipboard and Audio1. R23 remains without Android support.

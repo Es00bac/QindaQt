@@ -131,6 +131,8 @@ QString MediaPresenter::state() const {
     return QStringLiteral("unavailable");
 }
 QString MediaPresenter::recoveryLabel() const {
+    if (m_source.snapshot().diagnostic.code == Media::DiagnosticCode::Unsupported)
+        return tr("Open Removable Media");
     return m_source.ownerObserved() ? tr("Try again") : tr("Start Removable Media");
 }
 bool MediaPresenter::busy() const {

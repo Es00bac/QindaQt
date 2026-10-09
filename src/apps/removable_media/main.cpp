@@ -2,6 +2,7 @@
 #include "media_appearance.h"
 #include "media_controller.h"
 #include "media_exporter.h"
+#include "media_device_probe.h"
 #include "media_notifications.h"
 #include "udisks_backend.h"
 #include "qindaqt/app_appearance/application_appearance_controller.h"
@@ -45,7 +46,7 @@ private:
 // also makes installed-stage QML construction checks deterministic.
 class ProbeBackend final : public MediaBackend {
 public:
-    ProbeBackend() {
+    explicit ProbeBackend(const QString &mountedRoot = {}) {
         Volume volume;
         volume.token = QStringLiteral("probe-attachment");
         volume.device = QStringLiteral("/dev/probe1");
@@ -54,6 +55,11 @@ public:
         volume.size = 16ULL * 1024ULL * 1024ULL * 1024ULL;
         volume.mountable = volume.canMountReadOnly = volume.canFormat = volume.canPowerOff = true;
         volume.preferenceKey = QString(64, QLatin1Char('a'));
+        if (!mountedRoot.isEmpty()) {
+            volume.mountPath = mountedRoot;
+            volume.mountRoots = {mountedRoot};
+            volume.readOnlyKnown = true;
+        }
         m_volumes.append(volume);
     }
     QVector<Volume> volumes() const override { return m_volumes; }
@@ -109,11 +115,13 @@ int main(int argc, char **argv) {
     parser.addHelpOption();
     parser.addOption({QStringLiteral("watch"), QStringLiteral("Watch insertions with the window initially hidden")});
     parser.addOption({QStringLiteral("check-ui-contract"), QStringLiteral("Verify the UI using synthetic media and exit")});
+    parser.addOption({QStringLiteral("check-devices-contract"), QStringLiteral("Verify the Devices export using synthetic mounted media and exit")});
     parser.addOption({QStringLiteral("theme-directory"), QStringLiteral("Additional local theme directory"), QStringLiteral("path")});
     parser.process(application);
-    const bool probe = parser.isSet(QStringLiteral("check-ui-contract"));
+    const bool devicesProbe = parser.isSet(QStringLiteral("check-devices-contract"));
+    const bool probe = devicesProbe || parser.isSet(QStringLiteral("check-ui-contract"));
     const bool watch = parser.isSet(QStringLiteral("watch"));
-    auto session = probe ? QDBusConnection(QStringLiteral("removable-media-ui-probe"))
+    auto session = probe && !devicesProbe ? QDBusConnection(QStringLiteral("removable-media-ui-probe"))
                          : QDBusConnection::sessionBus();
 
     if (!probe && !session.registerService(QString::fromLatin1(serviceName))) {
@@ -137,7 +145,7 @@ int main(int argc, char **argv) {
     if (probe && !probeDirectory.isValid()) return 2;
     MediaPreferences preferences(probe ? probeDirectory.filePath(QStringLiteral("preferences.json")) : QString());
     std::unique_ptr<MediaBackend> backend;
-    if (probe) backend = std::make_unique<ProbeBackend>();
+    if (probe) backend = std::make_unique<ProbeBackend>(devicesProbe ? probeDirectory.path() : QString());
     else backend = std::make_unique<UDisksBackend>(QDBusConnection::systemBus());
     MediaController controller(*backend, preferences, !probe);
     std::unique_ptr<MediaNotifications> notifications;
@@ -146,7 +154,11 @@ int main(int argc, char **argv) {
     if (!probe && !session.registerObject(QString::fromLatin1(servicePath), &activation,
                                           QDBusConnection::ExportAllSlots)) return 2;
     MediaExporter devices(*backend, controller, session);
-    if (!probe && !devices.publishObject()) return 2;
+    if ((!probe || devicesProbe) && !devices.publishObject()) {
+        std::fprintf(stderr, "qindaqt-removable-media: could not export device support\n");
+        return 2;
+    }
+    if (devicesProbe) return verifyDevicesContract(session, probeDirectory.path());
     if (probe) controller.select(QStringLiteral("probe-attachment"));
 
     QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(session);

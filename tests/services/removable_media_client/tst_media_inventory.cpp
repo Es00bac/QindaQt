@@ -134,6 +134,7 @@ private Q_SLOTS:
     void oldOwnerUsesActivateWithoutFallback();
     void exactOwnerMalformedAndRevocation();
     void destructionWithPendingRead();
+    void mountedOwnerSnapshotAndUpdatesArePassive();
     void ownerProjectionRetainsPartitionsAndReadOnlyTruth();
 };
 void InventoryTests::unavailableNeverLaunches()
@@ -280,6 +281,8 @@ void InventoryTests::oldOwnerUsesActivateWithoutFallback()
     Public::MediaClient client(QDBusConnection::sessionBus(), launcher);
     client.start();
     QTRY_COMPARE(client.snapshot().diagnostic.code, Public::DiagnosticCode::Unsupported);
+    QVERIFY(client.snapshot().diagnostic.message.contains(QStringLiteral("Update Removable Media")));
+    QVERIFY(client.snapshot().diagnostic.message.contains(QStringLiteral("sign out and back in")));
     client.recover();
     QTRY_COMPARE(activation.activations, 1);
     QCOMPARE(launcher.attempts, 0);
@@ -344,6 +347,50 @@ void InventoryTests::destructionWithPendingRead()
     server.unregisterObject(QString::fromLatin1(Public::kObjectPath));
     server.unregisterService(QString::fromLatin1(Public::kServiceName));
     QDBusConnection::disconnectFromBus(QStringLiteral("delayed-media"));
+}
+void InventoryTests::mountedOwnerSnapshotAndUpdatesArePassive()
+{
+    auto server = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("new-media"));
+    Backend backend;
+    Owner::Volume volume;
+    volume.token = QStringLiteral("fixture-mounted");
+    volume.identity = QStringLiteral("fixture-volume");
+    volume.driveIdentity = QStringLiteral("fixture-drive");
+    volume.label = QStringLiteral("Mounted USB");
+    volume.kind = QStringLiteral("USB storage");
+    volume.mountPath = QStringLiteral("/tmp/fixture-usb");
+    volume.mountRoots = {volume.mountPath};
+    volume.readOnlyKnown = true;
+    backend.items = {volume};
+    QTemporaryDir config;
+    QVERIFY(config.isValid());
+    Owner::MediaPreferences prefs(config.filePath(QStringLiteral("choices.json")));
+    Owner::MediaController controller(backend, prefs, false);
+    Owner::MediaExporter exporter(backend, controller, server);
+    QVERIFY(exporter.publishObject());
+    QVERIFY(server.registerService(QString::fromLatin1(Public::kServiceName)));
+    Launcher launcher;
+    Public::MediaClient client(QDBusConnection::sessionBus(), launcher);
+    client.start();
+    QTRY_COMPARE(client.snapshot().availability, Public::Availability::Ready);
+    QCOMPARE(client.snapshot().rows.size(), 1);
+    QCOMPARE(client.snapshot().rows[0].preferredRoot, volume.mountPath);
+    QVERIFY(client.snapshot().rows[0].actions.open.enabled);
+    QVERIFY(client.snapshot().rows[0].actions.remove.enabled);
+    const auto revision = client.snapshot().lineage.revision;
+    auto inserted = volume;
+    inserted.token = QStringLiteral("fixture-inserted");
+    inserted.identity = QStringLiteral("fixture-second-volume");
+    inserted.mountPath = QStringLiteral("/tmp/fixture-second-usb");
+    inserted.mountRoots = {inserted.mountPath};
+    backend.items.append(inserted);
+    backend.refresh();
+    QTRY_COMPARE(client.snapshot().rows.size(), 2);
+    QVERIFY(client.snapshot().lineage.revision > revision);
+    QCOMPARE(client.snapshot().rows[1].preferredRoot, inserted.mountPath);
+    QCOMPARE(backend.mutations, 0);
+    QCOMPARE(launcher.attempts, 0);
+    server.unregisterService(QString::fromLatin1(Public::kServiceName));
 }
 void InventoryTests::ownerProjectionRetainsPartitionsAndReadOnlyTruth()
 {

@@ -22,7 +22,7 @@ target_link_libraries(qindaqt_removable_media_appearance PUBLIC
 target_compile_features(qindaqt_removable_media_appearance PUBLIC cxx_std_20)
 qindaqt_enable_warnings(qindaqt_removable_media_appearance)
 
-qt_add_executable(qindaqt-removable-media main.cpp)
+qt_add_executable(qindaqt-removable-media main.cpp media_device_probe.cpp media_device_probe.h)
 qt_add_qml_module(qindaqt-removable-media
     URI QindaQt.RemovableMediaApp VERSION 1.0
     QML_FILES Main.qml MediaDetails.qml FormatDialog.qml)
@@ -43,6 +43,11 @@ qindaqt_enable_warnings(qindaqt-removable-media)
 
 if(BUILD_TESTING)
     find_program(QINDAQT_MEDIA_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+    add_test(NAME qindaqt.removable-media-devices-contract
+        COMMAND "${QINDAQT_MEDIA_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt-removable-media> --check-devices-contract)
+    set_tests_properties(qindaqt.removable-media-devices-contract PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+        LABELS "apps;media;integration;private-bus" TIMEOUT 10)
     foreach(behavior policy udisks notifications)
         qt_add_executable(qindaqt_media_${behavior}_tests tests/tst_media_${behavior}.cpp)
         target_link_libraries(qindaqt_media_${behavior}_tests PRIVATE

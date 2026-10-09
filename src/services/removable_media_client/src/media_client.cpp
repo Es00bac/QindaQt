@@ -184,7 +184,7 @@ void MediaClient::requestSnapshot()
                 const bool old = error == QDBusError::UnknownObject || error == QDBusError::UnknownMethod
                     || error == QDBusError::UnknownInterface;
                 publishUnavailable(old ? DiagnosticCode::Unsupported : DiagnosticCode::Unavailable,
-                    old ? QStringLiteral("This media owner has no device inventory. Open Removable Media.")
+                    old ? QStringLiteral("Update Removable Media, then sign out and back in to use devices here. The media window can still manage this drive.")
                         : QStringLiteral("Could not read media support. Try again."));
                 return;
             }

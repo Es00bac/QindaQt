@@ -83,7 +83,8 @@ external labels as plain text.
 
 Starting or refreshing File Manager only observes. A missing owner offers
 Start Removable Media, retry and its graphical window; an old incompatible
-owner stays visibly unavailable. There is no consumer mount utility, preference
+owner stays visibly unavailable with an update-and-login instruction; its
+recovery action accurately says Open Removable Media. There is no consumer mount utility, preference
 store, automatic owner activation or observation-triggered device action.
 
 Open of an unmounted device waits for confirmed current roots and matching

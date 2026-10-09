@@ -74,6 +74,18 @@ The component supports the shared pre20260927-r7 desktop floor, and UDisks plus
 FAT/exFAT/ext4 format providers are Portage dependencies. A full-desktop recipe
 must set `QINDAQT_BUILD_REMOVABLE_MEDIA=OFF` while this package owns the component.
 
+The component package must include the Devices exporter before File Manager
+can discover drives or offer Eject. Updating only the desktop leaves an older
+Activate-only helper incompatible; a new login alone does not upgrade it.
+Install the matching Removable Media component and then sign out and back in.
+
+`--check-devices-contract` uses one synthetic mounted volume and checks the
+actual exported Version/GetSnapshot boundary through this process's unique bus
+name. It never claims the resident service name, connects to UDisks or submits
+an action. Run it with `dbus-run-session`, `QT_QPA_PLATFORM=offscreen` and an
+unavailable system bus to qualify a staged/installed component without touching
+physical media. This is export/package-composition evidence, not an eject test.
+
 ## Boundaries and evidence
 
 The application separates pure inventory projection, atomic choice persistence,

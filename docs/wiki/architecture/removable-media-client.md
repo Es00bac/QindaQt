@@ -8,7 +8,11 @@
 
 The owner privately exports Version=1, GetSnapshot and SnapshotChanged at `/org/qindaqt/RemovableMedia1/Devices`. Its adapter receives the existing backend and controller. Complete mount roots, partition numbers and known/unknown read-only truth originate in the owning projection; the adapter does not infer facts from status strings. It rolls an instance epoch on underlying UDisks authority replacement and salts public drive/volume/attachment identifiers. Duplicate labels and sibling partition rows stay separate. Bad roots, excessive inventory or invalid data withdraw the entire snapshot rather than hiding siblings. Dismissing a notification cannot withdraw this inventory.
 
-A missing owner reports **Media support unavailable**. A deliberate `recover` requests one closed owner launch; launcher success remains Loading until an observed owner publishes valid ready inventory. Failure or five-second startup timeout stays visible and offers Try again/the ordinary launcher. Passive reads never request a launch and repeated clicks while starting do not loop. An old Activate-only owner reports Unsupported; deliberate recovery opens its existing window rather than installing a second watcher or compatibility mount utility.
+A missing owner reports **Media support unavailable**. A deliberate `recover` requests one closed owner launch; launcher success remains Loading until an observed owner publishes valid ready inventory. Failure or five-second startup timeout stays visible and offers Try again/the ordinary launcher. Passive reads never request a launch and repeated clicks while starting do not loop. An old Activate-only owner reports Unsupported with an explicit instruction to
+update Removable Media and sign out and back in. Its recovery button says Open
+Removable Media and opens the existing window. A new login alone cannot add the
+missing exporter to an old component package; observation never installs a
+second watcher or compatibility mount utility.
 
 All decoded publications are validated atomically. Malformed data clears ready rows. Same-epoch revision regression and reuse of a retired epoch are refused; the client keeps bounded epoch history separately from unavailable presentation. Raw broker/service errors and private identities are never shown.
 

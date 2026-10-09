@@ -1,3 +1,7 @@
+## File Manager USB package mismatch — 2026-10-09T00:54:00+00:00
+
+R23 File Manager contains the device sidebar/Eject UI, but separately installed Removable Media r2 pins pre-exporter source and presents only Activate, so the live /Devices endpoint is absent. Source5266 and overlay r3 recipe4b586 are accepted for one component Portage build. Reduced production compile and synthetic unique-owner /Devices smoke passed; optional standalone test compilation timed out with four steps left. No installed R3, fresh-login sidebar or physical Eject result is claimed.
+
 ## QindaTK Android manager source boundary — 2026-10-09T00:48:00+00:00
 
 Exact QindaTK Android manager source cfd13c and author handoff952956 are integrated after independent manager review. Borrowed runtime status/launch is copied, revision-fenced and honest when absent; the app cannot start Waydroid or claim Running by itself. Focused app/controller/UI and strict docs passed, including the repaired compact synthetic row. Do not ship its visible desktop entry with the null production port; compose a usable setup/runtime port or gate the entry first. An admitted Android producer, actual window/container tile-tab behavior and Audio1 remain open.
