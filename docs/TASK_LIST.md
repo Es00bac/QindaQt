@@ -1,3 +1,7 @@
+## Windows .exe handler source — 2026-10-09T02:39:00+00:00
+
+Reviewed source c981526/98844ce adds a concrete Windows Program Runner: a responsive first-run chooser, per-program retained Wine profile, checked Portage Wine/bwrap payloads, and one fenced process submission. Owner focused strict builds (35.619 s initial, 10.893 s changed target), one CTest/seven Qt cases and strict docs passed. No real Wine application or installed .exe journey is claimed yet. R23 File Manager's generic MIME and IncludeNoDisplay Open With paths can use a separately packaged handler, so a small Portage component and one bounded ordinary launch are next; no full desktop rebuild is needed.
+
 ## Android setup and USB package boundary — 2026-10-09T02:18:00+00:00
 
 Reviewed Android menu gate 71ef7a6 and closed QindaPortage setup source 01e2fca are integrated. The hidden Android Applications binary can open package planning for fixed runtime/images atoms; it has no admitted registration/runtime producer or real Android app/window/audio journey. USB Removable Media R3 source and signed package SHA-256 71c19400… provide the /Devices exporter missing from installed R2. Portage refuses R3 alone because desktop R23 has an exact R2 PDEPEND. A dependency-only R24 desktop package and paired R24/R3 adoption are next. No physical Eject or installed R3 is claimed.
