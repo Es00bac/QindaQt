@@ -148,3 +148,27 @@ opening now has an actionable package-selection route where QindaPortage exists.
 The three short gates include closed target/refusal/owner-loss/no-fake-registration
 controls plus actual offscreen setup-button input. They use an injected native
 planning port and never launch QindaPortage or a guest during verification.
+
+## Private producer transport
+
+[ADR-0372](../adr/0372-bind-private-android-producers-to-kernel-lifetimes.md) moves
+RuntimePort/types/validation to the Qt Core service protocol. The app's previous
+header aliases the same types; static consumers rebuild. The new service
+RuntimePort receiver/helper ProducerEndpoint use an unnamed private descriptor,
+per-packet kernel sender PID/UID, held pidfd/executable object and a private
+bootstrap key. They never identify a producer from a bus name or metadata.
+
+A trusted supervisor must first admit the installed native executable and its
+session/runtime/recipe context. This transport proves the provisioned process
+and its current lifetime; it does not collect guest signing identity, task/
+surface ownership or window evidence. The production management composition is
+still null-runtime and its desktop entry remains hidden. No public fd/PID argv
+option or automatic helper start is exposed.
+
+Packet size/field/array bounds and exact version/direction are enforced before
+publication. Death/exec change/getter checks fence stale cached truth before Qt
+notifications arrive. Runtime/registration replacement invalidates dependent
+operations; same-ID requests never replay and a retired attachment cannot return.
+Owned-fork tests demonstrate kernel credentials/lifetime on inert synthetic
+publishers, not running Android apps. Supervisor/verified guest collector and
+renderer/window admission are the next concrete product layers.

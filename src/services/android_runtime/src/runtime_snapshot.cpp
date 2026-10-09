@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "qindaqt/android_manager/runtime_port.h"
+#include "qindaqt/services/android_runtime/runtime_port.h"
 #include "qindaqt/shell_launcher/launcher_bounds.h"
 
 #include <QHash>
 #include <QUuid>
 
-namespace QindaQt::AndroidManager {
+namespace QindaQt::Services::AndroidRuntime {
 using namespace QindaQt::ShellLauncher;
 
 bool validRuntimeMessage(const QString &message)
@@ -88,4 +88,4 @@ bool validateRuntimeSnapshot(const RuntimeSnapshot &snapshot, QString *error)
     }
     return true;
 }
-} // namespace QindaQt::AndroidManager
+} // namespace QindaQt::Services::AndroidRuntime

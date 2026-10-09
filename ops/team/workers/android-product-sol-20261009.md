@@ -2,11 +2,11 @@
 
 - Identity: Codex collaboration worker android-product-sol-20261009; manager requested Sol max. No independent runtime provider/model observation is available to this worker.
 - Role: Android Applications identity and public catalog/launcher slice.
-- Status: working — handing the short-verified Android QindaPortage setup slice to independent review.
-- Base: 42299ecbbffae4ecfc6f8060314c8e6bd04eb515
-- Branch: worker/android-runtime-setup-sol-20261009
-- Worktree: ~/work_SPaC3/container-wm-android-runtime-setup-sol-20261009
-- Ownership: src/apps/android_manager/**, focused tests, desktop entry/additive registries and primary Android manager wiki. Shared foreign architecture stays with Windows owner.
+- Status: working — handing exact private producer transport/ownership candidate to independent review.
+- Base: ccb676e9110ec418dc9c5b94fab2f58736148f82
+- Branch: worker/android-producer-admission-sol-20261009
+- Worktree: ~/work_SPaC3/container-wm-android-producer-sol-20261009
+- Ownership: src/services/android_runtime/**, focused android runtime/manager tests and primary Android wiki; compositor new android_* only after interface coordination.
 - Resources: no VM, package, host runtime or heavy compiler run. Small focused source tests only.
 
 ## Updates
@@ -38,3 +38,11 @@
 - 2026-10-09T01:07:40+00:00 — Manager granted one2CPU/2GiB/120s SetupPort/native adapter build plus <=30s three-gate smoke while4CPU/5GiB package cohort continues. Starting only that source-focused unit; no QindaPortage/Waydroid/helper execution or install.
 
 - 2026-10-09T01:16:43+00:00 — Setup build exit0,33.455s/999.3MiB/0swap; three-gate smoke3/3 in0.94s,23Qt cases0fail/skip/blacklist; strict docs/link exit0,544documents,9.122s/165.7MiB. Compact420px updated UI capture visually checked. All units settled. Native selector is fixed package planning only; no actual QindaPortage/Waydroid/helper, install, VM, guest registration/window or audio execution.
+
+- 2026-10-09T02:31:53+00:00 — Claimed latest acceptedccb isolated producer branch. Implementing private inherited SOCK_SEQPACKET descriptors, per-packet SCM_CREDENTIALS and held pidfd checks; SO_PEERCRED from a pre-fork socketpair is not child identity. Source-only until one short native owned-process gate; no guest/helper/runtime operation or public argv bootstrap.
+
+- 2026-10-09T03:00:47+00:00 — Producer/protocol source and actual owned-fork credential/death/exec tests frozen. Manager approved protocol ownership repair and ADR0372. Windows private predecessor observed inactive/dead; starting the one granted2CPU/2GiB/120s focused build with exact retained output. No guest, software manager, helper or runtime/bootstrap action.
+
+- 2026-10-09T03:08:37+00:00 — Initial focused compile exit0 (42.155s/800.6MiB); native/codec/alias3/3/30Qt passed1.78s. Final receipt inspection found inherited QtTest SIGTERM crash reporting in deliberately retired fixture children. Preserved original log; manager authorized only a <=10s warm descriptor-test compile and <=10s suite after child SIGTERM default reset. No production change or broad rerun. Docs/link546/0 already settled.
+
+- 2026-10-09T03:11:54+00:00 — One strict source build passed42.155s/800.6MiB; initial codec/native/alias3/3/30Qt passed1.78s. Fixture-only SIGTERM reset warm compile4.114s/467.8MiB and exact descriptor8Qt/0fail/skip passed0.42s with clean intentional retirement receipt; original retained. Strict docs/link546/0 passed17.757s/173.3MiB. All units/owned fixture children settled. No guest, helper activation, supervisor/compositor mutation or default GUI origin claim.
