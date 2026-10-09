@@ -22,21 +22,25 @@ private Q_SLOTS:
         QVERIFY(binding.start());
         QSignalSpy lost(&binding, &PortalSessionBinding::selectedSessionOwnerLost);
 
-        auto caller = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
-                                                     QStringLiteral("portal-owner-first"));
-        QVERIFY(caller.isConnected());
         auto request = QDBusMessage::createMethodCall(
             QString::fromLatin1(kNativePortalService),
             QString::fromLatin1(kNativePortalPath),
             QString::fromLatin1(kNativePortalService),
             QStringLiteral("AttachSessionWithDisplay"));
         request << QStringLiteral("qindaqt-7");
-        QDBusPendingCallWatcher first(caller.asyncCall(request, 1000));
-        QTRY_VERIFY_WITH_TIMEOUT(first.isFinished(), 2000);
-        const QDBusPendingReply<bool> firstReply = first;
-        QVERIFY(!firstReply.isError());
-        QVERIFY(!firstReply.value()); // No private compositor in this short test.
-        QCOMPARE(lost.count(), 0);
+
+        // The named connection closes only after every local reference dies.
+        {
+            auto caller = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
+                                                         QStringLiteral("portal-owner-first"));
+            QVERIFY(caller.isConnected());
+            QDBusPendingCallWatcher first(caller.asyncCall(request, 1000));
+            QTRY_VERIFY_WITH_TIMEOUT(first.isFinished(), 2000);
+            const QDBusPendingReply<bool> firstReply = first;
+            QVERIFY(!firstReply.isError());
+            QVERIFY(!firstReply.value()); // No private compositor in this short test.
+            QCOMPARE(lost.count(), 0);
+        }
 
         QDBusConnection::disconnectFromBus(QStringLiteral("portal-owner-first"));
         QTRY_COMPARE_WITH_TIMEOUT(lost.count(), 1, 2000);
