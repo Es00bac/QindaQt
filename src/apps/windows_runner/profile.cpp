@@ -36,6 +36,17 @@ bool ownedDirectory(const QString &path)
         && !(info.permissions() & (QFile::WriteGroup | QFile::WriteOther));
 }
 
+QByteArray runtimeDigest(const InstalledWine &runtime)
+{
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    hash.addData(runtime.id.toUtf8());
+    for (const auto &pin : {runtime.preloader, runtime.loader, runtime.server, runtime.bubblewrap}) {
+        hash.addData(QByteArrayLiteral("\0")); hash.addData(pin->path.toUtf8());
+        hash.addData(QByteArrayLiteral("\0")); hash.addData(pin->digest);
+    }
+    return hash.result();
+}
+
 QProcessEnvironment guestEnvironment(const QProcessEnvironment &session,
     const QString &root, const InstalledWine &runtime)
 {
@@ -105,7 +116,9 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
     QJsonObject previous;
     if (QFileInfo::exists(receiptPath)) {
         QFile old(receiptPath);
-        if (QFileInfo(receiptPath).isSymLink() || !old.open(QIODevice::ReadOnly) || old.size() > 65536) {
+        if (!QFileInfo(receiptPath).isFile() || QFileInfo(receiptPath).isSymLink()
+            || QFileInfo(receiptPath).ownerId() != static_cast<quint32>(::getuid())
+            || !old.open(QIODevice::ReadOnly) || old.size() > 65536) {
             return refused(QStringLiteral("This Windows profile receipt needs repair."), root);
         }
         const QJsonDocument parsed = QJsonDocument::fromJson(old.readAll());
@@ -175,7 +188,7 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
         : previous.value(QStringLiteral("registrationId")).toString();
     const QString previousRevision = previous.value(QStringLiteral("revision")).toString();
     bool revisionValid = false; const quint64 revision = previous.isEmpty() ? 0 : previousRevision.toULongLong(&revisionValid);
-    if ((!previous.isEmpty() && (!revisionValid || revision == 0)) || revision == std::numeric_limits<quint64>::max()) {
+    if ((!previous.isEmpty() && (!revisionValid || revision == 0 || QString::number(revision) != previousRevision)) || revision == std::numeric_limits<quint64>::max()) {
         return refused(QStringLiteral("This Windows profile revision needs repair. Its data was retained."), root);
     }
     const QString requestedKind = kind == ProgramKind::Installer ? QStringLiteral("installer") : QStringLiteral("portable");
@@ -183,7 +196,7 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
         && previous.value(QStringLiteral("sourcePath")).toString() == canonical
         && previous.value(QStringLiteral("sourceSha256")).toString() == QString::fromLatin1(imagePin->digest.toHex())
         && previous.value(QStringLiteral("runtimeCpv")).toString() == runtime->id
-        && previous.value(QStringLiteral("runtimeSha256")).toString() == QString::fromLatin1(runtime->loader->digest.toHex())
+        && previous.value(QStringLiteral("runtimeSha256")).toString() == QString::fromLatin1(runtimeDigest(*runtime).toHex())
         && previous.value(QStringLiteral("kind")).toString() == requestedKind;
     QJsonObject receipt{{QStringLiteral("schema"), 1},
         {QStringLiteral("provenance"), QStringLiteral("user-selected-file")},
@@ -192,7 +205,7 @@ ProfileLaunch launchProgram(const ProgramInspection &inspection,
         {QStringLiteral("sourcePath"), canonical},
         {QStringLiteral("sourceSha256"), QString::fromLatin1(imagePin->digest.toHex())},
         {QStringLiteral("runtimeCpv"), runtime->id},
-        {QStringLiteral("runtimeSha256"), QString::fromLatin1(runtime->loader->digest.toHex())},
+        {QStringLiteral("runtimeSha256"), QString::fromLatin1(runtimeDigest(*runtime).toHex())},
         {QStringLiteral("kind"), requestedKind},
         {QStringLiteral("exposure"), QStringLiteral("native-user-session")},
         {QStringLiteral("lastLaunchId"), launchId}, {QStringLiteral("phase"), QStringLiteral("prepared")}};

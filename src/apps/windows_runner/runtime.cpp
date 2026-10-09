@@ -154,7 +154,7 @@ ProgramInspection inspectProgram(const QString &path, const QString &dataRoot)
         const QString base = QStringLiteral("/usr/lib/wine-proton-") + version;
         auto runtime = std::make_shared<InstalledWine>();
         runtime->id = QStringLiteral("app-emulation/") + entry;
-        runtime->label = QStringLiteral("Wine Proton %1").arg(version);
+        runtime->label = QStringLiteral("Wine %1 (Proton build)").arg(version);
         runtime->preloader = packagePin(package, base + QStringLiteral("/wine/x86_64-unix/wine-preloader"));
         runtime->loader = packagePin(package, base + QStringLiteral("/wine/x86_64-unix/wine"));
         runtime->server = packagePin(package, base + QStringLiteral("/bin/wineserver"));

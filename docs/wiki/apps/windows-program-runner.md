@@ -1,0 +1,21 @@
+# Windows Program Runner
+
+`qindaqt-windows-runner` is the concrete File Manager handler for an explicitly selected local Windows PE program. The packaged `org.qindaqt.WindowsRunner.desktop` entry receives one literal local-file argument; desktop-scoped MIME fallbacks remain below XDG user and administrator choices. It uses the public [WindowsRunner PE boundary](../architecture/windows-runner.md), not game-library or store internals.
+
+## Setup and launch
+
+The Qt Widgets window selects an installed runtime and explicitly distinguishes a portable application from an installer. Its QtConcurrent worker performs all PE inspection, Portage runtime inventory/payload verification, image hashing and profile/receipt work. Runtime/kind choices and the installed-program chooser cannot re-enable a launch while a job is in flight; stale inspection generations never replace the latest choice.
+
+The first backend supports root-owned Portage Wine Proton builds (Wine engine, not a complete umu/Steam Runtime profile). It resolves the exact VDB package and verifies installed preloader, Unix loader, wineserver and bubblewrap bytes against root-owned `CONTENTS` MD5, also recording SHA-256 through stable handles. There is no user-directory Proton discovery, downloader, floating alias or silent runtime substitution. An unavailable saved runtime leaves the chooser unselected. Full Proton/umu profiles remain a separate subsequent adapter.
+
+A profile is private user state below `$XDG_DATA_HOME/qindaqt/windows-programs`. A source-path hash is only its internal lookup key; the persistent public registration ID is a separate canonical UUID. Schema1 receipts record user-file provenance, positive revision, exact source SHA-256, runtime tuple, portable/installer kind and explicit `native-user-session` exposure. Unknown schema is retained and launch refused. Unchanged relaunch keeps registration/revision and cached image; recipe changes increment revision. Prefix, receipts, program images and user documents survive all failure paths. The only deleted file is the current operation's fresh duplicate temporary image when an identical cached image already exists.
+
+The setup states that file access uses normal desktop permissions. This is an explicit native-user-session profile, not a security sandbox. Bubblewrap preserves that filesystem exposure while mounting the checked immutable program snapshot over its original pathname, preserving portable-app sibling paths. It also overlays the checked runtime handles; no shell interprets program names or arguments. A kernel profile lock serializes receipt/profile mutation through the single `posix_spawn` dispatch, and the checked descriptor slots are inherited deliberately after ambient descriptors are closed. Successful dispatch means startup submitted, not Running or a qualified window.
+
+After an installer command ends, the user may choose an actual PE executable under that same profile's `prefix/drive_c`; target selection reuses the prefix/data/registration. Exit status alone never certifies installation. Closing setup during preparation requests cancellation and prevents dispatch if observed before submission. A race after submission remains uncertain; no automatic retry or broad wineserver kill occurs.
+
+## Current delivery evidence
+
+The executable/setup/profile/native-dispatch target is real compiled source. The first strict focused build passed once in35.619s; its private source smoke passed1/1/7Qt in.0156s. The smoke injects submission and never executes Wine; it verifies first-run/relaunch retention, literal files and sanitized environment, kernel lock held at dispatch, changed-runtime refusal, unknown-schema retention and cancellation. A targeted rebuild validates the later in-flight GUI/complete-runtime-tuple guard.
+
+A short actual ordinary Wine launch probe is separately authorized and required; no installed File Manager `.exe` journey, typing/save/resize/independent close/relaunch, authenticated blue member identity, Audio1 or standard HMENU Global Menu is claimed from these source checks. Ordinary managed Applications registration/session dispatch still needs its own producer composition. See [foreign application lifecycle](../architecture/foreign-applications.md) and [ADR0370](../adr/0370-admit-user-selected-windows-programs-through-leased-pe-files.md).

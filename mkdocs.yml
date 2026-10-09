@@ -168,6 +168,7 @@ nav:
       - Compositor attachment and idle: architecture/compositor-attachment.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
+      - Windows Program Runner: apps/windows-program-runner.md
       - QindaQt.AppShell 1.0: apps/application-shell.md
       - Welcome to QindaQt: apps/welcome.md
       - Calendar: apps/calendar.md

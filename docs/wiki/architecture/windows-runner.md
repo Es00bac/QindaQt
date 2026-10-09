@@ -65,14 +65,13 @@ The inspector reads at most8KiB of bounded DOS/PE/COFF/optional/section headers,
 
 The injected setup/profile port owns the file lease, real visible first-run setup and per-app prefix/data. It must record user-file provenance, distinguish portable/installer choice explicitly, and transactionally hold current registration/profile authority through actual dispatch. Refused/default fallback means no operational side effect; any post-submission uncertainty is OutcomeUnknown. The core copied recheck cannot close that final race by itself.
 
-This source slice implements format/identity admission and both route adapters. Concrete profile/receipt persistence, visible setup, process launching and a compiled packaged MIME handler remain subsequent work; the injected source smoke does not start Wine. File format admission alone never grants a blue window association, file grant, Audio1 control or menu export.
+This source slice implements format/identity admission and both route adapters. The concrete [Windows Program Runner](../apps/windows-program-runner.md) now supplies worker-only profile/receipt persistence, visible setup, checked-FD native dispatch and its paired packaged MIME handler. Its injected source smoke does not start Wine; actual launch and installed-user qualification remain separate. File format admission alone never grants a blue window association, file grant, Audio1 control or menu export.
 
 ## Delivery and acceptance boundary
 
 This slice implements the public planning/coordinator target, installed public
 headers and deterministic focused tests with injected ports. Production
-Portage recipe loading, stable-handle payload adapters, a real Wine/umu process
-adapter and session dispatch composition remain subsequent slices.
+Portage guest-recipe loading and managed session/catalog producer composition remain subsequent slices. The user-file handler implements its own concrete Wine process/profile adapter; a complete Proton/umu adapter remains subsequent work.
 The Proton process adapter must refuse until it can demonstrate that the leased
 Steam Runtime/Proton tuple is exactly the one it executes.
 

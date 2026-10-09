@@ -34,7 +34,7 @@ public:
         layout->addWidget(m_program);
         auto *scope = new QLabel(QStringLiteral("Each program keeps its own Windows profile and data. File access uses your normal desktop permissions."), this);
         scope->setWordWrap(true); layout->addWidget(scope);
-        m_runtime = new QComboBox(this); m_runtime->setAccessibleName(QStringLiteral("Wine or Proton runtime")); layout->addWidget(m_runtime);
+        m_runtime = new QComboBox(this); m_runtime->setAccessibleName(QStringLiteral("Windows runtime")); layout->addWidget(m_runtime);
         m_kind = new QComboBox(this); m_kind->addItems({QStringLiteral("Run a portable application"), QStringLiteral("Run an installer")});
         m_kind->setAccessibleName(QStringLiteral("Application or installer")); layout->addWidget(m_kind);
         m_status = new QLabel(this); m_status->setTextFormat(Qt::PlainText); m_status->setWordWrap(true); layout->addWidget(m_status);
@@ -49,7 +49,7 @@ public:
                 m_profileRoot + QStringLiteral("/prefix/drive_c"), QStringLiteral("Windows programs (*.exe);;All files (*)"));
             if (!selected.isEmpty()) { m_useExistingProfile = true; inspect(selected); }
         });
-        connect(m_runtime, &QComboBox::currentIndexChanged, this, [this] { m_run->setEnabled(m_inspection && m_inspection->error.isEmpty() && m_runtime->currentIndex() >= 0); });
+        connect(m_runtime, &QComboBox::currentIndexChanged, this, [this] { m_run->setEnabled(!m_jobPending && m_pid < 0 && m_inspection && m_inspection->error.isEmpty() && m_runtime->currentIndex() >= 0); });
         connect(m_run, &QPushButton::clicked, this, [this] { launch(); });
         m_processPoll = new QTimer(this); m_processPoll->setInterval(200);
         connect(m_processPoll, &QTimer::timeout, this, [this] {
@@ -58,9 +58,10 @@ public:
             m_processPoll->stop(); m_pid = -1;
             if (m_installer) {
                 show(); m_chooseInstalled->setVisible(true); m_run->setEnabled(true);
+                m_runtime->setEnabled(true); m_kind->setEnabled(true);
                 m_status->setText(QStringLiteral("When installation finishes, choose the program installed in this Windows profile."));
             } else if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-                show(); m_run->setEnabled(true);
+                show(); m_run->setEnabled(true); m_runtime->setEnabled(true); m_kind->setEnabled(true);
                 m_status->setText(QStringLiteral("The Windows runtime command failed. The profile and data were retained. You can explicitly try again."));
             } else { QApplication::quit(); }
         });
@@ -77,10 +78,12 @@ private:
     void inspect(const QString &path)
     {
         m_program->setText(QFileInfo(path).fileName()); m_run->setEnabled(false);
+        m_chooseInstalled->setEnabled(false); m_runtime->setEnabled(false); m_kind->setEnabled(false);
         m_status->setText(QStringLiteral("Checking the program and installed runtimes…"));
-        m_jobPending = true;
+        m_jobPending = true; const quint64 generation = ++m_inspectionGeneration;
         auto *watcher = new QFutureWatcher<ProgramInspection>(this);
-        connect(watcher, &QFutureWatcher<ProgramInspection>::finished, this, [this, watcher] {
+        connect(watcher, &QFutureWatcher<ProgramInspection>::finished, this, [this, watcher, generation] {
+            if (generation != m_inspectionGeneration) { watcher->deleteLater(); return; }
             m_inspection = std::make_shared<ProgramInspection>(watcher->result()); watcher->deleteLater();
             m_jobPending = false;
             if (m_closeRequested) { QApplication::quit(); return; }
@@ -97,6 +100,7 @@ private:
                 m_runtime->setCurrentIndex(preferred);
             }
             m_run->setEnabled(m_inspection->error.isEmpty() && m_runtime->currentIndex() >= 0);
+            m_chooseInstalled->setEnabled(true); m_runtime->setEnabled(true); m_kind->setEnabled(true);
             m_status->setText(m_inspection->error.isEmpty()
                 ? QStringLiteral("Choose the runtime and whether this is an application or installer. Your existing profile and data are preserved.")
                 : m_inspection->error);
@@ -108,6 +112,7 @@ private:
     {
         if (!m_inspection || m_runtime->currentIndex() < 0) { return; }
         m_run->setEnabled(false); m_chooseInstalled->setVisible(false);
+        m_runtime->setEnabled(false); m_kind->setEnabled(false);
         m_status->setText(QStringLiteral("Preparing the Windows profile and starting the program…"));
         m_installer = m_kind->currentIndex() == 1;
         const auto inspected = m_inspection;
@@ -125,7 +130,9 @@ private:
             if (!result.profileRoot.isEmpty()) { m_profileRoot = result.profileRoot; }
             m_profileRuntimeId = runtime->id;
             if (!result.submitted || result.processId <= 0) {
-                if (m_closeRequested) { QApplication::quit(); } else { m_run->setEnabled(true); }
+                if (m_closeRequested) { QApplication::quit(); } else {
+                    m_run->setEnabled(true); m_runtime->setEnabled(true); m_kind->setEnabled(true);
+                }
                 return;
             }
             m_pid = result.processId; m_processPoll->start();
@@ -146,6 +153,7 @@ private:
     bool m_installer = false;
     bool m_useExistingProfile = false;
     bool m_jobPending = false, m_closeRequested = false;
+    quint64 m_inspectionGeneration = 0;
     std::shared_ptr<std::atomic_bool> m_cancelled;
 };
 
@@ -154,6 +162,7 @@ int main(int argc, char **argv)
     QApplication application(argc, argv);
     QApplication::setApplicationName(QStringLiteral("qindaqt-windows-runner"));
     QApplication::setOrganizationName(QStringLiteral("QindaQt"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("org.qindaqt.WindowsRunner"));
     application.setQuitOnLastWindowClosed(false);
     const QStringList arguments = application.arguments();
     if (arguments.size() != 2) { return 2; }
