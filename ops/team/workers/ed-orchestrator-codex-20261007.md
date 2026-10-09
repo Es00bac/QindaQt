@@ -2,12 +2,13 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — Qualify live R24/R3 USB behavior and deliver Android/Windows runtime components with bounded Portage builds.
+- Status: working — Qualify installed WindowsRunner user journey, complete Android renderer evidence, and repair portal lifecycle with bounded checks.
 - Worktree: ~/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
 ## Updates
 
+- 2026-10-09T04:32:00+00:00 — Focused WindowsRunner-r1 signed gpkg SHA964d8a independently verified after post-build temp-image assertion false failure; full signature/embedded overlay recipe/four-file image pass. Normal laptop Portage install exit0/10.993s, exact keyword accepted; VDB/world/profile/hashes and three PE xdg-mime defaults pass. R23 FM generic doubleclick/OpenWith dispatch exists, but no visible Wine app/window/Audio1/HMENU claim. USB R24/R3 remains live, physical drive absent. Android kernel producer on main00aad; compositor evidence in progress.
 - 2026-10-09T03:24:00+00:00 — Independently reviewed Android credential/pidfd source3522 and comment successor7a1, integrated c88c/2c04; owner focused build42.155s,3CTest/30Qt real fork/forgery/death/exec, fixture-only clean8Qt and strict docs pass. No trusted supervisor bootstrap, guest collector, live renderer/window or installed Android claim. Window evidence assignment corrected to new compositor/kwin/android_* only. Windows component-r1 overlay a146 synced; one focused signed package next.
 - 2026-10-09T03:20:00+00:00 — Reviewed/integrated Windows bwrap0.11.2 FD-option fix99b as c7da; first native probe reached backend then failed unsupported --preserve-fds, one causal retry stopped at private-display readiness before backend. Owner changed-target compile9.034s/source smoke pass; no visible Wine/install claim. Component-r1 candidate waits overlay/image gate. Android descriptor producer candidate3522 source reviewed, one comment-contract clarification pending.
 - 2026-10-09T03:12:00+00:00 — Fully signed R24/R3 pair installed normally in25.358s, both package signatures/embedded recipes and R24 2622-path image parity pass. VDB/dependency/world/profile correct. Installed R3 synthetic private Devices check passes; refreshed only supervised old R2 helper, live /Devices/GetSnapshot responds. USB absent, so physical sidebar/Eject pending; no device action. Windows standalone handler source is integrated, component-r1 candidate awaits overlay integration; Android producer source/focused tests pass, independent review next.
