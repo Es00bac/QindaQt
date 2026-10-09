@@ -1,3 +1,7 @@
+## Android private producer source — 2026-10-09T03:24:00+00:00
+
+Reviewed source c88c1ee/2c0415f moves Android RuntimePort values into a QtCore service protocol and adds a private seqpacket producer/receiver with kernel SCM_CREDENTIALS, held pidfds, executable-object checks, bounded packets and no-replay operation ledger. Owner focused build 42.155 s and three CTests/30 Qt cases passed, including real fork, forged sender, death and exec replacement; a fixture-only SIGTERM cleanup check passed separately. Strict docs passed. This is transport, not an admitted guest: executable/session/recipe bootstrap, trusted package/task/surface collector, compositor association, QindaQt tile/tab and Audio1 remain. The Android Applications entry stays hidden with a null production runtime port; no Android app launch is claimed.
+
 ## Windows handler bwrap compatibility — 2026-10-09T03:20:00+00:00
 
 Causal source c7da959 replaces unsupported bubblewrap --preserve-fds with installed 0.11.2 options --ro-bind-fd and --sync-fd. The changed target and focused source check pass in 9.034 s. The first private Wine attempt submitted the real backend but bwrap exited on the unsupported option; the one authorized retry stopped earlier when its private display missed an 8-second readiness deadline. Neither produced a visible Notepad window, so installed .exe behavior remains unqualified. A separate focused WindowsRunner Portage component -r1 is the next release candidate; do not claim working Wine, File Manager defaults, Audio1 or HMENU yet.
