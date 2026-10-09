@@ -1,6 +1,6 @@
 # Codex display Apply repair
 
-- Status: available — installed repair verified; awaiting explicit authorization for the source main merge
+- Status: available — owner-approved repair integrated and verified; existing checkout work preserved
 - Provider: OpenAI Codex
 - Base: `5c69fcf81` (`origin/main`, refreshed from qinda)
 - Branch: `fix/display-apply-20261009`
@@ -16,3 +16,7 @@
 - 2026-10-09T17:55:48Z — Candidate `927039197` independently accepted; focused CTest 8/8 and private two-output position/125%-scale/90-degree rotation, Keep and Revert pass. Docs 551 and strict MkDocs pass. Signed R25 package verifies all 2,622 image paths with exactly the executable and runtime archive changed; installing through normal Portage next.
 
 - 2026-10-09T18:05:37+00:00 — Normal Portage installed signed R25; Display1 restart preserved live layout. A physical two-output 8-pixel preview reached confirmation and Cancel restored the preimage exactly. Overlay `a13d49f` is integrated; source main merge was rejected by automatic approval review for unestablished manager authorization. Requested owner approval after completing the installed fix. Available for a concrete display regression recheck; no further implementation claimed.
+
+- 2026-10-09T18:53:38+00:00 — Owner explicitly approved source main merge. Fast-forwarded qinda main to `2c0f21698`; the exact reviewed product source remains unchanged. Fresh affected build and all eight focused tests pass, exit 0 (2.39 seconds). Synchronizing checkout/mirror and preserving the two pre-existing qinda modifications.
+
+- 2026-10-09T18:56:33+00:00 — qinda checkout fast-forwarded to approved main with both original local modifications preserved. The fork pin required conflict resolution: restored its exact pre-sync bytes, retained the autostash `8ec14c359` and ignored backup/patch; the platform queue merged with its existing local notes retained. No unrelated changes were committed or discarded. Final documentation bookkeeping and laptop mirror sync close the approved merge.
