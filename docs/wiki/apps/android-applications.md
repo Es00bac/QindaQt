@@ -1,0 +1,90 @@
+# Android Applications
+
+Android Applications is an ordinary QindaTK desktop window for browsing supplied
+Android registrations, reading current availability and requesting launches.
+Its native desktop entry is `org.qindaqt.AndroidApplications`; it is a management
+utility, not a replacement generic entry for every guest application.
+[The shared catalog](../shell/launcher.md#managed-application-catalog-values)
+owns stable Android/Windows identities. The management boundary is recorded in
+[ADR-0369](../adr/0369-manage-android-applications-through-a-borrowed-runtime-port.md).
+
+## Current implementation boundary
+
+The application, Qt Core controller and public borrowed `RuntimePort` exist in
+`src/apps/android_manager`. The production executable currently has no admitted
+Android registration/runtime adapter and injects a null port. It shows Android
+support unavailable, with no fabricated stock application rows or enabled
+launch/refresh actions. The owning adapter, setup/materialization, package
+updates/removal, data preservation workflows, real per-app icon provider,
+registered launch execution and runtime recovery remain subsequent slices.
+No Waydroid process is started by this application or its tests.
+
+A supplied port owns source authentication, packaged recipe/materialization
+verification, current-session/attachment freshness and actual runtime facts.
+The controller borrows it on the same GUI thread. The port returns copied,
+strictly validated snapshots and accepts nonblocking typed requests; it exposes
+no private paths, shell commands, arbitrary executable URLs or storage objects.
+This is a C++ presentation port, not a new D-Bus/wire/persistence schema.
+
+## Catalog and status
+
+One validated complete snapshot supplies Android-only registrations plus one
+matching status per registration. Positive revisions, canonical attachment UUID,
+exact registration/revision/recipe bindings, closed enums, bounded UTF-8 messages,
+duplicates and counts are checked before publication. Malformed data publishes
+no partial rows. A lower revision or changed same-revision snapshot withdraws
+truth until a fresh valid snapshot arrives.
+
+Runtime readiness, application state and observed window count remain separate.
+Ready means launch admission, not a running guest or mapped surface. Running
+can have no observed window; an absent count is unknown and is not painted as
+zero. Only the supplied port changes these facts. The controller uses the public
+catalog builder/search ranker, so names, keywords, sort and stable UUID identities
+stay consistent with ordinary Applications values.
+
+The QindaTK window offers search, Refresh, runtime status/feedback and per-app
+Launch. Each supplied Android registration has a green toolkit semantic tint
+and explicit Android text/accessible description, separate from selection,
+error and runtime status. This badge describes catalog origin only. It cannot
+classify a running window from a title, app_id, alias or PID. The window keeps
+normal native geometry and closing; QindaQt's compositor owns any later
+container/tab/tile behavior, never this QML.
+
+## Launch and recovery truth
+
+The controller serializes one pending launch. It sends a fresh operation UUID,
+exact attachment/snapshot revision and current managed application binding. The
+port must recheck the current registration revision and exact recipe digest
+before dispatch. The controller sets pending before calling the port, allowing
+a synchronous refusal/result without losing it. Accepted requests show Launching
+and disable other launches; they never set Running or invent a window count.
+
+Owner or recipe replacement/remove withdraws a dependent pending request.
+Late/foreign operation results cannot affect a fresh request. A terminal result
+requests read-only refresh; it does not repeat launch. The 30-second deadline
+reports an unconfirmed outcome without claiming cancellation or stopped state.
+New explicit requests are independent operations. Port destruction clears all
+rows and admission. Setup/install/delete/force-stop are not implied by Launch.
+
+## Build and short evidence
+
+`QINDAQT_BUILD_ANDROID_MANAGER` defaults to the existing QindaTK Viewer switch,
+so configurations without that dependency remain available. The executable and
+native entry install as component `AndroidApplications`; the static public
+`QindaQt::AndroidManager` library owns controller/port headers. An ordinary
+Portage release build and component/package installation remain release gates.
+
+```sh
+cmake -S tests/apps/android_manager -B build/android-manager -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DQINDAQT_ENABLE_STRICT_WARNINGS=ON
+cmake --build build/android-manager -j2
+ctest --test-dir build/android-manager --timeout 10 --output-on-failure
+```
+
+The three short gates cover controller inventory/search/failure/owner/recipe/
+timeout behavior, offscreen QindaTK rows/input and the actual compiled executable
+with `--smoke`. All use private temporary data/runtime roots, unavailable buses,
+offscreen software rendering and fatal Qt warnings. UI captures show explicitly
+synthetic registration values, not running Android apps. Test item lookup uses
+the visual child tree and observes fresh delegates after ListView polish;
+QObject ownership and a retained pre-rebuild row are not display authority.

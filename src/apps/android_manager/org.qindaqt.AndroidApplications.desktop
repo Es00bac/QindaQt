@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Android Applications
+Comment=Manage Android application availability and launches
+Exec=qindaqt-android-applications
+Icon=applications-other
+Categories=System;Settings;
+Keywords=Android;applications;

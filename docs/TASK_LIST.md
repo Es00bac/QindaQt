@@ -1,3 +1,7 @@
+## QindaTK Android manager source — 2026-10-09T00:48:00+00:00
+
+The independently reviewed QindaTK Android Applications manager cfd13c is integrated as a truthful status/search/launch UI over a borrowed runtime port. It does not connect to stock Waydroid yet: default production state is unavailable, and no Android app is launched or associated with a QindaQt window. Owner focused build, controller and compact UI checks plus strict docs passed. A desktop release must connect an admitted setup/runtime port or hide/omit the currently visible entry to avoid a dead end. Next: admitted registration/materialization/runtime adapter, normal catalog launch, DeX-like mixed native tile/tab, files/input/clipboard and Audio1. R23 remains without Android support.
+
 ## Guarded Audio1 send source — 2026-10-09T00:37:00+00:00
 
 Exact Audio1 prerequisite1184 (byte-equal product/test source to previously accepted e000) and guarded send source10258 are accepted for integration. Independent strip/send/bus gain and configured-output reconciliation compile behind a default-OFF fixed PipeWire image gate; focused public Audio1 pin/readback and failure-mode tests pass. This is no audible PCM or installed mixer claim. Fixed PipeWire r1 Portage qualification, actual graph/PCM, mono/channel-trim and Android/Windows streams remain.

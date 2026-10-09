@@ -43,6 +43,7 @@ install(
 
 option(BUILD_SHARED_LIBS "Build loadable integration modules as shared libraries" ON)
 option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
+option(QINDAQT_BUILD_ANDROID_MANAGER "Build the QindaTK Android Applications manager" "${QINDAQT_BUILD_VIEWER}")
 # AGENT-GUARD: gui-apps/qindaqt-system-monitor installs this executable from
 # its own --component SystemMonitor. A desktop package built from this tree
 # installs every component, so the two collide on /usr/bin unless one of them

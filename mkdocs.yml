@@ -175,6 +175,7 @@ nav:
       - File Manager: apps/file-manager.md
       - Removable media: apps/removable-media.md
       - Image and PDF Viewer: apps/viewer.md
+      - Android Applications: apps/android-applications.md
       - Settings Center: apps/settings-center.md
       - "Settings Printers & scanners route": apps/printers-scanners-settings.md
       - Settings Appearance route: apps/appearance-settings.md
@@ -566,3 +567,4 @@ nav:
       - "0364: Provider-owned secure Voice credentials": adr/0364-configure-voice-credentials-through-provider-owned-secure-storage.md
       - "0366: Coordinate ordinary Windows launches through public ports": adr/0366-coordinate-ordinary-windows-launches-through-public-ports.md
       - "0368: Managed application catalog routing": adr/0368-merge-managed-applications-without-desktop-key-authority.md
+      - "0369: Android management through a borrowed runtime port": adr/0369-manage-android-applications-through-a-borrowed-runtime-port.md

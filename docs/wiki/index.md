@@ -190,6 +190,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [QindaQt File Manager](apps/file-manager.md) documents the first-party local
   directory navigation, breadcrumb/history, bounded file-launch, QST-1/Controls
   presentation, and accessibility boundaries.
+- [Android Applications](apps/android-applications.md) records the QindaTK management window,
+  public borrowed status/launch port and honest missing-runtime-adapter boundary.
 - [QindaQt Viewer](apps/viewer.md) documents the QindaTK image/PDF application,
   local document boundary and Poppler rendering. [Default applications](apps/default-applications.md)
   explains the packaged defaults and user association choices.

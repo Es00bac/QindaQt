@@ -1,3 +1,7 @@
+## QindaTK Android manager source boundary — 2026-10-09T00:48:00+00:00
+
+Exact QindaTK Android manager source cfd13c and author handoff952956 are integrated after independent manager review. Borrowed runtime status/launch is copied, revision-fenced and honest when absent; the app cannot start Waydroid or claim Running by itself. Focused app/controller/UI and strict docs passed, including the repaired compact synthetic row. Do not ship its visible desktop entry with the null production port; compose a usable setup/runtime port or gate the entry first. An admitted Android producer, actual window/container tile-tab behavior and Audio1 remain open.
+
 ## Audio1 guarded source boundary — 2026-10-09T00:37:00+00:00
 
 Source1184 plus10258 is integrated as a default-OFF Audio1 send-gain and output-routing path after manager review; the previous e000 prerequisite's audio product/test bytes match1184 exactly. Owner strict focused compile and50 Qt checks passed; fixed PipeWire package/image, real PCM and installed user controls remain open. ADR0361 is Proposed. The optional long experiment is OFF and is not a coding gate.
