@@ -59,8 +59,11 @@ struct LaunchResult {
 [[nodiscard]] bool validRuntimeMessage(const QString &message);
 
 // Borrowed nonblocking GUI-thread port; it must be created on the controller's
-// thread. It owns source authentication, package/materialization truth and
-// current revision admission. Implementations return copied values, never
+// thread. The composed port must obtain authenticated package/materialization
+// facts and current revision admission from its qualified bootstrap/collector.
+// A descriptor adapter checks transport/kernel lifetime only; it does not
+// collect or attest guest facts (docs/wiki/adr/0372-bind-private-android-producers-to-kernel-lifetimes.md).
+// Implementations return copied values, never
 // shell argv or private paths. Destruction/loss withdraws all launch authority.
 // requestLaunch rechecks the exact attachment/revision/recipe before dispatch,
 // emits bounded terminal results and never automatically replays a mutation.

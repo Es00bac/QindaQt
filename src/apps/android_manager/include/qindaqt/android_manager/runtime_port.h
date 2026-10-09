@@ -4,7 +4,8 @@
 
 // AGENT-CONTRACT: Source compatibility only; these static-library types now
 // belong to the service protocol, never a dependency on app implementation.
-// All consumers rebuild together (ADR for private Android producer channel).
+// All consumers rebuild together; see
+// docs/wiki/adr/0372-bind-private-android-producers-to-kernel-lifetimes.md.
 namespace QindaQt::AndroidManager {
 using Services::AndroidRuntime::ManagedApplicationBinding;
 using Services::AndroidRuntime::ManagedApplicationRegistration;
