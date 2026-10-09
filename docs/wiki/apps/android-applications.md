@@ -140,9 +140,10 @@ setup targets, unavailable/refused software-manager dispatch and owner loss
 produce plain feedback. Accepted GUI dispatch is only a handoff and is never
 Android Ready/Running, package materialization or a mapped window.
 
-The ordinary desktop entry remains `NoDisplay=true`. ADR-0375 adds the concrete
-native helper and permits a focused dependency-qualified setup menu entry;
-qualified guest registrations and Android launches remain unavailable.
+The ordinary full-desktop source entry remains `NoDisplay=true`. The separately
+installed Android Applications component requires QindaPortage and generates a
+visible setup entry; the owner confirmed the menu item and setup/status window
+open. Qualified guest registrations and Android launches remain unavailable.
 The three short gates include closed target/refusal/owner-loss/no-fake-registration
 controls plus actual offscreen setup-button input. They use an injected native
 planning port and never launch QindaPortage or a guest during verification.
@@ -159,9 +160,9 @@ bootstrap key. They never identify a producer from a bus name or metadata.
 A trusted supervisor must first admit the installed native executable and its
 session/runtime/recipe context. This transport proves the provisioned process
 and its current lifetime; it does not collect guest signing identity, task/
-surface ownership or window evidence. The production management composition is
-now uses ADR-0375 admission with null fallback; guest facts stay unavailable. No public fd/PID argv
-option or automatic helper start is exposed.
+surface ownership or window evidence. The production management composition
+now uses ADR-0375 admission with a null fallback; guest facts stay unavailable.
+No public fd/PID argv option or ambient Waydroid start is exposed.
 
 Packet size/field/array bounds and exact version/direction are enforced before
 publication. Death/exec change/getter checks fence stale cached truth before Qt
@@ -191,11 +192,11 @@ and never reuse a cached result as app authority.
 The short focused checks use inert owned forks and verify credential admission,
 non-native and mismatched provider/PID refusal, process death and runtime
 withdrawal/replacement. They do not launch Android or claim a guest window.
-Existing KWin registry/publisher, supervisor and production composition are not
-wired by this isolated source slice. The next product gate is a separately
-admitted renderer bootstrap plus authenticated guest package/task/surface
-association, followed by exact ordinary-window publication and mixed native/
-Android container coverage. The focused native setup entry is separately gated by its QindaPortage dependency.
+Existing KWin registry/publisher do not consume this renderer evidence. The
+separately installed native manager/helper composition does not provide guest
+renderer or app facts. The next product gate is admitted renderer bootstrap plus
+authenticated guest package/task/surface association, then ordinary-window
+publication and mixed native/Android container coverage.
 
 ## Separate collector and renderer lifetime
 
@@ -253,7 +254,8 @@ paths owned by an installed desktop image. The exact four installed files are
 
 Short source checks execute the real built native helper with private sealed
 records, verify recipe identity and untrusted/public-mode refusal, and inject the
-admitted copied port into the controller without guest rows. Source staging is
-not a system/package install. Signed Portage adoption and a real native setup
-menu journey remain installed gates; Android app/window/container/audio proof
-remains beyond this conservative helper version.
+admitted copied port into the controller without guest rows. The focused signed
+Portage component is installed; its four product files match the reviewed image,
+its offscreen startup passes, and the owner confirmed the setup menu/window. The
+current pre-install Session1 process is deliberately not admitted until a fresh
+login. Android app/window/container/audio proof remains beyond this helper.
