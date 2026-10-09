@@ -107,6 +107,12 @@ int main(int argc, char **argv)
         helpers.filePath(QStringLiteral("qindaqt-portal-capture")),
         helpers.filePath(QStringLiteral("qindaqt-portal-shortcuts")),
         helpers.filePath(QStringLiteral("qindaqt-portal-misc")));
+    foundation.setSelectedSessionOwnerLostHandler([&application] {
+        // AGENT-CONTRACT: systemd/D-Bus owns backend activation. Retire the
+        // selected first-caller lease with this process at logout so a later
+        // graphical session starts with fresh authority.
+        application.quit();
+    });
     if (!foundation.start()) {
         std::fprintf(stderr, "xdg-desktop-portal-qindaqt: native composition unavailable\n");
         return 3;

@@ -130,6 +130,14 @@ Screenshot, ScreenCast, RemoteDesktop, InputCapture and Clipboard move together.
 Wallpaper and Background remain closed, and `default=none` prevents implicit
 fallback. OpenURI belongs to the standard frontend and has no backend selector.
 The exact table is in the [Settings backend v1 reference](../reference/portal-settings-backend-v1.md).
+
+[ADR-0367](../adr/0367-use-one-dbus-owner-for-the-resident-portal.md)
+makes this D-Bus/systemd activation the only ordinary resident launch path.
+The session supervisor requests activation and attaches its selected display;
+it does not also spawn the executable. The resident retires when the exact
+selected caller disconnects. A stale failed unit from R23 is not evidence
+that the session-owned portal endpoint was absent; the installed lifecycle
+repair still requires a fresh-login service/owner check.
 [ADR-0342](../adr/0342-route-native-portals-to-their-owning-process.md)
 supersedes the old KDE routing/drop-in choice; source selection still requires
 coherent native, package and installed qualification.

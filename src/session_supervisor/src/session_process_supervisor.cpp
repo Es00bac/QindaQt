@@ -177,7 +177,6 @@ bool SessionProcessSupervisor::start(QString *error)
     m_desktopControls->resetRestartCount();
     m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
-    m_portal->resetRestartCount();
     m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
@@ -278,7 +277,6 @@ void SessionProcessSupervisor::stop() noexcept
     m_desktopControls->resetRestartCount();
     m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
-    m_portal->resetRestartCount();
     m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();

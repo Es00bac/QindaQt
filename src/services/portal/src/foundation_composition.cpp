@@ -23,6 +23,7 @@ namespace QindaQt::Services::Portal {
 class PortalFoundationComposition::Private {
 public:
     PortalSessionBinding session;
+    std::function<void()> selectedSessionOwnerLost;
     RequestRegistry requests;
     ProcessAccessConsent consent;
     ProcessChooser chooser;
@@ -79,6 +80,10 @@ public:
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });
+        QObject::connect(&session, &PortalSessionBinding::selectedSessionOwnerLost,
+                         &session, [this] {
+            if (selectedSessionOwnerLost) selectedSessionOwnerLost();
+        });
     }
 };
 PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
@@ -102,6 +107,8 @@ PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusCon
         QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
             QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser), std::move(capture), std::move(shortcuts), std::move(misc))) {}
 PortalFoundationComposition::~PortalFoundationComposition() { stop(); }
+void PortalFoundationComposition::setSelectedSessionOwnerLostHandler(
+    std::function<void()> handler) { d->selectedSessionOwnerLost = std::move(handler); }
 bool PortalFoundationComposition::start() { return d->session.start(); }
 void PortalFoundationComposition::stop() { d->requests.retireAll(); d->idle.revoke(); d->session.stop(); }
 } // namespace QindaQt::Services::Portal

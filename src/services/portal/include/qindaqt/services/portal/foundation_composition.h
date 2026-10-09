@@ -3,6 +3,7 @@
 #include <QDBusConnection>
 #include <QObject>
 #include <QStringList>
+#include <functional>
 #include <memory>
 namespace QindaQt::Services::Portal {
 // Small composition of independent family adapters, not portal policy.
@@ -42,6 +43,10 @@ public:
         QString chooserExecutable, QString captureExecutable, QString shortcutExecutable,
         QString miscExecutable);
     ~PortalFoundationComposition();
+    // Same-thread callback, invoked only after the exact selected D-Bus
+    // connection disappears. The caller owns captured state and must keep it
+    // alive through stop/destruction; no callback runs for generic display loss.
+    void setSelectedSessionOwnerLostHandler(std::function<void()> handler);
     bool start();
     void stop();
 private:

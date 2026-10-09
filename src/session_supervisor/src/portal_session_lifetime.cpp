@@ -9,11 +9,11 @@
 #include <QUuid>
 #include <unistd.h>
 namespace QindaQt::SessionSupervisor {
-namespace { constexpr auto Service = "org.qindaqt.Portal1"; constexpr auto Path = "/org/qindaqt/Portal1"; }
+namespace { constexpr auto Service = "org.qindaqt.Portal1"; constexpr auto Path = "/org/qindaqt/Portal1"; constexpr auto Backend = "org.freedesktop.impl.portal.desktop.qindaqt"; }
 PortalSessionLifetime::PortalSessionLifetime(QObject *parent)
     : PortalSessionLifetime(false, parent) {}
 PortalSessionLifetime::PortalSessionLifetime(bool captureControl, QObject *parent)
-    : QObject(parent), child_(QStringLiteral("portal"), {}),
+    : QObject(parent),
       service_(captureControl ? QStringLiteral("org.qindaqt.PortalCapture1") : QString::fromLatin1(Service)),
       path_(captureControl ? QStringLiteral("/org/qindaqt/PortalCapture1") : QString::fromLatin1(Path)) {
     retry_.setInterval(100);
@@ -44,7 +44,18 @@ void PortalSessionLifetime::begin(const QString &program, const QString &display
             retry_.start();
             if (!newOwner.isEmpty()) attach();
         });
-    if (!program.isEmpty()) child_.start(program);
+    if (!program.isEmpty()) {
+        // AGENT-CONTRACT: the .service descriptor and systemd unit are the
+        // only backend launch authority. A second child races for Portal1
+        // and leaves a failed user unit even when the session copy works.
+        auto activation = QDBusMessage::createMethodCall(
+            QStringLiteral("org.freedesktop.DBus"),
+            QStringLiteral("/org/freedesktop/DBus"),
+            QStringLiteral("org.freedesktop.DBus"),
+            QStringLiteral("StartServiceByName"));
+        activation.setArguments({QString::fromLatin1(Backend), quint32(0)});
+        bus_->asyncCall(activation, 2000);
+    }
     retry_.start(); attach();
 }
 void PortalSessionLifetime::attach() {
@@ -73,6 +84,6 @@ void PortalSessionLifetime::attach() {
 void PortalSessionLifetime::stop() noexcept {
     ++generation_; pending_ = false; retry_.stop(); watcher_.reset();
     if (bus_) { QDBusConnection::disconnectFromBus(connectionName_); bus_.reset(); }
-    child_.stop(); display_.clear(); owner_.clear(); attempts_ = 0;
+    display_.clear(); owner_.clear(); attempts_ = 0;
 }
 }

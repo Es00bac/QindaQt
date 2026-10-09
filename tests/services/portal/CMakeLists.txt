@@ -14,6 +14,16 @@ find_file(QINDAQT_KDE_PORTAL_DBUS_SERVICE
           NAMES org.freedesktop.impl.portal.desktop.kde.service
           PATHS /usr/share/dbus-1/services)
 
+qt_add_executable(qindaqt_portal_session_owner_tests
+                  tst_session_owner_lifetime.cpp)
+target_link_libraries(qindaqt_portal_session_owner_tests
+    PRIVATE QindaQt::PortalSession Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_portal_session_owner_tests)
+add_test(NAME qindaqt.portal-selected-session-owner
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_portal_session_owner_tests>)
+set_tests_properties(qindaqt.portal-selected-session-owner PROPERTIES
+    TIMEOUT 10 LABELS "portal;session;dbus")
+
 qt_add_executable(qindaqt_portal_appearance_policy_tests
                   tst_appearance_policy.cpp)
 target_compile_definitions(

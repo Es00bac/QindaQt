@@ -408,6 +408,8 @@ integration retains every accepted decision in numeric order.
 - [ADR-0363: Admit per-volume Trash without following payload links](0363-admit-per-volume-trash-without-following-payload-links.md) — Accepted; supersedes only home-only Trash admission and final-link refusal portions of0064.
 - [ADR-0364: Configure Voice credentials through provider-owned secure storage](0364-configure-voice-credentials-through-provider-owned-secure-storage.md) — Accepted; same-owner optional extension, secure reload and effective fallback truth.
 
+- [ADR-0367: Use one D-Bus owner for the resident portal](0367-use-one-dbus-owner-for-the-resident-portal.md) — Proposed; source and installed fresh-login checks pending.
+
 - [ADR-0365: Publish peripheral batteries through Power1 receipts](0365-publish-peripheral-batteries-through-power1-receipts.md) — Accepted; separate inventory preserves system-battery policy and authenticates sender-bound nonce receipts.
 
 - [ADR-0366: Coordinate ordinary Windows launches through public ports](0366-coordinate-ordinary-windows-launches-through-public-ports.md)

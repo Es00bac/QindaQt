@@ -73,13 +73,17 @@ A different caller cannot replace it. Public
 private ordinary socket peer/PIDFD joined to exact bus-daemon compositor owner
 and PID plus retained selected-session liveness. This proves identity and
 lifetime, not executable attestation. Frontend options cannot supply that
-attachment. The supervisor's independent PortalSessionLifetime starts the optional native
-backend after the shell, retains a dedicated selected-session connection and
-supplies the canonical ordinary display basename. It uses bounded asynchronous
-exact-owner/same-UID admission attempts, reattaches backend replacement on the
-same session connection, and disconnects before stopping the child. Replies are
-transport acknowledgements; the backend still owns actual peer/privacy admission.
-Missing helper/display or failed attachment does not prevent login.
+attachment. The supervisor's PortalSessionLifetime requests the installed
+D-Bus/systemd backend asynchronously after the shell, retains a dedicated
+selected-session connection and supplies the canonical ordinary display
+basename. It never spawns a competing child ([ADR-0367](../adr/0367-use-one-dbus-owner-for-the-resident-portal.md)).
+Bounded exact-owner/same-UID attempts reattach a backend replacement on the
+same session connection. Disconnecting that exact selected connection makes
+the resident quit cleanly, so a later login gets a fresh first-caller lease.
+A compositor interruption revokes authority without admitting a different
+caller. Replies remain transport acknowledgements; the backend owns actual
+peer/privacy admission. Missing helper/display or failed attachment does not
+prevent login.
 
 Access and Email start and publish only while that attachment is live and the
 public exact-owner NativeLockStateMonitor admits Unlocked. Uncertainty, native

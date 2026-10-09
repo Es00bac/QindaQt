@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
-#include <qindaqt/session_supervisor/session_optional_child.h>
 #include <QDBusConnection>
 #include <QDBusServiceWatcher>
 #include <QTimer>
 #include <memory>
 namespace QindaQt::SessionSupervisor {
-// Same-thread optional portal child and selected-session D-Bus lifetime. The
-// dedicated connection is retained across backend replacement, then disconnected
-// before child teardown so native consent/URI authority retires through the retained owner-loss boundary.
-// Missing helper/display or failed admission never blocks login. RPC replies are
-// only transport acknowledgements; the backend owns display/privacy admission.
+// Same-thread selected-session D-Bus lifetime. The backend is activated once
+// through its installed D-Bus/systemd service; this class never spawns a
+// competing child. The dedicated selected connection retires native authority
+// on session stop. Missing backend/display never blocks login; replies are
+// transport acknowledgements, not display/privacy admission.
 class PortalSessionLifetime final : public QObject {
     Q_OBJECT
 public:
@@ -21,11 +20,9 @@ public:
     // Watch compositor-owned capture broker; never launch or activate it.
     void attachCapture(const QString &display);
     void stop() noexcept;
-    void resetRestartCount() noexcept { child_.resetRestartCount(); }
 private:
     void begin(const QString &program, const QString &display);
     void attach();
-    OptionalSessionChild child_;
     std::unique_ptr<QDBusConnection> bus_;
     std::unique_ptr<QDBusServiceWatcher> watcher_;
     QTimer retry_;

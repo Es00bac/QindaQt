@@ -3,6 +3,7 @@
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <QDBusContext>
 #include <QDBusMessage>
+#include <QDBusServiceWatcher>
 
 namespace QindaQt::Services::Portal {
 inline constexpr auto kNativePortalService = "org.qindaqt.Portal1";
@@ -37,12 +38,18 @@ public Q_SLOTS:
 Q_SIGNALS:
     void invalidated();
     void bindingChanged();
+    // Exact selected unique connection ended; resident process must retire so
+    // a later login cannot inherit its first-caller lease.
+    void selectedSessionOwnerLost();
 private:
+    void retireSelectedOwner();
     QDBusConnection m_bus;
     QString m_sessionOwner;
     QindaQt::Platform::Compositor::CompositorAttachment m_attachment;
+    QDBusServiceWatcher m_ownerWatch;
     QString m_controlService;
     QString m_controlPath;
     bool m_started = false;
+    bool m_sessionOwnerLost = false;
 };
 } // namespace QindaQt::Services::Portal
