@@ -1,6 +1,6 @@
 # ADR-0367: Use one D-Bus owner for the resident portal
 
-- **Status:** Proposed pending focused source review and installed fresh login
+- **Status:** Proposed pending installed fresh-login lifecycle qualification
 - **Date:** 2026-10-08
 - **Owners:** Session supervisor and resident portal
 - **Supersedes:** The supervisor-spawned child lifetime clause of [ADR-0318](0318-native-portal-foundation.md); keeps [ADR-0054](0054-export-appearance-through-the-standard-settings-portal.md) activation.
