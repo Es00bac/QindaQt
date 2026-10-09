@@ -1,3 +1,7 @@
+## Android setup menu user acceptance and release retention — 2026-10-09T05:46:00+00:00
+
+The owner confirmed the installed Android Applications entry appears in the app menu and its setup/status window opens. This qualifies component menu/startup presentation, not guest app launch; the package-owned collector still returns Unavailable/no rows until guest package/task evidence exists. The four signed R24/R3/WindowsRunner/Android component gpkg artifacts were hash-verified and retained in ignored release caches on qinda and qinda-top for rollback; installation remains Portage-owned.
+
 ## Installed Android Applications setup component — 2026-10-09T05:39:00+00:00
 
 Reviewed source fe01fd6 and QindaGentoo recipe a30007f ship a separate package-owned Android setup manager and private native collector without rebuilding R24. The immutable source archive SHA-256 3a561a46… produced a signed gpkg SHA-256 323bb922… after one resource-capped build and six-second warm continuation. Full signature, embedded recipe and component-only image passed on qinda and laptop. Normal laptop Portage installed one binary in 11.763 s; the manager, collector, visible setup desktop entry and fixed recipe match package hashes, and a 150-ms offscreen manager startup passed. QindaPortage r4 is a runtime dependency; the menu entry is visible only in this focused component. The helper reports Unavailable/no app rows and never starts Waydroid without qualified guest image/package/task evidence. No Android application launch, QindaQt tile/tab or Audio1 is claimed.
