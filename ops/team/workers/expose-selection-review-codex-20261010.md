@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — exact source review handed off; bounded native evidence or package review help offered
+- Status: available — exact R29 recipe rejection handed off; awaiting only the bounded staging repair
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -18,3 +18,7 @@
 - 2026-10-10T17:33:10Z — Verification: candidate controller, surface and composition CTests pass 3/3, 46 Qt cases, zero failures/skips/blacklists, exit 0 in 2.27 seconds. Exact source bytes match the owner's build inputs; diff whitespace check exits 0. No fresh build or unchanged broad suite repeated.
 - 2026-10-10T17:33:10Z — Handoff: ACCEPT 2d99ca7a0ca5aa983757cb4f46ffda6253604248 for the bounded pointer selection repair. Root owns native raise/focus proof and integration; review does not claim installed user-visible resolution. Transitioning to available, then reading the Shell queue and offering bounded next-gate help.
 - 2026-10-10T17:33:48Z — Read the current Shell routing and expose selection peer thread after handoff. Offered one exact Portage recipe/pin review or a read-only check of root's native raise/focus artifact; no unrelated outcome claimed and no second native runtime opened.
+- 2026-10-10T17:42:55Z — Claimed root's bounded recipe review: overlay 10c67e862af129f53b382fff4fac1bf7763332bc and R23-based equivalent source 42ec5bfa87721dbba05157fdf6030071e71da5d6. Reviewing only R29 recipe, immutable R28 repack/ledger verification, two added Manifest rows and README truth, without a new build or broad audit.
+- 2026-10-10T17:46:33Z — Reviewed descendant 59136754f0b33f5f672cdd5b2f6f7cb2251a19f7. Its pinned public certificate includes the expected D1E92C77 signing subkey; no private key material is present. Discovered whole-tree QindaQt component staging includes unbuilt qindaqt-wm because KDEInstallDirs6 sets the project's default component. Sent exact concern immediately to root.
+- 2026-10-10T17:47:34Z — Verification: isolated generated session install script fails exit 1 for missing qindaqt-wm, reproducing the staging defect without a build. Full retained R28 gpkg signature/embedded recipe hash, all 2,622 ledger entries, both new distfile Manifest hash/size inputs and exact Gather source parity pass. The host trust configuration was not changed.
+- 2026-10-10T17:47:34Z — Handoff: REJECT overlay 59136754f0b33f5f672cdd5b2f6f7cb2251a19f7 only for whole-tree staging after shell-only compilation. Root owns a shell-local install-script repair and exact descendant; offer remains bounded repair/native/artifact review. No new build or unrelated audit occurred.
