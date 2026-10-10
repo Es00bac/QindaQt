@@ -6,6 +6,8 @@
 #include <QScopeGuard>
 namespace qindaqt::keyring::service {
 QString SecretService::addPrompt(Prompt prompt) {
+    // A queued portal request has not unlocked anything to restore on cancel.
+    if (prompt.action == "portal-unlock") prompt.relockOnCancel = false;
     int owned = 0;
     for (const auto &[path,p] : prompts_) { (void)path; if (p.owner == prompt.owner) ++owned; }
     if (prompts_.size() >= 32 || owned >= 4) throw std::runtime_error("Prompt limit");
@@ -63,10 +65,32 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
     auto signal = QDBusMessage::createTargetedSignal(p.owner,path,"org.freedesktop.Secret.Prompt","Completed");
     signal.setArguments({dismissed,QVariant::fromValue(QDBusVariant(result))});
     bus_.send(signal);
+    if (activePrompt_ == path) {
+        activePrompt_.clear();
+        QTimer::singleShot(0,this,[this] {
+            if (!activePrompt_.isEmpty()) return;
+            for (const auto &[next,prompt] : prompts_)
+                if (prompt.running) { startPrompt(next); break; }
+        });
+    }
 }
 void SecretService::startPrompt(const QString &path) {
     const auto initial = prompts_.find(path); if (initial == prompts_.end()) return;
-    const auto &initialPrompt = initial->second;
+    auto &initialPrompt = initial->second;
+    if (initialPrompt.action == "unlock" || initialPrompt.action == "portal-unlock") {
+        while (initialPrompt.next < initialPrompt.collections.size()
+               && !repository_.locked(initialPrompt.collections.at(initialPrompt.next))) {
+            const auto id = initialPrompt.collections.at(initialPrompt.next++);
+            for (const auto &object : initialPrompt.objects)
+                if (collectionForPath(object.path()) == id) initialPrompt.completed.append(object);
+        }
+        if (initialPrompt.next >= initialPrompt.collections.size()) { finishPrompt(path,false); return; }
+    }
+    // AGENT-GUARD: one authentication surface at a time. Waiting clients
+    // recheck shared collection state after the active unlock, so one password
+    // satisfies concurrent requests without competing for keyboard focus.
+    if (!activePrompt_.isEmpty() && activePrompt_ != path) return;
+    activePrompt_ = path;
     const auto requestedId = initialPrompt.action == "create" ? QString() : initialPrompt.collections.value(initialPrompt.next);
     const auto c = repository_.find(requestedId);
     PromptRequest request{initialPrompt.action=="portal-create"?QString("create"):initialPrompt.action=="portal-unlock"?QString("unlock"):initialPrompt.action,requestedId,(initialPrompt.action == "create" || initialPrompt.action == "portal-create" || initialPrompt.action == "confirm-delete") ? initialPrompt.label : c ? c->label : requestedId,initialPrompt.owner,{}};
@@ -75,6 +99,9 @@ void SecretService::startPrompt(const QString &path) {
     QTimer::singleShot(550,this,[this,path,request] {
         const auto pending = prompts_.find(path); if (pending == prompts_.end()) return;
         if((pending->second.action=="reveal" || pending->second.action.startsWith("portal-")) && !nativeDisclosureAllowed()) {finishPrompt(path,true);return;}
+        if ((pending->second.action == "unlock" || pending->second.action == "portal-unlock")
+            && !repository_.locked(request.collection)) { startPrompt(path); return; }
+        if (pending->second.action == "portal-unlock") pending->second.relockOnCancel = true;
         pending->second.ticket = promptsProvider_.begin(request,[this,path](SecureBuffer password,bool cancelled) {
             const auto found = prompts_.find(path); if (found == prompts_.end()) return;
             auto &p = found->second; p.ticket = 0;

@@ -75,6 +75,7 @@ private:
     QDBusConnection bus_;
     std::map<QString, std::unique_ptr<Session>> sessions_;
     std::map<QString, Prompt> prompts_;
+    QString activePrompt_;
     QString sessionOwner_;
     QPointer<KeyringLockPolicy> lockPolicy_;
     int pendingRekeys_ = 0;
