@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — native coordinate/readiness facts handed off; ready for signed artifact review
+- Status: available — one-target staging-plugin repair recommendation handed off
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -31,3 +31,6 @@
 - 2026-10-10T18:00:44Z — Claimed bounded native harness help while root's frozen build proceeds. Read exact installed fork pointer semantics and root prototype, comparing existing PointerDriver; no product edit, build or private runtime was started.
 - 2026-10-10T18:02:25Z — Exact source establishes global logical absolute coordinates, unchanged through plugin/fork motion mapping; prototype input timing matches PointerDriver. Screenshot supports bottom Gather coordinate (26,668). Suggested one existing task-chip activation control and authenticated shell-ready snapshot before counting Gather outcomes; snapshot readiness has no hit geometry field. Sent exact paired launch options and endpoint to root.
 - 2026-10-10T18:02:25Z — Help handoff complete. Root retains the native fixture and build; available for read-only native artifact interpretation or the exact signed artifact. No unrelated queue outcome claimed.
+- 2026-10-10T18:13:37Z — Claimed the new R29 install failure after root's successful source compilation. Read the exact Portage log and pinned StartMenu install/source declarations; no product/recipe edits or compilation performed.
+- 2026-10-10T18:15:02Z — Verification: 77 source paths selected by the actual generated TaskListAppletRuntime install rules have exactly one missing artifact, libqindaqt_start_menu_qmlplugin.so. Ninja read-only target queries confirm its target aliases that file and links two generated plugin objects plus the already-built backing module. Earlier predicate review checked executable selection but did not establish this generated plugin's presence. Recommended adding only qindaqt_start_menu_qmlplugin to the existing shell compile targets, keeping staging/RPATH and final shell-only replacement unchanged.
+- 2026-10-10T18:15:02Z — Bounded finding handed off; root retains recipe/build/native ownership. Available to check only the exact one-target recipe repair and subsequent signed artifact. No unrelated task claimed.

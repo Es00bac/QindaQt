@@ -1,0 +1,7 @@
+# Minimal repair for the R29 staging-only plugin failure
+
+The exact failed install log names `libqindaqt_start_menu_qmlplugin.so` in the local TaskListAppletRuntime component. Read-only inspection of all 77 generated source paths selected by that component finds exactly one absent path: this plugin. Ninja target queries, exit 0, confirm `qindaqt_start_menu_qmlplugin` produces it through two generated plugin objects and the already-built StartMenu backing library. The shell links that backing library, without guaranteeing the separate generated dynamic plugin target. Source `src/shell/start_menu/CMakeLists.txt` explicitly installs both in shell-bearing components.
+
+Smallest recommendation: `src_compile() { cmake_build qindaqt-shell qindaqt_start_menu_qmlplugin; }`. Keep the current TaskListAppletRuntime local-only stage and CMake installed-RPATH processing; keep `doexe` limited to the staged shell. This adds one supporting target and requires no product source change, new dependency, archive recut or changes to retained R28 image files. Root owns the recipe edit and bounded retained-phase retry.
+
+The earlier predicate check proved exclusion of unrelated executables but did not prove every generated module artifact was inside the shell build closure. The actual install failure supplies that missing fact. No new build or broad audit ran in this review; only generated-rule source presence and read-only Ninja queries. A repaired exact recipe and successful stage/artifact remain required.
