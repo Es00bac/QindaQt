@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — one-target staging-plugin repair recommendation handed off
+- Status: available — repaired recipe faa1f4c accepted; exact signed artifact review pending
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -34,3 +34,5 @@
 - 2026-10-10T18:13:37Z — Claimed the new R29 install failure after root's successful source compilation. Read the exact Portage log and pinned StartMenu install/source declarations; no product/recipe edits or compilation performed.
 - 2026-10-10T18:15:02Z — Verification: 77 source paths selected by the actual generated TaskListAppletRuntime install rules have exactly one missing artifact, libqindaqt_start_menu_qmlplugin.so. Ninja read-only target queries confirm its target aliases that file and links two generated plugin objects plus the already-built backing module. Earlier predicate review checked executable selection but did not establish this generated plugin's presence. Recommended adding only qindaqt_start_menu_qmlplugin to the existing shell compile targets, keeping staging/RPATH and final shell-only replacement unchanged.
 - 2026-10-10T18:15:02Z — Bounded finding handed off; root retains recipe/build/native ownership. Available to check only the exact one-target recipe repair and subsequent signed artifact. No unrelated task claimed.
+- 2026-10-10T18:16:39Z — Rechecked exact overlay faa1f4ca81bdc38944de2e333b8f239bb096439f: only the identified plugin compile target, its rationale and matching README correction changed from 999c52. Diff whitespace gate exits 0; source/archive/signature/local-stage/final-image scope unchanged.
+- 2026-10-10T18:18:54Z — ACCEPT faa1f4ca81bdc38944de2e333b8f239bb096439f. Actual Portage log confirms install completed; root reports fresh staging2 unit exit 0 after removing only stale persisted environment/.compiled cache. Artifact verification remains root-owned and pending independent review. Old mapped native mouse now raises both ordinary targets; no user failure reproduction claimed. Same-window dock/overview comparison shares the controller boundary; native touch remains unmeasured.
