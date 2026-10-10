@@ -81,10 +81,14 @@ private Q_SLOTS:
         window->show(); window->requestActivate();
         QTRY_VERIFY(window->isActive());
         QTRY_VERIFY(password->hasActiveFocus());
+        password->setProperty("text",QStringLiteral("synthetic"));
         button->forceActiveFocus();
-        window->hide();
+        QTRY_VERIFY(button->hasActiveFocus());
+        QQuickWindow other;
+        other.show(); other.requestActivate();
+        QTRY_VERIFY(other.isActive());
         QTRY_VERIFY(!window->isActive());
-        window->show(); window->requestActivate();
+        window->requestActivate();
         QTRY_VERIFY(window->isActive());
         QTRY_VERIFY(password->hasActiveFocus());
     }
