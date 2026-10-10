@@ -92,6 +92,9 @@ Item {
     TapHandler {
         objectName: "gatherIconChipTap"
         enabled: chip.interactive
+        // AGENT-GUARD: own the tap so Gather's background cannot also dismiss
+        // and clear the selected item (compositor/gather-overview.md).
+        gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: chip.activated()
     }
 }

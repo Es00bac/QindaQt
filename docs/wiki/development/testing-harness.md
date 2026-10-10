@@ -4450,6 +4450,14 @@ This checkpoint does not claim installed-session or physical-input coverage.
 
 ### Gathered pager input linkage
 
+The transient overview's `qindaqt.gather-overview-surface-qml` row sends real
+mouse and touch input to window tiles, icon chips, and container cards. It
+clears the projection synchronously on background dismissal, checks exactly
+one activation and no dismissal for each tile, and separately checks background
+and Escape dismissal. `qindaqt.gather-overview-composition` verifies exact task
+intent count, generation and target for ordinary, minimized, iconified and
+container entries through the real task-list controller.
+
 The private compositor input adapter compiles the Qt Core gathered-pager router
 once. Both the production plugin and the focused input-adapter executable link
 that same implementation, so pointer and touch pager calls cannot leave the

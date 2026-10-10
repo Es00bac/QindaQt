@@ -86,6 +86,7 @@ class GatherOverviewCompositionTests final : public QObject {
 private Q_SLOTS:
     void absentTaskListNeverOpensAndProjectsNothing();
     void openProjectsTheBorrowedTaskListAndClosesOnActivation();
+    void activationBecomesTheMatchingTaskIntent_data();
     void activationBecomesTheMatchingTaskIntent();
     void losingTheTaskListClosesAnOpenOverview();
     void theWorkAreaComesFromTheOutputTheOverviewOpensOn();
@@ -170,35 +171,68 @@ void GatherOverviewCompositionTests::
     QVERIFY(itemsOf(composition.controller()->projection()).isEmpty());
 }
 
+void GatherOverviewCompositionTests::activationBecomesTheMatchingTaskIntent_data()
+{
+    QTest::addColumn<QString>("taskId");
+    QTest::addColumn<QString>("targetWindowId");
+    QTest::addColumn<bool>("minimized");
+    QTest::addColumn<bool>("iconified");
+    QTest::newRow("window") << QStringLiteral("w1") << QStringLiteral("w1")
+                            << false << false;
+    QTest::newRow("minimized-window") << QStringLiteral("w1") << QStringLiteral("w1")
+                                      << true << false;
+    QTest::newRow("iconified-window") << QStringLiteral("w1") << QStringLiteral("w1")
+                                      << false << true;
+    QTest::newRow("container") << QStringLiteral("c1") << QStringLiteral("w2")
+                               << false << false;
+}
+
 void GatherOverviewCompositionTests::activationBecomesTheMatchingTaskIntent()
 {
+    QFETCH(QString, taskId);
+    QFETCH(QString, targetWindowId);
+    QFETCH(bool, minimized);
+    QFETCH(bool, iconified);
     Fixture fixture;
     TaskListAppletController taskList(fixture.source, fixture.authority,
                                       fixture.port, allGrants());
     QQmlEngine engine;
     GatherOverviewComposition composition(*qGuiApp, engine, {});
     composition.setTaskListAccess(&taskList);
-    QVERIFY(publishReady(fixture, standardFacts()) != 0);
+    auto facts = standardFacts();
+    facts.first().minimized = minimized;
+    facts.first().iconified = iconified;
+    const quint64 revision = publishReady(fixture, facts);
+    QVERIFY(revision != 0);
     composition.controller()->setWorkArea(QRectF(0, 0, 1920, 1080));
     composition.toggle();
 
     const QVariantMap projection = composition.controller()->projection();
     const int before = static_cast<int>(fixture.port.calls.size());
-    const QVariantMap window = itemForTask(projection, QStringLiteral("w1"));
+    const QVariantMap window = itemForTask(projection, taskId);
     QVERIFY(!window.isEmpty());
-    // A standalone window addresses the whole entry: no windowId.
+    // Grouped overview tiles address the whole task: no member override.
     QVERIFY(window.value(QStringLiteral("windowId")).toString().isEmpty());
     composition.controller()->activate(window);
     // The intent reached the real dispatch path rather than being invented
     // here: the port is what the applet controller ends up calling.
-    QVERIFY(fixture.port.calls.size() >= before);
+    QCOMPARE(static_cast<int>(fixture.port.calls.size()), before + 1);
+    const auto &call = fixture.port.calls.last();
+    QCOMPARE(call.method, QStringLiteral("executeTaskIntent"));
+    QCOMPARE(call.request.kind, TaskIntentKind::Activate);
+    QCOMPARE(call.request.taskId, taskId);
+    QCOMPARE(call.request.expectedRevision, revision);
+    QVERIFY(call.request.windowId.isEmpty());
+    QCOMPARE(call.outcome.primaryWindowId, targetWindowId);
+    QVERIFY(call.outcome.ok());
+    QVERIFY(!composition.controller()->isOpen());
 
     // A stale item cannot act, even though it looks exactly like a live one.
     // The controller refuses it before the composition ever sees it, which is
     // the reason the surface is allowed to hold plain value maps.
     composition.toggle();
     composition.controller()->setWorkArea(QRectF(0, 0, 1920, 1080));
-    composition.toggle();
+    QVERIFY(composition.controller()->isOpen());
     QVariantMap stale = window;
     stale[QStringLiteral("generationRevision")] =
         QVariant::fromValue<quint64>(1);

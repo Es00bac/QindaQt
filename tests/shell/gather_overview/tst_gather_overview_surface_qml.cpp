@@ -140,6 +140,7 @@ private Q_SLOTS:
     void everyLaneDrawsItsOwnComponentAtThePlannersFrame();
     void aCapturedPreviewReplacesTheIconAndClearsOnDismissal();
     void originTranslatesDesktopLogicalFramesIntoTheSurface();
+    void clickingATileReportsTheItemItWasProjectedFrom_data();
     void clickingATileReportsTheItemItWasProjectedFrom();
     void escapeAsksToDismiss();
     void clickingTheScrimAsksToDismiss();
@@ -193,6 +194,8 @@ GatherOverviewSurfaceQmlTests::createSurface(const QVariantMap &projection)
         GatherOverviewSurface {
             width: 1920
             height: 1080
+            property bool clearOnDismiss: false
+            onDismissRequested: if (clearOnDismiss) projection = null
         }
     )qml",
                       QUrl(QStringLiteral("inline:gather-surface.qml")));
@@ -307,19 +310,46 @@ void GatherOverviewSurfaceQmlTests::
 }
 
 void GatherOverviewSurfaceQmlTests::
+    clickingATileReportsTheItemItWasProjectedFrom_data()
+{
+    QTest::addColumn<QString>("lane");
+    QTest::addColumn<bool>("touch");
+    for (const char *lane : {"window", "icon", "card"}) {
+        for (const bool touch : {false, true}) {
+            const QByteArray name = QByteArray(lane) + (touch ? "-touch" : "-mouse");
+            QTest::newRow(name.constData()) << QString::fromLatin1(lane) << touch;
+        }
+    }
+}
+
+void GatherOverviewSurfaceQmlTests::
     clickingATileReportsTheItemItWasProjectedFrom()
 {
+    QFETCH(QString, lane);
+    QFETCH(bool, touch);
     const QRectF windowFrame(450, 90, 260, 176);
     QQuickItem *surface = createSurface(stubProjection(
-        {tile(QStringLiteral("w1"), QStringLiteral("window"), windowFrame)}));
+        {tile(QStringLiteral("w1"), lane, windowFrame)}));
     QVERIFY(surface != nullptr);
+    // Production closes and clears the projection synchronously on dismissal.
+    // An isolated signal spy misses selection lost to the background handler.
+    surface->setProperty("clearOnDismiss", true);
 
     QSignalSpy activated(surface, SIGNAL(activated(QVariant)));
     QVERIFY(activated.isValid());
+    QSignalSpy dismissed(surface, SIGNAL(dismissRequested()));
+    QVERIFY(dismissed.isValid());
 
-    QTest::mouseClick(m_window.get(), Qt::LeftButton, Qt::NoModifier,
-                      windowFrame.center().toPoint());
-    QTRY_COMPARE(activated.count(), 1);
+    const QPoint position = windowFrame.center().toPoint();
+    if (touch) {
+        auto *device = QTest::createTouchDevice();
+        QTest::touchEvent(m_window.get(), device).press(0, position).commit();
+        QTest::touchEvent(m_window.get(), device).release(0, position).commit();
+    } else {
+        QTest::mouseClick(m_window.get(), Qt::LeftButton, Qt::NoModifier, position);
+    }
+    QTRY_COMPARE_WITH_TIMEOUT(activated.count(), 1, 1000);
+    QCOMPARE(dismissed.count(), 0);
 
     const QVariantMap reported = activated.first().first().toMap();
     QCOMPARE(reported.value(QStringLiteral("taskId")).toString(),

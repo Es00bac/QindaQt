@@ -265,6 +265,12 @@ the `generationRevision` it was projected from, so the owner echoes the
 generation and stale-revision arbitration can refuse a dead action. Escape and
 a click that misses every tile both become `dismissRequested()`.
 
+Each interactive tile takes the pointer's exclusive grab from press through
+release, for both mouse and touch. The background must not receive the same
+tap: its synchronous dismissal clears the projection and can race selection.
+A selection emits one activation without background dismissal; the composition
+then closes the overview through the normal activation path.
+
 Three visuals, one per lane: `GatherIconChip` (a round chip, identity only),
 `GatherContainerCard` (icon, title, member count, and the container's own
 colour on a leading stripe), and `GatherWindowTile` (title and aspect-fitted
