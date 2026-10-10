@@ -74,7 +74,8 @@ int main(int argc,char **argv) {
             policy=std::make_unique<ResidentLockPolicy>(repository,service,display,bus);
         QSocketNotifier ending(signalFd,QSocketNotifier::Read);
         QObject::connect(&ending,&QSocketNotifier::activated,&application,[&] {
-            signalfd_siginfo info{}; ::read(signalFd,&info,sizeof(info)); application.quit();
+            signalfd_siginfo info{};
+            if (::read(signalFd,&info,sizeof(info)) == static_cast<ssize_t>(sizeof(info))) application.quit();
         });
         QTimer authority;
         QObject::connect(&authority,&QTimer::timeout,&application,[&] {
