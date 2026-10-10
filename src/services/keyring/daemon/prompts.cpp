@@ -65,8 +65,8 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
     auto signal = QDBusMessage::createTargetedSignal(p.owner,path,"org.freedesktop.Secret.Prompt","Completed");
     signal.setArguments({dismissed,QVariant::fromValue(QDBusVariant(result))});
     bus_.send(signal);
-    if (activePrompt_ == path) {
-        activePrompt_.clear();
+    if (activePrompt_ == path) activePrompt_.clear();
+    if (activePrompt_.isEmpty()) {
         QTimer::singleShot(0,this,[this] {
             if (!activePrompt_.isEmpty()) return;
             for (const auto &[next,prompt] : prompts_)
