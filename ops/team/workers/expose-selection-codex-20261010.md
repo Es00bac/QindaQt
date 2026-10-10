@@ -2,7 +2,7 @@
 
 - Role: accountable implementer; manager integrates only after independent review
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: working — checking the integrated source after signed Portage adoption
+- Status: available — signed overview input repair active; physical owner confirmation remains open
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Branch: fix/expose-selection-20261010
 - Worktree: isolated expose-selection-20261010 worktree
@@ -20,3 +20,5 @@
 - 2026-10-10T18:20:03Z — R29 Portage compile/install/package passed after adding the sole generated StartMenu staging plugin; exact overlay faa1f4c independently accepted. Full signature, embedded recipe and 2,622-path parity passed on qinda: only usr/bin/qindaqt-shell differs from signed R28. Private KGlobalAccel trigger actually maps Gather; old R28 ordinary mouse selects both fixture windows with correct active identity and top stack, so no native reproduction of the owner failure is claimed. A status-only live comparison and exact artifact mouse/touch replay are next.
 
 - 2026-10-10T18:27:37Z — Signed R29 passed full signature, embedded exact recipe and all 2,622-path image parity on both hosts. Exact artifact mouse and touch replay each focused and raised two distinct fixture windows in a mapped private Gather reached through KGlobalAccel. Normal laptop Portage upgraded only R28 to R29; loaded replacement shell matches SHA cc61dd33, compositor owner and 19 other tracked process lifetimes remain unchanged, as do world/profile. Old R28 also passed native ordinary selection; physical owner failure remains unconfirmed, and the synthetic corner attempt did not qualify that trigger. Manager checks are next; no roadmap weight advances.
+
+- 2026-10-10T18:30:02Z — Manager boundary f19a987e9 verified in the retained warm build after checking out that exact integrated source: build exit0/no work, owning Gather/profile CTest10/10 exit0 in2.39s, links/navigation551 exit0 and strict MkDocs exit0 in8.91s. R29 is loaded and the installed hash remains exact. Product/task/handoff documentation states the original physical no-raise case remains unconfirmed; no completion weight advances. Help offer: handle one concrete failing same-window reproduction through the existing activation boundary with the same reviewer if the owner still sees it. Transitioning to available.
