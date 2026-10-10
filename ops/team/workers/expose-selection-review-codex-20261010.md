@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — final recipe 999c52 accepted; ready for signed artifact and actual native evidence review
+- Status: available — native coordinate/readiness facts handed off; ready for signed artifact review
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -28,3 +28,6 @@
 - 2026-10-10T17:54:36Z — Handoff: REJECT dcfa146000209f763577832db9924eb0b2e17757 only for temporary known-key trust failure; previous stage finding is resolved in this exact descendant. Ready to re-review only the temporary trust repair, then the signed artifact/native evidence. No new build, source change or unchanged baseline audit was performed.
 - 2026-10-10T17:57:34Z — Claimed and rechecked only exact overlay 999c52c5acf07b1bb73416077778fa8cf0b65ece. Its three-line change matches the guard and two independently proven temporary primary-ownertrust/check-trustdb commands exactly; the diff whitespace gate exits 0. Earlier dcfa146 rejection is resolvedBy 999c52c5acf07b1bb73416077778fa8cf0b65ece. Root independently reports fresh qinda full verifier exit 0 and 2,622 signed image paths; unchanged baseline gates were not repeated.
 - 2026-10-10T17:57:34Z — Handoff: ACCEPT exact final recipe 999c52c5acf07b1bb73416077778fa8cf0b65ece, with shell-only TaskListAppletRuntime local stage preserved. Root owns frozen Portage build, signed artifact and actual mapped-overview raise/focus verification. Root invalidated earlier active-B native observations because synthetic hot-corner input had not opened Gather. No installed fix or valid native reproduction is claimed; bounded artifact/native review help remains available.
+- 2026-10-10T18:00:44Z — Claimed bounded native harness help while root's frozen build proceeds. Read exact installed fork pointer semantics and root prototype, comparing existing PointerDriver; no product edit, build or private runtime was started.
+- 2026-10-10T18:02:25Z — Exact source establishes global logical absolute coordinates, unchanged through plugin/fork motion mapping; prototype input timing matches PointerDriver. Screenshot supports bottom Gather coordinate (26,668). Suggested one existing task-chip activation control and authenticated shell-ready snapshot before counting Gather outcomes; snapshot readiness has no hit geometry field. Sent exact paired launch options and endpoint to root.
+- 2026-10-10T18:02:25Z — Help handoff complete. Root retains the native fixture and build; available for read-only native artifact interpretation or the exact signed artifact. No unrelated queue outcome claimed.
