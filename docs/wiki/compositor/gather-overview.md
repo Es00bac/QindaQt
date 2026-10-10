@@ -289,3 +289,15 @@ cannot look like it worked.
 ## Minimized-item integration evidence
 
 The gathered minimized source boundary (`21809c56`) shares overview columns and usable work-area geometry. Manager native replay covers a 640×480 output with a 40-pixel reserved top bar, 17 mixed items, paging, real metadata icons, identity fallback, and fullscreen-origin restoration. Eleven focused CTests and 17/17 native verdicts pass. The integrated identity/hover plugin also passes the compositor lock matrix 33/33 without failure or skip; hover labels cannot outlive the lock privacy fence. Physical multi-output/input acceptance and installed adoption remain later delivery gates. See the [native session-lock boundary](../architecture/native-session-lock.md).
+
+## October 10 selection delivery
+
+The exclusive tile tap repair is independently reviewed in source `2d99ca7a0`.
+Focused desktop R29 applies it to the R23 shell retained by signed R28; package
+verification preserves all 2,622 image paths and changes only the shell
+executable. Native mouse and touch checks on the exact artifact each select,
+focus and raise two ordinary fixture windows, with Gather opened through its
+production KGlobalAccel action. The supervised laptop shell adopted R29 while
+the compositor and 19 other tracked application/session process lifetimes
+continued. The old shell also passes those native ordinary checks; physical
+confirmation of the reported hot-corner no-raise failure remains separate.
