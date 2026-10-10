@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — exact R29 recipe rejection handed off; awaiting only the bounded staging repair
+- Status: available — dcfa146 staging repair passes; temporary certificate trust repair requested
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -22,3 +22,7 @@
 - 2026-10-10T17:46:33Z — Reviewed descendant 59136754f0b33f5f672cdd5b2f6f7cb2251a19f7. Its pinned public certificate includes the expected D1E92C77 signing subkey; no private key material is present. Discovered whole-tree QindaQt component staging includes unbuilt qindaqt-wm because KDEInstallDirs6 sets the project's default component. Sent exact concern immediately to root.
 - 2026-10-10T17:47:34Z — Verification: isolated generated session install script fails exit 1 for missing qindaqt-wm, reproducing the staging defect without a build. Full retained R28 gpkg signature/embedded recipe hash, all 2,622 ledger entries, both new distfile Manifest hash/size inputs and exact Gather source parity pass. The host trust configuration was not changed.
 - 2026-10-10T17:47:34Z — Handoff: REJECT overlay 59136754f0b33f5f672cdd5b2f6f7cb2251a19f7 only for whole-tree staging after shell-only compilation. Root owns a shell-local install-script repair and exact descendant; offer remains bounded repair/native/artifact review. No new build or unrelated audit occurred.
+- 2026-10-10T17:52:44Z — Claimed exact descendant dcfa146000209f763577832db9924eb0b2e17757 for re-review of only the TaskListAppletRuntime local install rule and pinned public-certificate dearmor path. Root identified that the default local QindaQt component also includes the preview executable; the repaired component explicitly excludes it. Original archives, source and image ledger remain unchanged.
+- 2026-10-10T17:53:41Z — Original missing-launcher reproduction passes exit 0 with the repaired component. Generated-rule trace selects exactly one executable, qindaqt-shell, excluding both preview and wm; this is rule selection evidence, not an artifact stage. Dearmor succeeds but fresh gpkg verification fails with known-key undefined trust because no temporary ownertrust/trustdb was initialized. Sent the exact failure immediately.
+- 2026-10-10T17:54:36Z — Bounded remedy verified: import the pinned primary certificate's ownertrust into the temporary home, then check that home's trustdb. Both no-agent operations exit 0; full retained R28 gpkg signature verification then passes. Import alone is insufficient because Portage disables automatic trustdb checking. Host trust was not changed.
+- 2026-10-10T17:54:36Z — Handoff: REJECT dcfa146000209f763577832db9924eb0b2e17757 only for temporary known-key trust failure; previous stage finding is resolved in this exact descendant. Ready to re-review only the temporary trust repair, then the signed artifact/native evidence. No new build, source change or unchanged baseline audit was performed.
