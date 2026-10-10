@@ -2,7 +2,7 @@
 
 - Role: independent candidate reviewer
 - Provider: OpenAI Codex; no independent model telemetry claim
-- Status: available — dcfa146 staging repair passes; temporary certificate trust repair requested
+- Status: available — final recipe 999c52 accepted; ready for signed artifact and actual native evidence review
 - Base: c05721d48388ce36512172ff6886f9ebd0ffea42
 - Candidate: 2d99ca7a0ca5aa983757cb4f46ffda6253604248
 - Branch: review/expose-selection-20261010
@@ -26,3 +26,5 @@
 - 2026-10-10T17:53:41Z — Original missing-launcher reproduction passes exit 0 with the repaired component. Generated-rule trace selects exactly one executable, qindaqt-shell, excluding both preview and wm; this is rule selection evidence, not an artifact stage. Dearmor succeeds but fresh gpkg verification fails with known-key undefined trust because no temporary ownertrust/trustdb was initialized. Sent the exact failure immediately.
 - 2026-10-10T17:54:36Z — Bounded remedy verified: import the pinned primary certificate's ownertrust into the temporary home, then check that home's trustdb. Both no-agent operations exit 0; full retained R28 gpkg signature verification then passes. Import alone is insufficient because Portage disables automatic trustdb checking. Host trust was not changed.
 - 2026-10-10T17:54:36Z — Handoff: REJECT dcfa146000209f763577832db9924eb0b2e17757 only for temporary known-key trust failure; previous stage finding is resolved in this exact descendant. Ready to re-review only the temporary trust repair, then the signed artifact/native evidence. No new build, source change or unchanged baseline audit was performed.
+- 2026-10-10T17:57:34Z — Claimed and rechecked only exact overlay 999c52c5acf07b1bb73416077778fa8cf0b65ece. Its three-line change matches the guard and two independently proven temporary primary-ownertrust/check-trustdb commands exactly; the diff whitespace gate exits 0. Earlier dcfa146 rejection is resolvedBy 999c52c5acf07b1bb73416077778fa8cf0b65ece. Root independently reports fresh qinda full verifier exit 0 and 2,622 signed image paths; unchanged baseline gates were not repeated.
+- 2026-10-10T17:57:34Z — Handoff: ACCEPT exact final recipe 999c52c5acf07b1bb73416077778fa8cf0b65ece, with shell-only TaskListAppletRuntime local stage preserved. Root owns frozen Portage build, signed artifact and actual mapped-overview raise/focus verification. Root invalidated earlier active-B native observations because synthetic hot-corner input had not opened Gather. No installed fix or valid native reproduction is claimed; bounded artifact/native review help remains available.
