@@ -11,6 +11,31 @@ this source description is not a successful print or scan receipt.
 [ADR-0356](../adr/0356-delegate-printer-and-scanner-settings-to-installed-tools.md)
 records the delegation and lifetime contract.
 
+The [printing stack packaging decision](../adr/0376-ship-a-complete-printing-stack.md)
+defines the separately delivered scheduler, filters, discovery, drivers and
+graphical setup dependencies. A desktop entry alone does not install or enable
+that stack. On October 12 the attached Samsung ML-216x was visible over USB but
+the laptop had no configured queue, enabled CUPS socket, conversion filters,
+Samsung driver or graphical setup tool. Delivery and physical print evidence
+are tracked separately from the Settings page's source tests.
+
+## Samsung USB qualification, October 12
+
+Portage installed SpliX, cups-filters and system-config-printer with their
+dependencies. Enabling the installed CUPS socket and replaying the attached
+printer's USB add event invoked the upstream `configure-printer@` service.
+It automatically selected `samsung/ml2160.ppd.gz`, created `ML-2160-Series`
+and made it the default. Qt's CUPS plugin enumerated the same default with
+23 paper sizes. No machine-specific URI or serial is stored here.
+
+Because CUPS had started before the filters were installed, its first test
+submission rejected the stale MIME database. Reloading the scheduler made
+the new conversions available. Subsequent job 2 reported
+`job-completed-successfully` with one sheet and the printer returned to idle.
+Held job 3 was canceled through the ordinary user's CUPS connection, moving
+from held to canceled with zero sheets. These are backend receipts; readable
+paper confirmation and the repaired Office path are separate gates.
+
 ## Existing owners
 
 | Page action | Fixed catalog identity | Owning operation |

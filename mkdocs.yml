@@ -576,3 +576,4 @@ nav:
       - "0373: Android renderer origin and guest identity": adr/0373-separate-android-renderer-origin-from-guest-app-identity.md
       - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md
       - "0375: Package-owned Android collector bootstrap": adr/0375-bootstrap-the-package-owned-android-collector.md
+      - "0376: Complete printing stack": adr/0376-ship-a-complete-printing-stack.md

@@ -1,3 +1,9 @@
+## Printing delivery — 2026-10-12T16:22:02Z
+
+The owner requests a working attached Samsung printer and out-of-box QindaQt/QindaOffice printing. Root owns live host/queue/package adoption and desktop documentation on isolated `fix/printing-20261012` from `8365da954`. `printing_defaults` owns overlay `fix/printing-defaults-20261012` from `2dadb4e`; `office_printing` owns Office `fix/printing-20261012` from `9b5b184`. Exact independent source/package review follows candidates; no printer/scanner milestone is complete. Thread: `ops/team/messages/printing-20261012/`.
+
+Acceptance next: installed Samsung driver/queue and one-page CUPS job, actual Office print-path/range/failure tests, default dependency/activation package, exact review and source preservation on qinda. Hardware is exclusively owned by root. Keep the host's configured MAKEOPTS unchanged; earlier resource-limit recipes below are historical and do not govern this outcome.
+
 ## Current release and resource routing — 2026-10-08T21:50:16+00:00
 
 Power product276151 has source acceptance and owning22/22 tests (193Qt/zero fail or skip,3boundaries); native evidence independent review pending. Root integrates and reruns owning gates, then combines Power with already accepted Voice/Files in a new immutable R23 package. R21/R22 source archives remain preserved and unbuilt; no recut. R20/providerR5 remain installed. Gabbee-r6 signed artifact25fc928a is independently accepted; paired adoption remains required. Voice Astra owns installed-image Voice probes and Power evidence review; Windows Astra owns Power installed-image/hardware support; Foreign Astra owns laptop Android guest-parent diagnostic archive/first ordinary apps. No completed foreign-app journey or full plan completion claimed.
