@@ -55,7 +55,7 @@ build instructions, license and development status.
 | Native browser work in progress | [QindaWeb active branch](https://github.com/Es00bac/QindaWeb/tree/feature/native-browser) |
 | Portage manager | [QindaPortage](https://github.com/Es00bac/QindaPortage) |
 | Boot menu and splash | [QindaBoot](https://github.com/Es00bac/QindaBoot) |
-| Local model-server tools and configuration | QindaLLM — licensed source and package ready; GitHub repository creation is temporarily rate-limited |
+| Local model-server tools and configuration | [QindaLLM](https://github.com/Es00bac/QindaLLM) |
 | Local model-server monitor | [QindaLlamaWatch](https://github.com/Es00bac/QindaLlamaWatch) |
 | Source-reading developer companion | [JevReader](https://github.com/Es00bac/JevReader) |
 | Dictation and desktop voice integration | [gabbee](https://github.com/Es00bac/gabbee) |

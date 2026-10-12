@@ -350,7 +350,7 @@ not made public.
 
 The new public repositories are QindaPortage (the `LocalAiPortage` hub),
 QindaFoxAgent, QindaLlamaWatch, QindaPhotocraft, QindaTK-agent-guide,
-QindaWeb, QindaIconArt, qindaqt-kwin, JevReader and QindaBoot. The
+QindaWeb, QindaIconArt, qindaqt-kwin, JevReader, QindaBoot and QindaLLM. The
 [root catalog](https://github.com/Es00bac/QindaQt#related-projects) links each source. QindaWeb's
 implementation remains on `feature/native-browser`; its main branch is a
 project introduction. Publishing it does not imply a finished browser.
@@ -365,10 +365,12 @@ or blobs above [GitHub's 100 MiB limit](https://docs.github.com/en/repositories/
 replace provenance or runtime qualification. Model tests and inference/service
 operations were explicitly deferred while other work was running on qinda.
 
-QindaLLM source `91a294cd967f0331bbef13f95b74920a27cd2d7e` is committed on
-qinda with its licensed, verified source archive and overlay recipe. GitHub
-temporarily rate-limited creation of its new repository; publication remains
-pending until that exact public ref can be verified.
+[QindaLLM](https://github.com/Es00bac/QindaLLM) completed the eleven new public
+repositories at 20:06 UTC after GitHub's temporary creation limit cleared.
+Its public `main` was verified at
+`91a294cd967f0331bbef13f95b74920a27cd2d7e`, matching the licensed qinda source.
+Its verified source archive and overlay recipe remain unchanged; publication
+does not replace the archive or activate the model service.
 
 The owner explicitly authorized GPL-3.0-or-later for the original code in
 QindaBoot, QindaLLM and QindaDeck. Their source declarations retain third-party
