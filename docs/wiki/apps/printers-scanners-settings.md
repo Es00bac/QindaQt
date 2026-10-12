@@ -34,7 +34,13 @@ the new conversions available. Subsequent job 2 reported
 `job-completed-successfully` with one sheet and the printer returned to idle.
 Held job 3 was canceled through the ordinary user's CUPS connection, moving
 from held to canceled with zero sheets. These are backend receipts; readable
-paper confirmation and the repaired Office path are separate gates.
+paper confirmation and the repaired Office path are separate gates. The owner
+reported that job 2 had no paper loaded and job 4 still produced no page after
+loading paper. After a physical disconnect/reconnect, short text job 5 again
+reported one sheet through CUPS; physical confirmation remains pending. The
+device's live USB identity response then reported `STATUS:IDLE`, and its basic
+status flags did not report paper empty or error. None of these software
+receipts establishes successful physical output.
 
 ## Existing owners
 
