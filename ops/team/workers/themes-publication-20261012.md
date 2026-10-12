@@ -2,7 +2,7 @@
 
 - Role: isolated QindaThemes source reconciliation implementer
 - Provider: OpenAI Codex; model not independently inspected
-- Status: idle — accepted exact overlay candidate after independent read-only source/archive/image review
+- Status: idle — accepted repaired exact publication and network-print documentation candidate
 - Base: ec9320a0a6b3ffa6ccb0f51e83342f7395d73ef7
 - Other parent: f5ec8daa90b5e8db1495b3b1a18d3cadc09b63d2
 - Branch: ops/github-sync-20261012 (QindaThemes)
@@ -21,3 +21,6 @@
 - 2026-10-12T19:23:18+00:00 — Handed off Boot f778750ea9e9622b76b2abd84f0710486757997f, LLM 91a294cd967f0331bbef13f95b74920a27cd2d7e and Deck 38f3731652058114288d96d592f3750a45774ff7. Each changes only LICENSE and additive README; canonical license bytes, non-documentation blob/mode preservation (42/10/103), links and whitespace pass. Candidate-only hub pushes; normal branches/checkouts unchanged. Overlay owner has pins and document names; awaits root acceptance.
 - 2026-10-12T19:34:04+00:00 — Manager accepted/published the three original-code license candidates. New independent review assignment: QindaGentoo c16790ee51a3998688f189f279fe3164bafb155b over 18eb802cbab542c856194be7e1d466b4abd5f419; focus licensed Boot/LLM/Deck revisions, package boundaries and preservation. No candidate edits, model/service operations, installs/builds or Trellis interaction.
 - 2026-10-12T19:39:03+00:00 — ACCEPT c16790ee51a3998688f189f279fe3164bafb155b: 369 old ebuilds, 347 Manifest rows/72 files, 10 Trellis paths and defaults preserved; prior optional package review unchanged. Independently verified 44/12/105 final source blobs and 39/9/10 staged image paths for Boot/LLM/Deck, docs/licenses, archive pins/digests and unchanged runtime bytes. No model/service/install/build/runtime operation; root owns integration/publication.
+- 2026-10-12T19:49:26+00:00 — Claimed independent documentation review for pushed container-wm candidate 7b586ff6c over fa6125dea. Scope: README, handoff/task state, printers/scanners and release wiki claims/links. Exact diff and recorded evidence only; no GitHub API, model/runtime, tests, builds, installs or source edits.
+- 2026-10-12T19:51:20+00:00 — Exact documentation review found a chronology/qualification contradiction: HANDOFF and TASK_LIST place the new entry between the prior heading and its old content, carrying an old network-printer-unqualified sentence under the new accepted-print record. Requested heading/block reorder from manager; other source/package/publication claims match recorded evidence.
+- 2026-10-12T19:52:27+00:00 — ACCEPT repaired documentation candidate 0239541f7f36e58049ef56ede3f50c881db5fdc7. Exact recheck confirms new handoff/task record precedes intact historical heading/body; original finding on 7b586ff6c is resolved. Publication/license/package scopes and owner-confirmed network printing match recorded evidence; LLM GitHub creation stays explicitly pending. No API, test, model/service/build/install actions.
