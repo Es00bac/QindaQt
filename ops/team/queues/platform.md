@@ -1,8 +1,6 @@
-## Printing delivery — 2026-10-12T16:22:02Z
+## Printing delivery complete — 2026-10-12T17:10:06Z
 
-The owner requests a working attached Samsung printer and out-of-box QindaQt/QindaOffice printing. Root owns live host/queue/package adoption and desktop documentation on isolated `fix/printing-20261012` from `8365da954`. `printing_defaults` owns overlay `fix/printing-defaults-20261012` from `2dadb4e`; `office_printing` owns Office `fix/printing-20261012` from `9b5b184`. Exact independent source/package review follows candidates; no printer/scanner milestone is complete. Thread: `ops/team/messages/printing-20261012/`.
-
-Acceptance next: installed Samsung driver/queue and one-page CUPS job, actual Office print-path/range/failure tests, default dependency/activation package, exact review and source preservation on qinda. Hardware is exclusively owned by root. Keep the host's configured MAKEOPTS unchanged; earlier resource-limit recipes below are historical and do not govern this outcome.
+Owner-confirmed Samsung output follows an overfilled-tray correction and production Write fixture job 8. Office source d47c4d9 and overlay 422c024 are integrated; laptop Office r3 and printing defaults1-r1 are installed. Exact independent source/recipe/artifact reviews, manager owning tests, installed file ledger and service health pass. The printing target owns boot dependencies; no desktop/document restart. Workers are available for a concrete regression in this delivered scope; no new queue work is claimed. Other Office ranges/network printers/scanning remain bounded follow-ups, not full ED-11 completion. Durable evidence: ops/team/messages/printing-20261012/ and the owning wiki page.
 
 ## Current release and resource routing — 2026-10-08T21:50:16+00:00
 

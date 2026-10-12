@@ -1,3 +1,23 @@
+## Samsung printing and default-stack delivery — 2026-10-12T17:10:06Z
+
+QindaOffice source `d47c4d9` and QindaGentoo `422c024` are integrated on qinda.
+The laptop now has Portage printing defaults `1-r1`, SpliX `2.0.2`, CUPS
+conversion/discovery/setup tools and Office `0.1.0_p20261010-r3`. The target is
+enabled and active; existing CUPS configuration/queues and open documents are
+preserved. First-install EAPI 8 empty-root activation is regression-tested.
+
+The owner cleared an overfilled paper tray, confirmed the internal test page
+and green LED, then replied “Got it” to production QindaWrite fixture job 8.
+CUPS recorded one completed sheet. Held-job cancellation also passed. Write
+now refreshes printers, refuses a missing selection, reports submission errors
+and honors page ranges/section paper. Exact source, recipe and signed artifact
+received separate review; owning CTests pass 2/2, twelve activation cases and
+17 ipp-usb tests pass, 68 installed Office files match and isolated installed
+startup passes. The broad legacy sections test hit 60 seconds in its final
+screenshot case; its focused PDF-section replacement passed. No broader Office,
+network-printer or scanner qualification, full ED-11 completion or feature-weight
+advance follows. See [printing details](wiki/apps/printers-scanners-settings.md).
+
 ## Overview selection input repair installed — 2026-10-10T18:27:37Z
 
 The three Gather tile handlers now take an exclusive mouse/touch tap, preventing the same selection from also dismissing through the background scrim. Exact source `2d99ca7a0` and focused deployment `42ec5bfa8` have independent review. All six old-QML cases failed the no-background-dismiss assertion; the repair passed at 100%, 125% and 150%. Ten owning Gather/profile CTests and strict docs/link checks passed on the accepted source.

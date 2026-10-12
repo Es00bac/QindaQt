@@ -1,5 +1,15 @@
 ## Fast Android and Windows delivery order — October 8, 18:15 MDT
 
+## October 12 printing delivery
+
+The desktop printing stack and Office r3 are installed on the laptop after
+exact independent review. The owner cleared an overfilled Samsung paper tray
+and confirmed the production Write fixture page. Default service activation,
+USB driver selection, printer refresh, range handling, failure presentation
+and held-job cancellation have focused evidence in
+[Printers & scanners](../apps/printers-scanners-settings.md). Network devices,
+other models and scanner journeys remain unqualified; ED-11 is not complete.
+
 The owner requires a DeX-like result hosted by QindaQt: Android app content
 uses ordinary QindaQt windows and container tabs/tiling alongside native
 apps; QindaTK owns setup, status, errors and app management. Windows apps

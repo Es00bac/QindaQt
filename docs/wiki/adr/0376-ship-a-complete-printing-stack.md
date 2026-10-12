@@ -63,9 +63,17 @@ ipp-usb tests, isolated package images and unit verification passed. The
 installed dependency plan adds eight packages/upgrades/rebuilds on the
 previously bootstrapped laptop, without a desktop rebuild.
 
-This acceptance covers the package contract. The Samsung's physical output
-remains unqualified after the owner reported no paper from jobs whose CUPS
-transmission had completed; see the owning page's hardware record.
+Live adoption caught the original hook's assumption that `ROOT` was `/`:
+EAPI 8 actually exports the real `ROOT`/`EROOT` as empty strings. Independently
+accepted repair `422c0248519c47d225a716c52864bf7a0f64e20c` ships revision 1-r1,
+normalizes `EROOT`, and tests empty, slash and Prefix/image roots. All twelve
+policy fixtures pass; the old version fails the new empty-root regression.
+Existing deliberate upgrade opt-outs remain unchanged.
+
+The installed stack and Office r3 now have one-page Samsung qualification:
+the owner cleared an overfilled tray, confirmed the printer's internal test
+page and then receipt of the production QindaWrite fixture. Other hardware and
+scanning remain separate; see the owning page's exact job and package record.
 
 Acceptance includes the resolved Portage dependency plan, package image and
 activation behavior, installed printer discovery, a known one-page job,

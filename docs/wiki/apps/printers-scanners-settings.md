@@ -19,7 +19,7 @@ the laptop had no configured queue, enabled CUPS socket, conversion filters,
 Samsung driver or graphical setup tool. Delivery and physical print evidence
 are tracked separately from the Settings page's source tests.
 
-The QindaGentoo desktop profile now includes `net-print/qindaqt-printing`.
+The QindaGentoo desktop profile now includes `net-print/qindaqt-printing-1-r1`.
 Its reviewed package supplies CUPS with USB/DNS-SD support, cups-filters,
 cups-browsed, ipp-usb, Gutenprint, SpliX and system-config-printer with polkit.
 The package's systemd target starts the providers on a fresh install, preserving
@@ -50,6 +50,37 @@ reported one sheet through CUPS; physical confirmation remains pending. The
 device's live USB identity response then reported `STATUS:IDLE`, and its basic
 status flags did not report paper empty or error. None of these software
 receipts establishes successful physical output.
+
+The owner subsequently found the paper tray was overfilled, removed excess
+paper, printed the device's own configuration page and reported a green light.
+With SpliX 2.0.2 and the refreshed ML-2160 PPD, production QindaWrite fixture
+job 8 then completed one sheet and the owner replied “Got it” after submission.
+This qualifies one real page from the Write renderer through Qt, CUPS and USB.
+The no-reattach diagnostic used only job 6; no USB quirk override remains on
+the queue, and the successful Write job used ordinary settings.
+
+The laptop now has printing defaults 1-r1 and Office `0.1.0_p20261010-r3`
+installed through Portage. The printing target is enabled and its CUPS,
+discovery and Avahi services are active. The temporary independently enabled
+CUPS socket was retired; the printing target owns its boot dependency. No
+compositor, shell or open document was restarted. Save and reopen an already
+running Office application to load the updated executable.
+
+Office source `d47c4d905534bea0b2d65394eebf35dc5b7bbab5` adds explicit printer
+refresh, refusal of a vanished selection, completion/error handling and
+persistent error presentation. Write honors page ranges and the first selected
+section's paper. Independent and manager owning CTests pass 2/2; four narrow/
+wide dialog captures were inspected, and the opt-in hardware fixture passed.
+The signed r3 artifact's 68 installed files match its ledger; installed
+QindaWrite's isolated startup/help check passes. Other Office renderers' page
+range behavior, other printer models, network devices and scanning retain
+their separate qualification boundaries.
+
+Actual first installation exposed EAPI 8's empty `EROOT` convention: version 1
+enabled the target but skipped its immediate start. Reviewed overlay repair
+`422c0248519c47d225a716c52864bf7a0f64e20c` normalizes the real root and excludes
+Prefix/image roots. Twelve policy cases pass, and the new regression fails
+against the original recipe. Upgrades continue to preserve deliberate disables.
 
 ## Existing owners
 

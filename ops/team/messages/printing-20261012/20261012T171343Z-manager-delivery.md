@@ -1,0 +1,11 @@
+# Printing delivery handoff
+
+The attached Samsung ML-216x now prints. The owner removed excess paper, confirmed its internal test page/green LED, and replied “Got it” after the repaired production QindaWrite fixture job 8. CUPS recorded one sheet; earlier completed-without-paper jobs remain negative physical evidence. No per-queue USB quirk override was retained.
+
+Accepted/integrated Office source: d47c4d905534bea0b2d65394eebf35dc5b7bbab5. Overlay: 422c0248519c47d225a716c52864bf7a0f64e20c (includes printing stack39d2606 and Office recipe9f6eed5). Both hub and normal qinda source checkouts agree. Office r3 signed artifact SHA256: 3e4a6a7891000f6922d4113b3e6ffebc3c93dd3670dc2048783c767219ce7eab.
+
+Laptop installed net-print/qindaqt-printing-1-r1 and gui-apps/qindaoffice-0.1.0_p20261010-r3 through normal Portage, exit0. Portage owns CUPS, filters, discovery, modern USB, common drivers and graphical setup. Target enabled; CUPS/socket, cups-browsed and Avahi active. The temporary standalone CUPS-socket enable was removed so the package target owns startup. The initial EAPI8 empty-root defect is repaired and separately accepted. Unrelated pending SDDM config was not adopted; user documents and the desktop were not restarted.
+
+Verification: 12/12 root/prefix/mask/upgrade policy tests; old recipe fails the new empty-root case; 17 ipp-usb upstream tests; manager owning Office2/2 CTests; real Write hardware fixture3 Qt passes; held-job cancellation state4→7/zero sheets; four dialog images inspected; independent full artifact signature/recipe/source/68-file/10-ELF checks; 68/68 installed Office file hashes; isolated installed qindawrite --help exit0; strict MkDocs and 552-document navigation/links exit0. Existing broad sections test hit60 seconds in its final screenshot case; its focused PDF-section replacement passed. Source tests did not print user documents.
+
+No broader Office-range, network-printer, other-model or scanner proof is claimed. ED-11/feature weights do not advance as a whole. No mandatory work remains for this delivered Samsung/QindaWrite/default-package outcome; save/reopen an already running Office app to use the updated executable. Retained signed artifacts and ignored diagnostic logs support rollback/reproduction. Available for a concrete printing regression; no unrelated queue work claimed.
