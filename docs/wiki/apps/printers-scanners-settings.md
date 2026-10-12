@@ -19,6 +19,15 @@ the laptop had no configured queue, enabled CUPS socket, conversion filters,
 Samsung driver or graphical setup tool. Delivery and physical print evidence
 are tracked separately from the Settings page's source tests.
 
+The QindaGentoo desktop profile now includes `net-print/qindaqt-printing`.
+Its reviewed package supplies CUPS with USB/DNS-SD support, cups-filters,
+cups-browsed, ipp-usb, Gutenprint, SpliX and system-config-printer with polkit.
+The package's systemd target starts the providers on a fresh install, preserving
+administrator presets and service masks. Existing CUPS queues and configuration
+remain untouched; updates do not re-enable or restart the target. If CUPS was
+running before its filters were installed, finish pending jobs and restart the
+scheduler once to load those filters.
+
 ## Samsung USB qualification, October 12
 
 Portage installed SpliX, cups-filters and system-config-printer with their

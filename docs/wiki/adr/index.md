@@ -427,4 +427,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0374: Bind separate Android renderers to held lifetimes](0374-bind-separate-android-renderers-to-held-lifetimes.md) — Accepted split collector/renderer lifetime and native extraction only; live bootstrap/guest association stay gated.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
-- [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Proposed Portage dependency and activation default; hardware and package gates pending.
+- [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.

@@ -1,6 +1,6 @@
 # ADR-0376: Ship a complete printing stack
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-12
 - **Owners:** Platform packaging and first-party applications
 - **Supersedes:** None
@@ -54,6 +54,18 @@ A stock desktop has the scheduler, tools and drivers needed for ordinary
 printing. The dependency footprint increases; exact model support still
 depends on the installed upstream drivers. Modern IPP devices and legacy
 Samsung SPL devices follow their respective upstream paths.
+
+QindaGentoo candidate `39d26063991f9713133f0661ff5db3fd2b2a2ab1` is
+independently accepted and integrated. It requires SpliX 2.0.2, packages
+upstream ipp-usb 0.9.34 with vendored Go dependencies, and leaves CUPS's
+local listener policy unchanged. Ten activation-policy fixtures, 17 upstream
+ipp-usb tests, isolated package images and unit verification passed. The
+installed dependency plan adds eight packages/upgrades/rebuilds on the
+previously bootstrapped laptop, without a desktop rebuild.
+
+This acceptance covers the package contract. The Samsung's physical output
+remains unqualified after the owner reported no paper from jobs whose CUPS
+transmission had completed; see the owning page's hardware record.
 
 Acceptance includes the resolved Portage dependency plan, package image and
 activation behavior, installed printer discovery, a known one-page job,
