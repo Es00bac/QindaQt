@@ -82,6 +82,50 @@ enabled the target but skipped its immediate start. Reviewed overlay repair
 Prefix/image roots. Twelve policy cases pass, and the new regression fails
 against the original recipe. Upgrades continue to preserve deliberate disables.
 
+## Sharing a USB printer over the network
+
+A USB printer can stay attached to one desktop while other machines print
+through that desktop's CUPS server. Install the printing stack on the server
+through Portage, enable sharing with `cupsctl --share-printers`, and mark only
+the intended queue shared with
+`lpadmin -p QUEUE -o printer-is-shared=true`. This follows the
+[OpenPrinting sharing procedure](https://openprinting.github.io/cups/doc/sharing.html).
+The normal sharing option admits the local subnet; it does not enable remote
+administration or unrestricted access from other networks.
+
+The server owns the physical USB driver and filters. Clients use its IPP queue
+with an IPP Everywhere configuration, for example
+`lpadmin -p QUEUE -E -v ipp://SERVER.local:631/printers/QUEUE -m everywhere`.
+Mark that client queue unshared to avoid advertising a second proxy printer.
+When moving a printer from a client's USB port to the server, update the
+existing queue's URI and driver and keep its name/default, so applications'
+saved selections continue to resolve. Re-enable the client queue if unplugging
+the USB cable had disabled it. Do not equate successful submission with paper
+output: check both client and server job state and confirm a physical page.
+
+### October 12 network qualification
+
+The owner moved the Samsung to the desktop host. Portage installed printing
+1-r1 and its ten missing/reconfigured dependencies there, preserving the
+existing DNS-SD compatibility flag. Its printing target is enabled and CUPS,
+cups-browsed and Avahi are active. The physical queue uses SpliX's ML-2160
+PPD and is shared, with local-subnet access and remote administration disabled.
+
+The laptop's existing `ML-2160-Series` default now uses the server's IPP queue
+and an IPP Everywhere driver; its disconnected USB backend is gone. The client
+queue is not shared. DNS-SD advertises the physical server queue to other
+network clients, and automatic discovery remains enabled. Machine-specific
+addresses and device serials remain administrator configuration rather than
+package defaults.
+
+The actual production Write print-dialog fixture passed 3/3 Qt methods with
+live discovery, and its hardware fixture passed 3/3 methods. Laptop job 11 and
+server job 1 have the same job UUID, each reports one sheet and
+`job-completed-successfully`, and both queues returned to idle. This establishes
+the network submission/driver path. The owner confirmed that the page printed
+correctly, completing the laptop-to-desktop-to-Samsung physical check. No model
+workload or inference service was started for this verification.
+
 ## Existing owners
 
 | Page action | Fixed catalog identity | Owning operation |

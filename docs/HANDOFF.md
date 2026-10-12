@@ -1,5 +1,11 @@
 ## Samsung printing and default-stack delivery — 2026-10-12T17:10:06Z
 
+## Non-game source publication and shared Samsung printing — 2026-10-12T19:45:10+00:00
+
+Existing non-game GitHub repositories were reconciled with qinda; QindaThemes retains both public SDDM and native desktop histories. New open-source companion publication and the owner-approved original-code GPL grants are documented in the release procedure. Exact overlay c16790ee51a3998688f189f279fe3164bafb155b is independently accepted, integrated on qinda and GitHub, and synced into both Portage trees. Four optional companions plus licensed Boot/LLM/Deck revisions preserve earlier recipes, delivery defaults, third-party rights and concurrent Trellis work. All seven source archives are verified in qinda's cache. Model tests, runtime/dependency builds and service operations were explicitly deferred.
+
+The Samsung is now USB-attached to qinda and shared through CUPS on the local subnet. The laptop keeps ML-2160-Series as its IPP default. Production Write fixture job11 and server job1 share one UUID and each report one sheet; the owner confirmed readable paper. qinda's printing target is enabled and active. No desktop restart or open-document change was required. IconArt's large source upload completed and its exact public ref is verified. GitHub's temporary QindaLLM repository-creation throttle is the only remaining publication gate; its exact licensed source and verified package archive are preserved on qinda.
+
 QindaOffice source `d47c4d9` and QindaGentoo `422c024` are integrated on qinda.
 The laptop now has Portage printing defaults `1-r1`, SpliX `2.0.2`, CUPS
 conversion/discovery/setup tools and Office `0.1.0_p20261010-r3`. The target is

@@ -303,6 +303,103 @@ Public GitHub publication and the existing package-delivery hub have separate
 roles. Publishing these sources does not change the `qinda-sync` contract,
 override package pins, update either working tree or restart a live session.
 
+### October 12 non-game source refresh
+
+The owner-requested refresh compared existing GitHub branches against the qinda
+hubs and published committed source. Game repositories were excluded. Existing
+private/public visibility and uncommitted working files were preserved. This
+was source publication, not a new binary release or a fresh runtime test of
+every application.
+
+| Public repository | Verified source commit or retained public head |
+| --- | --- |
+| QindaQt | `fa6125deabe0b0b88468e89306e3dcabee677ccf`, followed by this publication/network-printing receipt |
+| QindaTK | `e6837dc5a501739bd35730f4f567cea4158426cb` |
+| QindaOffice | `d47c4d905534bea0b2d65394eebf35dc5b7bbab5` |
+| QindaStudio | `b13bbcbf76eb88830812c9cec7f0e6f78f0b1dda` |
+| QindaQt_Apps | `2dd5bc5479d3f36c2d564a88c9d01277f12c6d88` |
+| QindaGentoo | `c16790ee51a3998688f189f279fe3164bafb155b` |
+| QindaThemes | `c8f7aa9d89b1534f1b0ea8127ad69358bb28a88f` |
+| gabbee | `bfdf9e02fd9a4737bc3673faec84bcc61a6c94f9` |
+| sloom-studio | `642339e160ccc54dd4db3bd81728f816915e1176` |
+| QindaDeck | `38f3731652058114288d96d592f3750a45774ff7` |
+| QindaMPV | `26552d25069cc88ecc604223678000076a84aa3e` |
+| UtechSmart-Venus-Pro-Linux-MMO-Mouse-Utility | `d886fcfc2df7ca07a4439582081c870a315a2a4e` |
+| QindaScreensavers | `7d8ef7e4718bb84ed0d1ed57dfaaa1f4d802daa9` |
+| circuit-reef | `dcacc60065aec9bc4bca5f52af90cc9f61c9f203` |
+| qinda-patrol | `cc0701fae73d86a45c6e90397f1f6cf8fa1d3d97` |
+
+Venus Pro already had three additional public commits; its qinda checkout and
+hub were fast-forwarded to retain them. QindaThemes had independent public SDDM
+and native desktop histories. The reviewed merge preserves all 16,021 native
+paths and all 108 public paths, retains the original SDDM README separately,
+and documents provenance and checksum scope. Its optional browser runner now
+runs only as a script, so ordinary test discovery does not launch a browser.
+Manager verification passed 36 Python tests and all 107 SDDM checksums; no new
+SDDM/PAM runtime qualification is claimed.
+
+The in-progress desktop showcase is published separately at
+`showcase/desktop-office-site` (`ff60e886f39d3ac74bd7fc8f36a9c6d2501e6516`).
+The screensaver palette fix is preserved separately at
+`feature/native-lock-qt611` (`8583c74a77d1d6cd6fa7b2e485a7f6b0a87793c5`),
+retaining the newer existing public default branch. These branches are source
+checkpoints, not accepted main integrations. The owner subsequently authorized publishing newer open-source projects and
+including all related projects in the overlay. Their source/license and
+package coverage checks are recorded separately; proprietary projects are
+not made public.
+
+The new public repositories are QindaPortage (the `LocalAiPortage` hub),
+QindaFoxAgent, QindaLlamaWatch, QindaPhotocraft, QindaTK-agent-guide,
+QindaWeb, QindaIconArt, qindaqt-kwin, JevReader and QindaBoot. The
+[root catalog](https://github.com/Es00bac/QindaQt#related-projects) links each source. QindaWeb's
+implementation remains on `feature/native-browser`; its main branch is a
+project introduction. Publishing it does not imply a finished browser.
+
+Before first public pushes, a separate reviewer checked their existing license
+scope, reachable object sizes, credential patterns and private runtime artifact
+paths. KWin's unchanged upstream history was traced to KDE `v6.6.6`; its
+credential scan covered the 121 subsequent commits plus the complete current
+tree, and its size scan covered all history. The other new projects' scans
+covered their full selected reachable histories. No credential-pattern findings
+or blobs above [GitHub's 100 MiB limit](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github) were found. These bounded checks do not
+replace provenance or runtime qualification. Model tests and inference/service
+operations were explicitly deferred while other work was running on qinda.
+
+QindaLLM source `91a294cd967f0331bbef13f95b74920a27cd2d7e` is committed on
+qinda with its licensed, verified source archive and overlay recipe. GitHub
+temporarily rate-limited creation of its new repository; publication remains
+pending until that exact public ref can be verified.
+
+The owner explicitly authorized GPL-3.0-or-later for the original code in
+QindaBoot, QindaLLM and QindaDeck. Their source declarations retain third-party
+notices; new package revisions preserve historical recipes and archive bytes.
+Existing proprietary Hane source and private recovery records retain their
+existing privacy.
+
+The accepted overlay coverage candidate is
+`c16790ee51a3998688f189f279fe3164bafb155b`, preserving the concurrent Trellis
+package commit and all 369 earlier recipes, 347 historical Manifest entries,
+profile defaults and exact delivery selections. It adds optional
+`www-plugins/qindafox-agent`, `app-doc/qindatk-agent-guide`,
+`dev-util/jevreader` and `app-misc/qindadeck-tools`, plus separate licensed
+Boot-r1, LLM-r2 and Deck-r1 revisions. The
+[complete package map](https://github.com/Es00bac/QindaGentoo/blob/master/docs/first-party-coverage.md)
+records each project's actual installation boundary. A Deck host helper does
+not install or flash its firmware/Android application, and a static guide does
+not start a web server or change hosting visibility.
+
+Forty overlay tests, focused offline helper/guide fixtures and exact staged
+source/image/Manifest comparisons pass. Independent review verified all final
+Boot/LLM/Deck archive blobs and their 39/9/10 installed image paths against the
+accepted source commits. Boot retains reserved-artwork restrictions; the
+source-only LLM archive is reproducible and remains fetch-restricted even when
+GitHub is available. Its model weights/runtime dependency are separate, and
+its inherited llama.cpp provider is in `::guru`. Python-version and unrelated
+x32/non-systemd-profile metadata advisories remain documented. No new package
+was merged into either running host as part of publication; the separately
+requested printer stack is recorded in
+[Printers & scanners](../apps/printers-scanners-settings.md#october-12-network-qualification).
+
 ### Sharing a delivery between qinda and qinda-top
 
 [ADR-0219](../adr/0219-share-completed-work-through-qinda.md) keeps qinda's

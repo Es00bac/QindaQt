@@ -1,0 +1,23 @@
+# Themes publication worker
+
+- Role: isolated QindaThemes source reconciliation implementer
+- Provider: OpenAI Codex; model not independently inspected
+- Status: idle — accepted exact overlay candidate after independent read-only source/archive/image review
+- Base: ec9320a0a6b3ffa6ccb0f51e83342f7395d73ef7
+- Other parent: f5ec8daa90b5e8db1495b3b1a18d3cadc09b63d2
+- Branch: ops/github-sync-20261012 (QindaThemes)
+- Worktree: qinda:~/work_SPaC3/QindaThemes-github-sync-20261012
+- Ownership: isolated QindaThemes candidate only; own worker record and new replies
+
+## Updates
+
+- 2026-10-12T18:47:18+00:00 — Claimed reconciliation. Read native and public README, root workflow and parent machine policy. qinda reports 33 GiB available; preserve both histories, license notices, assets and installation boundaries, then push candidate branch only.
+- 2026-10-12T18:47:54+00:00 — Merge has one add/add conflict, README.md. Other source paths are disjoint. Preserve public guide verbatim as README.sddm.md and adjust only that path in the SDDM checksum manifest; native README becomes combined entry point. Native icon source notes already declare resulting icon pack GPL-3.0-or-later with MIT input modules.
+- 2026-10-12T18:51:43+00:00 — Verified and handed off candidate `c8f7aa9d89b1534f1b0ea8127ad69358bb28a88f`; all 21 selected tests passed, both native generators and SDDM static/copy checks passed, 107 hashes and 39 links passed, 36 unit tests collect with Playwright blocked. Branch pushed only to qinda hub; main/canonical source unchanged. Available to repair exact review findings.
+- 2026-10-12T19:00:37+00:00 — Manager accepted and published QindaThemes candidate after independent review and 36 passing combined tests. New read-only assignment: audit eleven newer project families, exact reachable source histories, license evidence, secret/private artifacts, and oversized Git blobs; QindaHane remains proprietary and excluded.
+- 2026-10-12T19:05:56+00:00 — Public-source license gaps narrowed to QindaBoot, QindaLLM and QindaDeck; vendored notices do not license whole Deck. FoxAgent and guide full reachable-history scans passed; IconArt 75 commits/11,033 blobs (873,479,480 raw bytes) scanned without credential matches or >100 MiB blobs. KWin inherited history scan remains active. No runtime/model operations.
+- 2026-10-12T19:11:26+00:00 — Completed twelve-project audit (including added Deck). Clear-license candidates have no credential-pattern matches or >100 MiB blobs. KWin credential scope was narrowed, at manager request, to verified KDE v6.6.6 base plus 121 downstream commits/all current-tree blobs; full-history object-size audit remains complete. Boot, LLM and Deck are license-blocked. No project edits/pushes, model calls, builds, service actions or downloads.
+- 2026-10-12T19:19:10+00:00 — Manager relayed explicit owner approval to release original QindaBoot, QindaLLM and QindaDeck code under GPL-3.0-or-later. Claimed source-license-only implementation, preserving third-party terms and runtime files; isolated exact-base worktrees, candidate-only hub pushes and independent review required. No model/runtime/build/install operations.
+- 2026-10-12T19:23:18+00:00 — Handed off Boot f778750ea9e9622b76b2abd84f0710486757997f, LLM 91a294cd967f0331bbef13f95b74920a27cd2d7e and Deck 38f3731652058114288d96d592f3750a45774ff7. Each changes only LICENSE and additive README; canonical license bytes, non-documentation blob/mode preservation (42/10/103), links and whitespace pass. Candidate-only hub pushes; normal branches/checkouts unchanged. Overlay owner has pins and document names; awaits root acceptance.
+- 2026-10-12T19:34:04+00:00 — Manager accepted/published the three original-code license candidates. New independent review assignment: QindaGentoo c16790ee51a3998688f189f279fe3164bafb155b over 18eb802cbab542c856194be7e1d466b4abd5f419; focus licensed Boot/LLM/Deck revisions, package boundaries and preservation. No candidate edits, model/service operations, installs/builds or Trellis interaction.
+- 2026-10-12T19:39:03+00:00 — ACCEPT c16790ee51a3998688f189f279fe3164bafb155b: 369 old ebuilds, 347 Manifest rows/72 files, 10 Trellis paths and defaults preserved; prior optional package review unchanged. Independently verified 44/12/105 final source blobs and 39/9/10 staged image paths for Boot/LLM/Deck, docs/licenses, archive pins/digests and unchanged runtime bytes. No model/service/install/build/runtime operation; root owns integration/publication.

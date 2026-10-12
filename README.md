@@ -43,17 +43,29 @@ build instructions, license and development status.
 | Project | Source |
 | --- | --- |
 | Shared Qt Quick toolkit | [QindaTK](https://github.com/Es00bac/QindaTK) |
+| Interactive toolkit authoring guide | [QindaTK-agent-guide](https://github.com/Es00bac/QindaTK-agent-guide) |
+| Native compositor fork | [qindaqt-kwin](https://github.com/Es00bac/qindaqt-kwin) |
 | Writer, spreadsheet, presentations and notes | [QindaOffice](https://github.com/Es00bac/QindaOffice) |
 | Native creative studio | [QindaStudio](https://github.com/Es00bac/QindaStudio) |
+| Native photo editor | [QindaPhotocraft](https://github.com/Es00bac/QindaPhotocraft) |
 | Video and audio player | [QindaMPV](https://github.com/Es00bac/QindaMPV) |
 | Terminal and application sources | [QindaQt_Apps](https://github.com/Es00bac/QindaQt_Apps) |
 | QindaFox browser work in progress | [QindaFox source checkpoint](https://github.com/Es00bac/QindaQt_Apps/tree/snapshot/qinda-20260919/QindaFox) |
+| Browser automation extension and native bridge | [QindaFoxAgent](https://github.com/Es00bac/QindaFoxAgent) |
+| Native browser work in progress | [QindaWeb active branch](https://github.com/Es00bac/QindaWeb/tree/feature/native-browser) |
+| Portage manager | [QindaPortage](https://github.com/Es00bac/QindaPortage) |
+| Boot menu and splash | [QindaBoot](https://github.com/Es00bac/QindaBoot) |
+| Local model-server tools and configuration | QindaLLM — licensed source and package ready; GitHub repository creation is temporarily rate-limited |
+| Local model-server monitor | [QindaLlamaWatch](https://github.com/Es00bac/QindaLlamaWatch) |
+| Source-reading developer companion | [JevReader](https://github.com/Es00bac/JevReader) |
+| Dictation and desktop voice integration | [gabbee](https://github.com/Es00bac/gabbee) |
 | Desktop control deck | [QindaDeck](https://github.com/Es00bac/QindaDeck) |
 | Venus Pro mouse utility | [QindaVenusPro](https://github.com/Es00bac/UtechSmart-Venus-Pro-Linux-MMO-Mouse-Utility) |
 | Gentoo overlay and shared delivery tools | [QindaGentoo](https://github.com/Es00bac/QindaGentoo) |
 | Five screensavers and shared native rendering | [QindaScreensavers](https://github.com/Es00bac/QindaScreensavers) |
 | Standalone Patrol and Reef histories | [qinda-patrol](https://github.com/Es00bac/qinda-patrol), [circuit-reef](https://github.com/Es00bac/circuit-reef) |
-| SDDM login themes and artwork | [QindaThemes](https://github.com/Es00bac/QindaThemes) |
+| Native desktop/icon themes and SDDM login themes | [QindaThemes](https://github.com/Es00bac/QindaThemes) |
+| Painted and hand-drawn icon artwork | [QindaIconArt](https://github.com/Es00bac/QindaIconArt) |
 | Mega Brawl and Prism Kart | [QindaArcade](https://github.com/Es00bac/QindaArcade) |
 | Sloom Studio | [sloom-studio](https://github.com/Es00bac/sloom-studio) |
 
@@ -62,7 +74,11 @@ Uncommitted source is preserved on `snapshot/qinda-20260919` and
 `snapshot/qinda-top-20260919` branches where applicable. These checkpoints
 preserve work in progress; they are not release or runtime-verification claims.
 `SOURCE_SNAPSHOT.md` on each checkpoint records its provenance. Publishing
-source does not install packages or restart either desktop.
+source does not install packages or restart either desktop. The
+[October 12 refresh](docs/wiki/development/releases.md#october-12-non-game-source-refresh)
+updates existing non-game repositories and publishes newer open-source
+companions. Package coverage is tracked in the
+[overlay catalog](https://github.com/Es00bac/QindaGentoo).
 
 ## Build
 
