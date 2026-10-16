@@ -301,6 +301,22 @@ candidate, and the no-argument change hint is coalesced and directed only to
 the bound shell owner
 ([ADR-0073](../adr/0073-publish-atomic-authenticated-task-facts.md)).
 
+What one changing title may cost is bounded
+([ADR-0383](../adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md)).
+Caption changes reach the producer at most four times a second per window,
+with the final title always delivered; the producer samples at most once per
+250 ms, sends the hint only when the published bytes changed, and answers
+`TaskListSnapshot` from the cached, already encoded generation. The bound
+shell's PID is looked up once per connection. A terminal agent's spinner title
+(about 10 Hz) therefore costs about four reads a second rather than twenty.
+The facts no longer depend on the latest visibility sample being valid: they
+carry the last published visibility generation as their action fence, so one
+stranded or half-updated window no longer turns the dock `Degraded`
+([ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)).
+The program behind a Wine or Steam launcher class is resolved once per window;
+its Steam name and icon arrive from a worker thread and update the facts a
+moment after the window appears.
+
 Container page activation/detach for `hybrid-process` groups remains outside
 the older Compositor1 transaction bridge. This does not prevent ordinary task
 activation, whole-container minimize/restore, Close All, or raise through the

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
 
+#include "containerlifetimeledger.h"
+
 #include "hybridchromedragtranslator.h"
 #include "hybridchromepointerrouter.h"
 #include "hybridcontainerplacement.h"
@@ -15,6 +17,7 @@
 #include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
+#include "hybridstackingorder.h"
 
 #include <core/output.h>
 #include <window.h>
@@ -83,6 +86,52 @@ QRect KWinHybridSession::workArea(const QString &containerId) const
         .toAlignedRect();
 }
 
+QStringList KWinHybridSession::containerStackingOrder() const
+{
+    QHash<QString, QString> activeMemberOwners;
+    const auto containerIds = m_runtime->topology().containerIds();
+    for (const auto &containerId : containerIds) {
+        const auto layout = m_sceneFactory->committedLayout(containerId);
+        if (!layout) {
+            continue;
+        }
+        for (auto member = layout->activePage.members.cbegin();
+             member != layout->activePage.members.cend(); ++member) {
+            activeMemberOwners.insert(member.key(), containerId);
+        }
+    }
+    QStringList windowsBottomToTop;
+    for (auto *window : KWin::workspace()->stackingOrder()) {
+        windowsBottomToTop.append(m_registry.windowId(window));
+    }
+    return topmostActiveMemberContainerOrder(
+        windowsBottomToTop, activeMemberOwners, containerIds);
+}
+
+std::optional<QRectF> KWinHybridSession::dockTargetFrame(
+    const HybridInput::DockTarget &target) const
+{
+    if (!target.containerId.isEmpty()) {
+        const auto layout = m_sceneFactory->committedLayout(target.containerId);
+        if (!layout) {
+            return std::nullopt;
+        }
+        if (target.zone != HybridInput::DockZone::Tab) {
+            if (target.memberId.isEmpty()) {
+                // Container-edge drop: preview half of the whole content area.
+                return QRectF(layout->activePage.contentFrame);
+            }
+            const auto member = layout->activePage.members.constFind(target.memberId);
+            if (member != layout->activePage.members.cend()) {
+                return QRectF(member->windowFrame);
+            }
+        }
+        return QRectF(layout->outerFrame);
+    }
+    const auto frame = m_registry.targetFrame(target.memberId);
+    return frame.isValid() ? std::optional<QRectF>(frame) : std::nullopt;
+}
+
 void KWinHybridSession::initializeGroupedGeometryReconciliation()
 {
     m_groupedGeometryReconciler =
@@ -137,6 +186,11 @@ void KWinHybridSession::reconcileWorkAreaGeometry()
     if (m_shutdown) {
         return;
     }
+    // ADR-0384: forget containers that dissolved since the last publication
+    // before refreshing maximize areas, which would otherwise fail for them.
+    if (m_runtime) {
+        m_containerLedger->reconcile(m_runtime->topology().containerIds());
+    }
     if (m_placement) {
         for (const auto &failure : m_placement->refreshMaximizedAreas()) {
             qWarning("QindaQt Hybrid maximize-area refresh failed: %s",
@@ -163,6 +217,9 @@ void KWinHybridSession::reconcileWorkAreaGeometry()
                      qPrintable(failure));
         }
     }
+    // ADR-0384: last, after every frame Hybrid re-applies: nothing may stay
+    // on an output that is gone.
+    rescueStrandedWindows();
     synchronizeMinimizedGather();
     synchronizeChrome();
 }

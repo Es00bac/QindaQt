@@ -14,9 +14,12 @@
 #include <window.h>
 #include <workspace.h>
 
-#include <QDBusConnectionInterface>
+#include "qindaqt/compositor/shellcredentialcache.h"
+
+#include <QDBusArgument>
 #include <QDBusMessage>
-#include <QDBusReply>
+#include <QDBusMetaType>
+#include <QDBusServiceWatcher>
 #include <QSet>
 #include <QVariantMap>
 
@@ -37,23 +40,57 @@ constexpr auto TaskFactsChangedSignal = "TaskListSnapshotChanged";
 
 QtBusShellCredentialSource::QtBusShellCredentialSource(QDBusConnection connection)
     : m_connection(std::move(connection))
+    , m_ownerWatch(std::make_unique<QDBusServiceWatcher>())
 {
+    m_ownerWatch->setConnection(m_connection);
+    m_ownerWatch->setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
+    m_cache = std::make_unique<ShellCredentialCache>(
+        [this](const QString &uniqueName) { return lookup(uniqueName); },
+        [this](const QString &uniqueName, bool watched) {
+            if (watched) {
+                m_ownerWatch->addWatchedService(uniqueName);
+            } else {
+                m_ownerWatch->removeWatchedService(uniqueName);
+            }
+        });
+    // AGENT-CONTRACT: unique names are never reused by the bus daemon, so the
+    // only event that can make a cached PID wrong is the owner disconnecting,
+    // which NameOwnerChanged reports here.
+    QObject::connect(m_ownerWatch.get(), &QDBusServiceWatcher::serviceUnregistered,
+                     m_ownerWatch.get(), [this](const QString &uniqueName) {
+                         m_cache->forget(uniqueName);
+                     });
 }
+
+QtBusShellCredentialSource::~QtBusShellCredentialSource() = default;
 
 std::optional<qint64> QtBusShellCredentialSource::processIdForUniqueName(
     const QString &uniqueName) const
 {
+    return m_cache->processIdForUniqueName(uniqueName);
+}
+
+std::optional<qint64> QtBusShellCredentialSource::lookup(const QString &uniqueName) const
+{
     if (!m_connection.isConnected() || uniqueName.isEmpty()
-        || !uniqueName.startsWith(u':') || !m_connection.interface()) {
+        || !uniqueName.startsWith(u':')) {
         return std::nullopt;
     }
-    const QDBusReply<QVariantMap> reply =
-        m_connection.interface()->serviceCredentials(uniqueName);
-    if (!reply.isValid()) {
+    auto request = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetConnectionCredentials"));
+    request << uniqueName;
+    // AGENT-GUARD: QDBus::Block, never BlockWithGui: a nested event loop on
+    // the compositor thread would re-enter KWin. The explicit timeout bounds
+    // the stall when the bus daemon is slow.
+    const QDBusMessage reply =
+        m_connection.call(request, QDBus::Block, LookupTimeoutMilliseconds);
+    if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
         return std::nullopt;
     }
+    const auto credentials = qdbus_cast<QVariantMap>(reply.arguments().constFirst());
     bool ok = false;
-    const qulonglong processId = reply.value()
+    const qulonglong processId = credentials
         .value(QString::fromLatin1(ProcessIdCredential)).toULongLong(&ok);
     if (!ok || processId <= 1
         || processId > static_cast<qulonglong>(std::numeric_limits<qint64>::max())) {
@@ -174,7 +211,12 @@ KWinShellWindowRegistry::KWinShellWindowRegistry(
 std::optional<ShellWindowGeneration>
 KWinShellWindowRegistry::currentGeneration() const
 {
-    if (!m_visibility.refreshForActionFence() || m_visibility.revision() == 0) {
+    // AGENT-CONTRACT (ADR-0384): the fence is the last *published* visibility
+    // generation, the same one task facts carry. Refreshing first keeps it
+    // current; a rejected sample keeps the previous generation instead of
+    // rejecting every dock action as stale.
+    static_cast<void>(m_visibility.refreshForActionFence());
+    if (m_visibility.revision() == 0) {
         return std::nullopt;
     }
     return ShellWindowGeneration{m_visibility.epoch(), m_visibility.revision()};
@@ -295,23 +337,23 @@ QByteArray KWinShellWindowActionsEndpoint::RaiseWindow(
 QByteArray KWinShellWindowActionsEndpoint::ActiveWindowIdentity()
 {
     const QString caller = calledFromDBus() ? message().service() : QString{};
-    const QByteArray result = m_identityController.snapshot(caller);
-    const auto decoded = decodeShellWindowIdentitySnapshot(result);
-    if (decoded && decoded->status != ShellWindowIdentityStatus::Unauthorized) {
+    auto reply = m_identityController.reply(caller);
+    if (reply.authorized) {
         m_boundIdentityOwner = caller;
     }
-    return result;
+    return std::move(reply.payload);
 }
 
 QByteArray KWinShellWindowActionsEndpoint::TaskListSnapshot()
 {
+    // ADR-0383: the controller says whether the caller authenticated; decoding
+    // the reply again just to learn that cost a full JSON parse per read.
     const QString caller = calledFromDBus() ? message().service() : QString{};
-    const QByteArray result = m_taskFactsController.snapshot(caller);
-    const auto decoded = decodeShellTaskFactsSnapshot(result);
-    if (decoded && decoded->status != ShellTaskFactsStatus::Unauthorized) {
+    auto reply = m_taskFactsController.reply(caller);
+    if (reply.authorized) {
         m_boundTaskFactsOwner = caller;
     }
-    return result;
+    return std::move(reply.payload);
 }
 
 void KWinShellWindowActionsEndpoint::sendDirectedIdentityInvalidation()

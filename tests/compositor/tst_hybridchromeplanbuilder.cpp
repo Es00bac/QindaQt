@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hybridchromeplanbuilder.h"
+#include "chromeplancomparison.h"
 
 #include "qindaqt/hybrid_constraints/constraint_solver.h"
 
@@ -78,6 +79,10 @@ private Q_SLOTS:
     void rejectsChromeMetricsThatDisagreeWithScene();
     void rejectsStaleCommittedGeometry();
     void splitDeckPlanIsTitledByTheMeasuredContainerName();
+    void titleRefreshEqualsAFreshBuild();
+    void titleRefreshOfANonLeadingMemberLeavesTabsAlone();
+    void titleRefreshAsksForAReplanWhenAShadedLabelWouldMove();
+    void titleRefreshRejectsAPlanForAnotherContainer();
 };
 
 void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
@@ -318,6 +323,120 @@ void HybridChromePlanBuilderTest::splitDeckPlanIsTitledByTheMeasuredContainerNam
     QCOMPARE(plan->tabs.size(), 2);
     QCOMPARE(plan->tabs[1].title, QStringLiteral("Chat - Firefox"));
     QVERIFY(plan->titleTab.right() < plan->deckPiece.left());
+}
+
+// ADR-0383: a caption change patches the published plan; the result must be
+// exactly the plan a full synchronization would have built.
+void HybridChromePlanBuilderTest::titleRefreshEqualsAFreshBuild()
+{
+    const auto container = sampleContainer();
+    const auto solution = solve(container);
+    QVERIFY(solution);
+    QHash<QString, QString> captions{{QStringLiteral("left"), QStringLiteral("⠋ Claude Code")},
+                                     {QStringLiteral("right"), QStringLiteral("notes")},
+                                     {QStringLiteral("chat-window"), QStringLiteral("chat")}};
+    const HybridWindowTitleLookup lookup = [&captions](const QString &id) {
+        return captions.value(id);
+    };
+    QString error;
+    const auto published =
+        HybridChromePlanBuilder::build(container, *solution, chromeOptions(), lookup, &error);
+    QVERIFY2(published, qPrintable(error));
+
+    QCOMPARE(HybridChromePlanBuilder::refreshTitles(container, *published, chromeOptions(),
+                                                    lookup)
+                 .outcome,
+             HybridChromePlanBuilder::TitleRefresh::Outcome::Unchanged);
+
+    captions[QStringLiteral("left")] = QStringLiteral("⠙ Claude Code");
+    captions[QStringLiteral("chat-window")] = QStringLiteral("chat (2)");
+    const auto refresh =
+        HybridChromePlanBuilder::refreshTitles(container, *published, chromeOptions(), lookup);
+    QCOMPARE(refresh.outcome, HybridChromePlanBuilder::TitleRefresh::Outcome::Patched);
+    const auto rebuilt =
+        HybridChromePlanBuilder::build(container, *solution, chromeOptions(), lookup, &error);
+    QVERIFY2(rebuilt, qPrintable(error));
+    QCOMPARE(compareChromePlans(refresh.plan, *rebuilt), ChromePlanDifferences{});
+    QCOMPARE(refresh.plan.tabs[0].title, QStringLiteral("⠙ Claude Code +1"));
+    QCOMPARE(refresh.plan.tabs[1].title, QStringLiteral("chat (2)"));
+    // Only text differs from what was published.
+    const auto differences = compareChromePlans(*published, refresh.plan);
+    QVERIFY(!differences.testFlag(ChromePlanDifference::Structure));
+    QVERIFY(!differences.testFlag(ChromePlanDifference::TabGeometry));
+}
+
+void HybridChromePlanBuilderTest::titleRefreshOfANonLeadingMemberLeavesTabsAlone()
+{
+    const auto container = sampleContainer();
+    const auto solution = solve(container);
+    QHash<QString, QString> captions{{QStringLiteral("left"), QStringLiteral("editor")},
+                                     {QStringLiteral("right"), QStringLiteral("⠋ build")}};
+    const HybridWindowTitleLookup lookup = [&captions](const QString &id) {
+        return captions.value(id);
+    };
+    QString error;
+    const auto published =
+        HybridChromePlanBuilder::build(container, *solution, chromeOptions(), lookup, &error);
+    QVERIFY2(published, qPrintable(error));
+    captions[QStringLiteral("right")] = QStringLiteral("⠙ build");
+    const auto refresh =
+        HybridChromePlanBuilder::refreshTitles(container, *published, chromeOptions(), lookup);
+    QCOMPARE(refresh.outcome, HybridChromePlanBuilder::TitleRefresh::Outcome::Patched);
+    // The page is titled by its leading member, so only the (decoration-
+    // painted) member title changed: nothing for the chrome to repaint.
+    QCOMPARE(compareChromePlans(*published, refresh.plan),
+             ChromePlanDifferences(ChromePlanDifference::UnpaintedText));
+}
+
+void HybridChromePlanBuilderTest::titleRefreshAsksForAReplanWhenAShadedLabelWouldMove()
+{
+    Core::WindowContainer container(QStringLiteral("group"));
+    QString error;
+    QVERIFY(container.addPage(QStringLiteral("work"), QStringLiteral("leaf"),
+                              QStringLiteral("window-a"), &error));
+    QVERIFY(container.addPage(QStringLiteral("more"), QStringLiteral("leaf-b"),
+                              QStringLiteral("window-b"), &error));
+    QString caption = QStringLiteral("first");
+    const HybridWindowTitleLookup lookup = [&caption](const QString &) { return caption; };
+    for (const bool named : {true, false}) {
+        HybridChromePlanOptions options;
+        options.shaded = true;
+        options.containerTitle = named ? QStringLiteral("Container") : QString();
+        caption = QStringLiteral("first");
+        const auto label = HybridChromePlanBuilder::shadedLabel(container, options, lookup);
+        options.shadedOuterFrame = QRectF(
+            0.0, 0.0,
+            HybridChrome::ChromeShadedBadge::badgeWidth(options.metrics, 2, label.width)
+                + 2.0 * options.metrics.outerBorder,
+            31.0);
+        const auto published =
+            HybridChromePlanBuilder::build(container, {}, options, lookup, &error);
+        QVERIFY2(published, qPrintable(error));
+        caption = QStringLiteral("a much longer second caption");
+        const auto refresh =
+            HybridChromePlanBuilder::refreshTitles(container, *published, options, lookup);
+        // A named strip keeps its label (only pill titles change); an unnamed
+        // one is labelled by its page, so its width must be re-measured.
+        QCOMPARE(refresh.outcome,
+                 named ? HybridChromePlanBuilder::TitleRefresh::Outcome::Patched
+                       : HybridChromePlanBuilder::TitleRefresh::Outcome::NeedsReplan);
+    }
+}
+
+void HybridChromePlanBuilderTest::titleRefreshRejectsAPlanForAnotherContainer()
+{
+    const auto container = sampleContainer();
+    const auto solution = solve(container);
+    QString error;
+    auto published = HybridChromePlanBuilder::build(
+        container, *solution, chromeOptions(), [](const QString &) { return QString(); },
+        &error);
+    QVERIFY2(published, qPrintable(error));
+    published->containerId = QStringLiteral("other");
+    QCOMPARE(HybridChromePlanBuilder::refreshTitles(container, *published, chromeOptions(),
+                                                    [](const QString &) { return QString(); })
+                 .outcome,
+             HybridChromePlanBuilder::TitleRefresh::Outcome::NeedsReplan);
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

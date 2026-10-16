@@ -2,6 +2,7 @@
 #include "kwinhybridsession.h"
 
 #include "kwingroupcontextmenu.h"
+#include "containerlifetimeledger.h"
 #include "hybridinteractionruntime.h"
 #include "hybridcontainerplacement.h"
 #include "kwininteractionfilter.h"
@@ -536,10 +537,7 @@ bool KWinHybridSession::ungroupContainer(const QString &containerId,
         }
         return false;
     }
-    forgetShadedContainer(containerId);
-    m_placement->forgetContainer(containerId);
-    m_minimizedContainers.remove(containerId);
-    m_appearance.forgetContainer(containerId);
+    m_containerLedger->forget(containerId);
     synchronizeChrome();
     return true;
 }

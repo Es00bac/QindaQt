@@ -139,12 +139,21 @@ void KWinHybridSession::restoreMemberChromeVisibilityForShutdown() noexcept
 void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &palette)
 {
     m_chromeStyle.palette = palette;
+    if (m_chromeManager) {
+        m_chromeManager->invalidateRendering();
+    }
     synchronizeChrome();
 }
 
 void KWinHybridSession::setChromeStyle(const HybridChrome::ChromeStyle &style)
 {
     m_chromeStyle = style;
+    // AGENT-GUARD: overlays skip plans that compare equal (ADR-0383), and the
+    // comparison cannot see ChromeStyle::buttonPainter. A new style may swap
+    // only the painter, so every overlay repaints once regardless.
+    if (m_chromeManager) {
+        m_chromeManager->invalidateRendering();
+    }
     synchronizeChrome();
 }
 

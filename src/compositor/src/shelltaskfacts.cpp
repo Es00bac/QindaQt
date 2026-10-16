@@ -295,9 +295,7 @@ ShellTaskFactsPublishResult ShellTaskFactsStore::publish(
         }
         return ShellTaskFactsPublishResult::Rejected;
     }
-    QJsonObject state = stateJson(candidate);
-    const QByteArray canonical = QJsonDocument(state).toJson(QJsonDocument::Compact);
-    if (m_available && canonical == m_canonicalState) {
+    if (m_available && m_published && *m_published == candidate) {
         setError(error, {});
         return ShellTaskFactsPublishResult::Unchanged;
     }
@@ -305,6 +303,7 @@ ShellTaskFactsPublishResult ShellTaskFactsStore::publish(
         setError(error, QStringLiteral("task facts revision is exhausted"));
         return ShellTaskFactsPublishResult::RevisionExhausted;
     }
+    QJsonObject state = stateJson(candidate);
     state.insert(QStringLiteral("status"), QStringLiteral("ok"));
     state.insert(QStringLiteral("schemaVersion"), 1);
     state.insert(QStringLiteral("epoch"), m_epoch);
@@ -315,7 +314,7 @@ ShellTaskFactsPublishResult ShellTaskFactsStore::publish(
         return ShellTaskFactsPublishResult::Rejected;
     }
     ++m_revision;
-    m_canonicalState = canonical;
+    m_published = candidate;
     m_snapshotJson = payload;
     m_available = true;
     setError(error, {});
@@ -359,20 +358,26 @@ bool ShellTaskFactsController::authorized(const QString &callerUniqueName) const
 
 QByteArray ShellTaskFactsController::snapshot(const QString &callerUniqueName)
 {
+    return reply(callerUniqueName).payload;
+}
+
+ShellTaskFactsController::Reply ShellTaskFactsController::reply(
+    const QString &callerUniqueName)
+{
     // AGENT-GUARD: The source may sample every managed KWin window. The PID
     // join must precede that call so unauthorized peers get constant-size
     // denial independent of titles, counts, or current focus.
     if (!authorized(callerUniqueName)) {
-        return QJsonDocument(QJsonObject{
+        return {QJsonDocument(QJsonObject{
             {QStringLiteral("status"), QStringLiteral("unauthorized")},
             {QStringLiteral("schemaVersion"), 1},
             {QStringLiteral("failure"),
              QJsonObject{{QStringLiteral("code"), QStringLiteral("caller-pid-mismatch")},
                          {QStringLiteral("message"),
                           QStringLiteral("the D-Bus caller does not own the shell panels")}}},
-        }).toJson(QJsonDocument::Compact);
+        }).toJson(QJsonDocument::Compact), false};
     }
-    return m_source.snapshotJson();
+    return {m_source.snapshotJson(), true};
 }
 
 } // namespace QindaQt::Compositor

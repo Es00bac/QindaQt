@@ -94,6 +94,8 @@ private Q_SLOTS:
     void primaryColorRoundTripsAndRejectsMisplacedOrMalformedValues();
     void hostileBoundsAndReferencesRetainTheGeneration();
     void authenticationPrecedesSourceInspection();
+    void replyCarriesAuthorizationWithoutADecode();
+    void unchangedSamplesKeepTheEncodedPayload();
 };
 
 void ShellTaskFactsTests::publicationIsAtomicAndGenerationFenced()
@@ -252,6 +254,51 @@ void ShellTaskFactsTests::authenticationPrecedesSourceInspection()
     panel.pid = 99;
     QCOMPARE(controller.snapshot(QStringLiteral(":1.4")), foreign);
     QCOMPARE(source.calls, 1);
+}
+
+// ADR-0383: the D-Bus endpoint binds change hints from reply().authorized
+// instead of decoding the payload it just produced.
+void ShellTaskFactsTests::replyCarriesAuthorizationWithoutADecode()
+{
+    Credentials credentials;
+    credentials.pids.insert(QStringLiteral(":1.4"), 42);
+    credentials.pids.insert(QStringLiteral(":1.5"), 99);
+    PanelOwner panel;
+    Source source;
+    ShellTaskFactsController controller(credentials, panel, source);
+
+    const auto granted = controller.reply(QStringLiteral(":1.4"));
+    QVERIFY(granted.authorized);
+    QCOMPARE(granted.payload, source.payload);
+    QCOMPARE(source.calls, 1);
+
+    const auto denied = controller.reply(QStringLiteral(":1.5"));
+    QVERIFY(!denied.authorized);
+    QCOMPARE(denied.payload, controller.snapshot(QStringLiteral(":1.5")));
+    QCOMPARE(source.calls, 1);
+}
+
+// ADR-0383: the store compares candidates by value, so an unchanged sample
+// neither re-encodes nor replaces the cached payload the endpoint serves.
+void ShellTaskFactsTests::unchangedSamplesKeepTheEncodedPayload()
+{
+    ShellTaskFactsStore store(QString::fromLatin1(Epoch));
+    QCOMPARE(store.publish(candidate()), ShellTaskFactsPublishResult::Published);
+    const QByteArray first = store.snapshotJson();
+    const char *const buffer = store.snapshotJson().constData();
+    for (int repeat = 0; repeat < 5; ++repeat) {
+        QCOMPARE(store.publish(candidate()), ShellTaskFactsPublishResult::Unchanged);
+    }
+    QCOMPARE(store.snapshotJson().constData(), buffer);
+    QCOMPARE(store.revision(), quint64(1));
+
+    // Unavailable and back with the same facts is a new generation.
+    QVERIFY(store.markUnavailable(QStringLiteral("probe"), QStringLiteral("probe")));
+    QCOMPARE(store.publish(candidate()), ShellTaskFactsPublishResult::Published);
+    QCOMPARE(store.revision(), quint64(3));
+    auto decoded = decodeShellTaskFactsSnapshot(store.snapshotJson());
+    QVERIFY(decoded && decoded->available());
+    QCOMPARE(decoded->facts, decodeShellTaskFactsSnapshot(first)->facts);
 }
 
 QTEST_GUILESS_MAIN(ShellTaskFactsTests)

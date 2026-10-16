@@ -2,13 +2,13 @@
 #pragma once
 
 #include "qindaqt/compositor/shelltaskfacts.h"
-#include "qindaqt/compositor/wineidentitycache.h"
 
-#include <QDir>
 #include <QHash>
 #include <QMetaObject>
 #include <QObject>
 #include <QVector>
+
+#include <memory>
 
 namespace KWin {
 class Window;
@@ -20,6 +20,8 @@ class ContainerControlBridge;
 
 namespace QindaQt::Compositor::KWinIntegration {
 
+class CoalescedChangeNotifier;
+class ForeignIdentityResolver;
 class KWinHybridSession;
 class KWinOutputInventory;
 class KWinShellVisibilityPublisher;
@@ -29,6 +31,11 @@ class ManagedWindowRegistry;
 // GUI-thread adapter that samples all facts, referenced inventories, and
 // container lineage without event-loop reentry, then publishes one immutable
 // generation. KWin pointers never cross this boundary.
+//
+// AGENT-CONTRACT (ADR-0383): sampling is rate-limited to RefreshIntervalMs
+// with a trailing flush, and snapshotJson() serves the cached, already
+// encoded generation without re-sampling. snapshotChanged() therefore fires
+// at most once per interval, and only when the published bytes changed.
 class KWinShellTaskFactsPublisher final : public QObject,
                                           public ShellTaskFactsSource
 {
@@ -45,6 +52,9 @@ public:
     ~KWinShellTaskFactsPublisher() override;
 
     [[nodiscard]] const QByteArray &snapshotJson() override;
+    [[nodiscard]] quint64 sampleCount() const noexcept { return m_samples; }
+
+    static constexpr qint64 RefreshIntervalMilliseconds = 250;
 
 Q_SIGNALS:
     void snapshotChanged();
@@ -63,13 +73,12 @@ private:
     KWinHybridSession &m_hybrid;
     KWinShellPanelOwnerSource &m_panelOwner;
     ShellTaskFactsStore m_store;
-    // ADR-0230: Steam manifest names and PE-icon extraction for opaque-class
-    // windows; confined to this object's GUI thread, fail-silent.
-    Compositor::WineIdentityCache m_wineIdentity{
-        Compositor::WineIdentityCache::defaultCacheRoot(),
-        QDir::homePath()};
+    // ADR-0169/ADR-0230/ADR-0384: the program behind an opaque launcher class,
+    // read once per window; Steam names and PE icons come from a worker.
+    std::unique_ptr<ForeignIdentityResolver> m_foreignIdentity;
+    std::unique_ptr<CoalescedChangeNotifier> m_refresh;
     QHash<KWin::Window *, QVector<QMetaObject::Connection>> m_connections;
-    bool m_refreshScheduled = false;
+    quint64 m_samples = 0;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

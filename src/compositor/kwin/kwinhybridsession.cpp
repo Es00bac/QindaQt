@@ -20,6 +20,7 @@
 #include "kwinworkspaceuiport.h"
 #include "qindaqt/workspaces_apps/desktop_applications.h"
 #include "containercloseprompt.h"
+#include "containerlifetimeledger.h"
 #include "kwinchromemanager.h"
 #include "kwinchromescenelifecycle.h"
 #include "kwindockpreview.h"
@@ -105,6 +106,8 @@ HybridChromePlanOptions chromePlanOptions(const HybridChrome::ChromeStyle &style
 KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *parent)
     : QObject(parent)
     , m_registry(registry)
+    , m_containerLedger(std::make_unique<ContainerLifetimeLedger>(
+          [this](const QString &containerId) { forgetContainerState(containerId); }))
 {
     m_sceneFactory = std::make_unique<KWinHybridSceneFactory>(registry, sceneMetrics());
     m_sceneFactory->setMinimizedContainerProbe(
@@ -264,6 +267,14 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             this, [this](const QString &id, const QString &) { forgetManagedWindow(id); });
     connect(&registry, &ManagedWindowRegistry::windowsChanged,
             this, &KWinHybridSession::handleWindowsChanged);
+    connect(&registry, &ManagedWindowRegistry::windowCaptionsChanged,
+            this, &KWinHybridSession::refreshWindowTitles);
+    // Queued: runs after KWin's own rearrange, placement-tracker restore and
+    // the queued work-area reconciliation have all settled (ADR-0384).
+    connect(&registry, &ManagedWindowRegistry::outputsChanged,
+            this, &KWinHybridSession::rescueStrandedWindows, Qt::QueuedConnection);
+    connect(workspace, &KWin::Workspace::windowActivated,
+            this, &KWinHybridSession::guardHiddenActivation);
     connect(m_chromeManager.get(), &KWinChromeManager::chromeDragLifecycle,
             this, &KWinHybridSession::handleChromeDrag);
     connect(m_chromeManager.get(), &KWinChromeManager::windowActionRequested,
@@ -407,52 +418,6 @@ void KWinHybridSession::shutdown() noexcept
     m_sceneFactory.reset();
 }
 
-QStringList KWinHybridSession::containerStackingOrder() const
-{
-    QHash<QString, QString> activeMemberOwners;
-    const auto containerIds = m_runtime->topology().containerIds();
-    for (const auto &containerId : containerIds) {
-        const auto layout = m_sceneFactory->committedLayout(containerId);
-        if (!layout) {
-            continue;
-        }
-        for (auto member = layout->activePage.members.cbegin();
-             member != layout->activePage.members.cend(); ++member) {
-            activeMemberOwners.insert(member.key(), containerId);
-        }
-    }
-    QStringList windowsBottomToTop;
-    for (auto *window : KWin::workspace()->stackingOrder()) {
-        windowsBottomToTop.append(m_registry.windowId(window));
-    }
-    return topmostActiveMemberContainerOrder(
-        windowsBottomToTop, activeMemberOwners, containerIds);
-}
-
-std::optional<QRectF> KWinHybridSession::dockTargetFrame(
-    const HybridInput::DockTarget &target) const
-{
-    if (!target.containerId.isEmpty()) {
-        const auto layout = m_sceneFactory->committedLayout(target.containerId);
-        if (!layout) {
-            return std::nullopt;
-        }
-        if (target.zone != HybridInput::DockZone::Tab) {
-            if (target.memberId.isEmpty()) {
-                // Container-edge drop: preview half of the whole content area.
-                return QRectF(layout->activePage.contentFrame);
-            }
-            const auto member = layout->activePage.members.constFind(target.memberId);
-            if (member != layout->activePage.members.cend()) {
-                return QRectF(member->windowFrame);
-            }
-        }
-        return QRectF(layout->outerFrame);
-    }
-    const auto frame = m_registry.targetFrame(target.memberId);
-    return frame.isValid() ? std::optional<QRectF>(frame) : std::nullopt;
-}
-
 void KWinHybridSession::invalidateChromePublication()
 {
     // AGENT-GUARD: Chrome plans and stack authority form one input-facing
@@ -480,6 +445,9 @@ void KWinHybridSession::synchronizeChrome()
         return;
     }
     QScopedValueRollback<bool> synchronizing(m_synchronizingChrome, true);
+    // ADR-0384: one diff forgets every container that dissolved since the
+    // last publication, whichever path dissolved it.
+    m_containerLedger->reconcile(m_runtime->topology().containerIds());
     QString error;
     // Native title restoration belongs to topology lifetime, not scene image
     // lifetime. It must still run while compositing is temporarily unavailable.

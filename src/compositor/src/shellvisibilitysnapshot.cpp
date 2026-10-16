@@ -126,9 +126,149 @@ QJsonArray stringsJson(const QStringList &values)
     return result;
 }
 
+// The output a frame overlaps most, ties broken by the lowest id so the
+// choice is deterministic; nullopt when it overlaps none.
+std::optional<QString> bestOverlappingOutput(
+    const QRect &frame, const QVector<ShellVisibilityOutputSnapshot> &sortedOutputs)
+{
+    std::optional<QString> best;
+    qint64 bestArea = 0;
+    for (const auto &output : sortedOutputs) {
+        if (!intersects(output.geometry, frame)) {
+            continue;
+        }
+        const QRect overlap = output.geometry.intersected(frame);
+        const qint64 area = qint64(overlap.width()) * overlap.height();
+        if (!best || area > bestArea) {
+            best = output.id;
+            bestArea = area;
+        }
+    }
+    return best;
+}
+
+void degrade(QVector<ShellVisibilityDegradation> *degradations, const QString &windowId,
+             ShellVisibilityDegradationKind kind, QString message)
+{
+    if (degradations) {
+        degradations->append({windowId, kind, std::move(message)});
+    }
+}
+
+// AGENT-GUARD: every rejection names its member and its reason (ADR-0237);
+// a rejection voids the whole batch, so its message is all a reader of the
+// log gets. These are producer bugs and must stay batch-fatal. Returns true
+// when the window is structurally sound.
+bool structurallySound(const ShellVisibilityWindowSnapshot &window,
+                       const QSet<QString> &seenIds, QString *error)
+{
+    const QString windowLabel = describe(window.id);
+    if (!validIdentifier(window.id)) {
+        return fail(error, QStringLiteral("managed window %1 has a non-canonical identifier")
+                               .arg(windowLabel));
+    }
+    if (seenIds.contains(window.id)) {
+        return fail(error, QStringLiteral("managed window %1 is listed more than once")
+                               .arg(windowLabel));
+    }
+    if (!hasSafeExtent(window.frameGeometry)) {
+        return fail(error, QStringLiteral("managed window %1 has an unusable frame geometry %2")
+                               .arg(windowLabel, describeRect(window.frameGeometry)));
+    }
+    const auto workspaces = canonicalIdentifiers(window.workspaceIds);
+    const bool canonicalWorkspaceScope =
+        (window.onAllWorkspaces && workspaces && workspaces->isEmpty())
+        || (!window.onAllWorkspaces && workspaces && !workspaces->isEmpty());
+    if (!canonicalWorkspaceScope) {
+        return fail(error,
+                    QStringLiteral("managed window %1 claims onAllWorkspaces=%2 with %3 "
+                                   "workspace IDs")
+                        .arg(windowLabel,
+                             window.onAllWorkspaces ? QStringLiteral("true")
+                                                    : QStringLiteral("false"),
+                             QString::number(window.workspaceIds.size())));
+    }
+    if (!canonicalIdentifiers(window.activityIds)) {
+        return fail(error, QStringLiteral("managed window %1 has non-canonical activity IDs")
+                               .arg(windowLabel));
+    }
+    return true;
+}
+
+// AGENT-NOTE (ADR-0384): the transient races ADR-0237 measured -- a window
+// between outputs, stranded by an unplugged output, or active for a moment
+// while still minimized or hidden -- degrade only that window. Voiding the
+// batch for them disabled auto-hide and the dock for the whole session.
+// Returns false when the window must be left out of this generation.
+bool repairTransient(ShellVisibilityWindowSnapshot *window,
+                     const QHash<QString, QRect> &outputGeometries,
+                     const QVector<ShellVisibilityOutputSnapshot> &sortedOutputs,
+                     QVector<ShellVisibilityDegradation> *degradations)
+{
+    const QString windowLabel = describe(window->id);
+    const auto outputGeometry = outputGeometries.constFind(window->outputId);
+    const bool knownOutput = outputGeometry != outputGeometries.cend();
+    if (!knownOutput || !intersects(outputGeometry.value(), window->frameGeometry)) {
+        const auto best = bestOverlappingOutput(window->frameGeometry, sortedOutputs);
+        if (!best) {
+            degrade(degradations, window->id, ShellVisibilityDegradationKind::StrandedExcluded,
+                    QStringLiteral("managed window %1 has frame geometry %2, which overlaps "
+                                   "no output; left out of this generation")
+                        .arg(windowLabel, describeRect(window->frameGeometry)));
+            return false;
+        }
+        if (knownOutput) {
+            degrade(degradations, window->id,
+                    ShellVisibilityDegradationKind::OutsideOutputReassigned,
+                    QStringLiteral("managed window %1 has frame geometry %2, which lies "
+                                   "outside its output %3 at %4; published on %5")
+                        .arg(windowLabel, describeRect(window->frameGeometry),
+                             describe(window->outputId),
+                             describeRect(outputGeometry.value()), describe(*best)));
+        } else {
+            degrade(degradations, window->id,
+                    ShellVisibilityDegradationKind::UnknownOutputReassigned,
+                    QStringLiteral("managed window %1 names output %2, which this "
+                                   "generation does not have; published on %3")
+                        .arg(windowLabel, describe(window->outputId), describe(*best)));
+        }
+        window->outputId = *best;
+    }
+    if (window->active && (window->minimized || window->hidden)) {
+        degrade(degradations, window->id,
+                ShellVisibilityDegradationKind::ActiveWhileHiddenCleared,
+                QStringLiteral("managed window %1 is active while marked %2; "
+                               "published as inactive")
+                    .arg(windowLabel, window->minimized ? QStringLiteral("minimized")
+                                                        : QStringLiteral("hidden")));
+        window->active = false;
+    }
+    return true;
+}
+
+// Only called for a structurally sound window, so the identifier lists are
+// known to canonicalize.
+QJsonObject publishedWindowJson(const ShellVisibilityWindowSnapshot &window)
+{
+    return {{QStringLiteral("id"), window.id},
+            {QStringLiteral("outputId"), window.outputId},
+            {QStringLiteral("frameGeometry"), geometryJson(window.frameGeometry)},
+            {QStringLiteral("workspaceIds"),
+             stringsJson(canonicalIdentifiers(window.workspaceIds).value_or(QStringList{}))},
+            {QStringLiteral("onAllWorkspaces"), window.onAllWorkspaces},
+            {QStringLiteral("activityIds"),
+             stringsJson(canonicalIdentifiers(window.activityIds).value_or(QStringList{}))},
+            {QStringLiteral("active"), window.active},
+            {QStringLiteral("maximized"), window.maximized},
+            {QStringLiteral("minimized"), window.minimized},
+            {QStringLiteral("hidden"), window.hidden},
+            {QStringLiteral("fullscreen"), window.fullscreen}};
+}
+
 std::optional<QJsonObject> canonicalState(
     const ShellVisibilitySnapshotCandidate &candidate,
-    QString *error)
+    QString *error,
+    QVector<ShellVisibilityDegradation> *degradations)
 {
     if (candidate.outputGeneration == 0) {
         fail(error, QStringLiteral("output generation must be non-zero"));
@@ -194,97 +334,25 @@ std::optional<QJsonObject> canonicalState(
     QJsonArray windowJson;
     QSet<QString> windowIds;
     QString activeWindowId;
-    for (const auto &window : windows) {
-        const auto outputGeometry = outputGeometries.constFind(window.outputId);
-        const auto workspaces = canonicalIdentifiers(window.workspaceIds);
-        const auto activities = canonicalIdentifiers(window.activityIds);
-        const bool canonicalWorkspaceScope =
-            (window.onAllWorkspaces && workspaces && workspaces->isEmpty())
-            || (!window.onAllWorkspaces && workspaces && !workspaces->isEmpty());
-        // AGENT-GUARD: these eight conditions shared one message, so a
-        // rejection reported only that *something* was wrong with *some*
-        // window. A rejection voids the entire batch and pins every panel
-        // safe-visible, so this message is what someone debugging lost
-        // auto-hide has to work from -- and one session logged 8079 of them
-        // with no way to tell a transient race (a window momentarily off its
-        // output, or active while still marked minimized) from a producer bug
-        // (a duplicate id, a malformed scope). Keep every cause distinct.
-        const QString windowLabel = describe(window.id);
-        if (!validIdentifier(window.id)) {
-            fail(error, QStringLiteral("managed window %1 has a non-canonical identifier")
-                            .arg(windowLabel));
+    for (auto window : windows) {
+        if (!structurallySound(window, windowIds, error)) {
             return std::nullopt;
         }
-        if (windowIds.contains(window.id)) {
-            fail(error, QStringLiteral("managed window %1 is listed more than once")
-                            .arg(windowLabel));
-            return std::nullopt;
-        }
-        if (outputGeometry == outputGeometries.cend()) {
-            fail(error, QStringLiteral("managed window %1 names output %2, which this "
-                                       "generation does not have")
-                            .arg(windowLabel, describe(window.outputId)));
-            return std::nullopt;
-        }
-        if (!hasSafeExtent(window.frameGeometry)) {
-            fail(error, QStringLiteral("managed window %1 has an unusable frame geometry %2")
-                            .arg(windowLabel, describeRect(window.frameGeometry)));
-            return std::nullopt;
-        }
-        if (!intersects(outputGeometry.value(), window.frameGeometry)) {
-            fail(error, QStringLiteral("managed window %1 has frame geometry %2, which lies "
-                                       "outside its output %3 at %4")
-                            .arg(windowLabel, describeRect(window.frameGeometry),
-                                 describe(window.outputId),
-                                 describeRect(outputGeometry.value())));
-            return std::nullopt;
-        }
-        if (!canonicalWorkspaceScope) {
-            fail(error,
-                 QStringLiteral("managed window %1 claims onAllWorkspaces=%2 with %3 "
-                                "workspace IDs")
-                     .arg(windowLabel,
-                          window.onAllWorkspaces ? QStringLiteral("true")
-                                                 : QStringLiteral("false"),
-                          QString::number(window.workspaceIds.size())));
-            return std::nullopt;
-        }
-        if (!activities) {
-            fail(error, QStringLiteral("managed window %1 has non-canonical activity IDs")
-                            .arg(windowLabel));
-            return std::nullopt;
-        }
-        if (window.active && (window.minimized || window.hidden)) {
-            fail(error, QStringLiteral("managed window %1 is active while marked %2")
-                            .arg(windowLabel,
-                                 window.minimized ? QStringLiteral("minimized")
-                                                  : QStringLiteral("hidden")));
-            return std::nullopt;
+        windowIds.insert(window.id);
+        if (!repairTransient(&window, outputGeometries, outputs, degradations)) {
+            continue;
         }
         if (window.active && !activeWindowId.isEmpty()) {
             fail(error,
                  QStringLiteral("managed windows %1 and %2 are both active, which cannot "
                                 "form one coherent snapshot")
-                     .arg(describe(activeWindowId), windowLabel));
+                     .arg(describe(activeWindowId), describe(window.id)));
             return std::nullopt;
         }
         if (window.active) {
             activeWindowId = window.id;
         }
-        windowIds.insert(window.id);
-        windowJson.append(
-            QJsonObject{{QStringLiteral("id"), window.id},
-                        {QStringLiteral("outputId"), window.outputId},
-                        {QStringLiteral("frameGeometry"),
-                         geometryJson(window.frameGeometry)},
-                        {QStringLiteral("workspaceIds"), stringsJson(*workspaces)},
-                        {QStringLiteral("onAllWorkspaces"), window.onAllWorkspaces},
-                        {QStringLiteral("activityIds"), stringsJson(*activities)},
-                        {QStringLiteral("active"), window.active},
-                        {QStringLiteral("maximized"), window.maximized},
-                        {QStringLiteral("minimized"), window.minimized},
-                        {QStringLiteral("hidden"), window.hidden},
-                        {QStringLiteral("fullscreen"), window.fullscreen}});
+        windowJson.append(publishedWindowJson(window));
     }
 
     return QJsonObject{
@@ -332,14 +400,22 @@ ShellVisibilitySnapshotStore::ShellVisibilitySnapshotStore(
 
 ShellVisibilityPublishResult ShellVisibilitySnapshotStore::publish(
     const ShellVisibilitySnapshotCandidate &candidate,
-    QString *error)
+    QString *error,
+    QVector<ShellVisibilityDegradation> *degradations)
 {
+    if (degradations) {
+        degradations->clear();
+    }
     if (!validIdentifier(m_epoch)) {
         fail(error, QStringLiteral("snapshot epoch is not canonical"));
         return ShellVisibilityPublishResult::Rejected;
     }
-    const auto state = canonicalState(candidate, error);
+    const auto state = canonicalState(candidate, error, degradations);
     if (!state) {
+        // A rejected batch publishes nothing, so nothing was degraded either.
+        if (degradations) {
+            degradations->clear();
+        }
         return ShellVisibilityPublishResult::Rejected;
     }
     const auto canonical = QJsonDocument(*state).toJson(QJsonDocument::Compact);

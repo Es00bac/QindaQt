@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "managedwindowregistry.h"
 
+#include "coalescedchangenotifier.h"
 #include "hybridwindowadmission.h"
 
 #include <core/output.h>
@@ -51,6 +52,9 @@ bool isLayerShellSurface(const KWin::Window *window)
 
 ManagedWindowRegistry::ManagedWindowRegistry(QObject *parent)
     : QObject(parent)
+    , m_captionChanges(std::make_unique<CoalescedChangeNotifier>(
+          CaptionIntervalMilliseconds,
+          [this](const QStringList &windowIds) { deliverCaptionChanges(windowIds); }))
 {
     auto *const compositorWorkspace = KWin::workspace();
     Q_ASSERT(compositorWorkspace);
@@ -73,6 +77,8 @@ ManagedWindowRegistry::ManagedWindowRegistry(QObject *parent)
     // whose windowAdded signal preceded this plugin is not permanently missed.
     QTimer::singleShot(0, this, &ManagedWindowRegistry::synchronize);
 }
+
+ManagedWindowRegistry::~ManagedWindowRegistry() = default;
 
 bool ManagedWindowRegistry::isManageable(const KWin::Window *window)
 {
@@ -110,8 +116,11 @@ void ManagedWindowRegistry::addWindow(KWin::Window *window)
         return;
     }
     m_windows.insert(id, window);
+    // ADR-0383: a caption is presentation text. It reaches consumers through
+    // its own rate-limited signal so a spinner title never re-plans chrome,
+    // re-samples task facts at frame rate, or floods the session bus.
     connect(window, &KWin::Window::captionChanged, this,
-            &ManagedWindowRegistry::scheduleWindowsChanged);
+            [this, id] { m_captionChanges->notify(id); });
     connect(window, &KWin::Window::frameGeometryChanged,
             this, [this](const KWin::RectF &) { scheduleWindowsChanged(); });
     connect(window, &KWin::Window::minimizedChanged,
@@ -138,6 +147,7 @@ void ManagedWindowRegistry::removeWindow(KWin::Window *window)
     }
     const auto containerId = m_owners.take(id);
     m_targetFrames.remove(id);
+    m_captionChanges->forget(id);
     Q_EMIT managedWindowClosed(id, containerId);
     scheduleWindowsChanged();
 }
@@ -156,6 +166,20 @@ void ManagedWindowRegistry::scheduleWindowsChanged()
         m_windowsChangedPending = false;
         Q_EMIT windowsChanged();
     });
+}
+
+void ManagedWindowRegistry::deliverCaptionChanges(const QStringList &windowIds)
+{
+    QStringList live;
+    live.reserve(windowIds.size());
+    for (const auto &windowId : windowIds) {
+        if (m_windows.value(windowId)) {
+            live.append(windowId);
+        }
+    }
+    if (!live.isEmpty()) {
+        Q_EMIT windowCaptionsChanged(live);
+    }
 }
 
 KWin::Window *ManagedWindowRegistry::window(const QString &windowId) const

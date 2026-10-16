@@ -59,6 +59,33 @@ enum class ShellVisibilityPublishResult {
     RevisionExhausted,
 };
 
+// ADR-0384: the transient conditions ADR-0237 measured no longer void the
+// batch. Each one degrades only the window it concerns, and the store reports
+// what it did so the producer can log it once per transition.
+enum class ShellVisibilityDegradationKind {
+    // The window names an output this generation does not have; it was
+    // published on the output its frame overlaps most.
+    UnknownOutputReassigned,
+    // The window's frame lies outside its own output; it was published on the
+    // output its frame overlaps most.
+    OutsideOutputReassigned,
+    // The window's frame overlaps no output at all (stranded by an output
+    // removal); it was left out of the batch.
+    StrandedExcluded,
+    // The window is active while minimized or hidden; it was published as not
+    // active, because nothing on screen can be the active window then.
+    ActiveWhileHiddenCleared,
+};
+
+struct ShellVisibilityDegradation final
+{
+    QString windowId;
+    ShellVisibilityDegradationKind kind =
+        ShellVisibilityDegradationKind::StrandedExcluded;
+    // Names the window, what was wrong and what was done, bounded for logs.
+    QString message;
+};
+
 struct ShellVisibilityRevisionSeed final
 {
     quint64 value = 0;
@@ -74,9 +101,16 @@ public:
         QString epoch,
         ShellVisibilityRevisionSeed revisionSeed = {});
 
+    // AGENT-CONTRACT (ADR-0384): structural problems (identifiers, scope,
+    // duplicates, two active windows, output inventory) still reject the
+    // whole candidate. The transient window conditions listed in
+    // ShellVisibilityDegradationKind are repaired per window and reported in
+    // `degradations`; the published batch is then valid for every consumer,
+    // which keeps validating strictly.
     [[nodiscard]] ShellVisibilityPublishResult publish(
         const ShellVisibilitySnapshotCandidate &candidate,
-        QString *error = nullptr);
+        QString *error = nullptr,
+        QVector<ShellVisibilityDegradation> *degradations = nullptr);
     [[nodiscard]] const QByteArray &snapshotJson() const noexcept;
     [[nodiscard]] quint64 revision() const noexcept;
     [[nodiscard]] const QString &epoch() const noexcept;

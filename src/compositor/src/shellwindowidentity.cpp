@@ -287,11 +287,17 @@ bool ShellWindowIdentityController::authorized(
 
 QByteArray ShellWindowIdentityController::snapshot(const QString &callerUniqueName)
 {
+    return reply(callerUniqueName).payload;
+}
+
+ShellWindowIdentityController::Reply ShellWindowIdentityController::reply(
+    const QString &callerUniqueName)
+{
     // AGENT-GUARD: The source can touch KWin window state. Authenticate first
     // so an arbitrary session-bus peer cannot use this method as an identity
     // or focus oracle.
     if (!authorized(callerUniqueName)) {
-        return QJsonDocument(QJsonObject{
+        return {QJsonDocument(QJsonObject{
             {QStringLiteral("status"), QStringLiteral("unauthorized")},
             {QStringLiteral("schemaVersion"), 1},
             {QStringLiteral("failure"),
@@ -299,9 +305,9 @@ QByteArray ShellWindowIdentityController::snapshot(const QString &callerUniqueNa
                           QStringLiteral("caller-pid-mismatch")},
                          {QStringLiteral("message"),
                           QStringLiteral("the D-Bus caller does not own the shell panels")}}},
-        }).toJson(QJsonDocument::Compact);
+        }).toJson(QJsonDocument::Compact), false};
     }
-    return m_identitySource.snapshotJson();
+    return {m_identitySource.snapshotJson(), true};
 }
 
 QByteArray encodeShellWindowIdentitySnapshot(

@@ -11,6 +11,14 @@
 #include <QObject>
 #include <QPointer>
 
+#include <memory>
+
+class QDBusServiceWatcher;
+
+namespace QindaQt::Compositor {
+class ShellCredentialCache;
+}
+
 namespace KWin {
 class LayerSurfaceV1Interface;
 }
@@ -23,15 +31,31 @@ class KWinShellWindowIdentityPublisher;
 class KWinShellTaskFactsPublisher;
 class ManagedWindowRegistry;
 
+// Session-bus credentials for the shell endpoints (ADR-0383): one bounded
+// GetConnectionCredentials round trip per unique name, then a cached answer
+// until NameOwnerChanged reports that connection gone. Before the cache, every
+// task-list read and every targeted change hint made a blocking call on the
+// compositor thread with the default 25 s timeout.
+// Owned and called on the plugin's (compositor) thread.
 class QtBusShellCredentialSource final : public ShellWindowCredentialSource
 {
 public:
     explicit QtBusShellCredentialSource(QDBusConnection connection);
+    ~QtBusShellCredentialSource() override;
     [[nodiscard]] std::optional<qint64> processIdForUniqueName(
         const QString &uniqueName) const override;
 
+    // A slow bus daemon (swapped out) denies one request instead of stalling
+    // the compositor; the next request retries because failures are not
+    // cached.
+    static constexpr int LookupTimeoutMilliseconds = 500;
+
 private:
+    [[nodiscard]] std::optional<qint64> lookup(const QString &uniqueName) const;
+
     QDBusConnection m_connection;
+    std::unique_ptr<QDBusServiceWatcher> m_ownerWatch;
+    std::unique_ptr<ShellCredentialCache> m_cache;
 };
 
 // Derives one live authority from committed production panel roles. Surface

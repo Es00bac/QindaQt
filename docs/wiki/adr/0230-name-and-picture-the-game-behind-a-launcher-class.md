@@ -1,10 +1,13 @@
 # ADR-0230: name and picture the game behind a launcher class
 
-- **Status:** Accepted
+- **Status:** Accepted; superseded in part
 - **Date:** 2026-09-21
 - **Owners:** Compositor (window identity), Shell (iconography)
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0384](0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)
+  for thread confinement only: the cache now lives on a dedicated worker
+  thread and is consulted once per window, not on every task-facts sample on
+  KWin's GUI thread.
 
 ## Context
 

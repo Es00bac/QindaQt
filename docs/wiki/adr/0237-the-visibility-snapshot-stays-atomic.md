@@ -1,10 +1,14 @@
 # ADR-0237: The visibility snapshot stays atomic, and says what it rejected
 
-- **Status:** Accepted
+- **Status:** Accepted; superseded in part
 - **Date:** 2026-09-22
 - **Owners:** compositor (shell visibility), shell runtime
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0384](0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)
+  for the transient conditions (a window outside its output or naming a
+  missing one, and a window active while minimized or hidden), which now
+  degrade only that window. Structural causes still reject the batch with the
+  named messages this ADR introduced.
 
 ## Context
 

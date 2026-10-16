@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridscene.h"
 
+#include "kwinrescueoutputs.h"
 #include "managedwindowregistry.h"
 
 #include <effect/globals.h>
@@ -34,6 +35,21 @@ bool fail(QString *error, QString message)
 QString windowFocusToken(const KWin::Window *window)
 {
     return window ? window->internalId().toString(QUuid::WithoutBraces) : QString{};
+}
+
+// ADR-0384: a window's independent restore state was captured when it joined
+// a container, possibly on an output that has since been unplugged. Applied
+// verbatim it would send the window back to the removed output's coordinates
+// (one was found at 2560x1408+1536+32 on an eDP-only session). Drop an output
+// that is gone and move a frame that overlaps no remaining output onto the
+// nearest one; a state on a live output is returned unchanged.
+WindowRestoreState onLiveOutputs(WindowRestoreState state)
+{
+    if (!state.outputId.isEmpty() && !KWin::workspace()->findOutput(state.outputId)) {
+        state.outputId.clear();
+    }
+    state.geometry = onLiveOutput(state.geometry);
+    return state;
 }
 
 class RegistryHybridPlatform final : public KWinHybridScenePlatform
@@ -165,9 +181,10 @@ public:
     }
 
     bool validateState(const QString &windowId,
-                       const WindowRestoreState &state,
+                       const WindowRestoreState &requested,
                        QString *error) const override
     {
+        const WindowRestoreState state = onLiveOutputs(requested);
         if (!windowExists(windowId)) {
             return fail(error, QStringLiteral("unknown managed window '%1'").arg(windowId));
         }
@@ -190,10 +207,11 @@ public:
     }
 
     bool applyState(const QString &windowId,
-                    const WindowRestoreState &state,
+                    const WindowRestoreState &requested,
                     QString *error) override
     {
         auto *window = m_registry.window(windowId);
+        const WindowRestoreState state = onLiveOutputs(requested);
         if (!window || !validateState(windowId, state, error)) {
             return false;
         }

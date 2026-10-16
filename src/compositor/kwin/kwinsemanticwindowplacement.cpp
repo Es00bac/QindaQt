@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinsemanticwindowplacement.h"
+#include "kwinrescueoutputs.h"
 #include "managedwindowregistry.h"
 #include <QScopedValueRollback>
 #include <core/output.h>
@@ -123,7 +124,8 @@ bool KWinSemanticWindowPlacement::restore(const QString &id, QString *error) {
     return false;
   const auto state = m_states.take(id);
   QScopedValueRollback<bool> guard(m_applying, true);
-  window->moveResize(QRectF(state.restore));
+  // ADR-0384: never restore onto an output that has since been unplugged.
+  window->moveResize(onLiveOutput(QRectF(state.restore)));
   return true;
 }
 bool KWinSemanticWindowPlacement::isMaximized(const QString &id) const {

@@ -13,6 +13,7 @@ qt_add_executable(
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridoutputrescue.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
 )
 target_include_directories(

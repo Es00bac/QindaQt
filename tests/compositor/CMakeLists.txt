@@ -416,6 +416,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinchromehitrouting.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinchromemanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeplanlocalizer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeplancomparison.cpp"
     )
     target_include_directories(
         qindaqt_kwin_chrome_manager_tests
@@ -519,6 +520,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_chrome_plan_builder_tests
         tst_hybridchromeplanbuilder.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridchromeplanbuilder.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeplancomparison.cpp"
     )
     target_include_directories(
         qindaqt_hybrid_chrome_plan_builder_tests
@@ -646,6 +648,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridoutputrescue.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
     )
     target_include_directories(
@@ -677,6 +680,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridoutputrescue.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
     )
     target_include_directories(
@@ -762,6 +766,9 @@ if(TARGET qindaqt_kwin_input_adapter)
     )
 
     include("${CMAKE_CURRENT_LIST_DIR}/HybridSceneTests.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/ChangeBudgetTests.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/WindowModelIntegrityTests.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/PluginLoadTests.cmake")
 
     qt_add_executable(
         qindaqt_kwin_dock_preview_tests
