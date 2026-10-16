@@ -1,0 +1,73 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Identify what wakes this machine out of s2idle (stability round 2026-10-16).
+#
+# Runs ONE timed suspend (default 30 s) with kernel PM debugging enabled, then
+# reports the wake IRQ, wakeup-source counters that changed, amd_pmc s0i3
+# residency and the kernel's wake messages. Restores pm_debug_messages.
+#
+# AGENT-GUARD: this suspends the machine. Run it only with the owner's consent,
+# and only after sys-power/qindaqt-power-defaults is installed. Without its
+# SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false drop-in, an active sshfs network
+# location can hang the freeze phase (2026-10-14 08:49), and only a forced
+# power-off recovers. The script refuses to run if the drop-in is missing.
+#
+# Usage: sudo tools/diagnose-s2idle-wake [seconds]
+set -euo pipefail
+
+seconds=${1:-30}
+[[ $seconds =~ ^[0-9]+$ ]] && (( seconds >= 15 && seconds <= 300 )) || {
+    echo "seconds must be 15..300" >&2; exit 2; }
+[[ $EUID -eq 0 ]] || { echo "run with sudo" >&2; exit 2; }
+# The loaded unit, not merely a file on disk, must carry the override.
+systemctl show systemd-suspend.service -p Environment \
+    | grep -q 'SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false' || {
+    echo "refusing: systemd-suspend.service does not carry SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false" >&2
+    echo "install sys-power/qindaqt-power-defaults and run 'systemctl daemon-reload' first" >&2
+    exit 3; }
+
+out=$(mktemp -d /var/tmp/s2idle-wake.XXXXXX)
+snapshot_wakeup() {
+    for d in /sys/class/wakeup/wakeup*; do
+        printf '%s %s %s\n' "$(cat "$d/name")" "$(cat "$d/wakeup_count")" "$(cat "$d/event_count")"
+    done
+}
+snapshot_wakeup > "$out/before"
+cat /sys/firmware/acpi/interrupts/gpe* 2>/dev/null > "$out/gpe-before" || true
+mount | grep -q ' /sys/kernel/debug ' || mount -t debugfs none /sys/kernel/debug || true
+cat /sys/kernel/debug/amd_pmc/s0ix_stats > "$out/s0ix-before" 2>/dev/null || true
+previous_debug=$(cat /sys/power/pm_debug_messages)
+echo 1 > /sys/power/pm_debug_messages
+trap 'echo "$previous_debug" > /sys/power/pm_debug_messages' EXIT
+since=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "Suspending for ${seconds}s (RTC alarm will wake the machine)..."
+rtcwake -m no -s "$seconds" >/dev/null
+started=$(date +%s)
+systemctl suspend
+# systemctl returns before the suspend; wait until the system has resumed.
+for _ in $(seq 1 $((seconds + 120))); do
+    sleep 1
+    journalctl -k --since "$since" -o cat | grep -q 'PM: suspend exit' && break
+done
+slept=$(( $(date +%s) - started ))
+
+snapshot_wakeup > "$out/after"
+cat /sys/firmware/acpi/interrupts/gpe* 2>/dev/null > "$out/gpe-after" || true
+cat /sys/kernel/debug/amd_pmc/s0ix_stats > "$out/s0ix-after" 2>/dev/null || true
+
+echo "== Wall time from suspend request to resume: ${slept}s (requested ${seconds}s)"
+echo "== Wake IRQ: $(cat /sys/power/pm_wakeup_irq 2>/dev/null || echo unavailable)"
+changed_lines() { { diff "$1" "$2" || true; } | sed -n 's/^> /   /p'; }
+echo "== Wakeup sources whose counters changed (name wakeup_count event_count):"
+changed=$(changed_lines "$out/before" "$out/after"); echo "${changed:-   none}"
+echo "== ACPI GPE counters that changed:"
+changed=$(changed_lines "$out/gpe-before" "$out/gpe-after" | head -10); echo "${changed:-   none}"
+echo "== amd_pmc s0ix residency (after):"
+sed 's/^/   /' "$out/s0ix-after" 2>/dev/null || echo "   unavailable"
+echo "== Kernel wake messages:"
+{ journalctl -k --since "$since" -o cat || true; } \
+    | grep -iE 'wakeup|wake up|Triggering|IRQ|GPE|EC: |amd_pmc|deepest|LPS0|_DSM|s2idle|PM: ' \
+    | grep -viE 'ring .* uses VM inv' | head -60 | sed 's/^/   /' || true
+echo "Raw snapshots kept in $out"
