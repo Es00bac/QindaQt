@@ -101,12 +101,44 @@ T.Button {
     Accessible.description: running ? qsTr("Running. %1").arg(kindDescription())
                                      : kindDescription()
 
-    T.ToolTip {
-        objectName: "quickLaunchEntryTooltip"
-        visible: tile.dockMode && tile.hovered && !tile.dragHeld
-        text: tile.label
-        delay: Tokens.motion.short
-        popupType: T.Popup.Window
+    // AGENT-CONTRACT (ADR-0396): a Popup.Window keeps its own window, and with
+    // it a GL context and video memory, for as long as the Popup object exists,
+    // even after it closes, so a tooltip per tile would cost a window for every
+    // tile ever hovered. The tooltip is created when wanted and destroyed once
+    // it has faded out; an idle dock owns none. `parent: tile` is explicit
+    // because a Loader would otherwise parent it to itself.
+    readonly property bool tooltipWanted: dockMode && hovered && !dragHeld
+    // Held true from the first time the tooltip is wanted until it has closed
+    // and is no longer wanted. It is state, not a binding on the loaded item:
+    // `active` reading `item` would be a binding loop, since loading changes it.
+    property bool tooltipLoaded: false
+    onTooltipWantedChanged: {
+        if (tooltipWanted)
+            tooltipLoaded = true
+        else if (!(tooltipLoader.item as T.ToolTip)?.visible)
+            tooltipRelease.restart() // never opened, or already closed
+    }
+    Timer {
+        id: tooltipRelease
+        interval: 0
+        onTriggered: if (!tile.tooltipWanted) tile.tooltipLoaded = false
+    }
+    Loader {
+        id: tooltipLoader
+        active: tile.tooltipLoaded
+        sourceComponent: T.ToolTip {
+            objectName: "quickLaunchEntryTooltip"
+            parent: tile
+            // Bound once complete, not as an initial value: a popup created
+            // visible opens at once and skips `delay`, and the tooltip must
+            // keep its hover delay.
+            Component.onCompleted: visible = Qt.binding(() => tile.tooltipWanted)
+            text: tile.label
+            delay: Tokens.motion.short
+            popupType: T.Popup.Window
+            // The exit transition finished, so the window can go.
+            onClosed: tooltipRelease.restart()
+        }
     }
 
     onClicked: activated()

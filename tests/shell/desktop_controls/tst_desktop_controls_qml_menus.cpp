@@ -433,10 +433,19 @@ void DesktopControlsQmlMenuTests::quickLaunchDockUsesOnlyPersistedPins()
     QCOMPARE(icon->property("size").toInt(), 40);
     QCOMPARE(icon->width(), 40.0);
     QCOMPARE(icon->height(), 40.0);
-    auto *tooltip = entries.constFirst()->findChild<QObject *>(
-        QStringLiteral("quickLaunchEntryTooltip"));
-    QVERIFY(tooltip != nullptr);
+    // ADR-0396: the tooltip is created while the tile is hovered and gone once
+    // the pointer leaves, not retained for the life of the tile.
+    QQuickItem *tile = entries.constFirst();
+    QVERIFY(tile->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) == nullptr);
+    QTest::mouseMove(host.window.get(),
+                     tile->mapToScene(QPointF(tile->width() / 2, tile->height() / 2)).toPoint());
+    QObject *tooltip = nullptr;
+    QTRY_VERIFY((tooltip = tile->findChild<QObject *>(
+                     QStringLiteral("quickLaunchEntryTooltip"))) != nullptr);
     QCOMPARE(tooltip->property("text").toString(), QStringLiteral("Fixture Editor"));
+    QTest::mouseMove(host.window.get(),
+                     QPoint(host.window->width() - 2, host.window->height() - 2));
+    QTRY_VERIFY(tile->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) == nullptr);
 
     entries.constFirst()->forceActiveFocus();
     keyClickFocused(host, Qt::Key_Return);

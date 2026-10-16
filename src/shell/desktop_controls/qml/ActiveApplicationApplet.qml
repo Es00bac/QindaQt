@@ -10,7 +10,8 @@ import QindaQt.Tokens 1.0
 
 // GNOME-style active application indicator: the focused task-list row's
 // application name and icon; the popup offers Minimize and Close through the
-// task-list facade with the row's displayed revision. With no window focused
+// task-list facade, which fences each intent with the generation it is
+// showing. With no window focused
 // while the global menu shows the desktop menu (ADR-0260), it names that
 // menu's application (the File Manager) and offers no window actions.
 Item {
@@ -30,14 +31,19 @@ Item {
     property string popupRevision: ""
 
     // AGENT-GUARD: Minimize and Close act on the facade's CURRENT row, so an
-    // open popup must never outlive the task id and displayed revision it was
-    // opened for, or its rows would act on a replacement task. The
-    // controller's id/revision fence stays the dispatch authority; this only
-    // retires stale presentation (docs/wiki/shell/desktop-controls.md).
+    // open popup must never outlive the task id and displayed row it was
+    // opened for, or its rows would act on a replacement task or on a window
+    // count the user never saw. The controller's generation fence stays the
+    // dispatch authority; this only retires stale presentation
+    // (docs/wiki/shell/desktop-controls.md). The comparison is the facade's
+    // rowRevision, which advances when the displayed row changes, NOT its
+    // generation revision: that advances for every publication, so a spinner
+    // title on any other window would close the popup ten times a second
+    // (ADR-0391).
     function popupTaskCurrent() {
         return root.hasWindow && root.popupTaskId.length > 0
             && String(root.access.taskId) === root.popupTaskId
-            && String(root.access.revision) === root.popupRevision
+            && String(root.access.rowRevision) === root.popupRevision
     }
 
     function retireStalePopup() {
@@ -88,7 +94,7 @@ Item {
             if (!root.hasWindow)
                 return
             root.popupTaskId = String(root.access.taskId)
-            root.popupRevision = String(root.access.revision)
+            root.popupRevision = String(root.access.rowRevision)
             actions.open()
         }
 

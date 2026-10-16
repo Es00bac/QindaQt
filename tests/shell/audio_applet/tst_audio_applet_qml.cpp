@@ -17,6 +17,7 @@ private Q_SLOTS:
     void summaryIconTracksDefaultOutput_data();
     void summaryIconTracksDefaultOutput();
     void pickingAnOutputDeviceDispatchesSetDefault();
+    void popupMetersHoldALeaseOnlyWhileTheConsoleIsShown();
 };
 
 void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
@@ -426,6 +427,64 @@ void AudioAppletQmlTests::pickingAnOutputDeviceDispatchesSetDefault()
     QCOMPARE(transport.operations.constLast().request.kind,
              Audio::OperationKind::SetDefault);
     QCOMPARE(transport.operations.constLast().request.primary.serial, 11ULL);
+}
+
+// ADR-0394: the tray popup is closed almost all the time, and the Audio1
+// Levels stream (twenty frames a second) used to be decoded for nobody the
+// whole while. Each console meter holds one lease on the controller only while
+// it is shown, so a closed popup subscribes nothing.
+void AudioAppletQmlTests::popupMetersHoldALeaseOnlyWhileTheConsoleIsShown()
+{
+    FakeAudioTransport transport;
+    Audio::AudioClient client(&transport);
+    AudioAppletController controller(&client, true, true);
+    client.start();
+    transport.announceOwner(kOwner);
+    transport.reply(transport.fetches.constLast(), consoleClientSnapshot());
+    QCOMPARE(client.state(), Audio::ClientState::Ready);
+    QCOMPARE(controller.consoleRows().size(), 2);
+
+    AppletHarness harness;
+    QString error;
+    QVERIFY2(loadApplet(harness, &controller, {QStringLiteral("audio-volume-medium")}, &error),
+             qPrintable(error));
+    QQuickItem *root = harness.root();
+    QVERIFY(root != nullptr);
+    QQuickWindow window;
+    window.setGeometry(0, 0, 420, 520);
+    root->setParentItem(window.contentItem());
+    root->setPosition(QPointF(20, 20));
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+
+    // Popup closed: no meter exists on screen, nothing is subscribed.
+    QCOMPARE(client.levelsLeaseCount(), 0);
+    QVERIFY(transport.levelsRequests.isEmpty());
+
+    auto *summary = root->findChild<QQuickItem *>(QStringLiteral("audioAppletSummary"));
+    QVERIFY(summary != nullptr);
+    summary->forceActiveFocus();
+    QQuickItem *popupContent = openPopupContent(root, &window);
+    QVERIFY(popupContent != nullptr);
+    const auto meters = visualItemsNamed(popupContent, QStringLiteral("audioConsoleMeter_strip.hardware.1"))
+        + visualItemsNamed(popupContent, QStringLiteral("audioConsoleMeter_strip.hardware.2"));
+    QCOMPARE(meters.size(), 2);
+    QTRY_COMPARE(client.levelsLeaseCount(), 2);
+    QCOMPARE(controller.meterLeaseCount(), 2);
+    QCOMPARE(transport.levelsRequests, QList<bool>{true});
+
+    // A frame now moves the meter the popup shows.
+    QSignalSpy notifications(&controller, &AudioAppletController::consoleLevelsChanged);
+    transport.sendLevels(kOwner, {meterReading(QStringLiteral("strip.hardware.1"), -9.0, -15.0)});
+    QCOMPARE(notifications.size(), 1);
+
+    // Closing the popup gives every lease back and unsubscribes.
+    auto *popup = root->findChild<QObject *>(QStringLiteral("audioAppletPopup"));
+    QVERIFY(popup != nullptr);
+    QTest::keyClick(&window, Qt::Key_Escape);
+    QTRY_VERIFY(!popup->property("opened").toBool());
+    QTRY_COMPARE(client.levelsLeaseCount(), 0);
+    QCOMPARE(transport.levelsRequests, (QList<bool>{true, false}));
 }
 
 QTEST_MAIN(AudioAppletQmlTests)

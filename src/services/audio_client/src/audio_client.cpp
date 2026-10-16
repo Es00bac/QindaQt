@@ -21,7 +21,7 @@ AudioClient::AudioClient(AudioTransport *transport, QObject *parent)
     m_fetchTimer.setSingleShot(true);
     m_operationTimer.setSingleShot(true);
     m_retryTimer.setSingleShot(true);
-    m_retryTimer.setInterval(200);
+    m_retryTimer.setInterval(m_retryBackoff.initial());
     connect(&m_fetchTimer, &QTimer::timeout, this, &AudioClient::onFetchTimeout);
     connect(&m_operationTimer, &QTimer::timeout, this, &AudioClient::onOperationTimeout);
     connect(&m_retryTimer, &QTimer::timeout, this, &AudioClient::requestSnapshot);
@@ -36,12 +36,45 @@ AudioClient::AudioClient(AudioTransport *transport, QObject *parent)
             &AudioClient::acceptLevels);
 }
 
+void AudioClient::retainLevels()
+{
+    if (++m_levelsLeases == 1) {
+        m_transport->setLevelsSubscribed(true);
+    }
+}
+
+void AudioClient::releaseLevels()
+{
+    if (m_levelsLeases == 0) {
+        return;
+    }
+    if (--m_levelsLeases != 0) {
+        return;
+    }
+    m_transport->setLevelsSubscribed(false);
+    // With nobody listening the readings in the retained snapshot would only
+    // go stale. Clear them exactly as an upstream "metering stopped" batch
+    // does, so a later lease starts from an idle scale rather than a frozen
+    // one, and tell the surfaces that are still being torn down.
+    if (m_snapshot.has_value()) {
+        for (Strip &strip : m_snapshot->console.strips) {
+            strip.level = Level{};
+        }
+        for (Bus &bus : m_snapshot->console.buses) {
+            bus.level = Level{};
+        }
+    }
+    Q_EMIT levelsChanged({});
+}
+
 void AudioClient::acceptLevels(const QString &owner, const QList<LevelReading> &levels)
 {
     // Bound to the exact owner like every other transport value, and dropped
     // before there is a snapshot to apply them to: a reading has no meaning
-    // without the console it names.
-    if (owner.isEmpty() || owner != m_owner || !m_snapshot.has_value()) {
+    // without the console it names. A frame that was already queued when the
+    // last lease was released is stale truth for a surface that left.
+    if (m_levelsLeases == 0 || owner.isEmpty() || owner != m_owner
+        || !m_snapshot.has_value()) {
         return;
     }
     QList<LevelReading> applied;
@@ -118,6 +151,7 @@ void AudioClient::stop()
     m_fetchTimer.stop();
     m_operationTimer.stop();
     m_retryTimer.stop();
+    m_retryBackoff.reset();
     m_fetchInFlight = false;
     m_refetchNeeded = false;
     m_fetchRequestId = 0;
@@ -198,6 +232,7 @@ void AudioClient::acceptOwner(const QString &owner)
     completeUncertain(QStringLiteral("owner-replaced"));
     m_fetchTimer.stop();
     m_retryTimer.stop();
+    m_retryBackoff.reset();
     m_fetchInFlight = false;
     m_refetchNeeded = false;
     m_fetchRequestId = 0;
@@ -234,7 +269,7 @@ void AudioClient::requestSnapshot()
 void AudioClient::scheduleRefetch()
 {
     if (!m_retryTimer.isActive() && !m_owner.isEmpty()) {
-        m_retryTimer.start();
+        m_retryTimer.start(m_retryBackoff.take());
     }
 }
 
@@ -284,6 +319,9 @@ void AudioClient::acceptSnapshotReply(const QString &owner, const quint64 reques
         return;
     }
 
+    // The service answered coherently: whatever was failing no longer is, so
+    // the next failure retries quickly again (ADR-0394).
+    m_retryBackoff.reset();
     if (exactDuplicate) {
         publishSnapshotState(snapshot);
         if (m_refetchNeeded) {

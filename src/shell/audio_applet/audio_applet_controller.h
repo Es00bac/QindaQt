@@ -72,6 +72,21 @@ public:
                                    bool audioReadGranted,
                                    bool audioControlGranted,
                                    QObject *parent = nullptr);
+    // Meter lease (ADR-0394). A meter that is on screen calls retainMeters()
+    // and gives it back with releaseMeters() when hidden or destroyed. The
+    // Audio1 `Levels` stream is subscribed only while one is held; the tray
+    // popup is closed almost all the time, and the shell used to decode every
+    // frame for nobody. Whatever is still held when the controller is
+    // destroyed is given back. AGENT-GUARD: read denial grants no lease, since
+    // a meter is observation and must not switch a stream on for a surface that
+    // may not see it.
+    Q_INVOKABLE void retainMeters()
+    {
+        if (m_readGranted)
+            m_meterLeases.retain();
+    }
+    Q_INVOKABLE void releaseMeters() { m_meterLeases.release(); }
+    [[nodiscard]] int meterLeaseCount() const noexcept { return m_meterLeases.count(); }
 
     [[nodiscard]] int popupGeometryRevision() const noexcept { return m_popupGeometryRevision; }
     [[nodiscard]] QString phaseText() const;
@@ -205,6 +220,7 @@ private:
                        RequestKind kind) const;
 
     Audio::AudioClient *m_client = nullptr;
+    Audio::LevelsLeaseSet m_meterLeases{m_client};
     AudioAppletModel m_model;
     QHash<quint64, PendingRequest> m_pendingBySerial;
     QHash<quint64, quint64> m_serialByRequestId;

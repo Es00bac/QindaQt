@@ -61,6 +61,13 @@ public:
     // The name grammar every entry point enforces.
     [[nodiscard]] static bool isAcceptableIconName(const QString &iconName);
 
+    // The clamps locate()/hasIcon() apply to a request: size to [1, 512],
+    // scale to [1, 4] with NaN and non-finite input on the default. Public so
+    // a caller keying on the request tuple shares this one definition of "the
+    // same request" (IconAvailabilityCache).
+    [[nodiscard]] static int normalizedSize(int size);
+    [[nodiscard]] static double normalizedScale(double scale);
+
 private:
     enum class DirectoryType { Fixed, Scalable, Threshold };
 

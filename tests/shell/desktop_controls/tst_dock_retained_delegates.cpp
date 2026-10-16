@@ -32,6 +32,7 @@ class DockRetainedDelegateTests final : public QObject {
 private slots:
   void quickLaunchRetainsTilesAcrossRunInsertRemoveAndReorder();
   void taskStripRetainsTilesAndAnimationState();
+  void quickLaunchTooltipWindowIsReleasedAfterHover();
 };
 
 void DockRetainedDelegateTests::quickLaunchRetainsTilesAcrossRunInsertRemoveAndReorder() {
@@ -133,8 +134,18 @@ void DockRetainedDelegateTests::taskStripRetainsTilesAndAnimationState() {
     QCOMPARE(current().value(id), tile);
     QCOMPARE(tile->property("revealProgress").toReal(), 1.0);
   }
-  QCOMPARE(tile->property("entry").toMap().value(QStringLiteral("generationRevision")).toULongLong(),
-           tasks.source.revision());
+  // AGENT-CONTRACT (ADR-0390): a retained row carries no snapshot revision, so
+  // 100 publications cannot have left it stale. The strip fences a gesture
+  // with the controller's revision, which is the generation currently shown.
+  QVERIFY(!tile->property("entry").toMap().contains(QStringLiteral("generationRevision")));
+  QCOMPARE(controller.generationRevision(), tasks.source.revision());
+  const qsizetype callsBefore = tasks.port.calls.size();
+  QVERIFY(QMetaObject::invokeMethod(tile, "activate"));
+  QCOMPARE(tasks.port.calls.size(), callsBefore + 1);
+  QCOMPARE(tasks.port.lastCall().revision, tasks.source.revision());
+  tasks.port.complete(tasks.port.lastCall(),
+                      ShellTaskList::Operations::TaskListOperationStatus::Committed,
+                      QStringLiteral("ok"), {});
   QVERIFY(QMetaObject::invokeMethod(root, "previewHover",
       Q_ARG(QVariant, tile->property("index")), Q_ARG(QVariant, true)));
   QCOMPARE(root->property("previewTaskId").toString(), id);
@@ -155,6 +166,61 @@ void DockRetainedDelegateTests::taskStripRetainsTilesAndAnimationState() {
   QVERIFY(tasks.publish(facts) > 0);
   QVERIFY(!current().contains(id));
   QCOMPARE(root->property("previewIndex").toInt(), -1);
+}
+
+// ADR-0396: a Popup.Window keeps its window, and with it a GL context and video
+// memory, for as long as the popup object exists. A tooltip per tile used to
+// cost a window for every tile ever hovered; now the tooltip exists only while
+// it is wanted and takes its window with it.
+void DockRetainedDelegateTests::quickLaunchTooltipWindowIsReleasedAfterHover() {
+  LauncherStack launcher;
+  Shell::Launcher::LauncherAppletController controller(
+      &launcher.scanner, &launcher.persistence, &launcher.executor, true);
+  QVERIFY(launcher.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Editor"),
+                            QStringLiteral("/bin/true")));
+  QVERIFY(launcher.scanner.start());
+  launcher.publishDock(*DockItems::fromItems({DockItem::application(QStringLiteral("editor")),
+                                             DockItem::trash()}));
+  QuickLaunchController quick(&controller, true);
+  AppletHost host;
+  QString error;
+  QVERIFY2(host.create(QStringLiteral("QuickLaunchApplet"), &quick, &error, false,
+                       true, 60, 60), qPrintable(error));
+  const auto current = [&] {
+    return tiles(host.item, QStringLiteral("quickLaunchEntry"), "row",
+                 QStringLiteral("presentationId"));
+  };
+  QTRY_COMPARE(current().size(), 2);
+  QQuickItem *editor = current().value(QStringLiteral("application:editor"));
+  QVERIFY(editor != nullptr);
+  QTRY_COMPARE(editor->property("revealProgress").toReal(), 1.0);
+  // An idle tile owns neither a tooltip nor its window.
+  QVERIFY(editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) == nullptr);
+  const qsizetype idleWindows = QGuiApplication::allWindows().size();
+
+  const QPoint pointer = editor->mapToScene(QPointF(editor->width() / 2,
+                                                    editor->height() / 2)).toPoint();
+  QElapsedTimer sinceHover;
+  sinceHover.start();
+  QTest::mouseMove(host.window.get(), pointer);
+  QTRY_VERIFY(editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) != nullptr);
+  QPointer<QObject> tooltip =
+      editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip"));
+  QCOMPARE(tooltip->property("text").toString(), editor->property("label").toString());
+  QTRY_VERIFY(tooltip->property("visible").toBool());
+  // The tooltip keeps its hover delay: a popup created already visible opens at
+  // once and skips it.
+  const int delay = tooltip->property("delay").toInt();
+  QVERIFY2(delay >= 50, "a shorter delay would make the check below prove nothing");
+  QVERIFY2(sinceHover.elapsed() >= delay - 20,
+           qPrintable(QStringLiteral("opened after %1 ms, delay is %2 ms")
+                          .arg(sinceHover.elapsed()).arg(delay)));
+  QCOMPARE(QGuiApplication::allWindows().size(), idleWindows + 1);
+
+  QTest::mouseMove(host.window.get(),
+                   QPoint(host.window->width() - 2, host.window->height() - 2));
+  QTRY_VERIFY(tooltip.isNull());
+  QTRY_COMPARE(QGuiApplication::allWindows().size(), idleWindows);
 }
 
 QTEST_MAIN(DockRetainedDelegateTests)

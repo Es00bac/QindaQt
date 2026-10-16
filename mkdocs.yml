@@ -586,3 +586,10 @@ nav:
       - "0385: Non-dumpable compositor, inherited core limits": adr/0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md
       - "0386: Supervised locker and capture broker": adr/0386-supervise-compositor-owned-locker-and-capture-broker.md
       - "0387: Privileged entries by basename and local path": adr/0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md
+      - "0390: Snapshot revisions out of task rows": adr/0390-keep-snapshot-revisions-out-of-retained-task-rows.md
+      - "0391: Present controllers only while visible": adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md
+      - "0392: Memoised icon availability": adr/0392-memoise-icon-availability-beside-the-uncached-locator.md
+      - "0393: Merge XDG catalog directories": adr/0393-merge-every-xdg-data-directory-for-shell-catalogs.md
+      - "0394: Audio meter lease and retry backoff": adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md
+      - "0395: Settings teardown order and launch parsing": adr/0395-destroy-the-settings-scene-before-its-models-and-return-from-main.md
+      - "0396: Release per-tile popup windows": adr/0396-create-per-tile-popups-on-demand-and-release-their-windows.md

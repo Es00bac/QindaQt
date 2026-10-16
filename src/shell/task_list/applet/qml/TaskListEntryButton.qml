@@ -10,8 +10,13 @@ import QindaQt.Tokens 1.0
 
 // One task-list strip row: standalone window or collapsed container. The row
 // renders only controller-projected values and dispatches intents with the
-// exact generationRevision it displays, so the T0 stale-id arbitration can
-// refuse actions against a generation the user no longer sees.
+// controller's generationRevision, the revision of the generation the strip is
+// showing, so the T0 stale-id arbitration can refuse actions against a
+// generation the user no longer sees.
+//
+// AGENT-CONTRACT (ADR-0390): `entry` carries no revision. The snapshot
+// revision advances for every row on every publication, so a retained row
+// cannot hold it; it is read from `access` at the moment of the gesture.
 //
 // AGENT-CONTRACT: all visuals derive from semantic QST-1 roles (QindaQt.Tokens)
 // and the QindaQt.Controls focus ring; no applet-owned palette or fallback
@@ -118,9 +123,9 @@ T.ToolButton {
     function dispatchActivate() {
         if (targetWindowId.length > 0)
             access.activateTaskWindow(entry.taskId, targetWindowId,
-                                      entry.generationRevision)
+                                      access.generationRevision)
         else
-            access.activateTask(entry.taskId, entry.generationRevision)
+            access.activateTask(entry.taskId, access.generationRevision)
     }
 
     function activate() {
@@ -146,7 +151,7 @@ T.ToolButton {
     // them to the same activation path so the keyboard contract is complete.
     Keys.onReturnPressed: activate()
     Keys.onEnterPressed: activate()
-    Keys.onMenuPressed: contextMenu.popup()
+    Keys.onMenuPressed: openContextMenu()
 
     Accessible.role: Accessible.Button
     Accessible.name: entry.accessibleName
@@ -154,27 +159,60 @@ T.ToolButton {
         ? qsTr("Operation pending for this window")
         : qsTr("Press to activate. Press the Menu key for window actions.")
 
-    T.ToolTip {
-        id: dockTooltip
-        objectName: "taskListEntryTooltip"
-        // The hover preview card replaces the tooltip when the preview seam
-        // is present; an unavailable capture degrades to the preview card's
-        // title-only form, never to a duplicate floating label.
-        visible: button.dockMode && button.hovered
-                 && !(button.access !== null && button.access.previewsEnabled)
-        text: button.entry.accessibleName
-        delay: Tokens.motion.short
-        popupType: T.Popup.Window
+    // AGENT-CONTRACT (ADR-0396): a Popup.Window keeps its own window, and with it
+    // a GL context and video memory, for as long as the Popup object exists,
+    // even after it closes, so a tooltip and a menu per tile cost a window for
+    // every tile ever hovered or right-clicked. Both are therefore created
+    // when wanted and destroyed once closed: an idle strip owns no popup
+    // window. They name `parent: button` explicitly because a Loader would
+    // otherwise parent them to itself, and the tooltip positions against it.
+    //
+    // The hover preview card replaces the tooltip when the preview seam is
+    // present; an unavailable capture degrades to the preview card's
+    // title-only form, never to a duplicate floating label.
+    readonly property bool tooltipWanted: dockMode && hovered
+        && !(access !== null && access.previewsEnabled)
+    // Held true from the first time the tooltip is wanted until it has closed
+    // and is no longer wanted. It is state, not a binding on the loaded item:
+    // `active` reading `item` would be a binding loop, since loading changes it.
+    property bool tooltipLoaded: false
+    onTooltipWantedChanged: {
+        if (tooltipWanted)
+            tooltipLoaded = true
+        else if (!(tooltipLoader.item as T.ToolTip)?.visible)
+            tooltipRelease.restart() // never opened, or already closed
+    }
+    Timer {
+        id: tooltipRelease
+        interval: 0
+        onTriggered: if (!button.tooltipWanted) button.tooltipLoaded = false
+    }
+    Loader {
+        id: tooltipLoader
+        active: button.tooltipLoaded
+        sourceComponent: T.ToolTip {
+            objectName: "taskListEntryTooltip"
+            parent: button
+            // Bound once complete, not as an initial value: a popup created
+            // visible opens at once and skips `delay`, and the tooltip must
+            // keep its hover delay.
+            Component.onCompleted: visible = Qt.binding(() => button.tooltipWanted)
+            text: button.entry.accessibleName
+            delay: Tokens.motion.short
+            popupType: T.Popup.Window
+            // The exit transition finished, so the window can go.
+            onClosed: tooltipRelease.restart()
+        }
     }
 
     // Right-click opens the same context actions the Menu key exposes.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
-        onClicked: contextMenu.popup()
+        onClicked: button.openContextMenu()
     }
 
-    C.TouchContextArea { objectName: "taskListEntryTouchContext"; anchors.fill: parent; onContextRequested: contextMenu.popup() }
+    C.TouchContextArea { objectName: "taskListEntryTouchContext"; anchors.fill: parent; onContextRequested: button.openContextMenu() }
 
     contentItem: Item {
         RowLayout {
@@ -375,99 +413,32 @@ T.ToolButton {
         }
     }
 
-    // QindaQt.Controls ships no menu primitive yet; the context menu uses the
-    // QQC2 style palette and owns no applet-side colors.
-    T.Menu {
-        id: contextMenu
-        objectName: "taskListContextMenu"
-        popupType: T.Popup.Window
+    // The menu is created on demand and destroyed after it closes (ADR-0396).
+    function openContextMenu() {
+        contextMenuLoader.active = true
+        const menu = contextMenuLoader.item as T.Menu
+        if (menu !== null)
+            menu.popup()
+    }
+    Loader {
+        id: contextMenuLoader
+        active: false
+        sourceComponent: contextMenuComponent
+    }
+    Timer {
+        id: contextMenuRelease
+        interval: 0
+        onTriggered: contextMenuLoader.active = false
+    }
 
-        T.MenuItem {
-            objectName: "taskListContextActivate"
-            text: qsTr("Activate")
-            enabled: button.access !== null && button.access.canActivate
-                     && !button.entry.pending
-            onTriggered: button.dispatchActivate()
-        }
-        T.MenuItem {
-            objectName: "taskListContextMinimize"
-            text: button.entry.minimized ? qsTr("Restore") : qsTr("Minimize")
-            enabled: button.access !== null && button.access.canManage
-                     && !button.entry.pending
-            onTriggered: button.access.minimizeTask(
-                             button.entry.taskId, button.entry.generationRevision)
-        }
-        T.MenuItem {
-            objectName: "taskListContextClose"
-            text: qsTr("Close")
-            enabled: button.access !== null && button.access.canManage
-                     && !button.entry.pending
-            onTriggered: {
-                if (button.targetWindowId.length > 0)
-                    button.access.closeTaskWindow(button.entry.taskId,
-                                                  button.targetWindowId,
-                                                  button.entry.generationRevision)
-                else
-                    button.access.closeTask(button.entry.taskId,
-                                            button.entry.generationRevision)
-            }
-        }
-        T.MenuItem {
-            objectName: "taskListContextRaise"
-            text: qsTr("Raise")
-            enabled: button.access !== null && button.access.canManage
-                     && !button.entry.pending
-            onTriggered: button.access.raiseTask(
-                             button.entry.taskId, button.entry.generationRevision)
-        }
-        T.MenuSeparator {
-            visible: button.entry.kind === "container"
-        }
-        T.MenuItem {
-            objectName: "taskListContextUngroup"
-            visible: button.entry.kind === "container"
-            text: qsTr("Ungroup")
-            enabled: button.access !== null && button.access.canManage
-                     && !button.entry.pending
-            onTriggered: button.access.ungroupContainer(
-                             button.entry.taskId, button.entry.generationRevision)
-        }
-        // Keep in Dock (ADR-0265) pins this window's application; the dock
-        // then shows it with a running indicator instead of this tile. The
-        // dock answers when the menu opens, never from a stale binding.
-        onAboutToShow: keepInDockItem.available = button.dockAccess !== null
-            && button.entry.kind !== "container"
-            && button.dockAccess.canKeepInDock(String(button.entry.applicationId ?? ""))
-        T.MenuSeparator {
-            visible: keepInDockItem.available
-        }
-        T.MenuItem {
-            id: keepInDockItem
-            property bool available: false
-            objectName: "taskListContextKeepInDock"
-            visible: available
-            height: visible ? implicitHeight : 0
-            text: qsTr("Keep in Dock")
-            onTriggered: button.dockAccess.keepInDock(String(button.entry.applicationId ?? ""))
-        }
-        T.MenuSeparator {
-            visible: button.dockMode && button.stripMove !== null
-        }
-        T.MenuItem {
-            // Keyboard parity for the drag-reorder gesture (dock mode).
-            objectName: "taskListContextMoveLeft"
-            visible: button.dockMode && button.stripMove !== null
-            text: qsTr("Move left")
-            enabled: button.stripMove !== null && button.index > 0
-            onTriggered: button.stripMove(button.index, -1)
-        }
-        T.MenuItem {
-            objectName: "taskListContextMoveRight"
-            visible: button.dockMode && button.stripMove !== null
-            text: qsTr("Move right")
-            enabled: button.stripMove !== null && button.access !== null
-                     && button.index < button.access.entryCount - 1
-            onTriggered: button.stripMove(button.index, 1)
+    // QindaQt.Controls ships no menu primitive yet; see TaskListEntryMenu.qml.
+    Component {
+        id: contextMenuComponent
+        TaskListEntryMenu {
+            tile: button
+            // Closed means the popup window can go (ADR-0396): unload on the next
+            // turn, never from inside the signal that announces the close.
+            onClosed: contextMenuRelease.start()
         }
     }
 }

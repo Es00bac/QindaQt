@@ -26,6 +26,15 @@ public:
 
     virtual void start() = 0;
     virtual void stop() = 0;
+    // The meter stream (Audio1 `Levels`) is the one high-rate signal: twenty
+    // frames a second, decoded and queued for every subscriber whether or not
+    // a meter is on screen. It is therefore subscribed only while the client
+    // reports at least one consumer (AudioClient::retainLevels, ADR-0394).
+    // The request is a standing want, not a one-shot: an implementation applies
+    // it to the current owner at once and to every later owner, and keeps it
+    // across stop()/start(). `Changed` stays subscribed regardless. The default
+    // does nothing, for transports that carry no live meters.
+    virtual void setLevelsSubscribed(bool subscribed) { Q_UNUSED(subscribed) }
     virtual void fetchSnapshot(const QString &owner, quint64 requestId) = 0;
     virtual void submitOperation(const QString &owner, quint64 requestId,
                                  const OperationRequest &request) = 0;

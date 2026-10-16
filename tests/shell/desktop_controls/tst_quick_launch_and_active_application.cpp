@@ -26,6 +26,8 @@ private Q_SLOTS:
   void activeApplicationIntentsAreFencedByGrantsAndPending();
   void activeApplicationAndTaskRowsShowDesktopEntryNames();
   void activeApplicationNamesTheDesktopMenuWhileNoWindowIsFocused();
+  void activeApplicationIgnoresPublicationsThatChangeNothingItShows();
+  void quickLaunchIgnoresPublicationsThatChangeNoRunningWindow();
 };
 
 namespace {
@@ -317,6 +319,117 @@ void QuickLaunchAndActiveApplicationTests::activeApplicationIntentsAreFencedByGr
   QCOMPARE(blind.phaseText(), QStringLiteral("unavailable"));
   QVERIFY(!blind.close());
   QCOMPARE(tasks.port.calls.size(), 2);
+}
+
+void QuickLaunchAndActiveApplicationTests::
+    activeApplicationIgnoresPublicationsThatChangeNothingItShows()
+{
+  // AGENT-CONTRACT (ADR-0391): a terminal spinner republishes the task list
+  // ten times a second. The indicator shows the ACTIVE window only, so a
+  // spinner on any other window must not notify it.
+  TaskListStack tasks;
+  TaskListAppletController taskList(tasks.source, tasks.authority, tasks.port,
+                                    {true, true, true});
+  ActiveApplicationController active(&taskList, {true, true});
+  auto facts = TaskListStack::activeEditorFacts();
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(active.taskId(), QStringLiteral("w-editor"));
+  QSignalSpy stateSpy(&active, &ActiveApplicationController::stateChanged);
+
+  for (int generation = 0; generation < 50; ++generation) {
+    facts[1].title = QStringLiteral("spinner %1").arg(generation);
+    QVERIFY(tasks.publish(facts) > 0);
+  }
+  QCOMPARE(stateSpy.size(), 0);
+  // The generation it would fence an intent with is nevertheless current: the
+  // revision is the facade's, not a copy kept in a row that did not change.
+  QCOMPARE(active.revision(), tasks.source.revision());
+  QCOMPARE(active.revision(), taskList.generationRevision());
+
+  // A change to what it does show notifies exactly once.
+  facts[0].title = QStringLiteral("Editing a file");
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(stateSpy.size(), 1);
+  QCOMPARE(active.title(), QStringLiteral("Editing a file"));
+  QCOMPARE(active.revision(), tasks.source.revision());
+
+  // The facade's phase is part of what it shows even when the row is equal:
+  // a degraded source keeps the retained row but refuses intents.
+  QVERIFY(active.canManage());
+  tasks.source.markDegraded();
+  tasks.authority.setUnavailable();
+  QCOMPARE(active.phaseText(), QStringLiteral("degraded"));
+  QVERIFY(!active.canManage());
+  QCOMPARE(stateSpy.size(), 2);
+
+  // Minimize dispatches with the current generation.
+  QVERIFY(tasks.publish(facts) > 0);
+  QVERIFY(active.minimize());
+  QCOMPARE(tasks.port.lastCall().revision, tasks.source.revision());
+}
+
+void QuickLaunchAndActiveApplicationTests::
+    quickLaunchIgnoresPublicationsThatChangeNoRunningWindow()
+{
+  LauncherStack stack;
+  QVERIFY(stack.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Fixture Editor"),
+                         QStringLiteral("/bin/true")));
+  QVERIFY(stack.addEntry(QStringLiteral("terminal.desktop"), QStringLiteral("Fixture Terminal"),
+                         QStringLiteral("/bin/true")));
+  QVERIFY(stack.scanner.start());
+  stack.publishPinned({QStringLiteral("editor"), QStringLiteral("terminal")});
+  QindaQt::Shell::Launcher::LauncherAppletController launcher(
+      &stack.scanner, &stack.persistence, &stack.executor, true);
+  TaskListStack tasks;
+  TaskListAppletController taskList(tasks.source, tasks.authority, tasks.port,
+                                    {true, true, true});
+  QuickLaunchController quick(&launcher, true);
+  quick.setWindowSource(
+      &taskList,
+      [](const QString &applicationId) {
+        return applicationId == QStringLiteral("org.qindaqt.TextEditor")
+            ? QStringLiteral("editor") : QString{};
+      },
+      {true, true});
+  auto facts = TaskListStack::activeEditorFacts();
+  QVERIFY(tasks.publish(facts) > 0);
+  QSignalSpy stateSpy(&quick, &QuickLaunchController::stateChanged);
+  const int rebuilt = quick.rebuildCount();
+
+  // 100 publications that only retitle windows, as a spinner does: no row can
+  // change, so none is built.
+  for (int generation = 0; generation < 100; ++generation) {
+    facts[0].title = QStringLiteral("spinner %1").arg(generation);
+    facts[1].title = QStringLiteral("other %1").arg(generation);
+    QVERIFY(tasks.publish(facts) > 0);
+  }
+  QCOMPARE(quick.rebuildCount(), rebuilt);
+  QCOMPARE(stateSpy.size(), 0);
+
+  // The skipped publications did not strand activation: it fences with the
+  // generation the task list shows now, so the running editor comes forward
+  // instead of being refused as stale or started a second time.
+  QVERIFY(quick.activate(QStringLiteral("editor")));
+  QCOMPARE(tasks.port.calls.size(), 1);
+  QCOMPARE(tasks.port.lastCall().firstId, QStringLiteral("w-editor"));
+  QCOMPARE(tasks.port.lastCall().revision, tasks.source.revision());
+  QVERIFY(stack.spawner.requests.isEmpty());
+  tasks.port.complete(tasks.port.lastCall(),
+                      QindaQt::ShellTaskList::Operations::TaskListOperationStatus::Committed,
+                      QStringLiteral("ok"), {});
+
+  // A change to which window is active IS an input and rebuilds once.
+  facts[0].active = false;
+  facts[1].active = true;
+  facts[1].minimized = false;
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(quick.rebuildCount(), rebuilt + 1);
+  // So is a window that appears for a pinned application.
+  facts.append(TaskListTest::standalone(QStringLiteral("w-editor-2"),
+                                        QStringLiteral("org.qindaqt.TextEditor")));
+  QVERIFY(tasks.publish(facts) > 0);
+  QCOMPARE(quick.rebuildCount(), rebuilt + 2);
+  QVERIFY(quick.claimedTaskIds().contains(QStringLiteral("w-editor-2")));
 }
 
 QTEST_GUILESS_MAIN(QuickLaunchAndActiveApplicationTests)

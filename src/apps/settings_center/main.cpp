@@ -1,6 +1,8 @@
 #include "qindaqt/app_appearance/application_appearance_controller.h"
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "settings_launch_arguments.h"
 #include "settings_navigation_controller.h"
+#include "settings_qml_teardown.h"
 #include "settings_route_registry.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
@@ -35,7 +37,6 @@
 #include "settings_route_construction_probe.h"
 #include "settings_wallpaper_targets.h"
 
-#include <QCommandLineParser>
 #include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
@@ -214,66 +215,6 @@ struct AccessibilityServices {
 };
 
 
-// What the command line asked for. Kept as one value so main() stays a
-// composition root rather than an argument parser.
-struct LaunchArguments {
-  QString page;
-  QString destination;
-  QString selection;
-  QString themeDirectory;
-  bool listRoutes = false;
-  bool routeConstructionProbe = false;
-};
-
-// AGENT-CONTRACT: `--destination` names a tab within the page and `--select`
-// an item to select there, for example
-//   qindaqt-settings --page input --destination tablet --select <group>
-// Both are opaque here: the route page decides whether it knows them, so a
-// stale selection opens the route rather than failing to open anything. They
-// are bounded so a hostile argument cannot become an unbounded property.
-LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
-  QCommandLineParser parser;
-  parser.setApplicationDescription(QStringLiteral("QindaQt Settings"));
-  parser.addHelpOption();
-  const QCommandLineOption pageOption(
-      QStringLiteral("page"), QStringLiteral("Open a settings page"),
-      QStringLiteral("route"), QStringLiteral("notifications"));
-  parser.addOption(pageOption);
-  const QCommandLineOption themeDirectoryOption(
-      QStringLiteral("theme-directory"),
-      QStringLiteral("Additional local theme directory"),
-      QStringLiteral("path"));
-  parser.addOption(themeDirectoryOption);
-  const QCommandLineOption destinationOption(
-      QStringLiteral("destination"),
-      QStringLiteral("Open a destination within the page"),
-      QStringLiteral("destination"));
-  parser.addOption(destinationOption);
-  const QCommandLineOption selectOption(
-      QStringLiteral("select"),
-      QStringLiteral("Select this device or item within the destination"),
-      QStringLiteral("id"));
-  parser.addOption(selectOption);
-  const QCommandLineOption listRoutesOption(
-      QStringLiteral("list-routes"),
-      QStringLiteral("List registered route IDs for package verification"));
-  const QCommandLineOption routeProbeOption(
-      QStringLiteral("route-construction-probe"),
-      QStringLiteral("Exit after the requested route Loader resolves"));
-  parser.addOption(listRoutesOption);
-  parser.addOption(routeProbeOption);
-  parser.process(application);
-
-  return LaunchArguments{
-      parser.value(pageOption),
-      parser.value(destinationOption).left(64),
-      parser.value(selectOption).left(256),
-      parser.value(themeDirectoryOption),
-      parser.isSet(listRoutesOption),
-      parser.isSet(routeProbeOption),
-  };
-}
-
 // AGENT-CONTRACT: Notifications owns one independent Settings1 transport and
 // one client scoped to DND, quiet-hours, and per-application policy keys. The
 // route's three projections share one owner and token sequence, so an edit
@@ -343,7 +284,14 @@ int main(int argc, char **argv) {
   // window. Set before any window exists, matching the text editor.
   application.setDesktopFileName(QStringLiteral("org.qindaqt.Settings"));
 
-  const LaunchArguments arguments = parseLaunchArguments(application);
+  // AGENT-GUARD (ADR-0395): --help and usage errors return from main(); they
+  // used to exit() with the QApplication alive.
+  const QindaQt::Apps::SettingsCenter::LaunchParseResult launch =
+      QindaQt::Apps::SettingsCenter::parseLaunchArguments(application.arguments());
+  if (launch.exitStatus.has_value()) {
+    return QindaQt::Apps::SettingsCenter::emitLaunchExit(launch);
+  }
+  const QindaQt::Apps::SettingsCenter::LaunchArguments &arguments = launch.arguments;
   const QString &page = arguments.page;
   const auto registry =
       QindaQt::Apps::SettingsCenter::SettingsRouteRegistry::createDefault();
@@ -498,6 +446,11 @@ int main(int argc, char **argv) {
       {QStringLiteral("accessibilitySettings"),
        QVariant::fromValue(static_cast<QObject *>(&accessibility.model))},
   });
+
+  // AGENT-GUARD (ADR-0395): declared AFTER every model above, so it is destroyed
+  // first on every exit path and the QML scene is gone before any model is
+  // (settings_qml_teardown.h explains why the engine cannot come later).
+  QindaQt::Apps::SettingsCenter::QmlTeardown qmlTeardown(engine);
 
   engine.loadFromModule(QStringLiteral("QindaQt.SettingsApp"),
                         QStringLiteral("Main"));

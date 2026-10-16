@@ -5,6 +5,8 @@
 
 #include <QSet>
 
+#include <algorithm>
+
 namespace QindaQt::Themes {
 
 ThemeCatalog::ThemeCatalog(QObject *parent)
@@ -61,6 +63,60 @@ bool ThemeCatalog::loadDirectory(const QString &path, QString *error)
     }
 
     m_themes = loaded;
+    m_currentIndex = 0;
+    emit itemsChanged();
+    emit currentChanged();
+    return true;
+}
+
+bool ThemeCatalog::loadDirectories(const QStringList &paths, QString *error,
+                                   QStringList *skipped)
+{
+    QVector<ThemeSpec> merged;
+    bool haveBase = false;
+    for (const QString &path : paths) {
+        const auto results = ThemeLoader::fromDirectory(path);
+        if (results.isEmpty()) {
+            continue;
+        }
+        const bool base = !haveBase;
+        haveBase = true;
+        QSet<QString> directoryIds;
+        for (const auto &result : results) {
+            if (!result.ok || directoryIds.contains(result.theme.id)) {
+                const QString problem = !result.ok
+                    ? result.error
+                    : QStringLiteral("duplicate theme id: %1 in %2").arg(result.theme.id, path);
+                if (base) {
+                    if (error != nullptr) {
+                        *error = problem;
+                    }
+                    return false;
+                }
+                if (skipped != nullptr) {
+                    skipped->append(problem);
+                }
+                continue;
+            }
+            directoryIds.insert(result.theme.id);
+            const auto existing = std::find_if(merged.begin(), merged.end(),
+                [&result](const ThemeSpec &theme) { return theme.id == result.theme.id; });
+            if (existing == merged.end()) {
+                merged.append(result.theme);
+            } else {
+                *existing = result.theme;
+            }
+        }
+    }
+    if (merged.isEmpty()) {
+        if (error != nullptr) {
+            *error = QStringLiteral("no theme JSON files found in the catalog directories: %1")
+                         .arg(paths.join(QLatin1Char(':')));
+        }
+        return false;
+    }
+
+    m_themes = merged;
     m_currentIndex = 0;
     emit itemsChanged();
     emit currentChanged();

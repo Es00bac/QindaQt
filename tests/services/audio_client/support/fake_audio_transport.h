@@ -26,6 +26,13 @@ public:
 
     void start() override { ++startCalls; }
     void stop() override { ++stopCalls; }
+    // The standing meter-stream want (ADR-0394); every request is recorded so
+    // a row can assert the exact on/off sequence, not just the final state.
+    void setLevelsSubscribed(const bool subscribed) override
+    {
+        levelsRequests.push_back(subscribed);
+        levelsSubscribed = subscribed;
+    }
     void fetchSnapshot(const QString &owner, const quint64 requestId) override
     {
         fetches.push_back({owner, requestId});
@@ -61,6 +68,13 @@ public:
         Q_EMIT operationReply(operation.owner, operation.requestId, false, {}, reasonCode);
     }
 
+    void sendLevels(const QString &owner, const QList<Audio::LevelReading> &levels)
+    {
+        Q_EMIT levelsReceived(owner, levels);
+    }
+
+    QList<bool> levelsRequests;
+    bool levelsSubscribed = false;
     QList<Fetch> fetches;
     QList<Operation> operations;
     std::function<void(const Operation &)> operationSubmitted;
@@ -139,6 +153,35 @@ inline Audio::Snapshot clientSnapshot(const quint64 epoch = 11,
                          .channelVolumes = {0.75, 0.75},
                          .channelMap = {QStringLiteral("FL"), QStringLiteral("FR")}}};
     return snapshot;
+}
+
+// A snapshot whose console has two hardware strips, so a meter frame has
+// something to name.
+inline Audio::Snapshot consoleClientSnapshot(const quint64 epoch = 11, const quint64 revision = 2)
+{
+    Audio::Snapshot snapshot = clientSnapshot(epoch, revision);
+    snapshot.capabilities |= Audio::Capability::Console | Audio::Capability::ConsoleMeters;
+    for (quint32 index = 0; index < 2; ++index) {
+        Audio::Strip strip;
+        strip.id = QStringLiteral("strip.hardware.%1").arg(index + 1);
+        strip.label = QStringLiteral("Mic %1").arg(index + 1);
+        strip.kind = Audio::StripKind::HardwareInput;
+        strip.index = index;
+        strip.gainDb = 0.0;
+        snapshot.console.strips.append(strip);
+    }
+    return snapshot;
+}
+
+inline Audio::LevelReading meterReading(const QString &id, const double peakDb,
+                                        const double rmsDb)
+{
+    Audio::LevelReading reading;
+    reading.id = id;
+    reading.level.known = true;
+    reading.level.peakDb = peakDb;
+    reading.level.rmsDb = rmsDb;
+    return reading;
 }
 
 inline Audio::OperationResult successfulResult(const FakeAudioTransport::Operation &op,

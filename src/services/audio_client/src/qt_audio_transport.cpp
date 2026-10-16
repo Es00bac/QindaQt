@@ -53,6 +53,11 @@ public:
     bool activationPending = false;
     bool ownerResolved = false;
     bool running = false;
+    // The standing want for the meter stream, and whether the match for the
+    // CURRENT owner is installed. The want outlives owners and stop()/start().
+    bool levelsWanted = false;
+    bool levelsInstalled = false;
+    QString levelsOwner; // the owner the installed match names
 };
 
 QtAudioTransport::QtAudioTransport(const QDBusConnection &connection, QString serviceName,
@@ -170,20 +175,58 @@ void QtAudioTransport::onServiceOwnerChanged(const QString &service,
     }
 }
 
+void QtAudioTransport::setLevelsSubscribed(const bool subscribed)
+{
+    d->levelsWanted = subscribed;
+    applyLevelsSubscription();
+}
+
+void QtAudioTransport::applyLevelsSubscription()
+{
+    // AGENT-GUARD (ADR-0394): the Levels match rule exists on the bus only
+    // while someone needs the meters AND there is an owner to name. A stalled
+    // or merely slow consumer of this stream is what lets libdbus's receive
+    // limit trip (docs/wiki/architecture/audio-service.md, "Meter lease"), so
+    // an idle client must not be on the receiving end of it at all.
+    const bool wanted = d->levelsWanted && d->running && !d->owner.isEmpty();
+    if (wanted == d->levelsInstalled) {
+        return;
+    }
+    if (wanted) {
+        d->connection.connect(
+            d->owner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
+            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
+    } else {
+        d->connection.disconnect(
+            d->levelsOwner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
+            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
+    }
+    d->levelsInstalled = wanted;
+    d->levelsOwner = wanted ? d->owner : QString{};
+}
+
 void QtAudioTransport::setOwner(const QString &owner)
 {
     if (owner == d->owner && d->ownerResolved) {
         return;
+    }
+    // Drop the meter match for the owner it was installed for BEFORE the owner
+    // changes, then let applyLevelsSubscription() install it for the next one.
+    if (d->levelsInstalled) {
+        d->levelsInstalled = false;
+        d->connection.disconnect(
+            d->levelsOwner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
+            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
+        d->levelsOwner.clear();
     }
     if (!d->owner.isEmpty()) {
         d->connection.disconnect(d->owner, QString::fromLatin1(kObjectPath),
                                  QString::fromLatin1(kInterfaceName),
                                  QStringLiteral("Changed"), this,
                                  SLOT(onChanged(quint64,quint64)));
-        d->connection.disconnect(
-            d->owner, QString::fromLatin1(kObjectPath),
-            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
-            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
     }
     d->ownerResolved = true;
     d->owner = owner;
@@ -192,11 +235,8 @@ void QtAudioTransport::setOwner(const QString &owner)
                               QString::fromLatin1(kInterfaceName),
                               QStringLiteral("Changed"), this,
                               SLOT(onChanged(quint64,quint64)));
-        d->connection.connect(
-            d->owner, QString::fromLatin1(kObjectPath),
-            QString::fromLatin1(kInterfaceName), QStringLiteral("Levels"), this,
-            SLOT(onLevels(QList<QindaQt::Audio::LevelReading>)));
     }
+    applyLevelsSubscription();
     Q_EMIT ownerChanged(d->owner);
 }
 
@@ -209,7 +249,9 @@ void QtAudioTransport::onChanged(const quint64 epoch, const quint64 revision)
 
 void QtAudioTransport::onLevels(const QList<LevelReading> &levels)
 {
-    if (d->running && !d->owner.isEmpty()) {
+    // A frame already queued when the last consumer left is dropped here, so
+    // a released lease cannot be followed by one more decode.
+    if (d->running && d->levelsInstalled && !d->owner.isEmpty()) {
         Q_EMIT levelsReceived(d->owner, levels);
     }
 }

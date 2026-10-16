@@ -29,6 +29,8 @@ private slots:
     void ownerReplacementClearsTruthAndPendingWithoutReplay();
     void pickingADeviceSetsTheSystemDefault();
     void defaultRequestIsRefusedWithoutTheCapability();
+    void meterLeasesAreCountedPerControllerAndGatedByTheReadGrant();
+    void meterFramesReachSurfacesOnlyWhileAMeterHoldsALease();
 
 };
 
@@ -290,6 +292,93 @@ void AudioAppletControllerTests::unavailableSnapshotFailsClosedWithReason()
         AudioAppletController::tr("The audio service is not available right now."));
     QVERIFY(m_controller->deviceRows().isEmpty());
     QVERIFY(m_controller->streamRows().isEmpty());
+}
+
+// ADR-0394: the Audio1 Levels stream is subscribed only while a meter in the
+// shell is on screen. The controller is the shell's facade over the client, so
+// it counts the leases its meters take and gives back exactly its own.
+void AudioAppletControllerTests::meterLeasesAreCountedPerControllerAndGatedByTheReadGrant()
+{
+    QCOMPARE(m_client->levelsLeaseCount(), 0);
+    m_controller->retainMeters();
+    m_controller->retainMeters();
+    QCOMPARE(m_controller->meterLeaseCount(), 2);
+    QCOMPARE(m_client->levelsLeaseCount(), 2);
+    m_controller->releaseMeters();
+    QCOMPARE(m_client->levelsLeaseCount(), 1);
+
+    // A second panel's controller shares the client. Its stray release cannot
+    // give back a lease it never took, and its own pair is independent.
+    AudioAppletController other(m_client, true, true);
+    other.releaseMeters();
+    QCOMPARE(m_client->levelsLeaseCount(), 1);
+    other.retainMeters();
+    QCOMPARE(m_client->levelsLeaseCount(), 2);
+
+    // Read denial suppresses observation entirely: a meter is observation, so
+    // it takes no lease and can turn no stream on.
+    AudioAppletController denied(m_client, false, true);
+    denied.retainMeters();
+    QCOMPARE(denied.meterLeaseCount(), 0);
+    QCOMPARE(m_client->levelsLeaseCount(), 2);
+    denied.releaseMeters();
+    QCOMPARE(m_client->levelsLeaseCount(), 2);
+
+    // A controller destroyed while its popup is still open gives its leases
+    // back instead of leaving the stream on for the life of the shell.
+    {
+        AudioAppletController temporary(m_client, true, true);
+        temporary.retainMeters();
+        temporary.retainMeters();
+        QCOMPARE(m_client->levelsLeaseCount(), 4);
+    }
+    QCOMPARE(m_client->levelsLeaseCount(), 2);
+
+    m_controller->releaseMeters();
+    other.releaseMeters();
+    QCOMPARE(m_client->levelsLeaseCount(), 0);
+}
+
+void AudioAppletControllerTests::meterFramesReachSurfacesOnlyWhileAMeterHoldsALease()
+{
+    Snapshot snapshot = makeReadySnapshot();
+    snapshot.capabilities |= Capability::Console | Capability::ConsoleMeters;
+    QindaQt::Audio::Strip strip;
+    strip.id = QStringLiteral("strip.hardware.1");
+    strip.label = QStringLiteral("Mic");
+    strip.kind = QindaQt::Audio::StripKind::HardwareInput;
+    strip.index = 0;
+    snapshot.console.strips.append(strip);
+    m_client->start();
+    m_transport->changeOwner(kOwner);
+    m_transport->deliverSnapshot(m_transport->fetches.constLast().requestId, true, snapshot);
+    QCOMPARE(m_controller->phaseText(), QStringLiteral("ready"));
+
+    QSignalSpy notifications(m_controller, &AudioAppletController::consoleLevelsChanged);
+    QindaQt::Audio::LevelReading reading;
+    reading.id = strip.id;
+    reading.level.known = true;
+    reading.level.peakDb = -9.0;
+    reading.level.rmsDb = -15.0;
+
+    // Nobody is looking at a meter, so a frame is neither applied nor announced.
+    Q_EMIT m_transport->levelsReceived(kOwner, {reading});
+    QCOMPARE(notifications.size(), 0);
+    QVERIFY(!m_controller->consoleLevels().value(strip.id).toMap()
+                 .value(QStringLiteral("known")).toBool());
+
+    m_controller->retainMeters();
+    Q_EMIT m_transport->levelsReceived(kOwner, {reading});
+    QCOMPARE(notifications.size(), 1);
+    const QVariantMap live = m_controller->consoleLevels().value(strip.id).toMap();
+    QVERIFY(live.value(QStringLiteral("known")).toBool());
+    QCOMPARE(live.value(QStringLiteral("peakDb")).toDouble(), -9.0);
+
+    // The last meter leaving idles the scale and announces it once.
+    m_controller->releaseMeters();
+    QCOMPARE(notifications.size(), 2);
+    QVERIFY(!m_controller->consoleLevels().value(strip.id).toMap()
+                 .value(QStringLiteral("known")).toBool());
 }
 
 void AudioAppletControllerTests::grantsGateReadAndControlIndependently()

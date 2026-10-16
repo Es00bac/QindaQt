@@ -367,11 +367,13 @@ withholds all observation (phase `unavailable`, no rows, no dispatch);
 `windows.activate` and `windows.manage` gate their intents independently with
 pre-dispatch refusals and user feedback.
 
-The controller materializes both QML row lists once per reprojection, including
-application names and icon availability, before emitting `stateReprojected`.
-The `entryRows` and `windowRows` getters return bounded, implicitly shared
-snapshots; QML sequence length/index reads during dock layout and magnification
-must never repeat desktop-entry or filesystem icon resolution. Each new
+The controller materializes the `entryRows` list once per reprojection,
+including application names and icon availability, before emitting
+`stateReprojected`; `windowRows` is materialized once on its first read after a
+reprojection, since only an ungrouped strip reads it. The `entryRows` and
+`windowRows` getters return bounded, implicitly shared snapshots; QML sequence
+length/index reads during dock layout and magnification must never repeat
+desktop-entry or filesystem icon resolution. Each new
 publication refreshes the metadata and revision together, including previously
 missing icons. Read denial still publishes empty lists without resolving names
 or icons. The focused row-snapshot regression exercises QV4 reads with 1, 12,
@@ -413,13 +415,15 @@ count and no Ungroup action. A
 dock host raises the presentation bound so every row is projected and the
 zone viewport scrolls instead of truncating
 ([Dock interactions](dock-interactions.md)). Every
-row carries its generation revision and echoes it into each intent, so the T0
-arbitration refuses actions against a generation the user no longer sees.
+intent echoes the controller's `generationRevision`, the revision of the
+generation the strip is showing (see "Update cost and revision fencing"), so
+the T0 arbitration refuses actions against a generation the user no longer
+sees.
 Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
 for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
 uses the hosted Close All policy. Shell composition injects one
 `DesktopEntryIconResolver` built from explicit freedesktop application roots
-and one `IconThemeLocator` over the icon roots used by QML. Standalone rows resolve
+and one `IconAvailabilityCache` over the icon roots used by QML. Standalone rows resolve
 the compositor-provided application id to the desktop entry's `Icon=` name;
 container rows use `window-restore-symbolic`. Every row's `applicationName`
 and the application part of its `accessibleName` come from the same
@@ -441,7 +445,9 @@ indicator; it does not fabricate pinned entries. The dock
 reserves the full tile before hover magnification, while `reducedMotion`
 disables both movement and scaling.
 Tooltips and task context menus use their own popup window so they are not
-clipped by the panel band. `dockHasLauncherGroup` is a composition-supplied
+clipped by the panel band; both are created when wanted and destroyed once
+closed, so an idle strip owns no popup window (see "Popup windows are released
+on close"). `dockHasLauncherGroup` is a composition-supplied
 truth value: a separator appears only when both a preceding real launcher
 group and at least one task row are present. The default taskbar geometry and
 behavior remain unchanged.
@@ -490,6 +496,73 @@ dispatcher rows, a static boundary poison probe, and a relocated
 installed-package/source-poison proof of the `TaskListAppletRuntime` component.
 No focused row contacts a host bus, display, or compositor.
 
+### Update cost and revision fencing
+
+A producer republishes the whole generation whenever any window fact changes,
+and a terminal that retitles its tab ten times a second is an ordinary source
+of that. The cost of one publication must be proportional to what changed, not
+to the number of windows. The stability round of 2026-10-16 traced the shell's
+sustained CPU to this path and fixed it in four places:
+
+- **Row diffing.** Projected rows carry no per-snapshot field.
+  `generationRevision` is a controller property
+  (`TaskListAppletController::generationRevision`): the revision of the **last
+  reprojection**, not the source's live revision, because between a publication
+  and its reprojection the strip still shows the previous generation and a
+  gesture must fence against what is shown. The strip reads it at the moment of
+  a gesture (activate, minimize, close, raise, ungroup, reorder, preview) and
+  echoes it into the intent. `KeyedRowModel.volatileRoles` makes the rule
+  structural: a name listed there (the strip lists `generationRevision`) is
+  dropped from the published row and never counts as a change, and an identity
+  role can never be volatile. A title change is one `dataChanged` for one row;
+  an unchanged row emits nothing
+  ([ADR-0390](../adr/0390-keep-snapshot-revisions-out-of-retained-task-rows.md)).
+- **Icon hints.** The controller asks whether each row's icon resolves on every
+  publication; the composition answers from `IconAvailabilityCache`, a bounded
+  expiring memo in front of the uncached locator, so a spinner does not walk
+  the theme chain ten times a second
+  ([Shell iconography](iconography.md),
+  [ADR-0392](../adr/0392-memoise-icon-availability-beside-the-uncached-locator.md)).
+- **Window rows.** `windowRows` is built on first read after a reprojection,
+  not on every reprojection; only an ungrouped strip reads it.
+- **Neighbouring controllers.** Command search, Quick Launch and the active
+  application control no longer do their full work on every publication
+  ([Desktop controls](desktop-controls.md),
+  [ADR-0391](../adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md)).
+
+`tests/shell/task_list/tst_task_list_update_cost.cpp` (`ctest -R
+'^qindaqt\.task-list-update-cost$'`) is the measurement harness. It drives the
+production controller, the production icon and name resolvers over the host's
+real desktop entries and icon themes, and the compiled strip with 16 windows
+(12 with a desktop entry, 4 without) through 200 title-spinner publications
+after 20 warm-ups, and prints one `QINDAQT_BENCH` line with thread CPU time per
+update and `dataChanged` per update. It asserts only the deterministic part (one
+`dataChanged` per update, no structural signal), never a wall-clock bound. On
+the build host: about 82 ms and 16 touched rows per update before the change,
+about 0.5 ms and 1 touched row after.
+
+### Popup windows are released on close
+
+A `Popup.Window` popup owns a real window, and with it a GL context and video
+memory, for as long as the popup object exists, even after it closes. Measured
+with the update-cost harness's strip, the first context menu opened on any tile
+takes the window count from 1 to 2 and closing it leaves 2; opening one menu per
+tile on a 16-window strip left 17. A tooltip and a menu per tile therefore cost
+two windows for every tile ever hovered or right-clicked, which is how a
+long-lived shell reached about 54 contexts and 233 MB of video memory
+([ADR-0396](../adr/0396-create-per-tile-popups-on-demand-and-release-their-windows.md)).
+`TaskListEntryButton` (and the Quick Launch `DockItemTile`, see
+[Desktop controls](desktop-controls.md)) now creates both through a `Loader`:
+the context menu (its own `TaskListEntryMenu.qml`, which acts on the tile it is
+given) on `openContextMenu()` (Menu key, right click or touch context) and the
+dock tooltip while it is wanted, each destroyed on the turn after it has closed, so an idle strip owns no popup window and at most one is open at a time.
+Both name `parent:` explicitly, since a Loader would otherwise parent them to
+itself. Rows: `qindaqt.task-list-popup-windows` (on every tile one menu window
+while a menu is open and none after; the dock tooltip's window only while the
+pointer is on its tile) and `qindaqt.desktop-controls-dock-retained-delegates`
+(the Quick Launch tooltip's window is released after the pointer leaves); both
+count `QGuiApplication::allWindows()` around real opens and closes.
+
 ## Current implementation
 
 The source/static slice at `src/shell/task_list` implements the values,
@@ -521,8 +594,9 @@ list exists and is otherwise dropped as redundant. The independent
 Compositor1 inventories remain diagnostic inputs and must not be substituted
 or joined by shell code.
 
-The offscreen keyboard context-menu gate waits for the retained popup's actual
-`closed` signal and reactivates the test host before sending the next key.
-The offscreen platform leaves native focus on the hidden popup window; a real
-compositor restores the parent surface. The test asserts the menu is the same
-retained object and still reopens and dispatches subsequent actions.
+The offscreen keyboard context-menu gate waits for the popup's actual `closed`
+signal and reactivates the test host before sending the next key. The offscreen
+platform leaves native focus on the hidden popup window; a real compositor
+restores the parent surface. The test asserts the closed menu is destroyed with
+its window, that the next open builds a fresh menu, and that it still dispatches
+subsequent actions.

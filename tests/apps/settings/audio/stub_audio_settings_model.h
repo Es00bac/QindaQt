@@ -87,6 +87,7 @@ public:
   QVariantList consoleStrips;
   QVariantList consoleBuses;
   QVariantMap consoleLevels;
+  int meterLeases = 0, meterRetains = 0, meterReleases = 0; // ADR-0394 lease counts
   QStringList consolePresets = {QStringLiteral("Stream night"), QStringLiteral("Podcast")};
   QString lastPresetName;
   QStringList consoleMacros = {QStringLiteral("Mute mic")};
@@ -111,10 +112,7 @@ public:
   QVariantList peerBuses = {QVariantMap{{QStringLiteral("id"), QStringLiteral("bus.a2")},
                                         {QStringLiteral("label"), QStringLiteral("Bus A2")},
                                         {QStringLiteral("available"), true}}};
-  QString savedPeerName;
-  QString savedPeerBus;
-  QString savedPeerHost;
-  QString savedPeerOutput;
+  QString savedPeerName, savedPeerBus, savedPeerHost, savedPeerOutput;
   int savedPeerPort = 0;
   bool savedPeerOutgoing = false;
   QString removedPeerName;
@@ -143,8 +141,7 @@ public:
   quint64 channelSerial = 0;
   int channelIndex = -1;
   double channelLevel = -1.0;
-  QString createKindToken;
-  QString createDisplayName;
+  QString createKindToken, createDisplayName;
   int createChannels = 0;
   int createCount = 0;
   quint64 removeVirtualSerial = 0;
@@ -401,6 +398,9 @@ public:
   Q_INVOKABLE double unityFaderPosition() {
     return QindaQt::Audio::unityFaderPosition();
   }
+  // Meter lease (ADR-0394), counted so a page row can assert it follows visibility.
+  Q_INVOKABLE void retainMeters() { ++meterLeases; ++meterRetains; }
+  Q_INVOKABLE void releaseMeters() { meterLeases -= meterLeases > 0 ? 1 : 0; ++meterReleases; }
 
 Q_SIGNALS:
   void viewChanged();

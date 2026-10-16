@@ -277,6 +277,45 @@ set_tests_properties(qindaqt.settings-command-palette PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
+# ADR-0395: command-line handling returns from main() instead of exit(), and
+# the QML scene is destroyed before the models it reads.
+qt_add_executable(
+    qindaqt_settings_launch_arguments_test
+    tst_settings_launch_arguments.cpp
+)
+target_link_libraries(
+    qindaqt_settings_launch_arguments_test PRIVATE
+    QindaQt::SettingsNavigation Qt6::Core Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_launch_arguments_test)
+add_test(
+    NAME qindaqt.settings-launch-arguments
+    COMMAND qindaqt_settings_launch_arguments_test
+)
+set_tests_properties(
+    qindaqt.settings-launch-arguments PROPERTIES
+    LABELS "settings;navigation"
+)
+
+qt_add_executable(
+    qindaqt_settings_qml_teardown_test
+    tst_settings_qml_teardown.cpp
+)
+target_link_libraries(
+    qindaqt_settings_qml_teardown_test PRIVATE
+    QindaQt::SettingsNavigation Qt6::Core Qt6::Qml Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_qml_teardown_test)
+add_test(
+    NAME qindaqt.settings-qml-teardown
+    COMMAND qindaqt_settings_qml_teardown_test
+)
+set_tests_properties(
+    qindaqt.settings-qml-teardown PROPERTIES
+    LABELS "settings;navigation;teardown"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML_DISABLE_DISK_CACHE=1"
+)
+
 # 4. CLI unknown route rejection test
 add_test(
     NAME qindaqt.settings-app-rejects-unknown-route
@@ -435,3 +474,31 @@ foreach(test_target IN ITEMS qindaqt_settings_navigation_layout_test
     qindaqt_settings_navigation_interaction_test qindaqt_settings_command_palette_test)
     add_dependencies(${test_target} qindaqt_settings_printing_qml qindaqt_settings_printing_qmlplugin)
 endforeach()
+
+# --help and usage errors leave through return, not exit() (findings item 15).
+add_test(
+    NAME qindaqt.settings-app-help-exits
+    COMMAND "${CMAKE_COMMAND}"
+            -DSETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings>
+            -DSANDBOX_ROOT=${CMAKE_CURRENT_BINARY_DIR}/help-exits
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_help_exits.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-app-help-exits PROPERTIES
+    LABELS "offscreen;settings;navigation;teardown" TIMEOUT 60
+)
+
+# Twenty offscreen open/close cycles of the real binary, across pages: zero
+# aborts, zero signals, no warning at teardown (ADR-0395).
+add_test(
+    NAME qindaqt.settings-app-shutdown-loop
+    COMMAND "${CMAKE_COMMAND}"
+            -DSETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings>
+            -DTHEME_DIRECTORY=${PROJECT_SOURCE_DIR}/data/themes
+            -DSANDBOX_ROOT=${CMAKE_CURRENT_BINARY_DIR}/shutdown-loop
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_shutdown_loop.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-app-shutdown-loop PROPERTIES
+    LABELS "offscreen;settings;navigation;teardown" RUN_SERIAL TRUE TIMEOUT 600
+)

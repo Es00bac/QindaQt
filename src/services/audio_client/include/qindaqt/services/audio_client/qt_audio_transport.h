@@ -25,6 +25,7 @@ public:
 
     void start() override;
     void stop() override;
+    void setLevelsSubscribed(bool subscribed) override;
     void fetchSnapshot(const QString &owner, quint64 requestId) override;
     void submitOperation(const QString &owner, quint64 requestId,
                          const OperationRequest &request) override;
@@ -37,6 +38,7 @@ private Q_SLOTS:
 
 private:
     void setOwner(const QString &owner);
+    void applyLevelsSubscription();
     void queryInitialOwner();
     void requestActivation();
 

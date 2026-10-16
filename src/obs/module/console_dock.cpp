@@ -95,8 +95,28 @@ void ConsoleDock::setSources(const QList<DesiredSource> &sources)
     m_order = order;
 }
 
+void ConsoleDock::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    Q_EMIT meterVisibilityChanged(true);
+}
+
+void ConsoleDock::hideEvent(QHideEvent *event)
+{
+    QWidget::hideEvent(event);
+    Q_EMIT meterVisibilityChanged(false);
+}
+
 void ConsoleDock::setLevels(const QList<Audio::LevelReading> &levels)
 {
+    if (levels.isEmpty()) {
+        for (const Row &row : std::as_const(m_rows)) {
+            if (row.bar != nullptr) {
+                row.bar->setLevel({});
+            }
+        }
+        return;
+    }
     for (const Audio::LevelReading &reading : levels) {
         const auto row = m_rows.constFind(reading.id);
         if (row != m_rows.cend() && row->bar != nullptr) {

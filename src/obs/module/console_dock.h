@@ -26,10 +26,24 @@ public:
     explicit ConsoleDock(QWidget *parent = nullptr);
 
     void setSources(const QList<DesiredSource> &sources);
+    // An empty batch is the service's "metering stopped" (and what the client
+    // sends when the last meter lease is released): every bar returns to the
+    // grey of "nothing heard", it does not freeze on its last reading.
     void setLevels(const QList<Audio::LevelReading> &levels);
     void setServiceState(const QString &state, const QString &reasonCode);
 
     [[nodiscard]] qsizetype rowCount() const { return m_rows.size(); }
+
+Q_SIGNALS:
+    // The dock's meters are visible (true) or not (false). The bridge holds an
+    // Audio1 meter lease exactly while this is true (ADR-0394): a dock that is
+    // closed, tabbed behind another or on a hidden window shows no meter, so
+    // nothing should be decoded for it.
+    void meterVisibilityChanged(bool visible);
+
+protected:
+    void showEvent(QShowEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
 
 private:
     struct Row {

@@ -292,6 +292,7 @@ Rectangle {
                     implicitWidth: 14
                     implicitHeight: root.deskHeight
                     reading: root.model.consoleLevels[root.strip.id]
+                    levelsOwner: root.model
                     Tk.Flex.shrink: 0
                 }
 

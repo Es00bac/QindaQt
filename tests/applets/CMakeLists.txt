@@ -17,3 +17,13 @@ target_compile_definitions(
 )
 qindaqt_enable_warnings(qindaqt_applet_catalog_tests)
 add_test(NAME qindaqt.applet-catalog COMMAND qindaqt_applet_catalog_tests)
+
+# ADR-0393: the shell merges every XDG applet manifest directory.
+qt_add_executable(qindaqt_applet_catalog_merge_tests tst_catalog_merge.cpp)
+target_link_libraries(qindaqt_applet_catalog_merge_tests PRIVATE qindaqt_applets Qt6::Test)
+target_compile_definitions(
+    qindaqt_applet_catalog_merge_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_applet_catalog_merge_tests)
+add_test(NAME qindaqt.applet-catalog-merge COMMAND qindaqt_applet_catalog_merge_tests)

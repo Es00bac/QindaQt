@@ -130,10 +130,6 @@ void TaskListAppletDockQmlTests::dockModeReservesInteractiveTiles()
   QVERIFY(icon != nullptr && icon->isVisible());
   QCOMPARE(icon->property("size").toInt(), 40);
   QVERIFY(entry->findChild<QQuickItem *>(QStringLiteral("taskListRunningIndicator")) != nullptr);
-  auto *tooltip = entry->findChild<QObject *>(QStringLiteral("taskListEntryTooltip"));
-  QVERIFY(tooltip != nullptr);
-  QCOMPARE(tooltip->property("text").toString(),
-           entry->property("entry").toMap().value(QStringLiteral("accessibleName")).toString());
 
   auto *separator = root->findChild<QQuickItem *>(QStringLiteral("taskListDockGroupSeparator"));
   QVERIFY(separator != nullptr && !separator->isVisible());

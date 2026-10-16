@@ -75,6 +75,14 @@ class AudioSettingsModel final : public QObject {
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
                               QObject *parent = nullptr);
+  // Meter lease (ADR-0394). A meter on screen calls retainMeters() and gives it
+  // back with releaseMeters() when hidden or destroyed; the Audio1 `Levels`
+  // stream is subscribed only while one is held, so a Settings window parked on
+  // another page costs the bus nothing. Whatever is still held when the model
+  // is destroyed is given back; a release that was never matched is ignored.
+  Q_INVOKABLE void retainMeters();
+  Q_INVOKABLE void releaseMeters();
+  [[nodiscard]] int meterLeaseCount() const noexcept { return m_meterLeases.count(); }
 
   [[nodiscard]] bool loading() const noexcept;
   [[nodiscard]] bool ready() const noexcept;
@@ -322,6 +330,7 @@ private:
       const Audio::Snapshot &snapshot) const;
 
   Audio::AudioClient &m_client;
+  Audio::LevelsLeaseSet m_meterLeases{&m_client};
   QString m_localError;
   QString m_operationStatusText;
   QHash<quint64, PendingIntent> m_pendingBySerial;

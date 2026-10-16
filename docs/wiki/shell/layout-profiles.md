@@ -210,6 +210,48 @@ keeps the two sides apart, so a profile only the user store has is the user's
 own preset and a store copy of an installed id is an edited ("Modified")
 built-in ([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
 
+### Catalog directories
+
+Themes, applet manifests and the applet capability policy follow the same
+merge rule as profiles
+([ADR-0393](../adr/0393-merge-every-xdg-data-directory-for-shell-catalogs.md)).
+Before this rule the shell took the **first** directory
+`QStandardPaths::locate` found, so a stale `~/.local/share/qindaqt/themes`
+holding a few leftover symlinks hid every installed theme and the saved theme
+was rejected at each login while Settings, which already merged, still showed it.
+
+The directories merge **low to high precedence**: the source tree (only for the
+genuine build-tree executable), then the system roots in reverse
+`XDG_DATA_DIRS` order, then `XDG_DATA_HOME` last. A later entry overrides an
+earlier one by id (theme id, applet manifest id) and a new id is appended. An
+explicit `--theme-dir`, `--applet-dir`, `--applet-policy` or the matching
+`QINDAQT_*` environment variable is the whole answer and is never merged.
+
+- The base layer (the first directory that holds an entry) is **strict**: an
+  invalid or duplicate entry fails the load, because the installed catalog is the
+  product.
+- Override layers are **lenient**: an invalid, oversized or duplicate entry is
+  skipped, the installed entry stays in force, and the shell logs one warning per
+  skipped entry. A stale or hand-edited user file can neither hide the installed
+  set nor stop the shell from starting.
+- The applet **policy** merges by selector `(trust, packageId, capability)`: a
+  higher layer's defaults and rules replace the lower layer's for the same
+  selector, new selectors are appended, and a higher layer **never deletes** a
+  lower rule. This is more restrictive than the old shadowing, where a user
+  policy file replaced the system policy entirely and could drop its denials.
+- At startup the shell logs the merged directory lists, low to high, and the
+  saved-theme fallback warning names the requested theme, the fallback and the
+  directories searched. It used to name only the requested theme while
+  claiming to name the fallback.
+
+`qindaqt-shell-preview` still presents one catalog directory by design and keeps
+the first-match resolvers. Focused rows: `tst_catalogpaths` (precedence,
+isolation, omission of missing directories), `tst_theme_catalog_merge`,
+`tst_catalog_merge` (applets), `tst_policy_merge`, and
+`qindaqt.shell-catalog-merge`, which runs the real `qindaqt-shell --list` against
+a user directory holding a stale subset and asserts that every installed theme is
+still offered.
+
 ## Built-in workflow families
 
 QindaQt ships **one stock profile per distinct feel** — eleven of them. Each

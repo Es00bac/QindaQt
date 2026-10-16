@@ -123,6 +123,8 @@ public:
   [[nodiscard]] QVariantMap trashRow() const;
   [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
   [[nodiscard]] QString feedback() const { return m_feedback; }
+  // Full row rebuilds performed so far; diagnostics and tests only.
+  [[nodiscard]] int rebuildCount() const noexcept { return m_rebuilds; }
 
   // Brings the application's window forward when it is running (and window
   // activation is granted), else starts it through the launcher.
@@ -182,12 +184,26 @@ Q_SIGNALS:
   void feedbackChanged();
 
 private:
+  // AGENT-GUARD (ADR-0391): no snapshot revision is kept here. The task list
+  // advances its generation on every publication, so a stored copy would be
+  // stale by the next title change; activate() asks the facade for the
+  // revision it is showing at the moment of the gesture. Equality is what lets
+  // handleTasksChanged() recognize a publication that changed nothing this
+  // controller presents.
   struct RunningWindow {
     QString taskId;
-    quint64 revision = 0;
     bool active = false;
+
+    friend bool operator==(const RunningWindow &, const RunningWindow &) = default;
   };
 
+  using RunningWindows = QHash<QString, QList<RunningWindow>>;
+
+  [[nodiscard]] RunningWindows runningWindows() const;
+  // Task-list publications arrive ten or more times a second under a title
+  // spinner. Only a change to which windows run, or which is active, can alter
+  // a dock row, so anything else returns before any row is built.
+  void handleTasksChanged();
   void rebuild();
   void publishFeedback(const QString &message);
   [[nodiscard]] bool knownEntry(const QString &entryId) const;
@@ -211,7 +227,8 @@ private:
   QStringList m_claimedTaskIds;
   QVariantMap m_fileManagerRow;
   int m_fileManagerEnds = 0;
-  QHash<QString, QList<RunningWindow>> m_running;
+  RunningWindows m_running;
+  int m_rebuilds = 0;
   bool m_trashInDock = false;
   // What the last stateChanged published besides the rows; -1 forces the
   // first rebuild to publish.

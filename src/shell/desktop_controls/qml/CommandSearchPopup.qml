@@ -60,8 +60,32 @@ ControlPopupFrame {
             item.forceActiveFocus(Qt.TabFocusReason)
     }
 
+    // AGENT-CONTRACT (ADR-0391): the controller collects and ranks results only
+    // for a surface that is showing it. One controller serves every panel's
+    // popup, so presentation is a counted lease taken in aboutToShow and given
+    // back exactly once on close or destruction. The lease is given back
+    // BEFORE the query is cleared: clearing a presented controller would
+    // collect and publish results nobody is going to see.
+    property bool presenting: false
+    function present() {
+        if (!presenting && ready) {
+            presenting = true
+            access.present()
+        }
+    }
+    function dismiss() {
+        if (presenting) {
+            presenting = false
+            if (access !== null)
+                access.dismiss()
+        }
+    }
+    onAboutToShow: present()
+    Component.onDestruction: dismiss()
+
     onClosed: {
         popup.currentIndex = -1
+        dismiss()
         if (ready)
             access.query = ""
     }

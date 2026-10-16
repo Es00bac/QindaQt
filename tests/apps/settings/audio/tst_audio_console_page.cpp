@@ -34,6 +34,7 @@ private Q_SLOTS:
   void consoleStripControlsDispatch();
   void consoleBusControlsDispatch();
   void consoleBusRackDelayDispatches();
+  void consoleMetersHoldALeaseOnlyWhileVisible();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -283,6 +284,77 @@ void AudioConsolePageTest::consoleBusRackDelayDispatches() {
   QVERIFY(QMetaObject::invokeMethod(reset, "clicked"));
   QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.a1"));
   QCOMPARE(m_model->lastProcessing.value(QStringLiteral("delayMs")).toInt(), 0);
+}
+
+// ADR-0394: the Audio1 Levels stream is subscribed only while a meter is on
+// screen. Each console meter holds one lease on the model, taken when it
+// becomes visible in a shown window and given back when it is hidden, when its
+// page leaves, and when it is destroyed, so a Settings window parked on any
+// other route (or minimized) never receives a meter frame.
+void AudioConsolePageTest::consoleMetersHoldALeaseOnlyWhileVisible() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+  m_view->show();
+  QVERIFY(QTest::qWaitForWindowExposed(m_view.get()));
+
+  const QList<QQuickItem *> meters = [&] {
+    QList<QQuickItem *> found;
+    const auto visit = [&](auto &&self, QQuickItem *item) -> void {
+      if (item->objectName().startsWith(QStringLiteral("consoleStripMeter_"))
+          || item->objectName().startsWith(QStringLiteral("consoleBusMeter_")))
+        found.append(item);
+      for (QQuickItem *child : item->childItems())
+        self(self, child);
+    };
+    visit(visit, page);
+    return found;
+  }();
+  QVERIFY(meters.size() >= 4);
+  // The Devices tab is the page's default: its meters, if any, are not on
+  // screen, so a Settings window left on it holds no lease at all.
+  QCOMPARE(m_model->meterLeases, 0);
+  int onScreen = 0;
+  for (QQuickItem *meter : meters)
+    onScreen += meter->property("onScreen").toBool() ? 1 : 0;
+  QCOMPARE(onScreen, 0);
+
+  // Opening the Console tab puts every console meter on screen.
+  QVERIFY(QMetaObject::invokeMethod(page, "selectTab", Q_ARG(QVariant, 1)));
+  QTRY_VERIFY(m_model->meterLeases > 0);
+  onScreen = 0;
+  for (QQuickItem *meter : meters)
+    onScreen += meter->property("onScreen").toBool() ? 1 : 0;
+  QCOMPARE(onScreen, int(meters.size()));
+  QVERIFY(onScreen > 0);
+  QCOMPARE(m_model->meterLeases, onScreen);
+  QCOMPARE(m_model->meterRetains, onScreen);
+
+  // Leaving for another tab gives every lease back; coming back takes them.
+  QVERIFY(QMetaObject::invokeMethod(page, "selectTab", Q_ARG(QVariant, 0)));
+  QTRY_COMPARE(m_model->meterLeases, 0);
+  QCOMPARE(m_model->meterReleases, onScreen);
+  QVERIFY(QMetaObject::invokeMethod(page, "selectTab", Q_ARG(QVariant, 1)));
+  QTRY_COMPARE(m_model->meterLeases, onScreen);
+
+  // The route leaves: every lease comes back at once, none is left behind.
+  const int releasesBefore = m_model->meterReleases;
+  page->setVisible(false);
+  QTRY_COMPARE(m_model->meterLeases, 0);
+  QCOMPARE(m_model->meterReleases, releasesBefore + onScreen);
+  page->setVisible(true);
+  QTRY_COMPARE(m_model->meterLeases, onScreen);
+
+  // A window that is hidden shows nothing.
+  m_view->hide();
+  QTRY_COMPARE(m_model->meterLeases, 0);
+  m_view->show();
+  QVERIFY(QTest::qWaitForWindowExposed(m_view.get()));
+  QTRY_COMPARE(m_model->meterLeases, onScreen);
+
+  // Destroying the page releases whatever it held.
+  guard.reset();
+  QCOMPARE(m_model->meterLeases, 0);
+  QCOMPARE(m_model->meterRetains, m_model->meterReleases);
 }
 
 QTEST_MAIN(AudioConsolePageTest)

@@ -190,6 +190,20 @@ because each needs a projection or intent this applet does not have:
 - **Per-device meters.** `DeviceRow` and `StreamRow` carry no level at all;
   only `ConsoleRow` has a reading, through `consoleLevels`. A meter that is not
   measuring anything is worse than no meter.
+- **Meters are leased, not always on.** The `Levels` stream is twenty frames a
+  second, so the controller subscribes to it only while a meter is on screen
+  ([ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md),
+  [Audio service](../architecture/audio-service.md), "Meter lease and snapshot
+  retry backoff"). `AudioLedMeter` calls `retainMeters()` on its controller when
+  it is visible in a shown, non-minimized window and `releaseMeters()` when it is
+  hidden, when its window hides or minimizes, when its owner changes and when it
+  is destroyed; the controller counts them against the shared client and gives
+  back whatever it still holds when it is destroyed. The popup is closed almost
+  all the time, so an idle shell receives no meter frame. Read denial grants no
+  lease. The controller forwards the client's `levelsChanged` as
+  `consoleLevelsChanged` on its own narrow channel, so a level frame never
+  reprojects the applet; before the lease that notification was declared but
+  never emitted, and the popup's meters did not move.
 - **Bus strips in the console band.** The projection walks
   `snapshot.console.strips` only, and there is no bus fader or bus mute intent.
 
@@ -292,8 +306,8 @@ ctest --test-dir build/dev -R '^qindaqt\.audio-applet-' --output-on-failure
 | Test | Scope |
 | --- | --- |
 | `qindaqt.audio-applet-model` | Clamping, missing/invalid-wire fail-closed behavior, ordering, label fallbacks, unknown levels, bounds and overflow, default labels beyond the window, pending marking, and degraded retention. |
-| `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay, including a stale old-owner reply dropped after replacement. |
-| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. Two drag rows carry the ADR-0191 contract end to end: a keyboard drag (the item survives its own dispatch, keeps focus, advances 1 % per step, coalesces, and holds the requested value until the service echoes it) and a pointer drag (the item stays the window's mouse grabber across three moves inside one press, and the value the finger stopped on is what reaches the service). |
+| `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay, including a stale old-owner reply dropped after replacement. The ADR-0394 rows: leases counted per controller, a lease refused under read denial, every lease given back when the controller is destroyed, and level frames reaching surfaces only while a meter holds a lease. |
+| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. `popupMetersHoldALeaseOnlyWhileTheConsoleIsShown` proves the popup's meters hold a lease only while the console is on screen in a shown window. Two drag rows carry the ADR-0191 contract end to end: a keyboard drag (the item survives its own dispatch, keeps focus, advances 1 % per step, coalesces, and holds the requested value until the service echoes it) and a pointer drag (the item stays the window's mouse grabber across three moves inside one press, and the value the finger stopped on is what reaches the service). |
 | `qindaqt.audio-applet-wheel` | Real popup-window wheel delivery for stream/device accumulation, pixel-only input, zero/horizontal/modifier admission, pending coalescing, bounds, and disabled no-mutation. |
 | `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test; four independent poison mutations (D-Bus transport include, service-internal include, QML include, QObject derivation) must each be rejected. |
 | `qindaqt.audio-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, WirePlumber/PipeWire/GLib surfaces, process/file access, and D-Bus in the controller/QML; the shell composition root may construct the public Qt transport. Includes a poison negative control. |

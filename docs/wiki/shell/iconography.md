@@ -75,6 +75,39 @@ window. Each task-list reprojection refreshes those snapshots; the locator's
 canonical confinement checks and filesystem lookup semantics remain unchanged.
 See [Task list](task-list.md) for the publication contract and regression gate.
 
+## IconAvailabilityCache
+
+The locator remembers nothing, by contract, and the task list asks "does this
+icon resolve" for every row on every publication. A 16-window strip under a
+terminal title spinner spent about 87 percent of the shell's CPU in `statx`
+walking the theme chain for answers that had not changed.
+`IconAvailabilityCache(iconRoots, themeNames, clock)` sits in front of
+`IconThemeLocator::hasIcon` **only** and answers that yes or no from a bounded,
+expiring memo
+([ADR-0392](../adr/0392-memoise-icon-availability-beside-the-uncached-locator.md)):
+
+- It never returns a path and the image provider never consults it, so the
+  pixels a surface loads are still resolved and confined fresh. What is
+  remembered is a presentation hint that can be a few seconds old without harm
+  (the choice between the real icon and the typed fallback glyph).
+- A positive verdict is trusted for 30 s, then one metadata check of the
+  remembered file keeps it or forces a fresh lookup. A negative verdict is
+  trusted for 5 s only, because a Wine program's extracted icon is written
+  shortly after its window appears
+  ([ADR-0230](../adr/0230-name-and-picture-the-game-behind-a-launcher-class.md))
+  and the row must pick it up on a later publication without a theme change.
+- At most 512 verdicts are held, keyed by the locator's own clamped request
+  tuple (name, size, scale, symbolic). A name the locator refuses is answered
+  without being retained. When full, expired verdicts go first, then the memo
+  restarts empty.
+- The clock is injectable (monotonic milliseconds), so expiry is tested without
+  sleeping. Like the locator, an instance is confined to its owning thread.
+- `invalidate()` drops everything. The shell composition replaces the object
+  when the icon theme or roots change, which is what invalidates the memo.
+
+The locator's own freshness contract, and its test
+(`filesystemChangesRemainFresh`), are unchanged.
+
 ## DesktopEntryIconResolver
 
 `DesktopEntryIconResolver(applicationRoots)` eagerly scans the injected
@@ -193,7 +226,7 @@ Panel summaries use the compiled `Icon` element and preserve their prior
 accessible names on the surrounding buttons. Task-list composition owns one
 `DesktopEntryIconResolver` and projects its result from the compositor's
 application id into each row, then checks the name through an
-`IconThemeLocator` over the production roots. The `DesktopVirtual` component
+`IconAvailabilityCache` over the production roots. The `DesktopVirtual` component
 stages the four first-party desktop entries under `share/applications`; its
 sandbox exports `/opt/qindaqt/share:/usr/share` as `XDG_DATA_DIRS`, so staged
 metadata and system Breeze icon roots participate in the same confined lookup.
@@ -212,6 +245,7 @@ ctest --test-dir build/dev \
 | Test | Scope |
 | --- | --- |
 | `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, a 649-directory hicolor-shaped inventory with an application icon beyond the former truncation point, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, repeated missing/create/remove/symlink/non-file freshness, oversized-index refusal, index-cache bound. |
+| `qindaqt.shell-icons-availability-cache` | Live verdicts answered without disk, negative verdict expiring sooner and noticing new artwork, positive verdict revalidated by one metadata check and looked up again when its file is gone, `invalidate()`, size/scale/symbolic as distinct requests, refused names not retained, the 512-entry bound under hostile input, and normalization-equal requests sharing one verdict; all on an injected clock. |
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, `StartupWMClass` matching, display names under the same rules (a refused icon keeps its name), prettified-id fallback, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, over-long-id refusal before cache access, canonical cache-key sharing, hostile-id flood cache-key-byte and RSS bounds, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |

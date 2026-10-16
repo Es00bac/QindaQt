@@ -78,6 +78,10 @@ private Q_SLOTS:
   void queryRanksAcrossSourcesAndActivatesEachThroughItsFacade();
   void menuActivationRequiresTheRenderedRowToStillExist();
   void disabledAndUnlistedResultsAreRefused();
+  void aHiddenControllerDoesNoWorkForFacadeChanges();
+  void presentingCatchesUpOnceThenRefreshesOnlyTheChangedSource();
+  void presentationIsACountedLease();
+  void aSourceThatIsNotEnabledNeverMarksTheControllerStale();
 };
 
 void CommandSearchControllerTests::enabledSourcesAndGrantsSelectTheCandidatePool()
@@ -137,6 +141,8 @@ void CommandSearchControllerTests::queryRanksAcrossSourcesAndActivatesEachThroug
   CommandSearchController palette(fixture.sources(&taskList), allGrants(),
                                   {CommandSourceKind::Applications, CommandSourceKind::MenuActions,
                                    CommandSourceKind::Windows, CommandSourceKind::Workspaces});
+  // A surface is showing the palette: only a presented controller notifies.
+  palette.present();
   QSignalSpy resultsSpy(&palette, &CommandSearchController::resultsChanged);
 
   palette.setQuery(QStringLiteral("term"));
@@ -199,6 +205,7 @@ void CommandSearchControllerTests::menuActivationRequiresTheRenderedRowToStillEx
   QSignalSpy activationSpy(&fixture.menu, &GlobalMenuAppletAccess::activationRequested);
   auto replaced = menuTree(QStringLiteral("Open Something Else"));
   replaced.revision = 2;
+  hud.present();
   QSignalSpy resultsSpy(&hud, &CommandSearchController::resultsChanged);
   fixture.menu.publishTree(replaced);
   QVERIFY(resultsSpy.size() >= 1);
@@ -270,6 +277,161 @@ void CommandSearchControllerTests::disabledAndUnlistedResultsAreRefused()
   QVERIFY(fixture.workspaces.transport.switchRequests.isEmpty());
   palette.clearFeedback();
   QVERIFY(!palette.feedbackPresent());
+}
+
+namespace {
+// One task-list publication that changes only a title, the way a terminal
+// spinner does: the generation advances, the set of windows does not.
+void publishTitleChange(Fixture &fixture, int generation)
+{
+  auto facts = TaskListStack::activeEditorFacts();
+  facts[0].title = QStringLiteral("spinner %1").arg(generation);
+  QVERIFY(fixture.tasks.publish(facts) > 0);
+}
+}
+
+void CommandSearchControllerTests::aHiddenControllerDoesNoWorkForFacadeChanges()
+{
+  Fixture fixture;
+  QVERIFY(fixture.prepare());
+  TaskListAppletController taskList(fixture.tasks.source, fixture.tasks.authority,
+                                    fixture.tasks.port, {true, true, true});
+  CommandSearchController palette(fixture.sources(&taskList), allGrants(),
+                                  {CommandSourceKind::Applications, CommandSourceKind::MenuActions,
+                                   CommandSourceKind::Windows, CommandSourceKind::Workspaces});
+  QVERIFY(!palette.presented());
+  QSignalSpy resultsSpy(&palette, &CommandSearchController::resultsChanged);
+  QSignalSpy stateSpy(&palette, &CommandSearchController::stateChanged);
+
+  // 100 task-list publications, a menu republish and a workspace change with
+  // nobody showing the palette: nothing is collected, ranked or announced.
+  for (int generation = 0; generation < 100; ++generation) {
+    publishTitleChange(fixture, generation);
+  }
+  auto replaced = menuTree(QStringLiteral("Open Elsewhere"));
+  replaced.revision = 9;
+  fixture.menu.publishTree(replaced);
+  fixture.workspaces.publishReady();
+  QCOMPARE(palette.collectionCount(), 0);
+  QCOMPARE(resultsSpy.size(), 0);
+  QCOMPARE(stateSpy.size(), 0);
+
+  // A read still returns current truth: it brings the stale cache up to date
+  // without a signal, once, for all four sources.
+  QStringList windowTexts;
+  for (const QVariant &row : palette.results()) {
+    if (row.toMap().value(QStringLiteral("kind")).toString() == QStringLiteral("window")) {
+      windowTexts.append(row.toMap().value(QStringLiteral("text")).toString());
+    }
+  }
+  QVERIFY(windowTexts.contains(QStringLiteral("spinner 99")));
+  QCOMPARE(palette.collectionCount(), 4);
+  QCOMPARE(resultsSpy.size(), 0);
+  QCOMPARE(palette.resultCount(), palette.results().size());
+  QCOMPARE(palette.collectionCount(), 4);
+  // And activation addresses the generation the window was read from.
+  QVERIFY(palette.activate(firstIdOfKind(palette, QStringLiteral("window"))));
+  QCOMPARE(fixture.tasks.port.lastCall().revision, fixture.tasks.source.revision());
+  QCOMPARE(taskList.generationRevision(), fixture.tasks.source.revision());
+}
+
+void CommandSearchControllerTests::presentingCatchesUpOnceThenRefreshesOnlyTheChangedSource()
+{
+  Fixture fixture;
+  QVERIFY(fixture.prepare());
+  TaskListAppletController taskList(fixture.tasks.source, fixture.tasks.authority,
+                                    fixture.tasks.port, {true, true, true});
+  CommandSearchController palette(fixture.sources(&taskList), allGrants(),
+                                  {CommandSourceKind::Applications, CommandSourceKind::MenuActions,
+                                   CommandSourceKind::Windows, CommandSourceKind::Workspaces});
+  publishTitleChange(fixture, 1);
+  QSignalSpy resultsSpy(&palette, &CommandSearchController::resultsChanged);
+  QSignalSpy presentedSpy(&palette, &CommandSearchController::presentedChanged);
+
+  palette.present();
+  QVERIFY(palette.presented());
+  QCOMPARE(presentedSpy.size(), 1);
+  QCOMPARE(resultsSpy.size(), 1); // one catch-up notification
+  QCOMPARE(palette.collectionCount(), 4);
+
+  // While presented, each change recollects only the source that moved.
+  publishTitleChange(fixture, 2);
+  QCOMPARE(palette.collectionCount(), 5);
+  QCOMPARE(resultsSpy.size(), 2);
+  auto replaced = menuTree(QStringLiteral("Open Again"));
+  replaced.revision = 3;
+  fixture.menu.publishTree(replaced);
+  QCOMPARE(palette.collectionCount(), 6);
+  QCOMPARE(resultsSpy.size(), 3);
+  // A query recollects the launcher's candidates, the only query-dependent
+  // source, and reranks the rest.
+  palette.setQuery(QStringLiteral("term"));
+  QCOMPARE(palette.collectionCount(), 7);
+  QVERIFY(resultsSpy.size() >= 4);
+
+  // Leaving the surface silences it again; the next presentation catches up.
+  palette.dismiss();
+  QVERIFY(!palette.presented());
+  QCOMPARE(presentedSpy.size(), 2);
+  const qsizetype announced = resultsSpy.size();
+  publishTitleChange(fixture, 3);
+  palette.setQuery(QString());
+  QCOMPARE(resultsSpy.size(), announced);
+  palette.present();
+  QCOMPARE(resultsSpy.size(), announced + 1);
+  QCOMPARE(palette.collectionCount(), 9); // windows and applications again
+}
+
+void CommandSearchControllerTests::presentationIsACountedLease()
+{
+  Fixture fixture;
+  QVERIFY(fixture.prepare());
+  TaskListAppletController taskList(fixture.tasks.source, fixture.tasks.authority,
+                                    fixture.tasks.port, {true, true, true});
+  CommandSearchController palette(fixture.sources(&taskList), allGrants(),
+                                  {CommandSourceKind::Windows});
+  QSignalSpy presentedSpy(&palette, &CommandSearchController::presentedChanged);
+  // One controller serves every panel instance; each holds its own lease.
+  palette.dismiss(); // an unmatched release is ignored, never negative
+  QCOMPARE(presentedSpy.size(), 0);
+  palette.present();
+  palette.present();
+  QCOMPARE(presentedSpy.size(), 1);
+  palette.dismiss();
+  QVERIFY(palette.presented());
+  QCOMPARE(presentedSpy.size(), 1);
+  palette.dismiss();
+  QVERIFY(!palette.presented());
+  QCOMPARE(presentedSpy.size(), 2);
+  palette.dismiss();
+  palette.present();
+  QVERIFY(palette.presented());
+}
+
+void CommandSearchControllerTests::aSourceThatIsNotEnabledNeverMarksTheControllerStale()
+{
+  Fixture fixture;
+  QVERIFY(fixture.prepare());
+  TaskListAppletController taskList(fixture.tasks.source, fixture.tasks.authority,
+                                    fixture.tasks.port, {true, true, true});
+  // The HUD reads the active window's menu actions only. The task list,
+  // launcher and workspaces change constantly and are none of its business.
+  CommandSearchController hud(fixture.sources(&taskList), allGrants(),
+                              {CommandSourceKind::MenuActions});
+  hud.present();
+  QSignalSpy resultsSpy(&hud, &CommandSearchController::resultsChanged);
+  const int collected = hud.collectionCount();
+  for (int generation = 0; generation < 50; ++generation) {
+    publishTitleChange(fixture, generation);
+  }
+  fixture.workspaces.publishReady();
+  QCOMPARE(hud.collectionCount(), collected);
+  QCOMPARE(resultsSpy.size(), 0);
+  auto replaced = menuTree(QStringLiteral("Open Once More"));
+  replaced.revision = 5;
+  fixture.menu.publishTree(replaced);
+  QCOMPARE(hud.collectionCount(), collected + 1);
+  QCOMPARE(resultsSpy.size(), 1);
 }
 
 QTEST_GUILESS_MAIN(CommandSearchControllerTests)
