@@ -1,9 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Non-installed real Qt role + real private-confdir PAM conversation fixture.
 // Input commands are synthetic UI intent, never an approval/result injection.
+//
+// AGENT-CONTRACT (ADR-0382): the greeter locks into a ready state with NO PAM
+// conversation; a person's first key/click/touch starts one. The fork's nested
+// scenarios stand in for that person with the `input` (controller intent) and
+// `key` (a real synthetic key press through window, filter and QML) commands and
+// wait for NATIVE_GREETER_UI_READY / NATIVE_GREETER_IDLE before sending them.
+// NATIVE_GREETER_UI_READY now means "locked, credential field visible and
+// enabled" and no longer implies a pending prompt; NATIVE_GREETER_PROMPT still
+// means a PAM prompt is waiting for a response.
 #include "native_windows.h"
 #include "process_protection.h"
 #include "touch_keyboard.h"
+#include <QKeyEvent>
 #include <QQuickItem>
 #include <QTimer>
 #include <QFile>
@@ -74,7 +84,8 @@ int main(int argc, char **argv) {
     if (!view) continue;
     QObject::connect(view, &QQuickWindow::frameSwapped, &app, [view, controller] {
       auto *field = view->rootObject() ? view->rootObject()->findChild<QObject *>("nativeLockPassword") : nullptr;
-      if (controller->waiting() && field && field->property("visible").toBool()) {
+      if (controller->locked() && field && field->property("visible").toBool() &&
+          field->property("enabled").toBool()) {
         std::printf("NATIVE_GREETER_UI_READY DPR=%.2f LAYOUT=%s\n", static_cast<double>(view->devicePixelRatio()),
                     qPrintable(controller->layout())); std::fflush(stdout);
       }
@@ -127,6 +138,13 @@ int main(int argc, char **argv) {
       else if (command == "saver-reef") { preferences.select(QStringLiteral("circuit-reef")); scenePoll.start(); }
       else if (command == "cancel") { controller->cancel(); std::puts("NATIVE_GREETER_CANCELLED"); std::fflush(stdout); }
       else if (command == "begin") controller->begin();
+      else if (command == "input") controller->noteInput();
+      else if (command == "key") {
+        auto *view = app.topLevelWindows().isEmpty() ? nullptr : qobject_cast<QQuickView *>(app.topLevelWindows().first());
+        if (!view) { QCoreApplication::exit(2); return; }
+        QKeyEvent press(QEvent::KeyPress, Qt::Key_Shift, Qt::NoModifier);
+        QCoreApplication::sendEvent(view, &press);
+      }
       else if (command == "block-worker") { controller->cancel(); if (!worker.active() && configure("permit", "block")) controller->begin(); }
       else if (command == "account-deny") { if (!worker.active() && configure("account-deny")) controller->begin(); }
       else if (command == "account-permit") { if (!worker.active() && configure("permit")) controller->begin(); }
