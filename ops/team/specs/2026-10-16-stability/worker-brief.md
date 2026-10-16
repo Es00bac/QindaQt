@@ -49,6 +49,12 @@ points, because they came from a read-only audit.
   (with counts), and ends with "Independent review waived by the owner." In the fork, follow its AGENTS.md:
   `qindaqt:` subject prefix and a `QindaQt-ADR:` trailer.
 
+## Git remotes (hard rule)
+- Never push to any github.com remote. In `~/work_SPaC3/container-wm` (and worktrees made from it) `origin` is
+  the PUBLIC GitHub repo; the internal hub is the remote named `hub`. In qindaqt-kwin `origin` is the hub and
+  `github` is public. Push your branch only with an explicit internal remote, e.g. `git push hub <branch>`
+  (container-wm) or `git push origin <branch>` (qindaqt-kwin), after checking `git remote -v`.
+
 ## Board and voice
 - When you claim the work, create `ops/team/workers/<your-worker-name>.md` in the shared container-wm checkout
   on qinda. It needs `- Status: working — <outcome>` and a `## Updates` heading with ISO-8601 bullets. Post
