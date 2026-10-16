@@ -15,7 +15,10 @@ using namespace LockAuthentication;
 WorkerProcess::WorkerProcess(QObject *parent)
     : QObject(parent), m_program(QStringLiteral(QINDAQT_LOCK_PAM_EXECUTABLE)) {
   m_deadline.setSingleShot(true);
-  connect(&m_deadline, &QTimer::timeout, this, [this] { abort(Outcome::Unavailable); });
+  // Qt's default coarse timer may fire up to 5% (4.5 s) off a 90 s interval;
+  // the deadline must stay ahead of the worker's backstop (authentication.h).
+  m_deadline.setTimerType(Qt::PreciseTimer);
+  connect(&m_deadline, &QTimer::timeout, this, [this] { abort(Outcome::TimedOut); });
   connect(&m_process, &QProcess::started, this, [this] {
     if (m_childFd >= 0) { close(m_childFd); m_childFd = -1; }
   });
@@ -154,9 +157,17 @@ void WorkerProcess::consume(WireFrame frame) {
 void WorkerProcess::cancel() { abort(Outcome::Cancelled); }
 void WorkerProcess::abort(Outcome reason) {
   if (!m_active) return;
-  m_failure = reason; closeChannel();
-  if (m_process.state() != QProcess::NotRunning) m_process.kill();
-  else complete(reason);
+  m_failure = reason;
+  // AGENT-GUARD: SIGKILL the child BEFORE closing our end of the socket. EOF on
+  // the channel fails the worker's PAM conversation; if the worker runs even
+  // briefly after seeing it, pam_unix fails and pam_faillock "authfail" records
+  // a failed login for an attempt the user cancelled or abandoned. With the
+  // signal already pending the worker cannot return to user space to observe
+  // the EOF. A pending SIGKILL cannot be handled, so no PAM module ever runs.
+  const bool running = m_process.state() != QProcess::NotRunning;
+  if (running) m_process.kill();
+  closeChannel();
+  if (!running) complete(reason);
 }
 void WorkerProcess::finish(int code, QProcess::ExitStatus status) {
   if (!m_active) return;

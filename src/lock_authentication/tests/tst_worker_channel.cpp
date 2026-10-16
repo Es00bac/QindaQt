@@ -2,6 +2,7 @@
 #include "worker_wire.h"
 #include "worker_conversation.h"
 #include <QFile>
+#include <QFileInfo>
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -142,6 +143,27 @@ private Q_SLOTS:
     QVERIFY(!channel.receive());
     QCOMPARE(worker.process.readAllStandardOutput(), QByteArray());
     QCOMPARE(worker.process.readAllStandardError(), QByteArray());
+  }
+  void eofWithoutKillReachesPamFailurePath() {
+    // Positive control for WorkerProcessTest::abandonedAttempt. Closing the
+    // channel while the worker waits at its prompt, with nobody killing it, DOES
+    // drive pam_authenticate into its failure path (pam_unix + pam_faillock in
+    // production). That is why WorkerProcess must kill before it closes.
+    QTemporaryDir configuration; QVERIFY(configuration.isValid());
+    const QString marker = configuration.filePath("failure-path-reached");
+    QFile service(configuration.filePath("qindaqt-lock")); QVERIFY(service.open(QIODevice::WriteOnly));
+    const QByteArray module = QINDAQT_PRIVATE_PAM_MODULE_PATH;
+    service.write("auth required " + module + " witness " + marker.toUtf8() + "\naccount required " + module +
+                  " permit\nsession optional " + module + " permit\n"); service.close();
+    OwnedWorker worker; const int fd = worker.start(configuration.path()); QVERIFY(fd >= 0);
+    {
+      WorkerChannel channel(fd, std::chrono::seconds(3));
+      QVERIFY(channel.send({WireKind::Begin, {41, 5}, {}}));
+      const auto prompt = channel.receive(); QVERIFY(prompt);
+      QCOMPARE(prompt->kind, WireKind::Secret);
+    } // The channel destructor closes our end: EOF, no signal.
+    QVERIFY(worker.process.waitForFinished(3000));
+    QVERIFY(QFileInfo::exists(marker));
   }
   void workerEofAndIdentityInjection() {
     QTemporaryDir configuration; QVERIFY(configuration.isValid());

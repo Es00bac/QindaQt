@@ -428,5 +428,6 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
 - [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.
+- [ADR-0382: Start native lock authentication on user input](0382-start-native-lock-authentication-on-user-input.md) — Accepted: no PAM at lock time, ready field in every state, kill-before-close deadline ordering, locker that survives recoverable conditions.
 - [ADR-0383: Coalesce compositor change signals and repaint titles in the title band](0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md) — Accepted; 4 Hz caption/WindowsChanged/TaskListSnapshotChanged budget with trailing flush, cached task facts and credentials.
 - [ADR-0384: Degrade the visibility snapshot per window and rescue stranded windows](0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md) — Accepted; supersedes ADR-0237 in part (transient window conditions only).

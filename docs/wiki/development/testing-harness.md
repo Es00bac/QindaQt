@@ -4388,6 +4388,16 @@ The fork's non-installable test configuration sets
 `QINDAQT_PRIVATE_QT_LOCK_GREETER` to that exact built fixture. Native QtQuick
 rows cover two real output roles at normal and 150% scale, denied password,
 cancel/late response, account denial and current-worker standard unlock.
+Since [ADR-0382](../adr/0382-start-native-lock-authentication-on-user-input.md)
+the fixture locks into a ready state with no PAM conversation:
+`NATIVE_GREETER_UI_READY` means locked with a visible, enabled field,
+`NATIVE_GREETER_PROMPT` still means a prompt is waiting, and the stdin commands
+`input` and `key` stand in for the person whose first input starts the attempt.
+A scenario must send one of them before it waits for `NATIVE_GREETER_PROMPT`.
+The [lock greeter lifecycle](../architecture/lock-greeter.md) lists the
+deterministic `lock.greeter-*`, `lock.protocol-*` and `keyring_pam_manager_calls`
+tests that need no compositor session; `lock.greeter-process` runs this fixture
+itself against a fake `ext-session-lock` compositor.
 The fixture keeps fatal Qt warnings enabled. Its compiled public Patrol/Reef
 scenes load on the actual role; the pure OSK model exercises the QML credential
 editing/submit sink. Credential screenshots contain only synthetic test data.

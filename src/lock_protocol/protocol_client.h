@@ -48,4 +48,11 @@ private:
   bool m_locked = false, m_finished = false, m_unlocking = false;
 };
 inline constexpr char nativeResource[] = "qindaqt-session-lock-client";
+// AGENT-CONTRACT: same borrowed ProtocolClient as nativeResource, but WITHOUT
+// assigning a lock role to the window. It exists so the greeter can observe the
+// lock (locked/finished) even when this output's role is refused, in particular
+// when the compositor already finished the lock: otherwise a locker whose every
+// window failed would never learn the lock is gone and would linger, looking
+// alive to compositor-side supervision (ADR-0382).
+inline constexpr char nativeObserverResource[] = "qindaqt-session-lock-observer";
 } // namespace QindaQt::LockProtocol

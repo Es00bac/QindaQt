@@ -5,6 +5,7 @@
 #include <QProcess>
 #include <QSocketNotifier>
 #include <QTimer>
+#include <chrono>
 #include <memory>
 namespace QindaQt::LockWorkerClient {
 using LockAuthentication::AttemptToken;
@@ -14,7 +15,9 @@ using LockAuthentication::WireFrame;
 // borrows this object, invalidates coordinator tokens BEFORE cancel, and alone
 // consumes completed(). Nothing here is a QML object or public service.
 // start is admission only; prompts carry no password/result authority. Whole
-// attempt deadline kills only our owned child even if a PAM module blocks.
+// attempt deadline kills only our owned child even if a PAM module blocks and
+// reports Outcome::TimedOut. Every abort (cancel, deadline, transport failure)
+// SIGKILLs the child before closing the channel; see abort() for why.
 class WorkerProcess final : public QObject {
   Q_OBJECT
 public:
@@ -44,7 +47,9 @@ private:
   QProcess m_process;
   QTimer m_deadline;
   std::unique_ptr<QSocketNotifier> m_reader, m_writer;
-  int m_fd = -1, m_childFd = -1, m_timeoutMs = 90000;
+  int m_fd = -1, m_childFd = -1;
+  int m_timeoutMs = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(
+      LockAuthentication::attemptDeadline).count());
   QString m_program;
   QStringList m_arguments;
   AttemptToken m_token;

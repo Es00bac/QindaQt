@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "configure_policy.h"
 #include "protocol_client.h"
 #include "ext-session-lock-v1-client-protocol.h"
 #include <QtWaylandClient/private/qwaylanddisplay_p.h>
@@ -10,12 +11,13 @@
 #include <QScreen>
 #include <QtGui/qscreen_platform.h>
 #include <QHash>
+#include <QLoggingCategory>
 #include <QPointer>
 #include <QWindow>
-#include <limits>
 #include <memory>
 using namespace QtWaylandClient;
 using namespace QindaQt::LockProtocol;
+Q_LOGGING_CATEGORY(lcLockProtocol, "qindaqt.lock.protocol")
 namespace {
 class LockSurface final : public QWaylandShellSurface {
 public:
@@ -41,9 +43,15 @@ private:
   static void configure(void *data, ext_session_lock_surface_v1 *, unsigned serial,
                         unsigned width, unsigned height) {
     auto *self = static_cast<LockSurface *>(data);
-    if (!width || !height || width > unsigned(std::numeric_limits<int>::max()) ||
-        height > unsigned(std::numeric_limits<int>::max())) qFatal("Invalid native lock configure");
-    self->m_serial = serial; self->m_pending = true; self->m_size = QSize(int(width), int(height));
+    // AGENT-GUARD: never abort on a configure. Skip an unusable one and wait for
+    // the next; see configure_policy.h and ADR-0382.
+    const auto size = usableConfigureSize(width, height);
+    if (!size) {
+      qCWarning(lcLockProtocol, "ignoring unusable lock surface configure %ux%u (serial %u); waiting for the next one",
+                width, height, serial);
+      return;
+    }
+    self->m_serial = serial; self->m_pending = true; self->m_size = *size;
     self->applyConfigureWhenPossible();
   }
   ext_session_lock_surface_v1 *m_role;
@@ -70,7 +78,10 @@ public:
     return prepare(window);
   }
   void *nativeResourceForWindow(const QByteArray &resource, QWindow *window) override {
-    if (resource != nativeResource || !window || !window->handle()) return nullptr;
+    if (!window || !window->handle()) return nullptr;
+    // Observation only: never assigns a role, creates no protocol object.
+    if (resource == nativeObserverResource) return m_client.get();
+    if (resource != nativeResource) return nullptr;
     auto *wayland = static_cast<QWaylandWindow *>(window->handle());
     if (dynamic_cast<LockSurface *>(wayland->shellSurface())) return m_client.get();
     // Qt normally assigns a shell role only on show. Preassign the standard
@@ -80,17 +91,38 @@ public:
       auto *surface = prepare(wayland);
       if (!surface) return nullptr;
       m_prepared.insert(wayland, surface);
-      connect(wayland, &QObject::destroyed, this, [this, wayland] { m_prepared.remove(wayland); });
+      // AGENT-GUARD: a role handed out here but never consumed by createShellSurface
+      // (the window died before show, e.g. its QML failed to load) belongs to us:
+      // Qt only deletes a shell surface it was given. Leaving it would keep the
+      // output marked "already has a lock surface" forever and make every retry
+      // for that output fail (ADR-0382). Taking it out of m_prepared first keeps a
+      // consumed surface (Qt's) from being deleted twice.
+      connect(wayland, &QObject::destroyed, this, [this, wayland] { delete m_prepared.take(wayland).data(); });
     }
     return m_client.get();
   }
 private:
   LockSurface *prepare(QWaylandWindow *window) {
-    if (!m_client || !window || !window->window()->screen()) return nullptr;
+    // Every refusal says why: the greeter retries the output and the journal is
+    // the only record of what the compositor-side lock looked like.
+    if (!m_client || !window || !window->window()->screen()) {
+      qCWarning(lcLockProtocol, "no lock role: no protocol client or the window has no screen");
+      return nullptr;
+    }
     auto *screen = window->window()->screen()->nativeInterface<QNativeInterface::QWaylandScreen>();
-    if (!screen || !screen->output() || m_outputs.value(screen->output())) return nullptr;
+    if (!screen || !screen->output()) {
+      qCWarning(lcLockProtocol, "no lock role: the screen has no wl_output");
+      return nullptr;
+    }
+    if (m_outputs.value(screen->output())) {
+      qCWarning(lcLockProtocol, "no lock role: this output already has a lock surface");
+      return nullptr;
+    }
     auto *role = m_client->createSurface(wlSurfaceForWindow(window), screen->output());
-    if (!role) return nullptr;
+    if (!role) {
+      qCWarning(lcLockProtocol, "no lock role: the session lock is no longer available (finished or unlocking)");
+      return nullptr;
+    }
     auto *surface = new LockSurface(window, role);
     m_outputs.insert(screen->output(), surface);
     return surface;

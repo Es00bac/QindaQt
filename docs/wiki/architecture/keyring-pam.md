@@ -89,6 +89,35 @@ Helper/launcher/daemon suppress
 core dumps and set dumpable0 before handling tokens. Root, CAP_SYS_PTRACE and
 trusted process ancestors are outside this ordinary-user threat model.
 
+### Exact manager messages
+
+The bridge sends four calls to the root system manager. Each is a method of
+interface `org.freedesktop.systemd1.Manager` on object `/org/freedesktop/systemd1`
+owned by bus name `org.freedesktop.systemd1`; `src/services/keyring/pam/manager_calls.h`
+holds the only definition.
+
+| Call | Sent by | System bus policy for a non-root caller |
+| --- | --- | --- |
+| `GetUnit(s)` | Lock worker (user) | Open to everyone |
+| `LoadUnit(s)` | Login as root (a root caller may load an inactive unit) | Open to everyone on the bus |
+| `StartUnit(ss)` job mode `fail` | Login as root | Allowed on the bus, then polkit |
+| `GetUnitByPIDFD(h)` | Helper | Open to everyone |
+
+The policy matches (destination, interface, member). The bus name is not the
+interface: the bridge once passed `org.freedesktop.systemd1` as the interface, no
+allow rule matched, the default deny rejected every call (the journal showed
+`Rejected send message ... interface="org.freedesktop.systemd1" member="GetUnit"`
+at every unlock) and keyring unlock from the lock screen failed silently.
+`keyring_pam_manager_calls` pins the exact destination, path, interface, member,
+signature and arguments on a private bus that loads the real installed systemd
+policy, and checks that the old wrong-interface call and a bus without the policy
+are both rejected.
+
+Lock-screen unlock additionally needs the trusted system owner to be running: an
+unprivileged worker may only use an already loaded `qindaqt-keyring@UID.service`
+and never starts it. When it is not running, `GetUnit` is answered "not loaded"
+and the bridge falls back to the native prompt, which is the designed failure.
+
 ## Lifecycle and packaging boundary
 
 The source system template uses User=%i, a fixed protected launcher, no
@@ -144,7 +173,8 @@ same-UID zero-payload rejection, injected actual-daemon rejection and competing
 ownership. A separately compiled manager seam pins the sanitized child created
 by the fixture; no such runtime option exists in production.
 keyring_pam_owner_policy checks manager identity/state refusals and protected
-path permissions/symlinks. keyring_prompt_display checks actual private bus
+path permissions/symlinks. keyring_pam_manager_calls pins the exact systemd
+manager messages and the system bus policy that admits them. keyring_prompt_display checks actual private bus
 and kernel peer lineage, native slot/FD environment, fake or replaced sockets,
 owner replacement, in-flight cancellation, disconnect and default cleared state.
 The existing Secret Service suite preserves legacy attachment/prompt behavior.
