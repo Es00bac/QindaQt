@@ -1,3 +1,46 @@
+## October 16 stability round: RESUME HERE (Claude ⇄ Codex, kept current)
+
+The owner reported daily-driving instability and asked: "Fix the problems … I need a stable desktop." A
+read-only audit of the laptop session found the causes. See `ops/team/specs/2026-10-16-stability/findings.md`.
+Six of the last nine boots ended in a forced power-off:
+- four were a flat battery: s2idle wakes immediately, the closed lid re-suspends roughly 900 times, and the
+  hybrid-sleep image is discarded;
+- two were suspend hangs: user-session freezing hit sshfs network locations.
+
+The shared causes are:
+1. Session-bus discipline: synchronous polling, 20 Hz broadcasts, and a stuck client that grew dbus-daemon to
+   about 4 GB and filled swap.
+2. Lifecycles that fail closed forever: lock attachment, capture broker, locker relaunch.
+3. Blocking work on the compositor main thread: network-mount canonicalization and synchronous D-Bus.
+
+Rules for this round:
+- worker brief: `ops/team/specs/2026-10-16-stability/worker-brief.md`;
+- no dependencies from other desktops; clean Qinda implementations only;
+- independent review waived by the owner;
+- package and install once, at the end.
+
+| Lane | Owner | Branch / worktree | State |
+| --- | --- | --- | --- |
+| L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` | started |
+| L2 compositor plugin efficiency + window model | Claude (Opus) | `stability/l2-compositor-20261016` | started |
+| L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` | started |
+| L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (+ `stability/l4-capture-20261016`) | started |
+| L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` | started |
+| L6 packaging + system power policy | Claude (manager) | `stability/l6-packaging-20261016` + QindaGentoo | started |
+
+Base: container-wm main `1e11e127e`; qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
+`~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
+
+Next steps:
+- Integrate each lane into main as it lands and rerun the affected gates.
+- When every lane has landed, build one full qindaqt-desktop revision from a single commit (ending the
+  R23/R25/R28/R29 patchwork), a new qindaqt-kwin revision and `sys-power/qindaqt-power-defaults`.
+- Install on the laptop once through Portage; the owner logs out and back in.
+- Owner-assisted: identify the s2idle wake source with the diagnostic script from L6.
+
+Disk: on 2026-10-16 qinda had only 22 GB free. Thirty CMake build trees nine or more days old in stale
+worktrees were removed (source and commits untouched), leaving 46 GB free.
+
 ## Non-game publication complete — 2026-10-12T20:06:06Z
 
 All eleven new public repositories are published. QindaLLM's creation cooldown cleared, and its public main is verified at `91a294cd967f0331bbef13f95b74920a27cd2d7e`, matching the licensed source on qinda. The catalog and release procedure now link it. This closes the remaining repository-publication gate in the 19:45 record below; its verified package archive and overlay recipe are unchanged.
