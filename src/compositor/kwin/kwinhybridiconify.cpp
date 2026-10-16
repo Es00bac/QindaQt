@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
 
+#include "kwinrescueoutputs.h"
+
 #include "hybridiconchiprouter.h"
 #include "hybridiconifycontroller.h"
 #include "hybridinteractionruntime.h"
@@ -255,9 +257,11 @@ bool KWinHybridSession::restoreIconifiedWindow(const QString &windowId,
     auto *const workspace = KWin::workspace();
     if (window && !window->isDeleted()) {
         // AGENT-CONTRACT: the chip may have been dragged; the window reappears
-        // with its title bar under the chip, at its original size.
-        if (QRectF(window->frameGeometry()) != record->restoreFrame) {
-            window->moveResize(record->restoreFrame);
+        // with its title bar under the chip, at its original size -- unless
+        // that frame is on an output that is gone (ADR-0384).
+        const QRectF restoreFrame = onLiveOutput(record->restoreFrame);
+        if (QRectF(window->frameGeometry()) != restoreFrame) {
+            window->moveResize(restoreFrame);
         }
         if (activate && workspace) {
             workspace->activateWindow(window);
@@ -281,9 +285,9 @@ void KWinHybridSession::handleIconifiedReveal(const QString &windowId)
     }
     m_iconChipDragBaselines.remove(windowId);
     auto *const window = m_registry.window(windowId);
-    if (window && !window->isDeleted()
-        && QRectF(window->frameGeometry()) != record->restoreFrame) {
-        window->moveResize(record->restoreFrame);
+    const QRectF restoreFrame = onLiveOutput(record->restoreFrame);
+    if (window && !window->isDeleted() && QRectF(window->frameGeometry()) != restoreFrame) {
+        window->moveResize(restoreFrame);
     }
     Q_EMIT shellVisibilityStateChanged();
 }

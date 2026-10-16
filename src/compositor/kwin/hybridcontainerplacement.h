@@ -2,6 +2,7 @@
 #pragma once
 
 #include "hybridinteractionruntime.h"
+#include "hybridoutputrescue.h"
 #include "kwinhybridscene.h"
 
 #include "qindaqt/hybrid/windowtopology.h"
@@ -102,6 +103,14 @@ public:
     // Moves rather than resizes: the container keeps its size unless it no
     // longer fits, so a user's layout survives the display change.
     [[nodiscard]] QStringList refreshStrandedContainers();
+    // ADR-0384: the frames this controller saves for later -- a maximized
+    // container's restore frame and a rolled-up container's strip -- are
+    // re-checked against the outputs that remain. Each one that overlaps none
+    // of them moves onto the nearest output (rescuedFrame()), so neither a
+    // Restore nor an unroll can put a container back on an unplugged display.
+    // Returns the ids whose saved frames moved; reports a strip move through
+    // the changed sink so chrome follows it.
+    QStringList refreshStrandedSavedFrames(const QVector<RescueOutput> &outputs);
     // True while a gesture whose Begin this controller refused is still
     // sending phases. Exposed so the behaviour is testable; callers have no
     // reason to consult it.

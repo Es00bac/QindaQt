@@ -123,8 +123,9 @@ invalidated with the rest of the window inventory when that state changes.
 `active`, `skipTaskbar`, and `skipSwitcher` expose KWin's current presentation
 policy. `stackIndex` is the window's absolute zero-based index in
 `Workspace::stackingOrder()`, ordered bottom to top, or `-1` if a managed
-window is momentarily absent from that list. Window activation, stacking, and
-either skip flag invalidate `Windows` through `WindowsChanged()`.
+window is momentarily absent from that list. Window activation, stacking,
+captions, and either skip flag invalidate `Windows` through `WindowsChanged()`,
+which is rate-limited (see Runtime signals).
 
 ## Shell visibility snapshot
 
@@ -179,10 +180,16 @@ outward (floor origin, ceil far edge), so a subpixel overlap cannot disappear.
 Schema 1 is bounded to 4 MiB, 64 outputs, 4,096 windows, 256 workspace or
 activity memberships per window, 512 UTF-16 code units per identifier, and
 output scales in `(0, 16]`. A non-finite, overflowing, malformed, duplicate,
-over-limit, unknown-output, outside-output, or internally inconsistent admitted
-value rejects the complete candidate. The compositor retains the prior valid
-generation and emits no invalidation; it never publishes a selectively pruned
-user-window inventory.
+over-limit, or internally inconsistent admitted value rejects the complete
+candidate; the compositor retains the prior valid generation and emits no
+invalidation. Transient window conditions degrade only their window instead
+([ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)):
+a window outside its assigned output, or naming an output the generation lacks,
+is published on the output its frame overlaps most; a window overlapping no
+output, or one KWin momentarily cannot describe, is omitted until it is back;
+and a window active while minimized or hidden is published with
+`active: false`. Every published generation is therefore valid for the strict
+consumer.
 
 Visibility admission deliberately differs from Hybrid topology admission.
 Ordinary managed normal, dialog, and utility windows participate, including
@@ -443,6 +450,18 @@ data. `TaskListSnapshotChanged` is coalesced; clients reread rather than derive
 facts from signal order. See
 [ADR-0073](../adr/0073-publish-atomic-authenticated-task-facts.md).
 
+The producer samples at most once per 250 ms with a trailing flush, and only
+when a source changed; the hint is sent only when the published bytes changed,
+so it too arrives at most four times a second. `TaskListSnapshot` answers from
+the cached, already encoded generation and never re-samples KWin. The caller's
+PID is looked up once per unique bus name (500 ms timeout) and cached until
+`NameOwnerChanged` reports that connection gone. The action generation is the
+last *published* `ShellVisibilitySnapshot` revision, so a rejected visibility
+sample no longer makes the facts unavailable or every action stale. See
+[ADR-0383](../adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md)
+and
+[ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md).
+
 ## Development qualification-surface evidence
 
 `DevelopmentShellSurfaces` is a read-only qualification seam, not a supported
@@ -662,7 +681,11 @@ under `snapshot`. These reads do not make `Submit`, `DockWindows`, or
 - `ContainerCommitted(ay eventJson)` follows one successful D-Bus-bridge
   transaction; process-local Hybrid commits do not emit it;
 - `WindowsChanged()` covers manageable-window membership, captions, frames,
-  minimized/active/task/switcher state, stacking order, and ownership;
+  minimized/active/task/switcher state, stacking order, and ownership. It is
+  broadcast at most once per 250 ms with a trailing flush after the last
+  change ([ADR-0383](../adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md));
+  a change after a quiet period is still announced at the end of its event-loop
+  turn;
 - `OutputsChanged()` follows one newly accepted output inventory generation;
 - `InputCapabilitiesChanged()` follows input-device inventory/lifecycle
   changes; and

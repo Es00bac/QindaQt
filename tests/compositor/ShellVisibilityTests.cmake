@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-qt_add_executable(qindaqt_shell_visibility_snapshot_tests tst_shellvisibilitysnapshot.cpp)
+qt_add_executable(
+    qindaqt_shell_visibility_snapshot_tests
+    tst_shellvisibilitysnapshot.cpp
+    shellvisibilitysnapshot_fixture.h
+)
 target_link_libraries(
     qindaqt_shell_visibility_snapshot_tests
     PRIVATE QindaQt::CompositorBridge Qt6::Test
@@ -8,6 +12,21 @@ target_link_libraries(
 add_test(
     NAME compositor.shell-visibility-snapshot
     COMMAND qindaqt_shell_visibility_snapshot_tests
+)
+
+# ADR-0384 per-window degradation, split by behaviour from the strict rows.
+qt_add_executable(
+    qindaqt_shell_visibility_degradation_tests
+    tst_shellvisibilitydegradation.cpp
+    shellvisibilitysnapshot_fixture.h
+)
+target_link_libraries(
+    qindaqt_shell_visibility_degradation_tests
+    PRIVATE QindaQt::CompositorBridge Qt6::Test
+)
+add_test(
+    NAME compositor.shell-visibility-degradation
+    COMMAND qindaqt_shell_visibility_degradation_tests
 )
 
 qt_add_executable(

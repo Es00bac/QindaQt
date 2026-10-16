@@ -12,6 +12,10 @@ set(_qindaqt_kwin_hybrid_scene_common_sources
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinhybridscene.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/managedwindowregistry.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/managedwindowregistry.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/changeratelimiter.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/coalescedchangenotifier.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridoutputrescue.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinrescueoutputs.cpp"
 )
 
 function(qindaqt_add_kwin_hybrid_scene_test target source test_name)

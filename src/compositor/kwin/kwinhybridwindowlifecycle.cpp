@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
 
+#include "containerlifetimeledger.h"
 #include "hybridcontainerplacement.h"
 #include "hybridinteractionruntime.h"
 
@@ -68,10 +69,7 @@ void KWinHybridSession::forgetManagedWindow(const QString &windowId)
     const auto afterContainers = m_runtime->topology().containerIds();
     for (const auto &id : beforeContainers) {
         if (!afterContainers.contains(id)) {
-            forgetShadedContainer(id);
-            m_placement->forgetContainer(id);
-            m_minimizedContainers.remove(id);
-            m_appearance.forgetContainer(id);
+            m_containerLedger->forget(id);
         }
     }
     synchronizeChrome();

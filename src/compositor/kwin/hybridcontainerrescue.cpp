@@ -77,4 +77,34 @@ QStringList HybridContainerPlacementController::refreshStrandedContainers()
     return failures;
 }
 
+QStringList HybridContainerPlacementController::refreshStrandedSavedFrames(
+    const QVector<RescueOutput> &outputs)
+{
+    QStringList moved;
+    for (auto iterator = m_maximizeRestoreFrames.begin();
+         iterator != m_maximizeRestoreFrames.end(); ++iterator) {
+        if (const auto rescued = rescuedFrame(iterator.value(), outputs)) {
+            iterator.value() = *rescued;
+            moved.append(iterator.key());
+        }
+    }
+    bool stripMoved = false;
+    for (auto iterator = m_shadeStripFrames.begin(); iterator != m_shadeStripFrames.end();
+         ++iterator) {
+        if (const auto rescued = rescuedFrame(iterator.value(), outputs)) {
+            // Keep the strip's own size: it is sized for its label (ADR-0189);
+            // rescuedFrame() only shrinks a frame that cannot fit at all.
+            iterator.value() = *rescued;
+            moved.append(iterator.key());
+            stripMoved = true;
+        }
+    }
+    if (stripMoved && m_changed) {
+        m_changed();
+    }
+    moved.removeDuplicates();
+    moved.sort();
+    return moved;
+}
+
 } // namespace QindaQt::Compositor::KWinIntegration

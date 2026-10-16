@@ -18,7 +18,50 @@ private slots:
     void producerPayloadDecodesWithoutLoss();
     void maximumSharedIdentifierAndScaleRemainInteroperable();
     void unavailablePublicationForcesConsumerRejection();
+    void degradedProducerBatchStaysValidForTheStrictConsumer();
 };
+
+// ADR-0384: the producer repairs transient window conditions per window, and
+// the consumer keeps validating the whole batch strictly. What the producer
+// publishes after degrading must therefore always pass the consumer.
+void CompositorVisibilityWireRoundtripTests::degradedProducerBatchStaysValidForTheStrictConsumer()
+{
+    Compositor::ShellVisibilitySnapshotStore store(QStringLiteral("epoch-a"));
+    const Compositor::ShellVisibilitySnapshotCandidate candidate{
+        .scope = {QStringLiteral("workspace-1"), QStringLiteral("activity-1")},
+        .outputs = {{QStringLiteral("eDP-1"), QRect(0, 0, 1536, 864), 1.25}},
+        .windows = {{.id = QStringLiteral("stranded"),
+                     .outputId = QStringLiteral("eDP-1"),
+                     .frameGeometry = QRect(1536, 32, 2560, 1408),
+                     .workspaceIds = {QStringLiteral("workspace-1")},
+                     .activityIds = {},
+                     .maximized = true},
+                    {.id = QStringLiteral("hidden-active"),
+                     .outputId = QStringLiteral("HDMI-A-1"),
+                     .frameGeometry = QRect(100, 100, 400, 300),
+                     .workspaceIds = {QStringLiteral("workspace-1")},
+                     .activityIds = {},
+                     .active = true,
+                     .hidden = true},
+                    {.id = QStringLiteral("ordinary"),
+                     .outputId = QStringLiteral("eDP-1"),
+                     .frameGeometry = QRect(0, 0, 800, 600),
+                     .workspaceIds = {QStringLiteral("workspace-1")},
+                     .activityIds = {}}},
+    };
+    QVector<Compositor::ShellVisibilityDegradation> degradations;
+    QCOMPARE(store.publish(candidate, nullptr, &degradations),
+             Compositor::ShellVisibilityPublishResult::Published);
+    QCOMPARE(degradations.size(), 3);
+    const auto decoded =
+        ShellVisibility::CompositorVisibilitySnapshotDecoder::decode(store.snapshotJson());
+    QVERIFY2(decoded.ok(), qPrintable(decoded.error.message));
+    QCOMPARE(decoded.snapshot->windows.size(), 2);
+    for (const auto &window : decoded.snapshot->windows) {
+        QCOMPARE(window.outputId, QStringLiteral("eDP-1"));
+        QVERIFY(!window.active);
+    }
+}
 
 void CompositorVisibilityWireRoundtripTests::producerPayloadDecodesWithoutLoss()
 {

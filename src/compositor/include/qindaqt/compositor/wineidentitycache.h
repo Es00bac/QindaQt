@@ -27,8 +27,10 @@ namespace QindaQt::Compositor {
 //     (path, mtime, size) in a sidecar signature file. The shell resolves
 //     that name through its ordinary confined icon path (ADR-0230).
 //
-// Threading: NOT thread-safe; confine one instance to a single thread (the
-// KWin task-facts publisher's GUI thread in production). Every read is
+// Threading: NOT thread-safe; confine one instance to a single thread. In
+// production that is the foreign identity resolver's worker thread, never
+// KWin's GUI thread (ADR-0384): every call below may stat or read files under
+// the user's home, which can sit on a slow or network mount. Every read is
 // bounded by the steamappidentity/peicon ceilings; failures are silent and
 // yield "no name" / "no icon".
 class WineIdentityCache

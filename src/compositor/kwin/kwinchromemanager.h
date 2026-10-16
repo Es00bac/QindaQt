@@ -31,8 +31,15 @@ class ChromeOverlay
 {
 public:
     virtual ~ChromeOverlay() = default;
+    // Implementations may compare `plan` with what they last painted and skip
+    // or narrow the repaint (ADR-0383); the call itself is always the new
+    // published plan.
     virtual void setRenderPlan(HybridChrome::ChromeRenderPlan plan) = 0;
     virtual void setPointerHoverTarget(HybridChrome::ChromeHitTarget target) = 0;
+    // Forces the next setRenderPlan() to repaint completely even when the plan
+    // compares equal. Needed when paint inputs outside the plan's comparable
+    // values changed (a new ChromeStyle::buttonPainter).
+    virtual void invalidateRendering() noexcept {}
     // Reparents scene chrome to the member that owns the group's topmost stack
     // slot. Implementations must reject dead/unpaintable anchors.
     [[nodiscard]] virtual bool setStackingAnchor(const QString &windowId,
@@ -100,6 +107,17 @@ public:
     [[nodiscard]] bool containerQuarantined(
         const QString &containerId) const noexcept;
     void clear() noexcept;
+    // Replaces one container's published plan when `plan` differs from it only
+    // in title text (tab titles, member titles, the rolled-up badge label).
+    // Everything else, including geometry, must arrive through
+    // updateFromSnapshot(). The overlay repaints at most its title band.
+    // Returns false, changing nothing, for an unknown container or any
+    // structural difference.
+    [[nodiscard]] bool updateTitles(const QString &containerId,
+                                    HybridChrome::ChromeRenderPlan plan,
+                                    QString *error = nullptr);
+    // See ChromeOverlay::invalidateRendering(); applies to every overlay.
+    void invalidateRendering() noexcept;
 
     [[nodiscard]] HybridInput::HitTarget hitTestChrome(
         const QPointF &position) const override;

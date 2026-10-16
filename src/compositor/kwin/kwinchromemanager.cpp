@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinchromemanager.h"
 
+#include "chromeplancomparison.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -321,6 +323,46 @@ bool KWinChromeManager::updateFromSnapshot(const Hybrid::WindowTopology &snapsho
     // consumers (member-chrome identity publication) read complete plans.
     Q_EMIT chromePlansPublished();
     return true;
+}
+
+bool KWinChromeManager::updateTitles(const QString &containerId,
+                                     HybridChrome::ChromeRenderPlan plan,
+                                     QString *error)
+{
+    if (error) {
+        error->clear();
+    }
+    if (QThread::currentThread() != thread()) {
+        return reject(error, QStringLiteral("chrome title updates must run on the QObject thread"));
+    }
+    const auto found = m_entries.find(containerId);
+    if (found == m_entries.end()) {
+        return reject(error, QStringLiteral("container '%1' has no published chrome")
+                                 .arg(containerId));
+    }
+    // AGENT-GUARD: this path skips prepareSnapshot()'s topology validation, so
+    // it may only ever change text. Geometry, tabs, members and state are
+    // validated input-routing truth and must come through updateFromSnapshot.
+    const auto differences = compareChromePlans(found->second.plan, plan);
+    if (differences.testFlag(ChromePlanDifference::Structure)
+        || differences.testFlag(ChromePlanDifference::TabGeometry)) {
+        return reject(error, QStringLiteral("container '%1' title update changes more than text")
+                                 .arg(containerId));
+    }
+    if (!differences) {
+        return true;
+    }
+    found->second.plan = plan;
+    found->second.overlay->setRenderPlan(std::move(plan));
+    return true;
+}
+
+void KWinChromeManager::invalidateRendering() noexcept
+{
+    for (auto &[containerId, entry] : m_entries) {
+        Q_UNUSED(containerId)
+        entry.overlay->invalidateRendering();
+    }
 }
 
 void KWinChromeManager::quarantineContainer(const QString &containerId)

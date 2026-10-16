@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinshelltaskfacts.h"
 #include "qindaqt/compositor/foreignwindowidentity.h"
-#include "qindaqt/compositor/winelaunchpaths.h"
+#include "qindaqt/compositor/wineidentitycache.h"
 
+#include "coalescedchangenotifier.h"
+#include "foreignidentityresolver.h"
 #include "hybridtaskidentitypolicy.h"
 #include "kwinhybridsession.h"
 #include "kwinoutputinventory.h"
@@ -13,14 +15,14 @@
 
 #include "windowcontainer.h"
 
+#include <core/output.h>
 #include <virtualdesktops.h>
 #include <window.h>
 #include <workspace.h>
 
-#include <QFile>
+#include <QDir>
 #include <QHash>
 #include <QSet>
-#include <QTimer>
 
 #include <utility>
 
@@ -32,42 +34,6 @@ void setError(QString *error, QString message)
     if (error) {
         *error = std::move(message);
     }
-}
-
-// Bounded read of another process's command line, used only to recover the
-// program behind an opaque launcher class (ADR-0169).
-//
-// AGENT-GUARD: `pid` must be KWin's authenticated client PID (wl_client
-// credentials, or XRes LOCAL_CLIENT_PID on X11) - never a client-supplied
-// `_NET_WM_PID`, which a window can set to any value and would let one client
-// borrow another program's identity. The read is capped and failure is silent:
-// an exited or unreadable process simply yields no better identity.
-[[nodiscard]] QByteArray clientCommandLine(pid_t pid)
-{
-    if (pid <= 1) {
-        return {};
-    }
-    QFile cmdline(QStringLiteral("/proc/%1/cmdline").arg(static_cast<qint64>(pid)));
-    if (!cmdline.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-    return cmdline.read(8192);
-}
-
-// Bounded read of another process's environment, used only to locate the
-// Wine prefix (WINEPREFIX) for the ADR-0230 PE-icon path. Same guard as
-// clientCommandLine: the PID is KWin's authenticated client PID, the read is
-// capped, and failure is silent.
-[[nodiscard]] QByteArray clientEnvironment(pid_t pid)
-{
-    if (pid <= 1) {
-        return {};
-    }
-    QFile environ(QStringLiteral("/proc/%1/environ").arg(static_cast<qint64>(pid)));
-    if (!environ.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-    return environ.read(65536);
 }
 
 struct ContainerProjection final
@@ -130,10 +96,20 @@ KWinShellTaskFactsPublisher::KWinShellTaskFactsPublisher(
     , m_hybrid(hybrid)
     , m_panelOwner(panelOwner)
     , m_store(visibility.epoch())
+    , m_foreignIdentity(std::make_unique<ForeignIdentityResolver>(
+          std::make_shared<Compositor::WineIdentityCache>(
+              Compositor::WineIdentityCache::defaultCacheRoot(), QDir::homePath())))
+    , m_refresh(std::make_unique<CoalescedChangeNotifier>(
+          RefreshIntervalMilliseconds, [this](const QStringList &) { refresh(); }))
 {
     auto *const compositorWorkspace = KWin::workspace();
     Q_ASSERT(compositorWorkspace);
     connect(&m_registry, &ManagedWindowRegistry::windowsChanged,
+            this, &KWinShellTaskFactsPublisher::scheduleRefresh);
+    // Titles are task facts; they arrive already coalesced per window.
+    connect(&m_registry, &ManagedWindowRegistry::windowCaptionsChanged,
+            this, &KWinShellTaskFactsPublisher::scheduleRefresh);
+    connect(m_foreignIdentity.get(), &ForeignIdentityResolver::identityChanged,
             this, &KWinShellTaskFactsPublisher::scheduleRefresh);
     connect(&m_outputs, &KWinOutputInventory::inventoryChanged,
             this, &KWinShellTaskFactsPublisher::scheduleRefresh);
@@ -173,8 +149,10 @@ KWinShellTaskFactsPublisher::~KWinShellTaskFactsPublisher() = default;
 
 const QByteArray &KWinShellTaskFactsPublisher::snapshotJson()
 {
-    m_refreshScheduled = false;
-    refresh();
+    // AGENT-CONTRACT (ADR-0383): serve the cached, already encoded generation.
+    // Every change that can alter it schedules a refresh, which publishes and
+    // then invalidates the reader; re-sampling here doubled the work of every
+    // change and let a reader defeat the rate limit.
     return m_store.snapshotJson();
 }
 
@@ -212,6 +190,9 @@ void KWinShellTaskFactsPublisher::trackWindow(KWin::Window *window)
 
 void KWinShellTaskFactsPublisher::forgetWindow(KWin::Window *window)
 {
+    if (window) {
+        m_foreignIdentity->forget(m_registry.windowId(window));
+    }
     const auto connections = m_connections.take(window);
     for (const auto &connection : connections) {
         disconnect(connection);
@@ -220,18 +201,12 @@ void KWinShellTaskFactsPublisher::forgetWindow(KWin::Window *window)
 
 void KWinShellTaskFactsPublisher::scheduleRefresh()
 {
-    if (m_refreshScheduled) {
-        return;
-    }
-    m_refreshScheduled = true;
-    QTimer::singleShot(0, this, [this] {
-        m_refreshScheduled = false;
-        refresh();
-    });
+    m_refresh->notify();
 }
 
 void KWinShellTaskFactsPublisher::refresh()
 {
+    ++m_samples;
     QString error;
     const auto candidate = sample(&error);
     if (!candidate) {
@@ -255,8 +230,13 @@ void KWinShellTaskFactsPublisher::refresh()
 std::optional<ShellTaskFactsCandidate>
 KWinShellTaskFactsPublisher::sample(QString *error)
 {
-    if (!m_visibility.refreshForActionFence() || !m_outputs.available()
-        || m_visibility.revision() == 0) {
+    // AGENT-CONTRACT (ADR-0384): task facts carry the visibility generation as
+    // their action fence but never depend on the latest visibility sample
+    // being valid. refreshForActionFence() closes the invalidation window so
+    // the fence is current; a rejected visibility batch keeps its last
+    // published generation, and the dock keeps working on it.
+    static_cast<void>(m_visibility.refreshForActionFence());
+    if (!m_outputs.available() || m_visibility.revision() == 0) {
         setError(error, QStringLiteral("task facts dependencies are unavailable"));
         return std::nullopt;
     }
@@ -298,7 +278,14 @@ KWinShellTaskFactsPublisher::sample(QString *error)
 
     for (const QString &windowId : m_registry.windowIds()) {
         auto *window = m_registry.window(windowId);
-        if (!window || !window->output()) {
+        // A window can be between outputs for a moment after a hot-unplug;
+        // report the output it lies on rather than void every task.
+        auto *const output = window
+            ? (window->output() ? window->output()
+                                : KWin::workspace()->outputAt(
+                                      window->frameGeometry().center()))
+            : nullptr;
+        if (!window || !output) {
             setError(error, QStringLiteral("managed task window is unavailable"));
             return std::nullopt;
         }
@@ -317,20 +304,17 @@ KWinShellTaskFactsPublisher::sample(QString *error)
         QString clientExecutable;
         QString steamName;
         if (Compositor::isOpaqueLauncherClass(resourceClass)) {
-            const QByteArray commandLine = clientCommandLine(window->pid());
-            clientExecutable =
-                Compositor::executableFromCommandLine(commandLine);
-            // ADR-0230 layered on ADR-0169: a real `steam_app_<n>` title
-            // takes its human name from Steam's appmanifest (empty for
-            // `steam_app_0` and when Steam is absent), and the executable's
-            // PE icon is refreshed in the shared cache the shell's confined
-            // icon path reads. Both are bounded, memoized, and fail-silent.
-            steamName = m_wineIdentity.steamNameForClass(resourceClass);
-            if (!Compositor::windowsExecutablePathFromCommandLine(commandLine)
-                     .isEmpty()) {
-                m_wineIdentity.ensureIconForClient(
-                    commandLine, clientEnvironment(window->pid()));
-            }
+            // ADR-0230 layered on ADR-0169: a real `steam_app_<n>` title takes
+            // its human name from Steam's appmanifest, and the executable's PE
+            // icon is refreshed in the shared cache the shell's confined icon
+            // path reads. AGENT-GUARD (ADR-0384): never read /proc or the
+            // filesystem here; this runs for every window on every sample.
+            // The resolver reads each window's command line once and does the
+            // Steam/icon work on its worker.
+            const auto identity = m_foreignIdentity->identity(
+                windowId, static_cast<qint64>(window->pid()), resourceClass);
+            clientExecutable = identity.clientExecutable;
+            steamName = identity.steamName;
         }
         const QString applicationId = Compositor::resolveApplicationId(
             window->desktopFileName(), resourceClass, clientExecutable);
@@ -378,7 +362,7 @@ KWinShellTaskFactsPublisher::sample(QString *error)
                 || groupedMaximized,
             .fullscreen = window->isFullScreen(),
             .demandsAttention = window->isDemandingAttention(),
-            .outputId = window->output()->name(),
+            .outputId = output->name(),
             .workspaceIds = window->isOnAllDesktops()
                 ? QStringList{} : window->desktopIds(),
             .onAllWorkspaces = window->isOnAllDesktops(),

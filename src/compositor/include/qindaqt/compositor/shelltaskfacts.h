@@ -121,7 +121,10 @@ public:
 
 private:
     QByteArray m_snapshotJson;
-    QByteArray m_canonicalState;
+    // AGENT-NOTE (ADR-0383): the last published candidate, compared by value.
+    // An unchanged sample therefore costs no JSON encoding at all, and a
+    // changed one is encoded exactly once.
+    std::optional<ShellTaskFactsCandidate> m_published;
     QString m_epoch;
     quint64 m_revision = 0;
     bool m_available = false;
@@ -142,7 +145,16 @@ public:
                              ShellPanelOwnerSource &panelOwner,
                              ShellTaskFactsSource &source);
 
+    struct Reply final
+    {
+        QByteArray payload;
+        // True when the caller passed the panel-owner join, so the transport
+        // may bind change hints to it without decoding the payload again.
+        bool authorized = false;
+    };
+
     [[nodiscard]] bool authorized(const QString &callerUniqueName) const;
+    [[nodiscard]] Reply reply(const QString &callerUniqueName);
     [[nodiscard]] QByteArray snapshot(const QString &callerUniqueName);
 
 private:

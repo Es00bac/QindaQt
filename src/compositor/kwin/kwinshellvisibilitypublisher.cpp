@@ -216,17 +216,25 @@ void KWinShellVisibilityPublisher::scheduleRefresh()
 void KWinShellVisibilityPublisher::refresh()
 {
     QString error;
-    const auto candidate = sample(&error);
+    QVector<ShellVisibilityDegradation> excluded;
+    const auto candidate = sample(&error, &excluded);
     if (!candidate) {
         handleFailure(QStringLiteral("snapshot-sampling-failed"), error);
         return;
     }
-    const auto result = m_store.publish(*candidate, &error);
+    QVector<ShellVisibilityDegradation> degradations;
+    const auto result = m_store.publish(*candidate, &error, &degradations);
+    if (result == ShellVisibilityPublishResult::Published
+        || result == ShellVisibilityPublishResult::Unchanged) {
+        reportDegradations(excluded + degradations);
+    }
     if (result == ShellVisibilityPublishResult::Published) {
         m_outage = false;
+        m_lastFailure.clear();
         Q_EMIT snapshotChanged();
     } else if (result == ShellVisibilityPublishResult::Unchanged) {
         m_outage = false;
+        m_lastFailure.clear();
     } else if (result == ShellVisibilityPublishResult::RevisionExhausted) {
         handleFailure(QStringLiteral("revision-exhausted"), error);
     } else {
@@ -243,8 +251,13 @@ void KWinShellVisibilityPublisher::handleFailure(
     if (m_store.markUnavailable(code, message)) {
         Q_EMIT snapshotChanged();
     }
-    qWarning("QindaQt shell visibility snapshot is unavailable: %s",
-             qPrintable(message));
+    // A persistent structural failure is retried on every window event; say
+    // it once per distinct cause rather than once per attempt.
+    if (message != m_lastFailure) {
+        qWarning("QindaQt shell visibility snapshot is unavailable: %s",
+                 qPrintable(message));
+        m_lastFailure = message;
+    }
     if (m_outage) {
         return;
     }
@@ -254,8 +267,35 @@ void KWinShellVisibilityPublisher::handleFailure(
     QTimer::singleShot(50, this, [this] { scheduleRefresh(); });
 }
 
+void KWinShellVisibilityPublisher::reportDegradations(
+    const QVector<ShellVisibilityDegradation> &degradations)
+{
+    QSet<QString> current;
+    QSet<QString> degradedWindows;
+    for (const auto &degradation : degradations) {
+        const QString key = QStringLiteral("%1/%2").arg(
+            degradation.windowId, QString::number(int(degradation.kind)));
+        current.insert(key);
+        degradedWindows.insert(degradation.windowId);
+        if (!m_reportedDegradations.contains(key)) {
+            qWarning("QindaQt shell visibility degraded one window: %s",
+                     qPrintable(degradation.message));
+        }
+    }
+    for (const auto &key : std::as_const(m_reportedDegradations)) {
+        const QString windowId = key.section(u'/', 0, 0);
+        if (!current.contains(key) && !degradedWindows.contains(windowId)) {
+            qInfo("QindaQt shell visibility: window '%s' is consistent again",
+                  qPrintable(windowId.left(64)));
+            degradedWindows.insert(windowId);
+        }
+    }
+    m_reportedDegradations = std::move(current);
+}
+
 std::optional<ShellVisibilitySnapshotCandidate>
-KWinShellVisibilityPublisher::sample(QString *error) const
+KWinShellVisibilityPublisher::sample(QString *error,
+                                     QVector<ShellVisibilityDegradation> *excluded) const
 {
     ShellVisibilitySnapshotCandidate candidate;
     auto *const compositorWorkspace = KWin::workspace();
@@ -298,10 +338,15 @@ KWinShellVisibilityPublisher::sample(QString *error) const
         const auto geometry = alignedLogicalGeometry(window->frameGeometry());
         const auto uuid = window->internalId();
         if (!window->output() || !geometry || uuid.isNull()) {
-            if (error) {
-                *error = QStringLiteral("an admitted KWin window is unrepresentable");
-            }
-            return std::nullopt;
+            // ADR-0384: one window KWin cannot describe right now (no output
+            // during a hot-unplug, a degenerate frame) is left out; it no
+            // longer takes every panel's visibility down with it.
+            excluded->append({uuid.toString(QUuid::WithoutBraces),
+                              ShellVisibilityDegradationKind::StrandedExcluded,
+                              QStringLiteral("managed window '%1' has no output or no "
+                                             "usable frame; left out of this generation")
+                                  .arg(uuid.toString(QUuid::WithoutBraces))});
+            continue;
         }
         const auto owner = m_registry.owner(
             uuid.toString(QUuid::WithoutBraces));

@@ -4,6 +4,7 @@
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusReply>
 
+#include "coalescedchangenotifier.h"
 #include "kwininputadapter.h"
 #include "kwinoutputinventory.h"
 #include "kwinshellvisibilitypublisher.h"
@@ -108,8 +109,14 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
 {
     connect(m_coreEndpoint, &ControlEndpoint::ContainerCommitted,
             this, &KWinControlEndpoint::ContainerCommitted);
+    m_windowsChanged = std::make_unique<CoalescedChangeNotifier>(
+        WindowsChangedIntervalMilliseconds,
+        [this](const QStringList &) { Q_EMIT WindowsChanged(); });
     connect(&registry, &ManagedWindowRegistry::windowsChanged,
-            this, &KWinControlEndpoint::WindowsChanged);
+            this, [this] { m_windowsChanged->notify(); });
+    // Windows() carries titles, so a caption change still announces itself.
+    connect(&registry, &ManagedWindowRegistry::windowCaptionsChanged,
+            this, [this](const QStringList &) { m_windowsChanged->notify(); });
     connect(&outputInventory, &KWinOutputInventory::inventoryChanged,
             this, &KWinControlEndpoint::OutputsChanged);
     connect(&inputAdapter, &KWinInputAdapter::capabilitiesChanged,
@@ -135,6 +142,8 @@ KWinControlEndpoint::KWinControlEndpoint(ContainerControlBridge &bridge,
         }
     }
 }
+
+KWinControlEndpoint::~KWinControlEndpoint() = default;
 
 void KWinControlEndpoint::announceEdgeGesture(const QString &edge, const QString &action)
 {

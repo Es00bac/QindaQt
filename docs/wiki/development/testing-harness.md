@@ -1523,7 +1523,9 @@ It proves exact-unique-owner binding for reads, directed invalidations, and
 mutations, including cold-start known absence, owner loss, and replacement.
 `compositor.shell-task-facts` independently proves publication fencing,
 bounds/reference rejection with prior-generation retention, constant-size
-pre-source unauthorized denial, and panel-owner credential changes.
+pre-source unauthorized denial, panel-owner credential changes, the
+authorization flag returned with each reply, and that an unchanged sample keeps
+the already encoded payload (ADR-0383).
 
 Every transport process is the QtTest executable itself on a private bus; the
 rows contact no host session bus, compositor, display, input, hardware, or
@@ -2238,6 +2240,56 @@ beyond the Compositor MVP and are qualified separately below. Heterogeneous
 topology replay and rotation/hotplug/lid policy belong to Platform services;
 DRM/KMS, physical GPU/input devices, and suspend/resume remain Release
 qualification gates.
+
+## Compositor change budget and window-model integrity
+
+The 2026-10-16 stability rows
+([ADR-0383](../adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md),
+[ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md))
+are pure or fake-KWin and run headless:
+
+```sh
+ctest --test-dir build/release \
+  -R '^(compositor\.(change-rate-limiter|chrome-overlay-raster|shell-credential-cache|title-change-budget|output-rescue|container-lifetime|foreign-identity-resolver|shell-visibility-(snapshot|degradation)|shell-task-facts|hybrid-chrome-plan-builder)|qindaqt\.shell-visibility-wire-roundtrip)$' \
+  --output-on-failure
+```
+
+- `compositor.change-rate-limiter`: leading edge at the end of the turn,
+  trailing flush, per-key independence, pruning, a stepped clock, and a 10 Hz
+  title held to 41 deliveries in 10 s.
+- `compositor.chrome-overlay-raster`: plan-difference classes; identical plans
+  and member titles repaint nothing; tab titles, hover and split-deck glide
+  frames repaint only the band; band over body equals a full repaint exactly
+  and a single whole-frame paint within one antialiasing step, at scales 1,
+  1.25, 1.5 and 2, translucent, split-deck and rolled-up styles.
+- `compositor.title-change-budget`: one title at 10 Hz for 10 simulated seconds
+  through the production components. After: 41 caption deliveries,
+  `WindowsChanged`, task-fact samples and `TaskListSnapshotChanged` each, 0
+  re-plans, 0 full-frame renders, 41 band renders, 13.9 MB uploaded, 1
+  credential lookup. Its model of the previous wiring: 100 / 100 / 200 / 100,
+  100 re-plans and full renders, 1.48 GB, 200 lookups. The numbers are printed
+  with `qInfo`.
+- `compositor.shell-credential-cache`: one lookup per unique name, no cached
+  failures or well-known names, forget on owner loss, bounded eviction.
+- `compositor.output-rescue`: the live `2560x1408+1536+32` window on a
+  `1536x864` eDP-only session, reachable frames left alone, nearest-output
+  choice, and maximize-restore and rolled-strip frames moved off a removed
+  output. Model level: no harness probe can map a client onto a virtual output
+  before unplugging it.
+- `compositor.container-lifetime`: one row per dissolution path (close, native
+  title drag, context-menu ungroup, shared-chrome tab drag, keyboard detach,
+  keyboard grouping) through the real runtime; each reproduces the stale
+  "no valid maximize area" failure and then forgets the container once.
+- `compositor.foreign-identity-resolver`: one command-line read per window,
+  re-read on a PID or class change, the Steam name delivered later through the
+  event loop, late results dropped, and filesystem work on the worker thread.
+- `compositor.shell-visibility-degradation` and
+  `qindaqt.shell-visibility-wire-roundtrip`: a stranded window is left out, a
+  window outside its output or naming a missing one is reassigned, an active
+  hidden window is published inactive, a mixed batch reports one degradation
+  per cause, structural faults still reject (named, in
+  `compositor.shell-visibility-snapshot`), and the degraded batch passes the
+  strict shell decoder.
 
 ## Completed Hybrid qualification evidence
 

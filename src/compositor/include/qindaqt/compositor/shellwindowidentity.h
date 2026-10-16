@@ -101,7 +101,16 @@ public:
                                   ShellPanelOwnerSource &panelOwner,
                                   ShellWindowIdentitySource &identitySource);
 
+    struct Reply final
+    {
+        QByteArray payload;
+        // True when the caller passed the panel-owner join (ADR-0383): the
+        // transport binds change hints from this, not from a re-decode.
+        bool authorized = false;
+    };
+
     [[nodiscard]] bool authorized(const QString &callerUniqueName) const;
+    [[nodiscard]] Reply reply(const QString &callerUniqueName);
     [[nodiscard]] QByteArray snapshot(const QString &callerUniqueName);
 
 private:

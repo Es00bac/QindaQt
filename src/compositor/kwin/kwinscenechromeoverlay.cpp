@@ -2,10 +2,10 @@
 #include "kwinscenechromeoverlay.h"
 
 #include "kwinchromemanager.h"
+#include "chromeoverlayraster.h"
 #include "chromeplanlocalizer.h"
 #include "managedwindowregistry.h"
 
-#include "qindaqt/hybrid_chrome/chromerenderer.h"
 #include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 #include <compositor.h>
@@ -18,7 +18,6 @@
 #include <QEasingCurve>
 #include <QElapsedTimer>
 #include <QImage>
-#include <QPainter>
 #include <QPointer>
 #include <QTimer>
 
@@ -48,33 +47,35 @@ public:
     void setRenderPlan(HybridChrome::ChromeRenderPlan plan) override
     {
         m_globalGeometry = plan.outerFrame;
-        m_devicePixelRatio = plan.devicePixelRatio;
         auto localized = localizeChromeRenderPlan(std::move(plan), m_globalGeometry.topLeft());
         // ADR-0281: a split-deck carousel glides to its new active card over
         // the theme's motion duration (0 under reduced motion). Paint only:
         // the published plan, and so every hit test, is already final.
         if (localized.style.deckMotionMs > 0
-            && HybridChrome::ChromeSplitDeck::canAnimate(m_plan, localized)) {
+            && HybridChrome::ChromeSplitDeck::canAnimate(m_raster.plan(), localized)) {
             startDeckMotion(std::move(localized));
-        } else {
-            stopDeckMotion();
-            m_plan = std::move(localized);
+            return;
         }
-        render();
-        updateItem();
+        stopDeckMotion();
+        // ADR-0383: the raster compares plans. An identical plan repaints
+        // nothing; a title/tab-only change repaints the title band alone.
+        m_raster.setPlan(std::move(localized));
+        updateItems();
     }
 
     void setPointerHoverTarget(HybridChrome::ChromeHitTarget target) override
     {
-        const bool controlsHovered = target.kind == HybridChrome::HitKind::WindowButton;
-        if (m_state.hoveredTarget == target
-            && m_state.controlsHovered == controlsHovered) {
-            return;
+        auto state = m_raster.paintState();
+        state.controlsHovered = target.kind == HybridChrome::HitKind::WindowButton;
+        state.hoveredTarget = std::move(target);
+        if (m_raster.setPaintState(state) != ChromeOverlayRaster::Repaint::None) {
+            updateItems();
         }
-        m_state.hoveredTarget = std::move(target);
-        m_state.controlsHovered = controlsHovered;
-        render();
-        updateItem();
+    }
+
+    void invalidateRendering() noexcept override
+    {
+        m_raster.invalidate();
     }
 
     bool setStackingAnchor(const QString &windowId, QString *error) override
@@ -99,25 +100,38 @@ public:
             // after the anchor's surface/decoration, while the parent window's
             // own stack slot keeps later unrelated windows above this image.
             m_item->setZ(1);
+            // The title band is a child of the body item, so reparenting the
+            // body to a new anchor carries the band with it.
+            m_bandItem = scene->renderer()->createImageItem(m_item.get());
+            if (!m_bandItem) {
+                // Without its band the chrome would show no title row at all.
+                m_item->setParentItem(nullptr);
+                m_item.reset();
+                return fail(error,
+                            QStringLiteral("container '%1' could not create a title band image")
+                                .arg(m_containerId));
+            }
+            m_pushedBodyKey = 0;
+            m_pushedBandKey = 0;
         } else {
             m_item->setParentItem(windowItem);
         }
         m_anchor = window;
         m_anchorId = windowId;
-        updateItem();
+        updateItems();
         return true;
     }
 
     void showOverlay() override
     {
         m_visible = true;
-        updateItem();
+        updateItems();
     }
 
     void hideOverlay() noexcept override
     {
         m_visible = false;
-        updateItem();
+        updateItems();
     }
 
     bool isVisible() const noexcept override
@@ -134,11 +148,18 @@ public:
     {
         stopDeckMotion();
         m_visible = false;
+        if (m_bandItem) {
+            m_bandItem->setVisible(false);
+            m_bandItem->setParentItem(nullptr);
+            m_bandItem.reset();
+        }
         if (m_item) {
             m_item->setVisible(false);
             m_item->setParentItem(nullptr);
             m_item.reset();
         }
+        m_pushedBodyKey = 0;
+        m_pushedBandKey = 0;
         m_anchor.clear();
         m_anchorId.clear();
     }
@@ -148,9 +169,11 @@ private:
     {
         // Starting from what is on screen keeps a fast wheel smooth: a new
         // step mid-glide continues from the current card positions.
-        m_motionFrom = m_plan;
+        m_motionFrom = m_raster.plan();
         m_motionTarget = std::move(target);
-        m_plan = HybridChrome::ChromeSplitDeck::interpolate(m_motionFrom, m_motionTarget, 0.0);
+        m_raster.setPlan(
+            HybridChrome::ChromeSplitDeck::interpolate(m_motionFrom, m_motionTarget, 0.0));
+        updateItems();
         if (!m_motionTimer) {
             m_motionTimer = std::make_unique<QTimer>();
             m_motionTimer->setInterval(16);
@@ -168,12 +191,13 @@ private:
         if (progress >= 1.0) {
             stopDeckMotion();
         } else {
-            m_plan = HybridChrome::ChromeSplitDeck::interpolate(
+            // Glide frames move only the deck cards, so each repaints the
+            // title band rather than the whole frame.
+            m_raster.setPlan(HybridChrome::ChromeSplitDeck::interpolate(
                 m_motionFrom, m_motionTarget,
-                QEasingCurve(QEasingCurve::OutCubic).valueForProgress(progress));
+                QEasingCurve(QEasingCurve::OutCubic).valueForProgress(progress)));
         }
-        render();
-        updateItem();
+        updateItems();
     }
 
     // Lands any glide in flight on its target.
@@ -181,61 +205,60 @@ private:
     {
         if (m_motionTimer && m_motionTimer->isActive()) {
             m_motionTimer->stop();
-            m_plan = m_motionTarget;
+            m_raster.setPlan(m_motionTarget);
         }
     }
 
-    void render()
-    {
-        if (!m_plan.outerFrame.isValid() || !std::isfinite(m_devicePixelRatio)
-            || m_devicePixelRatio <= 0.0) {
-            m_image = {};
-            return;
-        }
-        const QSize physicalSize(
-            qCeil(m_plan.outerFrame.width() * m_devicePixelRatio),
-            qCeil(m_plan.outerFrame.height() * m_devicePixelRatio));
-        if (physicalSize.isEmpty()) {
-            m_image = {};
-            return;
-        }
-        m_image = QImage(physicalSize, QImage::Format_ARGB32_Premultiplied);
-        m_image.setDevicePixelRatio(m_devicePixelRatio);
-        m_image.fill(Qt::transparent);
-        QPainter painter(&m_image);
-        HybridChrome::ChromeRenderer::paint(painter, m_plan, m_state);
-    }
-
-    void updateItem() noexcept
+    // AGENT-GUARD: ImageItem::setImage() always discards quads and repaints
+    // the item, and uploads a texture when the cache key changed. Push an
+    // image only when the raster replaced it, so an unchanged plan costs no
+    // repaint and a title change re-uploads only the band texture.
+    void updateItems() noexcept
     {
         if (!m_item) {
             return;
         }
-        const bool renderable = m_visible && m_anchor && !m_image.isNull();
+        const QImage &body = m_raster.body();
+        const QImage &band = m_raster.band();
+        const bool renderable = m_visible && m_anchor && !body.isNull();
         m_item->setVisible(renderable);
+        if (m_bandItem) {
+            m_bandItem->setVisible(renderable && !band.isNull());
+        }
         if (!renderable) {
             return;
         }
-        m_item->setImage(m_image);
-        m_item->setSize(m_globalGeometry.size());
+        if (body.cacheKey() != m_pushedBodyKey) {
+            m_item->setImage(body);
+            m_pushedBodyKey = body.cacheKey();
+        }
+        m_item->setSize(m_raster.bodyLogicalSize());
         m_item->setPosition(m_globalGeometry.topLeft() - m_anchor->pos());
+        if (m_bandItem && !band.isNull()) {
+            if (band.cacheKey() != m_pushedBandKey) {
+                m_bandItem->setImage(band);
+                m_pushedBandKey = band.cacheKey();
+            }
+            m_bandItem->setPosition(QPointF(0.0, 0.0));
+            m_bandItem->setSize(m_raster.bandLogicalSize());
+        }
     }
 
     QString m_containerId;
     ManagedWindowRegistry &m_registry;
     // What is painted: the published plan, or a frame of a deck glide.
-    HybridChrome::ChromeRenderPlan m_plan;
+    ChromeOverlayRaster m_raster;
     HybridChrome::ChromeRenderPlan m_motionFrom;
     HybridChrome::ChromeRenderPlan m_motionTarget;
     std::unique_ptr<QTimer> m_motionTimer;
     QElapsedTimer m_motionClock;
-    HybridChrome::ChromePaintState m_state;
     QRectF m_globalGeometry;
-    QImage m_image;
     std::unique_ptr<KWin::ImageItem> m_item;
+    std::unique_ptr<KWin::ImageItem> m_bandItem;
+    qint64 m_pushedBodyKey = 0;
+    qint64 m_pushedBandKey = 0;
     QPointer<KWin::Window> m_anchor;
     QString m_anchorId;
-    qreal m_devicePixelRatio = 1.0;
     bool m_visible = false;
 };
 

@@ -166,6 +166,57 @@ HybridChromePlanBuilder::ShadedLabel HybridChromePlanBuilder::shadedLabel(
                 text, QFontMetricsF(HybridChrome::ChromeShadedBadge::labelFont()))};
 }
 
+HybridChromePlanBuilder::TitleRefresh HybridChromePlanBuilder::refreshTitles(
+    const Core::WindowContainer &container,
+    const HybridChrome::ChromeRenderPlan &published,
+    const HybridChromePlanOptions &options,
+    const HybridWindowTitleLookup &titleLookup)
+{
+    using Outcome = TitleRefresh::Outcome;
+    TitleRefresh result{Outcome::Unchanged, published};
+    if (published.containerId != container.id()) {
+        result.outcome = Outcome::NeedsReplan;
+        return result;
+    }
+    bool changed = false;
+    // A rolled-up plan may carry only the first few pages as pills, so tabs
+    // are matched to pages by id, never by index.
+    for (auto &tab : result.plan.tabs) {
+        const auto *page = container.page(tab.tabId);
+        if (!page) {
+            result.outcome = Outcome::NeedsReplan;
+            return result;
+        }
+        const auto overridden = options.tabTitleOverrides.constFind(tab.tabId);
+        const QString title =
+            overridden != options.tabTitleOverrides.cend() && !overridden->isEmpty()
+            ? *overridden
+            : pageTitle(*page, titleLookup);
+        if (tab.title != title) {
+            tab.title = title;
+            changed = true;
+        }
+    }
+    for (auto &member : result.plan.members) {
+        const QString title = resolvedTitle(member.memberId, titleLookup);
+        if (member.title != title) {
+            member.title = title;
+            changed = true;
+        }
+    }
+    if (published.shaded) {
+        // AGENT-GUARD (ADR-0189): the strip width was reserved for the label
+        // it paints. A different label needs the full path that resizes the
+        // strip first; patching only the text would elide or overflow it.
+        if (shadedLabel(container, options, titleLookup).text != published.badgeLabelText) {
+            result.outcome = Outcome::NeedsReplan;
+            return result;
+        }
+    }
+    result.outcome = changed ? Outcome::Patched : Outcome::Unchanged;
+    return result;
+}
+
 std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
     const Core::WindowContainer &container,
     const HybridConstraints::ConstraintSolution &solution,

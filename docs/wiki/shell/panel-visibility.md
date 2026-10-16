@@ -21,15 +21,28 @@ One evaluation contains:
 The caller must copy all of those values from one coherent compositor/shell
 generation. Identifiers, geometry, references, window scope, active-window
 cardinality, and enum values are validated before any result is emitted. One
-bad member rejects the complete batch; partial visibility publication is not a
-supported state. That remains deliberate — see
-[ADR-0237](../adr/0237-the-visibility-snapshot-stays-atomic.md) — and it carries
-an obligation: **every rejection names the offending member and the specific
-reason.** A shared message across causes makes a transient race (a window
-momentarily off its output, or active while still marked minimized)
-indistinguishable from a producer bug (a duplicate identifier, a malformed
-scope), and a rejection pins every panel safe-visible, so that message is all a
-reader gets.
+bad member rejects the complete batch on the consumer side; partial visibility
+evaluation is not a supported state. Every rejection names the offending member
+and the specific reason ([ADR-0237](../adr/0237-the-visibility-snapshot-stays-atomic.md)),
+because a rejection pins every panel safe-visible and its message is all a
+reader of the log gets.
+
+The compositor producer keeps that strict consumer fed with valid batches by
+repairing the *transient* window conditions per window before it publishes
+([ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)):
+
+| Condition seen in KWin | What the producer publishes |
+| --- | --- |
+| Frame outside its assigned output, or an output this generation lacks | The window on the output its frame overlaps most |
+| Frame overlapping no output (stranded by an unplug) | Nothing for that window; it returns once rescued |
+| Active while minimized or hidden | The window as not active |
+| No output or an unusable frame for a moment | Nothing for that window |
+
+Each repair is logged once when it starts and once when the window is
+consistent again. Structural producer bugs (non-canonical or duplicate
+identifiers, inconsistent scope, two active windows, a bad output inventory)
+still void the batch. Before this split, one window left on an unplugged
+output disabled auto-hide, the dock, and window actions for a whole session.
 
 ## Hide modes
 

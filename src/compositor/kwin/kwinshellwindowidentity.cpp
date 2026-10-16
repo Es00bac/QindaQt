@@ -142,7 +142,10 @@ void KWinShellWindowIdentityPublisher::refresh()
 std::optional<ShellWindowIdentityCandidate>
 KWinShellWindowIdentityPublisher::sample(QString *error)
 {
-    if (!m_visibility.refreshForActionFence() || m_visibility.revision() == 0) {
+    // ADR-0384: the action fence is the last published visibility generation;
+    // a rejected visibility sample must not take the identity down with it.
+    static_cast<void>(m_visibility.refreshForActionFence());
+    if (m_visibility.revision() == 0) {
         if (error) *error = QStringLiteral("the window-action generation is unavailable");
         return std::nullopt;
     }

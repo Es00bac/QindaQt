@@ -82,6 +82,31 @@ public:
         const Core::WindowContainer &container,
         const HybridChromePlanOptions &options,
         const HybridWindowTitleLookup &titleLookup);
+
+    // ADR-0383: a caption change re-derives only the title text of an already
+    // published plan, through the same page/member title rules build() uses,
+    // instead of re-planning the container.
+    struct TitleRefresh final {
+        enum class Outcome {
+            // Every title the plan carries is already current.
+            Unchanged,
+            // `plan` is the published plan with only title text replaced.
+            Patched,
+            // A title change would move geometry (the rolled-up strip is sized
+            // for its label) or the plan no longer matches the container;
+            // run a full chrome synchronization instead.
+            NeedsReplan,
+        };
+        Outcome outcome = Outcome::Unchanged;
+        HybridChrome::ChromeRenderPlan plan;
+    };
+    // `options` supplies only containerTitle and tabTitleOverrides, exactly as
+    // they were when `published` was built.
+    [[nodiscard]] static TitleRefresh refreshTitles(
+        const Core::WindowContainer &container,
+        const HybridChrome::ChromeRenderPlan &published,
+        const HybridChromePlanOptions &options,
+        const HybridWindowTitleLookup &titleLookup);
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

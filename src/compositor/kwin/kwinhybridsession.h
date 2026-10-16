@@ -30,6 +30,10 @@
 
 class QMenu;
 
+namespace KWin {
+class Window;
+}
+
 namespace QindaQt::WorkspacesApps { class DesktopApplications; }
 
 namespace QindaQt::HybridInput {
@@ -80,6 +84,7 @@ class KWinTransientManager;
 class ManagedWindowRegistry;
 class KWinApplicationPlacementServer;
 class MemberChromeVisibilityController;
+class ContainerLifetimeLedger;
 
 // Owns the production Hybrid collaborator graph for one KWin plugin lifetime.
 // The registry is borrowed and must outlive this object. All calls and Qt
@@ -256,6 +261,13 @@ private:
     void addManagedWindow(const QString &windowId);
     void forgetManagedWindow(const QString &windowId);
     void handleWindowsChanged();
+    // ADR-0383/0384: caption path (kwinhybridtitles.cpp), output-removal
+    // rescue (kwinhybridstranded.cpp), per-container forget and hidden-member
+    // focus (kwinhybridactivation.cpp).
+    void refreshWindowTitles(const QStringList &windowIds);
+    void rescueStrandedWindows();
+    void forgetContainerState(const QString &containerId);
+    void guardHiddenActivation(KWin::Window *window);
 public:
     // Workspace picker replacement (ADR-0165): a restored layout may bind a
     // File Manager picker window into a slot; the picker's chosen application
@@ -411,6 +423,9 @@ private:
     std::unique_ptr<HybridIconChipRouter> m_iconChipRouter;
     std::unique_ptr<KWinIconChipPresenter> m_iconChips;
     std::unique_ptr<KWinMinimizedGatherPager> m_minimizedGatherPager;
+    // AGENT-GUARD: reconciled by every synchronizeChrome(); early forgets go
+    // through m_containerLedger->forget(), never the stores directly.
+    std::unique_ptr<ContainerLifetimeLedger> m_containerLedger;
     std::unique_ptr<MinimizedGatherPagerRouter> m_minimizedGatherPagerRouter;
     QHash<QString, int> m_minimizedGatherPages;
     std::unique_ptr<QMenu> m_iconChipMenu;

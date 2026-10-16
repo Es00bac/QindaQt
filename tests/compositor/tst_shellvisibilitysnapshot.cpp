@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "qindaqt/compositor/shellvisibilitysnapshot.h"
+#include "shellvisibilitysnapshot_fixture.h"
 
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QtTest>
 
 #include <algorithm>
@@ -10,39 +8,7 @@
 
 using namespace QindaQt::Compositor;
 
-namespace {
-
-ShellVisibilitySnapshotCandidate validCandidate()
-{
-    return {
-        .scope = {QStringLiteral("workspace-1"), QStringLiteral("activity-1")},
-        .outputs = {{QStringLiteral("DP-2"), QRect(1920, 0, 2560, 1440), 1.5},
-                    {QStringLiteral("DP-1"), QRect(0, 0, 1920, 1080), 1.0}},
-        .windows = {{.id = QStringLiteral("window-b"),
-                     .outputId = QStringLiteral("DP-2"),
-                     .frameGeometry = QRect(2000, 40, 800, 600),
-                     .workspaceIds = {},
-                     .activityIds = {},
-                     .onAllWorkspaces = true,
-                     .maximized = true},
-                    {.id = QStringLiteral("window-a"),
-                     .outputId = QStringLiteral("DP-1"),
-                     .frameGeometry = QRect(10, 20, 900, 700),
-                     .workspaceIds = {QStringLiteral("workspace-2"),
-                                      QStringLiteral("workspace-1")},
-                     .activityIds = {QStringLiteral("activity-2"),
-                                     QStringLiteral("activity-1")},
-                     .active = true}},
-    };
-}
-
-QJsonObject parse(const QByteArray &payload)
-{
-    const auto document = QJsonDocument::fromJson(payload);
-    return document.isObject() ? document.object() : QJsonObject{};
-}
-
-} // namespace
+using namespace QindaQt::Compositor::VisibilityFixtures;
 
 class ShellVisibilitySnapshotTest final : public QObject
 {
@@ -153,11 +119,11 @@ void ShellVisibilitySnapshotTest::rejectsUnsafeAndAmbiguousGenerationsAtomically
 }
 
 // A rejection voids the whole batch and pins every panel safe-visible, so the
-// message is all a reader gets. These eight causes used to share one string --
-// "a managed window is invalid or ambiguous" -- which made 8079 rejections in
-// one session indistinguishable from each other. Each must name the member and
-// say what was wrong with it, so a transient race is legible as a different
-// thing from a producer bug. See ADR-0237.
+// message is all a reader gets. Each structural cause must name the member and
+// say what was wrong with it (ADR-0237). The transient causes that used to be
+// on this list -- a window outside its output, naming a missing output, or
+// active while minimized -- now degrade only that window (ADR-0384) and are
+// covered by the tests below.
 void ShellVisibilitySnapshotTest::namesTheRejectedMemberAndWhy()
 {
     const auto rejectionFor =
@@ -170,31 +136,7 @@ void ShellVisibilitySnapshotTest::namesTheRejectedMemberAndWhy()
             return result == ShellVisibilityPublishResult::Rejected ? error : QString();
         };
 
-    // A window momentarily off its output: the transient case, and the one the
-    // message has to distinguish from a real producer bug.
-    const QString outside = rejectionFor([](auto &candidate) {
-        candidate.windows[1].frameGeometry = QRect(9000, 9000, 10, 10);
-    });
-    QVERIFY2(outside.contains(QStringLiteral("'window-a'")), qPrintable(outside));
-    QVERIFY2(outside.contains(QStringLiteral("outside its output")), qPrintable(outside));
-    QVERIFY2(outside.contains(QStringLiteral("'DP-1'")), qPrintable(outside));
-
-    // Active while still marked minimized: the other transient case.
-    const QString active = rejectionFor([](auto &candidate) {
-        candidate.windows[1].minimized = true;
-    });
-    QVERIFY2(active.contains(QStringLiteral("'window-a'")), qPrintable(active));
-    QVERIFY2(active.contains(QStringLiteral("active while marked minimized")),
-             qPrintable(active));
-
-    // A window naming an output this generation does not have.
-    const QString absent = rejectionFor([](auto &candidate) {
-        candidate.windows[1].outputId = QStringLiteral("HDMI-9");
-    });
-    QVERIFY2(absent.contains(QStringLiteral("'window-a'")), qPrintable(absent));
-    QVERIFY2(absent.contains(QStringLiteral("'HDMI-9'")), qPrintable(absent));
-
-    // A duplicate id: a producer bug, and it must not read like the above.
+    // A duplicate id: a producer bug.
     const QString duplicate = rejectionFor([](auto &candidate) {
         auto copy = candidate.windows[1];
         copy.active = false;
@@ -217,6 +159,13 @@ void ShellVisibilitySnapshotTest::namesTheRejectedMemberAndWhy()
     QVERIFY2(twoActive.contains(QStringLiteral("'window-a'")), qPrintable(twoActive));
     QVERIFY2(twoActive.contains(QStringLiteral("'window-b'")), qPrintable(twoActive));
 
+    // An unusable frame is still structural.
+    const QString unusable = rejectionFor([](auto &candidate) {
+        candidate.windows[1].frameGeometry = QRect(0, 0, 0, 0);
+    });
+    QVERIFY2(unusable.contains(QStringLiteral("'window-a'")), qPrintable(unusable));
+    QVERIFY2(unusable.contains(QStringLiteral("unusable")), qPrintable(unusable));
+
     // Outputs are named too, for the same reason.
     const QString badScale = rejectionFor([](auto &candidate) {
         candidate.outputs[1].scale = 0.0;
@@ -225,7 +174,7 @@ void ShellVisibilitySnapshotTest::namesTheRejectedMemberAndWhy()
     QVERIFY2(badScale.contains(QStringLiteral("scale")), qPrintable(badScale));
 
     // Every cause must still be distinguishable from every other.
-    const QStringList all{outside, active, absent, duplicate, scope, twoActive, badScale};
+    const QStringList all{duplicate, scope, twoActive, unusable, badScale};
     for (const QString &message : all) {
         QVERIFY(!message.isEmpty());
     }

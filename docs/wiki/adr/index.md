@@ -232,14 +232,14 @@ integration retains every accepted decision in numeric order.
 - [ADR-0227: The audio console on QindaTK](0227-the-audio-console-on-qindatk.md)
 - [ADR-0228: bundled wallpapers resolve beyond PNG](0228-bundled-wallpapers-resolve-beyond-png.md)
 - [ADR-0229: proxy the legacy XEmbed tray into StatusNotifier items](0229-proxy-the-xembed-tray-into-status-notifier-items.md)
-- [ADR-0230: name and picture the game behind a launcher class](0230-name-and-picture-the-game-behind-a-launcher-class.md)
+- [ADR-0230: name and picture the game behind a launcher class](0230-name-and-picture-the-game-behind-a-launcher-class.md) — superseded in part by ADR-0384 (thread confinement)
 - [ADR-0231: QindaLutris is the desktop's game library](0231-qindalutris-the-game-library.md)
 - [ADR-0232: The gather overview replaces KWin's upper-left corner](0232-the-gather-overview-replaces-the-upper-left-corner.md)
 - [ADR-0233: own voice input as a contract, not an implementation](0233-own-voice-input-as-a-contract-not-an-implementation.md)
 - [ADR-0234: Qt and the compositor measure output scale with different rulers](0234-qt-and-compositor-measure-output-scale-differently.md)
 - [ADR-0235: escrow panels whose output is absent instead of failing the editor](0235-escrow-panels-whose-output-is-absent.md)
 - [ADR-0236: Fade the scene root, because Wayland has no window opacity](0236-fade-the-scene-root-not-the-panel-window.md)
-- [ADR-0237: The visibility snapshot stays atomic, and says what it rejected](0237-the-visibility-snapshot-stays-atomic.md)
+- [ADR-0237: The visibility snapshot stays atomic, and says what it rejected](0237-the-visibility-snapshot-stays-atomic.md) — superseded in part by ADR-0384
 - [ADR-0238: the audio applet's device picker sets the system default](0238-the-output-picker-sets-the-default.md)
 - [ADR-0239: Publish fullscreen in the shell visibility snapshot](0239-publish-fullscreen-in-shell-visibility.md)
 - [ADR-0240: Encode the KWin overview edge with KConfig semantics](0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md)
@@ -428,3 +428,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
 - [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.
+- [ADR-0383: Coalesce compositor change signals and repaint titles in the title band](0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md) — Accepted; 4 Hz caption/WindowsChanged/TaskListSnapshotChanged budget with trailing flush, cached task facts and credentials.
+- [ADR-0384: Degrade the visibility snapshot per window and rescue stranded windows](0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md) — Accepted; supersedes ADR-0237 in part (transient window conditions only).

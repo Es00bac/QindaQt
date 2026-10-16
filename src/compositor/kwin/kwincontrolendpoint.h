@@ -12,6 +12,7 @@
 #include <QPointer>
 
 #include <functional>
+#include <memory>
 #include <optional>
 
 namespace QindaQt::Compositor {
@@ -25,6 +26,7 @@ class LayerSurfaceV1Interface;
 
 namespace QindaQt::Compositor::KWinIntegration {
 
+class CoalescedChangeNotifier;
 class ManagedWindowRegistry;
 class KWinInputAdapter;
 class KWinOutputInventory;
@@ -69,6 +71,11 @@ public:
                         DevelopmentInputSink *developmentInputSink = nullptr,
                         DevelopmentOutputMutator *developmentOutputMutator = nullptr,
                         QObject *parent = nullptr);
+    ~KWinControlEndpoint() override;
+
+    // ADR-0383: WindowsChanged reaches the session bus at most this often,
+    // with a trailing flush after the last change.
+    static constexpr qint64 WindowsChangedIntervalMilliseconds = 250;
 
     // The provider is invoked synchronously by Capabilities() and must not
     // retain endpoint references. An empty provider omits the optional field.
@@ -118,6 +125,10 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     Q_SCRIPTABLE void ContainerCommitted(const QByteArray &eventJson);
+    // AGENT-CONTRACT (ADR-0383): a no-payload "re-read Windows()" hint
+    // broadcast to every session-bus peer, rate-limited to at most one per
+    // WindowsChangedIntervalMilliseconds plus a final flush. Never emit it
+    // directly; go through m_windowsChanged.
     Q_SCRIPTABLE void WindowsChanged();
     Q_SCRIPTABLE void OutputsChanged();
     Q_SCRIPTABLE void InputCapabilitiesChanged();
@@ -144,6 +155,7 @@ private:
     DevelopmentInputController m_developmentInput;
     DevelopmentOutputController m_developmentOutput;
     QList<QPointer<KWin::LayerSurfaceV1Interface>> m_developmentLayerSurfaces;
+    std::unique_ptr<CoalescedChangeNotifier> m_windowsChanged;
     bool m_mutationsEnabled = false;
 };
 

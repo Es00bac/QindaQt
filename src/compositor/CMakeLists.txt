@@ -20,6 +20,7 @@ add_library(qindaqt_compositor_shell_actions STATIC
     src/winelaunchpaths.cpp
     src/peicon.cpp
     src/wineidentitycache.cpp
+    src/shellcredentialcache.cpp
 )
 add_library(QindaQt::CompositorShellActions ALIAS qindaqt_compositor_shell_actions)
 target_sources(
@@ -38,6 +39,7 @@ target_sources(
             include/qindaqt/compositor/winelaunchpaths.h
             include/qindaqt/compositor/peicon.h
             include/qindaqt/compositor/wineidentitycache.h
+            include/qindaqt/compositor/shellcredentialcache.h
 )
 target_compile_features(qindaqt_compositor_shell_actions PUBLIC cxx_std_20)
 # Qt6::Gui serves the ADR-0230 PE-icon extraction (QImage decode/encode);
@@ -291,6 +293,26 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     kcoreaddons_add_plugin(
         qindaqt_compositor
         SOURCES
+            kwin/changeratelimiter.cpp
+            kwin/changeratelimiter.h
+            kwin/coalescedchangenotifier.cpp
+            kwin/coalescedchangenotifier.h
+            kwin/chromeoverlayraster.cpp
+            kwin/chromeoverlayraster.h
+            kwin/chromeplancomparison.cpp
+            kwin/chromeplancomparison.h
+            kwin/containerlifetimeledger.cpp
+            kwin/containerlifetimeledger.h
+            kwin/foreignidentityresolver.cpp
+            kwin/foreignidentityresolver.h
+            kwin/hybridactivationpolicy.h
+            kwin/hybridoutputrescue.cpp
+            kwin/hybridoutputrescue.h
+            kwin/kwinhybridactivation.cpp
+            kwin/kwinhybridstranded.cpp
+            kwin/kwinhybridtitles.cpp
+            kwin/kwinrescueoutputs.cpp
+            kwin/kwinrescueoutputs.h
             kwin/kwincontrolendpoint.cpp
             kwin/kwincontrolendpoint.h
             kwin/kwinshellvisibilitypublisher.cpp

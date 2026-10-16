@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QMetaObject>
 #include <QObject>
+#include <QSet>
 #include <QVector>
 
 #include <memory>
@@ -41,7 +42,9 @@ public:
     [[nodiscard]] quint64 revision() const noexcept;
     [[nodiscard]] bool available() const noexcept;
     // Synchronously closes the invalidation window before a Windows/action
-    // generation fence is published or compared.
+    // generation fence is published or compared. Returns whether the latest
+    // sample was valid; ADR-0384 consumers use revision() > 0 instead, so a
+    // rejected sample keeps the last published generation usable.
     [[nodiscard]] bool refreshForActionFence();
     void setHybridMaximizedProvider(HybridMaximizedProvider provider);
     void invalidate();
@@ -55,8 +58,11 @@ private:
     void scheduleRefresh();
     void handleFailure(const QString &code, const QString &message);
     void refresh();
+    // ADR-0384: logs each per-window degradation once when it starts, and
+    // once when that window is consistent again, instead of once per sample.
+    void reportDegradations(const QVector<ShellVisibilityDegradation> &degradations);
     [[nodiscard]] std::optional<ShellVisibilitySnapshotCandidate>
-    sample(QString *error) const;
+    sample(QString *error, QVector<ShellVisibilityDegradation> *excluded) const;
 
     ManagedWindowRegistry &m_registry;
     KWinOutputInventory &m_outputInventory;
@@ -64,6 +70,9 @@ private:
     std::unique_ptr<ShellVisibilityRefreshScheduler> m_scheduler;
     QHash<KWin::Window *, QVector<QMetaObject::Connection>> m_windowConnections;
     HybridMaximizedProvider m_hybridMaximized;
+    // "<window id>/<degradation kind>" for every degradation currently logged.
+    QSet<QString> m_reportedDegradations;
+    QString m_lastFailure;
     bool m_outage = false;
 };
 

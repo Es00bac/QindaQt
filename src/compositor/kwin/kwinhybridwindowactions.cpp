@@ -2,6 +2,7 @@
 #include "kwinhybridsession.h"
 
 #include "containercloseprompt.h"
+#include "containerlifetimeledger.h"
 #include "hybridchromesyncscheduler.h"
 #include "hybridcontainerplacement.h"
 #include "hybridinteractionruntime.h"
@@ -533,10 +534,7 @@ bool KWinHybridSession::detachNativeMember(const QString &containerId,
         return false;
     }
     if (!m_runtime->topology().container(containerId)) {
-        forgetShadedContainer(containerId);
-        m_placement->forgetContainer(containerId);
-        m_minimizedContainers.remove(containerId);
-        m_appearance.forgetContainer(containerId);
+        m_containerLedger->forget(containerId);
     }
     synchronizeChrome();
     return true;

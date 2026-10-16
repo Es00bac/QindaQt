@@ -279,6 +279,35 @@ real input paths, require live QindaQt decorations, and verify exact restoration
 when a grouped plugin unloads. Final qualification evidence is maintained in
 the [testing harness](../development/testing-harness.md).
 
+### Dissolution, output removal, and focus
+
+These rules keep the session-wide model coherent when the world changes under
+it ([ADR-0384](../adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md)):
+
+- **Every dissolution forgets its container.** A container dissolves when a
+  member closes, a member is title-dragged or tab-dragged out, the context menu
+  ungroups it, or keyboard detach/group/tile moves its second-to-last member
+  away. The session reconciles a `ContainerLifetimeLedger` against every
+  topology it publishes, and any vanished id has its placement (maximize and
+  restore frames, rolled strip, aspect pin), shade, minimized, and appearance
+  state forgotten exactly once. A dissolved container's leftover maximize record
+  used to fail "no valid maximize area" on every work-area change.
+- **Nothing is re-applied outside every output.** After an output is unplugged
+  KWin evacuates ordinary windows; Hybrid then re-applies frames of its own. A
+  window leaving a container gets its independent restore state, captured when
+  it joined, with a vanished output name dropped and a frame that overlaps no
+  remaining output moved into the nearest output's work area. Maximize restore
+  frames, rolled strips, an iconified window's unroll frame and a fractional
+  maximize's restore frame get the same rescue, ordinary stranded containers
+  are moved by `refreshStrandedContainers()`, and a final pass after every
+  output change brings back any independent window KWin left outside every
+  output. Frames hanging off an edge are left alone; fullscreen, maximized and
+  quick-tiled windows remain KWin's.
+- **A hidden member never keeps focus.** If KWin activates a hidden member of
+  a container that is neither rolled up nor in member focus mode, focus moves
+  to that container's visible member (its chrome anchor first) one event-loop
+  turn later, or on to the next window when the container shows none.
+
 Persisted login-session restore, mixed-DPI output migration, and physical
 hardware qualification remain later desktop work. Current and intended behavior
 are separated in

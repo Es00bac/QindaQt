@@ -191,6 +191,38 @@ three container-control rectangles. This all-fields translation is one bounded
 adapter rather than per-field paint logic; otherwise controls remain clickable
 through global hit testing while being clipped out of the local image.
 
+### What a change repaints
+
+Each container's chrome is two scene images
+([ADR-0383](../adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md)):
+a **title band** (the shared title row plus a 4 px spill margin), parented to
+the **body**, which covers the whole outer frame with the band rows left
+transparent. `ChromeOverlayRaster` compares every new plan with what it last
+painted (`compareChromePlans()`):
+
+| Change | Repaint and upload |
+| --- | --- |
+| Identical plan (most synchronizations) | Nothing; only item placement is refreshed |
+| Member titles only (painted by KDecoration) | Nothing |
+| Tab titles, rolled-badge label, split-deck glide frame, hover or press | The title band only |
+| Anything else (frames, focus, identity, style, members, dividers, tabs set) | Body and band |
+
+A maximized 2560x1408 container's band is 0.34 MB against a 14.4 MB frame.
+Band and body stacked are identical whichever repaint produced them; the band
+is always its own band-sized render, because QPainter strokes the wide focus
+glow one antialiasing step differently on a shorter device. A new style can
+swap only the button painter, which plans cannot compare, so a style or palette
+change forces one full repaint (`KWinChromeManager::invalidateRendering()`).
+
+Window captions take their own path. The registry delivers caption changes per
+window at most four times a second with a trailing flush; the session re-derives
+only title text with `HybridChromePlanBuilder::refreshTitles()` (the same page
+and member title rules as a full build) and publishes it through
+`KWinChromeManager::updateTitles()`, which refuses anything but a text change.
+A caption change never re-plans a container or runs `synchronizeChrome()`,
+except for an unnamed rolled-up strip, whose width is measured for a label
+derived from its page title.
+
 Shared chrome creates no production `QWidget`, `QWindow`, internal window,
 input mask, focusable surface, or `outputOnly` property. It consequently cannot
 be focused, independently raised, or admitted to the managed-client registry.
