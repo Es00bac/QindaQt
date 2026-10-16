@@ -26,7 +26,7 @@ Rules for this round:
 | L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` | started |
 | L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (+ `stability/l4-capture-20261016`) | started |
 | L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` | started |
-| L6 packaging + system power policy | Claude (manager) | `stability/l6-packaging-20261016` + QindaGentoo | started |
+| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (b483e8f87); QindaGentoo `stability/power-defaults-20261016` (9cddf9f); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | candidate pushed; integrate at release |
 
 Base: container-wm main `1e11e127e`; qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
 `~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
@@ -37,6 +37,23 @@ Next steps:
   R23/R25/R28/R29 patchwork), a new qindaqt-kwin revision and `sys-power/qindaqt-power-defaults`.
 - Install on the laptop once through Portage; the owner logs out and back in.
 - Owner-assisted: identify the s2idle wake source with the diagnostic script from L6.
+
+Integrated on main during the round:
+- `3367d7ce0`: merges `fix/keyring-prompts-20261009`, the R28-installed keyring prompt serialization that was
+  missing from main. Keyring tests: 20/22 pass. `keyring_legacy_import` (importer InvalidInput on KWallet
+  fixtures) and `keyring_native_ui_journey` (needs a live private compositor) fail in an environment-dependent
+  way that the merged code doesn't touch.
+- The integration tree `build/dev` was reconfigured with the ebuild install dirs
+  (`KDE_INSTALL_LIBEXECDIR=libexec`, `CMAKE_INSTALL_LIBDIR=lib64`, `KDE_INSTALL_LIBDIR=lib64`), so the portal
+  capture path check passes.
+
+Owner decisions (2026-10-16):
+- lid closed on battery: suspend, then hibernate;
+- short power-button press: suspend;
+- the s2idle wake-source test runs later, after `sys-power/qindaqt-power-defaults` is installed (use
+  `tools/diagnose-s2idle-wake`);
+- GitHub main was rolled back to 47d2bb1f1 after an accidental public push. In qinda's container-wm checkout
+  `origin` is PUBLIC GitHub; push only to `hub`.
 
 Disk: on 2026-10-16 qinda had only 22 GB free. Thirty CMake build trees nine or more days old in stale
 worktrees were removed (source and commits untouched), leaving 46 GB free.
