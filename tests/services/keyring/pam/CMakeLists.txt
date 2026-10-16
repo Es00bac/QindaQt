@@ -37,3 +37,22 @@ set_tests_properties(keyring_pam_owner_policy PROPERTIES WORKING_DIRECTORY "${PR
 add_library(qindaqt_pam_pidfd_unavailable MODULE pidfd_unavailable.cpp)
 target_link_libraries(qindaqt_pam_pidfd_unavailable PRIVATE "${CMAKE_DL_LIBS}")
 qindaqt_enable_warnings(qindaqt_pam_pidfd_unavailable)
+
+# The exact messages sent to the systemd manager, checked on a private bus that
+# loads the REAL installed systemd1 policy (skipped, exit 77, when absent).
+find_package(Threads REQUIRED)
+find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+find_file(QINDAQT_SYSTEMD1_BUS_POLICY org.freedesktop.systemd1.conf
+    PATHS /usr/share/dbus-1/system.d NO_DEFAULT_PATH)
+if(NOT QINDAQT_SYSTEMD1_BUS_POLICY)
+    set(QINDAQT_SYSTEMD1_BUS_POLICY "")
+endif()
+add_executable(qindaqt_pam_manager_calls test_manager_calls.cpp "${PAM_SOURCE}/manager_calls.cpp")
+target_include_directories(qindaqt_pam_manager_calls PRIVATE "${PAM_SOURCE}")
+target_link_libraries(qindaqt_pam_manager_calls PRIVATE PkgConfig::SYSTEMD Threads::Threads)
+target_compile_definitions(qindaqt_pam_manager_calls PRIVATE QINDAQT_DBUS_DAEMON="${DBUS_DAEMON_EXECUTABLE}"
+    QINDAQT_SYSTEMD1_BUS_POLICY="${QINDAQT_SYSTEMD1_BUS_POLICY}")
+qindaqt_enable_warnings(qindaqt_pam_manager_calls)
+add_test(NAME keyring_pam_manager_calls COMMAND qindaqt_pam_manager_calls)
+set_tests_properties(keyring_pam_manager_calls PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77
+    LABELS "keyring;pam;dbus;private-fixture")

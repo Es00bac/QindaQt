@@ -80,5 +80,9 @@ int main(int argc,char **argv) {
     bool accepted=false;
     try { accepted=run(argc,argv); } catch (...) {}
     const unsigned char result=static_cast<unsigned char>(accepted ? 0 : 1);
-    write(STDOUT_FILENO,&result,1);return accepted ? 0 : 1;
+    // The parent treats a missing result byte as failure, so an unwritable
+    // pipe is reported by the exit status instead of being silently ignored
+    // (glibc marks write() warn_unused_result; strict builds reject a bare call).
+    const ssize_t written=write(STDOUT_FILENO,&result,1);
+    return accepted && written==1 ? 0 : 1;
 }

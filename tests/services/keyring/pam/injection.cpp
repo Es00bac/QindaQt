@@ -8,5 +8,12 @@ __attribute__((constructor)) static void mark() {
     const char *path=std::getenv("QINDAQT_FIXTURE_INJECTION_MARK");
     if (!path) return;
     const int fd=open(path,O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW,0600);
-    if (fd>=0) { const char value='1';write(fd,&value,1);close(fd); }
+    if (fd>=0) {
+        // The marker's existence is the proof; an unwritable byte is only a
+        // missing mark. (glibc marks write() warn_unused_result and strict builds reject a bare call.)
+        const char value='1';
+        const ssize_t written=write(fd,&value,1);
+        (void)written;
+        close(fd);
+    }
 }
