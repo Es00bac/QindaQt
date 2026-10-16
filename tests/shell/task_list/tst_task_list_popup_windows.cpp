@@ -169,6 +169,8 @@ void TaskListPopupWindowsTests::dockTooltipWindowIsReleasedWhenNoLongerWanted() 
   // An idle tile owns neither a tooltip nor its window.
   QVERIFY(tile->findChild<QObject *>(QStringLiteral("taskListEntryTooltip")) == nullptr);
   const qsizetype idleWindows = QGuiApplication::allWindows().size();
+  QElapsedTimer sinceHover;
+  sinceHover.start();
   QTest::mouseMove(strip.window.get(),
                    tile->mapToScene(QPointF(tile->width() / 2, tile->height() / 2)).toPoint());
   QObject *created = nullptr;
@@ -178,6 +180,13 @@ void TaskListPopupWindowsTests::dockTooltipWindowIsReleasedWhenNoLongerWanted() 
   QCOMPARE(tooltip->property("text").toString(),
            tile->property("entry").toMap().value(QStringLiteral("accessibleName")).toString());
   QTRY_VERIFY(tooltip->property("visible").toBool());
+  // The tooltip keeps its hover delay. A popup created already visible opens at
+  // once and skips it, which also opens its window under the pointer.
+  const int delay = tooltip->property("delay").toInt();
+  QVERIFY2(delay >= 50, "a shorter delay would make the check below prove nothing");
+  QVERIFY2(sinceHover.elapsed() >= delay - 20,
+           qPrintable(QStringLiteral("opened after %1 ms, delay is %2 ms")
+                          .arg(sinceHover.elapsed()).arg(delay)));
   QCOMPARE(QGuiApplication::allWindows().size(), idleWindows + 1);
 
   QTest::mouseMove(strip.window.get(), QPoint(strip.window->width() - 2, 2));

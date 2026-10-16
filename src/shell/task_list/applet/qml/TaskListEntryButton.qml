@@ -193,7 +193,10 @@ T.ToolButton {
         sourceComponent: T.ToolTip {
             objectName: "taskListEntryTooltip"
             parent: button
-            visible: button.tooltipWanted
+            // Bound once complete, not as an initial value: a popup created
+            // visible opens at once and skips `delay`, and the tooltip must
+            // keep its hover delay.
+            Component.onCompleted: visible = Qt.binding(() => button.tooltipWanted)
             text: button.entry.accessibleName
             delay: Tokens.motion.short
             popupType: T.Popup.Window

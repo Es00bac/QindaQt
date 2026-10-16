@@ -200,12 +200,21 @@ void DockRetainedDelegateTests::quickLaunchTooltipWindowIsReleasedAfterHover() {
 
   const QPoint pointer = editor->mapToScene(QPointF(editor->width() / 2,
                                                     editor->height() / 2)).toPoint();
+  QElapsedTimer sinceHover;
+  sinceHover.start();
   QTest::mouseMove(host.window.get(), pointer);
   QTRY_VERIFY(editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) != nullptr);
   QPointer<QObject> tooltip =
       editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip"));
   QCOMPARE(tooltip->property("text").toString(), editor->property("label").toString());
   QTRY_VERIFY(tooltip->property("visible").toBool());
+  // The tooltip keeps its hover delay: a popup created already visible opens at
+  // once and skips it.
+  const int delay = tooltip->property("delay").toInt();
+  QVERIFY2(delay >= 50, "a shorter delay would make the check below prove nothing");
+  QVERIFY2(sinceHover.elapsed() >= delay - 20,
+           qPrintable(QStringLiteral("opened after %1 ms, delay is %2 ms")
+                          .arg(sinceHover.elapsed()).arg(delay)));
   QCOMPARE(QGuiApplication::allWindows().size(), idleWindows + 1);
 
   QTest::mouseMove(host.window.get(),

@@ -30,7 +30,10 @@ A per-tile popup is created when it is wanted and destroyed when it has closed:
   keep their exit transition; a tooltip that never opened (the pointer left
   during its delay) is dropped at once. The loaded state is a plain property
   moved by those events, not a binding on the loaded item, which would be a
-  binding loop.
+  binding loop. The tooltip's `visible` is bound in `Component.onCompleted`, not
+  given as an initial value: a popup created already visible opens at once and
+  skips its `delay`, which both defeats the hover delay and opens the window under
+  the pointer.
 - Each names `parent:` explicitly, because a Loader would otherwise parent the
   popup to itself and a tooltip positions against its parent.
 - Strip-level popups that exist once per strip (the hover preview card, the

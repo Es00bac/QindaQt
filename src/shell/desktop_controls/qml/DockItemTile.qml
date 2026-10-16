@@ -129,7 +129,10 @@ T.Button {
         sourceComponent: T.ToolTip {
             objectName: "quickLaunchEntryTooltip"
             parent: tile
-            visible: tile.tooltipWanted
+            // Bound once complete, not as an initial value: a popup created
+            // visible opens at once and skips `delay`, and the tooltip must
+            // keep its hover delay.
+            Component.onCompleted: visible = Qt.binding(() => tile.tooltipWanted)
             text: tile.label
             delay: Tokens.motion.short
             popupType: T.Popup.Window
