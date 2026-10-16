@@ -34,4 +34,37 @@ if(BUILD_TESTING)
     target_compile_definitions(qindaqt-private-lock-window PRIVATE QINDAQT_PRIVATE_LOCK_PLUGIN_ROOT="${CMAKE_CURRENT_BINARY_DIR}/plugins")
     add_dependencies(qindaqt-private-lock-window qindaqt_session_lock_integration)
     qindaqt_enable_warnings(qindaqt-private-lock-window)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    find_package(Threads REQUIRED)
+    qt_add_executable(tst_lock_protocol_configure tests/tst_configure_policy.cpp)
+    target_include_directories(tst_lock_protocol_configure PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(tst_lock_protocol_configure PRIVATE Qt6::Core Qt6::Test)
+    qindaqt_enable_warnings(tst_lock_protocol_configure)
+    add_test(NAME lock.protocol-configure COMMAND tst_lock_protocol_configure)
+    set_tests_properties(lock.protocol-configure PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 30 LABELS "lock;protocol")
+    # The real Qt Wayland client and this integration plugin against a fake
+    # ext-session-lock compositor (libwayland-server). Skipped (exit 77) when the
+    # wayland platform plugin is unavailable.
+    pkg_check_modules(LockWaylandServer IMPORTED_TARGET wayland-server)
+    if(LockWaylandServer_FOUND)
+        add_custom_command(OUTPUT ext-session-lock-v1-server-protocol.h
+            COMMAND "${QINDAQT_WAYLAND_SCANNER}" server-header "${QINDAQT_SESSION_LOCK_XML}" "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-server-protocol.h"
+            DEPENDS "${QINDAQT_SESSION_LOCK_XML}")
+        qt_add_executable(tst_lock_protocol_integration tests/tst_session_lock_integration.cpp
+            tests/fake_lock_compositor.cpp tests/fake_lock_compositor.h
+            "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-server-protocol.h"
+            "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-protocol.c")
+        target_include_directories(tst_lock_protocol_integration PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/tests" "${CMAKE_CURRENT_BINARY_DIR}")
+        target_link_libraries(tst_lock_protocol_integration PRIVATE qindaqt_lock_protocol
+            PkgConfig::LockWaylandServer Qt6::Test Qt6::GuiPrivate Threads::Threads)
+        target_compile_definitions(tst_lock_protocol_integration PRIVATE
+            QINDAQT_PRIVATE_LOCK_PLUGIN_ROOT="${CMAKE_CURRENT_BINARY_DIR}/plugins")
+        add_dependencies(tst_lock_protocol_integration qindaqt_session_lock_integration)
+        qindaqt_enable_warnings(tst_lock_protocol_integration)
+        add_test(NAME lock.protocol-integration COMMAND tst_lock_protocol_integration)
+        # The skipped configures log a warning on purpose and the test verifies it.
+        set_tests_properties(lock.protocol-integration PROPERTIES
+            ENVIRONMENT "QT_FATAL_WARNINGS=0" TIMEOUT 60 SKIP_RETURN_CODE 77 LABELS "lock;protocol")
+    endif()
 endif()
