@@ -67,6 +67,10 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE double faderPositionForGain(double gainDb)"
         "Q_INVOKABLE double gainForFaderPosition(double position)"
         "Q_INVOKABLE double unityFaderPosition()"
+        # ADR-0394: meter leases. They dispatch no operation; they only decide
+        # whether the Levels stream is subscribed while a meter is on screen.
+        "Q_INVOKABLE void retainMeters()"
+        "Q_INVOKABLE void releaseMeters()"
     )
     foreach(invokable IN LISTS invokables)
         string(REGEX REPLACE "[ \t\r\n]+" " " normalized "${invokable}")

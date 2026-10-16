@@ -66,6 +66,7 @@ RowLayout {
             Layout.fillWidth: true
             implicitHeight: 6
             reading: row.reading
+            levelsOwner: row.controller
         }
     }
 

@@ -101,6 +101,10 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
           &AudioSettingsModel::consoleLevelsChanged);
 }
 
+void AudioSettingsModel::retainMeters() { m_meterLeases.retain(); }
+
+void AudioSettingsModel::releaseMeters() { m_meterLeases.release(); }
+
 bool AudioSettingsModel::loading() const noexcept {
   const ClientState state = m_client.state();
   return state == ClientState::Stopped || state == ClientState::Starting;

@@ -581,3 +581,5 @@ nav:
       - "0391: Present controllers only while visible": adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md
       - "0392: Memoised icon availability": adr/0392-memoise-icon-availability-beside-the-uncached-locator.md
       - "0393: Merge XDG catalog directories": adr/0393-merge-every-xdg-data-directory-for-shell-catalogs.md
+      - "0394: Audio meter lease and retry backoff": adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md
+      - "0395: Settings teardown order and launch parsing": adr/0395-destroy-the-settings-scene-before-its-models-and-return-from-main.md

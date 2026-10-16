@@ -116,6 +116,22 @@ obs-websocket client read this; mute mirroring and scene macros are theirs.
 "QindaQt Console" lists every bridge source with the console's own dBFS peak
 meter (from Audio1's level readings, not OBS's mixer) and the Audio1 state.
 
+The dock's meters are leased ([ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md)).
+`DockMeterLease` holds one Audio1 meter lease on the bridge's client exactly
+while the dock is visible: it takes the lease when the dock is shown (or already
+is when it meets it) and gives it back when the dock is hidden, destroyed (OBS
+owns a registered dock) or when the bridge stops, so a closed or tabbed-away dock
+costs OBS nothing. It needs no libobs, so its rows run without an OBS frontend.
+A minimized OBS window does not change widget visibility, so a minimized OBS
+keeps its lease until the dock is hidden. An empty level batch (what the client
+sends when the last lease is released and the service sends when metering stops)
+returns every bar to grey rather than freezing the last reading.
+
+The bridge's audio client retries a refused or contradicted snapshot after
+200 ms, doubling to 10 s, and resets on the next coherent answer; it no longer
+retries every 200 ms for the life of the OBS process
+([Audio service](audio-service.md), "Meter lease and snapshot retry backoff").
+
 ## Building and packaging
 
 `src/obs/CMakeLists.txt` configures alone (`cmake -S src/obs`), which is how
@@ -132,6 +148,9 @@ control-protocol and console connectivity, not every hardware or mixing path.
 
 ## Verification
 
+`qindaqt.obs-console-dock` (the dock's visibility signal, the lease following
+it, a dock already on screen, destruction of the lease and of the dock, and the
+empty batch idling the bars, over the real client on a fake transport),
 `qindaqt.obs-bridge-sync` (pure projection and plan), `qindaqt.obs-bridge-libobs`
 (headless libobs: create, rename in place, retarget, remove, channel
 attachment, adoption of restored sources) and `qindaqt.obs-bridge-module-load`

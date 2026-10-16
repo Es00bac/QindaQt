@@ -21,6 +21,45 @@ Item {
     // the two apart deliberately).
     required property var reading
 
+    // AGENT-CONTRACT (ADR-0394): the meter stream (Audio1 `Levels`, twenty
+    // frames a second) is subscribed only while a meter is on screen. A meter
+    // holds one lease on its `levelsOwner` for exactly as long as it is visible
+    // in a window that can show it, and gives it back when it is hidden, when
+    // its window is hidden or minimized, when the owner changes, and when it is
+    // destroyed. The owner counts leases and subscribes on the first and
+    // unsubscribes on the last; this file never talks to a client or a bus.
+    // An owner without retainMeters() (a test double) simply holds no lease.
+    property var levelsOwner: null
+    readonly property bool onScreen: meter.visible && Window.window !== null
+        && Window.window.visible && Window.window.visibility !== Window.Minimized
+    property var leasedOwner: null
+
+    function syncLease() {
+        const owner = meter.levelsOwner
+        const wanted = meter.onScreen && owner !== null && owner !== undefined
+            && typeof owner.retainMeters === "function"
+        if (meter.leasedOwner !== null && (!wanted || meter.leasedOwner !== owner)) {
+            const leased = meter.leasedOwner
+            meter.leasedOwner = null
+            leased.releaseMeters()
+        }
+        if (wanted && meter.leasedOwner === null) {
+            meter.leasedOwner = owner
+            owner.retainMeters()
+        }
+    }
+
+    onOnScreenChanged: syncLease()
+    onLevelsOwnerChanged: syncLease()
+    Component.onCompleted: syncLease()
+    Component.onDestruction: {
+        if (meter.leasedOwner !== null) {
+            const leased = meter.leasedOwner
+            meter.leasedOwner = null
+            leased.releaseMeters()
+        }
+    }
+
     // The bottom of the drawn scale. Matches the console's minimum fader gain
     // so the meter and the fader describe the same span.
     readonly property real floorDb: -60.0

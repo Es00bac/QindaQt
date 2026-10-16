@@ -223,6 +223,66 @@ authority. The page remains discoverable with all tools absent; refresh never
 launches or repeats an action. The [owning route](printers-scanners-settings.md)
 defines literal argv, keyboard and installed-module poison gates (ADR-0356).
 
+## Startup, shutdown and the session bus
+
+Three properties of the process boundary are contracts, not incidental
+([ADR-0395](../adr/0395-destroy-the-settings-scene-before-its-models-and-return-from-main.md),
+[ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md)).
+
+**Command line.** `parseLaunchArguments` (`settings_launch_arguments.h`) reads
+`--page`, `--destination`, `--select`, `--theme-directory`, `--list-routes` and
+`--route-construction-probe` and returns either the arguments or an exit status
+with the text for stdout or stderr: `--help` is status 0, a usage error is
+status 1, the statuses `QCommandLineParser::process()` used. `main()` prints that
+text and returns. It never calls `exit()` while the `QApplication` and the rest
+of the Qt state are alive, which is where a `--help` abort came from.
+`--destination` and `--select` are opaque and bounded (64 and 256 characters).
+
+**Teardown order.** The engine is created before the models because the token
+facade, the icon runtime and the appearance model live in it, so plain scope
+exit would destroy every model before the QML root that binds to it.
+`QmlTeardown` (`settings_qml_teardown.h`) is declared in `main()` after the
+last model and before the scene loads; reverse declaration order destroys it
+first on every exit path (a plain return, the construction probe, an
+exception), deleting the root objects and collecting the script heap while the
+models still exist. The construction probe no longer deletes the roots itself
+(it used to, which hid the problem); it quits the loop and lets this real
+shutdown run, so every construction row and the shutdown loop exercise the
+production exit path.
+
+**Session bus health.** A Settings process left on the Appearance page for about
+26 hours stopped reading its session-bus socket while the daemon queued about
+4 GB for it. The cause is in QtDBus, not in a Settings model: a signal delivered
+to a slot on another thread is queued as a `QDBusMessage` that retains the
+libdbus message; libdbus stops watching the socket for reads once a
+connection's live messages pass 63 MiB; the watch is switched back on from the
+thread that frees the message, the GUI thread, but Qt's `QSocketNotifier` for
+that socket lives in the D-Bus worker thread, and `QSocketNotifier::setEnabled`
+from another thread only warns and does nothing. The process stays alive and its
+event loop keeps running; it simply never reads the bus again. A standalone
+harness reproduced exactly that (a delivered flood, then a trickle that is never
+received, plus the Qt warning). What it cannot show is what stalled the GUI
+thread long enough in the field; the volume (about 43 KB/s) matches the 20 Hz
+Audio `Levels` stream, which is the only high-rate broadcast on the desktop,
+but that part is inferred.
+
+Qt cannot be repaired from here, so the defense is to never be a subscriber to
+a high-rate stream without a reason: the Levels match rule exists only while a
+console meter is visible. Each console meter (`AudioConsoleMeter`) holds one
+lease on `AudioSettingsModel` while it is visible in a shown, non-minimized
+window; the model counts leases and subscribes on the first and unsubscribes on
+the last (see [Audio service](../architecture/audio-service.md), "Meter lease
+and snapshot retry backoff"). A Settings window on any other route, on the
+Devices tab, hidden or minimized receives no meter frame at all. Settings'
+other bus traffic is low-rate property-change notifications from its services
+and was not made conditional on page visibility; the pages keep their models
+live so a page opens with current truth.
+
+Not done: a heartbeat that notices a wedged connection and recovers (restart
+or reconnect) is a possible follow-up for any long-lived QtDBus client; it was
+left out because it needs a policy for what a user-facing window does when it
+detects it.
+
 ## Responsive interaction
 
 At widths of 540 logical pixels or greater, a two-column view presents a
@@ -370,6 +430,19 @@ ctest --test-dir build/dev --output-on-failure \
   client-unavailability warnings while rejecting QML/Loader warnings;
 - the CLI row rejects ordinary unknown, uppercase, parent-path, and nested-path
   startup intents with exit 2 and the exact diagnostic;
+- `qindaqt.settings-launch-arguments` proves `--help`/`-h` and usage errors are
+  returned as a status and text (0 and 1) instead of exiting, and that
+  `--destination` and `--select` are bounded; `qindaqt.settings-qml-teardown`
+  proves the scene is destroyed before the models with `QmlTeardown` and, as a
+  negative control, that without it the scene's destruction handler finds its
+  model destroyed; `qindaqt.settings-app-help-exits` runs the real binary for
+  `--help` and usage errors and requires the right exit status and stream and
+  nothing else on the other; `qindaqt.settings-app-shutdown-loop` opens and closes the
+  real binary twenty times across six pages under a poisoned heap
+  (`MALLOC_PERTURB_`) and fails on any abort, signal, missing construction
+  witness or QML/teardown warning. The field aborts did not reproduce in this
+  sandbox before or after the change, so the loop is a regression guard and
+  the ordering hazard is shown by the unit-level negative control;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
 - construction takes the route inventory from `--list-routes`, checks the

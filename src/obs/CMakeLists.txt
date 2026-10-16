@@ -83,6 +83,8 @@ target_sources(
         module/bridge_controller.h
         module/console_dock.cpp
         module/console_dock.h
+        module/dock_meter_lease.cpp
+        module/dock_meter_lease.h
         module/console_source_types.cpp
         module/console_source_types.h
         module/websocket_vendor.cpp

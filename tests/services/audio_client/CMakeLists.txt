@@ -64,3 +64,17 @@ set_tests_properties(
     qindaqt.audio-activation
     PROPERTIES LABELS "service;audio;dbus;activation" TIMEOUT 20 RUN_SERIAL TRUE
 )
+
+# ADR-0394: the meter stream is a leased subscription, and snapshot retries back
+# off exponentially instead of waking five times a second forever.
+qt_add_executable(
+    qindaqt_audio_client_levels_tests
+    tst_audio_client_levels.cpp
+    support/fake_audio_transport.h
+)
+target_link_libraries(
+    qindaqt_audio_client_levels_tests PRIVATE QindaQt::AudioClient Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_client_levels_tests)
+add_test(NAME qindaqt.audio-client-levels COMMAND qindaqt_audio_client_levels_tests)
+set_tests_properties(qindaqt.audio-client-levels PROPERTIES TIMEOUT 20 LABELS "service;audio")

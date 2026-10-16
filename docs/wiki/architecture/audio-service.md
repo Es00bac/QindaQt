@@ -407,6 +407,49 @@ Activation resolves an exact unique owner before any snapshot request; controls
 are never replayed. Private activation tests start only the public client, so
 they cover a genuinely cold installed service instead of pre-starting it.
 
+## Meter lease and snapshot retry backoff
+
+`Levels` is the one high-rate signal on the session bus: twenty frames a second,
+decoded and queued for every subscriber ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)).
+Before the lease every client (the shell, a Settings window parked on another
+page, the OBS bridge) installed its match rule when it started and received
+every frame whether or not a meter was on screen
+([ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md)).
+
+- **Lease.** `AudioClient::retainLevels()` and `releaseLevels()` are a counted
+  lease; `LevelsLease` is the RAII form (movable, not copyable, and the client
+  must outlive it). The first lease sets the transport's standing want
+  (`AudioTransport::setLevelsSubscribed(true)`), which `QtAudioTransport` applies
+  to the current owner by installing the `Levels` match rule, and re-applies to
+  every later owner and across `stop()`/`start()`. The last release removes the
+  rule, clears every retained reading and emits an empty `levelsChanged` batch,
+  the same "metering stopped" signal an upstream stop gives, and a frame already
+  queued is dropped on arrival. `Changed` stays subscribed regardless. A release
+  with no lease held is ignored.
+- **Holders.** A meter holds a lease only while it is visible in a window that
+  can show it: the QML meters of the [Settings console](../apps/audio-settings.md)
+  and the [tray popup](../shell/audio-applet.md) through their owning model or
+  controller, and the OBS console dock through the bridge
+  ([OBS bridge](obs-bridge.md)). Read denial grants the shell controller no lease.
+- **Retry backoff.** A refused, lost or contradicted snapshot is retried after
+  200 ms, doubling to a ceiling of 10 s (`RetryBackoff`, deterministic, no
+  jitter). Any coherent snapshot, a new owner or `stop()` resets it. The OBS
+  client used to retry every 200 ms for the life of the OBS process.
+- **Why the service keeps metering.** Audio1 cannot see the match rules of its
+  subscribers, so it cannot know that nobody listens. Stopping its meter tap on
+  a guess would silence other clients, and acquiring meters explicitly is a
+  public contract change (`AcquireMeters`/`ReleaseMeters`, named under
+  ADR-0174's "Revisit when"). That is not made here: until it is, the service
+  still produces the frames and the daemon discards them for lack of a
+  matching subscriber, which is the cost the lease cannot remove.
+
+Rows: `qindaqt.audio-client-levels` (lease counting, reapplication across owners
+and restarts, the idle batch, stale-frame drop, the backoff schedule and its
+reset, driven through the retry timer without sleeping),
+`qindaqt.audio-qt-transport` (match rule installed and removed on a private
+bus), plus the lease rows of the Settings console page, the shell applet
+controller and the OBS dock.
+
 ## Installed public client header closure
 
 The AudioProtocol production FILE_SET includes audio_console.h, an existing

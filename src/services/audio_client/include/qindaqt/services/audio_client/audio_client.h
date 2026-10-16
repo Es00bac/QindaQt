@@ -3,12 +3,14 @@
 #pragma once
 
 #include <qindaqt/services/audio_client/audio_transport.h>
+#include <qindaqt/services/audio_client/retry_backoff.h>
 
 #include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 
 #include <optional>
+#include <utility>
 
 namespace QindaQt::Audio
 {
@@ -43,6 +45,19 @@ public:
     [[nodiscard]] bool hasSnapshot() const noexcept;
     [[nodiscard]] Snapshot snapshot() const;
     [[nodiscard]] bool operationPending() const noexcept;
+
+    // Meter lease (ADR-0394). The Levels stream is subscribed only while at
+    // least one consumer holds a lease: retainLevels() counts one more, and
+    // the first one turns the subscription on; releaseLevels() gives one back,
+    // and the last one turns it off, returns every meter to "unknown" (the
+    // same signal an upstream stop gives, an empty levelsChanged batch) and
+    // drops a frame that was already in flight. A surface holds a lease only
+    // while a meter is visible. The count survives stop()/start() and owner
+    // changes: the transport re-applies the want to each owner. A release
+    // with no lease held is ignored. LevelsLease is the RAII form.
+    void retainLevels();
+    void releaseLevels();
+    [[nodiscard]] int levelsLeaseCount() const noexcept { return m_levelsLeases; }
 
     void setRequestTimeout(int milliseconds);
     [[nodiscard]] quint64 setDefault(const Handle &device);
@@ -99,6 +114,12 @@ public:
     [[nodiscard]] quint64 upsertVbanStream(const VbanStream &definition);
     [[nodiscard]] quint64 deleteVbanStream(const QString &name);
 
+    // Test seam, not for product code: the interval the next snapshot retry
+    // will wait, and the timer that fires it. Tests drive the timer's
+    // timeout() directly instead of sleeping through a real backoff.
+    [[nodiscard]] int pendingRetryDelayMilliseconds() const { return m_retryTimer.interval(); }
+    [[nodiscard]] QTimer *retryTimerForTesting() { return &m_retryTimer; }
+
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);
     void snapshotChanged(const QindaQt::Audio::Snapshot &snapshot);
@@ -153,11 +174,99 @@ private:
     QTimer m_fetchTimer;
     QTimer m_operationTimer;
     QTimer m_retryTimer;
+    // AGENT-CONTRACT (ADR-0394): a refused, lost or contradicted snapshot is
+    // retried on this schedule (0.2 s doubling to 10 s), reset by any healthy
+    // answer or a new owner.
+    RetryBackoff m_retryBackoff;
+    int m_levelsLeases = 0;
     quint64 m_nextRequestId = 1;
     quint64 m_fetchRequestId = 0;
     bool m_fetchInFlight = false;
     bool m_refetchNeeded = false;
     int m_requestTimeoutMs = 5000;
+};
+
+// RAII form of AudioClient::retainLevels: holds one lease for its lifetime.
+// Movable, not copyable. The client must outlive the lease (the client is
+// destroyed after the surfaces that borrow it).
+class LevelsLease
+{
+public:
+    LevelsLease() = default;
+    explicit LevelsLease(AudioClient *client)
+        : m_client(client)
+    {
+        if (m_client != nullptr) {
+            m_client->retainLevels();
+        }
+    }
+    LevelsLease(LevelsLease &&other) noexcept
+        : m_client(std::exchange(other.m_client, nullptr))
+    {
+    }
+    LevelsLease &operator=(LevelsLease &&other) noexcept
+    {
+        if (this != &other) {
+            release();
+            m_client = std::exchange(other.m_client, nullptr);
+        }
+        return *this;
+    }
+    LevelsLease(const LevelsLease &) = delete;
+    LevelsLease &operator=(const LevelsLease &) = delete;
+    ~LevelsLease() { release(); }
+
+    void release()
+    {
+        if (m_client != nullptr) {
+            std::exchange(m_client, nullptr)->releaseLevels();
+        }
+    }
+    [[nodiscard]] bool held() const noexcept { return m_client != nullptr; }
+
+private:
+    AudioClient *m_client = nullptr;
+};
+
+// Counted leases for a surface that hands them out to many meters (ADR-0394):
+// the client sees one lease per retain(), a release with nothing held is
+// ignored, and the destructor gives back whatever is still held, so a surface
+// torn down while meters are visible cannot leave the stream subscribed.
+// Not copyable. The client must outlive the set.
+class LevelsLeaseSet
+{
+public:
+    explicit LevelsLeaseSet(AudioClient *client) noexcept
+        : m_client(client)
+    {
+    }
+    LevelsLeaseSet(const LevelsLeaseSet &) = delete;
+    LevelsLeaseSet &operator=(const LevelsLeaseSet &) = delete;
+    ~LevelsLeaseSet() { releaseAll(); }
+
+    void retain()
+    {
+        ++m_count;
+        m_client->retainLevels();
+    }
+    void release()
+    {
+        if (m_count > 0) {
+            --m_count;
+            m_client->releaseLevels();
+        }
+    }
+    void releaseAll()
+    {
+        while (m_count > 0) {
+            release();
+        }
+    }
+    [[nodiscard]] int count() const noexcept { return m_count; }
+
+private:
+    AudioClient *m_client;
+    int m_count = 0;
 };
 
 } // namespace QindaQt::Audio

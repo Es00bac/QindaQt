@@ -336,6 +336,19 @@ number, the scale and the slot cannot disagree, and no second dB mapping lives
 in QML (ADR-0171). The meter reads the projection's `consoleLevels` channel,
 published per strip and bus as `{peakDb, rmsDb, known}` many times a second;
 an unknown reading renders as an empty, dimmed meter, never a fabricated one.
+Meters are leased ([ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md)):
+the `Levels` stream is subscribed only while a console meter is on screen. Each
+`AudioConsoleMeter` holds one lease on `AudioSettingsModel` (`retainMeters()` and
+`releaseMeters()`, part of the route's closed invokable surface and dispatching
+no operation) while it is visible in a shown, non-minimized window, and gives it
+back when it is hidden, when its tab or route leaves, when its window hides or
+minimizes, when its owner changes and when it is destroyed; the model gives back
+whatever it still holds when it is destroyed. A Settings window on the Devices or
+Peers tab, on another route, hidden or minimized therefore receives no meter
+frame. `consoleMetersHoldALeaseOnlyWhileVisible` proves the sequence on the
+production page: no lease on the default Devices tab, one per meter on the
+Console tab, none after leaving the tab, after the route hides and after the
+window hides, and none left behind when the page is destroyed.
 The fader, the rotary knob and the desk lamp pad are local controls marked
 `AGENT-NOTE: belongs in QindaTK` — the toolkit's slider is horizontal-only,
 it has no rotary control, and nothing in it has lamp semantics yet.

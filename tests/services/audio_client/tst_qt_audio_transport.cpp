@@ -74,6 +74,7 @@ private Q_SLOTS:
     void absentServiceLeavesStartingState();
     void successiveOwnersAndDelayedOperation();
     void latencyOffsetCrossesTheBus();
+    void theMeterStreamCrossesTheBusOnlyWhileLeased();
 };
 
 void QtAudioTransportTests::absentServiceLeavesStartingState()
@@ -309,6 +310,130 @@ void QtAudioTransportTests::latencyOffsetCrossesTheBus()
     QDBusConnection::disconnectFromBus(connectionName);
     qunsetenv("QINDAQT_AUDIO_LATENCY_PATH");
     qunsetenv("QINDAQT_AUDIO_VBAN_PATH");
+}
+
+namespace
+{
+
+// A round trip through the bus. The service answers org.freedesktop.DBus.Peer
+// from its own connection after everything it sent before, and the daemon
+// delivers one sender's messages to one receiver in order, so once this
+// returns every signal the service emitted earlier has been routed and, with
+// the GUI loop spinning, delivered. It also orders the client's own earlier
+// AddMatch/RemoveMatch ahead of the ping, so a match is in place (or gone)
+// before the next signal is published.
+void barrier(const QDBusConnection &connection, const QString &serviceName)
+{
+    const QDBusMessage ping = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kObjectPath),
+        QStringLiteral("org.freedesktop.DBus.Peer"), QStringLiteral("Ping"));
+    const QDBusMessage reply = connection.call(ping, QDBus::BlockWithGui, 5000);
+    QVERIFY2(reply.type() == QDBusMessage::ReplyMessage, qPrintable(reply.errorMessage()));
+}
+
+QList<LevelReading> oneReading(const QString &id, const double peakDb)
+{
+    LevelReading reading;
+    reading.id = id;
+    reading.level.known = true;
+    reading.level.peakDb = peakDb;
+    reading.level.rmsDb = peakDb - 6.0;
+    return {reading};
+}
+
+} // namespace
+
+// ADR-0394: the Levels match rule exists on the bus only while a consumer holds
+// a lease, follows the lease across a service replacement, and a released lease
+// is not followed by one more decoded frame.
+void QtAudioTransportTests::theMeterStreamCrossesTheBusOnlyWhileLeased()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.AudioLevelsTest.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    // AGENT-GUARD: never the developer's real console, VBAN or latency files.
+    qputenv("QINDAQT_AUDIO_VBAN_PATH", dir.filePath(QStringLiteral("audio-vban.json")).toUtf8());
+    qputenv("QINDAQT_AUDIO_LATENCY_PATH",
+            dir.filePath(QStringLiteral("audio-latency.json")).toUtf8());
+    const QString consolePath = dir.filePath(QStringLiteral("audio-console.json"));
+
+    const QString firstName = bus.name + QStringLiteral("-levels-service-1");
+    QDBusConnection firstConnection = QDBusConnection::connectToBus(bus.address, firstName);
+    QVERIFY(firstConnection.isConnected());
+    auto firstBackend = std::make_unique<FakeAudioBackend>();
+    FakeAudioBackend *first = firstBackend.get();
+    auto firstHost = std::make_unique<ResidentAudioService>(
+        std::move(firstBackend), firstConnection, serviceName, nullptr, consolePath);
+    QCOMPARE(firstHost->start(), ServiceStartStatus::Started);
+    first->publish(audioSnapshot(41, 2));
+
+    QtAudioTransport transport(bus.connection, serviceName);
+    AudioClient client(&transport);
+    QSignalSpy frames(&client, &AudioClient::levelsChanged);
+    client.start();
+    QTRY_COMPARE(client.state(), ClientState::Ready);
+    const QString stripId = client.snapshot().console.strips.at(0).id;
+
+    // No lease: the service meters, the bus carries nothing to this client.
+    barrier(bus.connection, serviceName);
+    first->publishLevels(oneReading(stripId, -30.0));
+    barrier(bus.connection, serviceName);
+    QCOMPARE(frames.size(), 0);
+    QVERIFY(!client.snapshot().console.strips.at(0).level.known);
+
+    client.retainLevels();
+    barrier(bus.connection, serviceName);
+    first->publishLevels(oneReading(stripId, -20.0));
+    barrier(bus.connection, serviceName);
+    QCOMPARE(frames.size(), 1);
+    QCOMPARE(client.snapshot().console.strips.at(0).level.peakDb, -20.0);
+
+    // Releasing removes the match: one idle batch for the surfaces, then
+    // silence even though the service keeps metering.
+    client.releaseLevels();
+    QCOMPARE(frames.size(), 2);
+    barrier(bus.connection, serviceName);
+    first->publishLevels(oneReading(stripId, -10.0));
+    barrier(bus.connection, serviceName);
+    QCOMPARE(frames.size(), 2);
+    QVERIFY(!client.snapshot().console.strips.at(0).level.known);
+
+    // A lease taken while a new owner is being found is applied to that owner.
+    client.retainLevels();
+    const QString firstOwner = client.owner();
+    firstHost->stop();
+    firstHost.reset();
+    QDBusConnection::disconnectFromBus(firstName);
+    QTRY_COMPARE(client.state(), ClientState::Unavailable);
+
+    const QString secondName = bus.name + QStringLiteral("-levels-service-2");
+    QDBusConnection secondConnection = QDBusConnection::connectToBus(bus.address, secondName);
+    QVERIFY(secondConnection.isConnected());
+    auto secondBackend = std::make_unique<FakeAudioBackend>();
+    FakeAudioBackend *second = secondBackend.get();
+    auto secondHost = std::make_unique<ResidentAudioService>(
+        std::move(secondBackend), secondConnection, serviceName, nullptr, consolePath);
+    QCOMPARE(secondHost->start(), ServiceStartStatus::Started);
+    second->publish(audioSnapshot(42, 1));
+    QTRY_COMPARE(client.state(), ClientState::Ready);
+    QVERIFY(client.owner() != firstOwner);
+    const qsizetype beforeSecond = frames.size();
+    barrier(bus.connection, serviceName);
+    second->publishLevels(oneReading(client.snapshot().console.strips.at(0).id, -15.0));
+    barrier(bus.connection, serviceName);
+    QCOMPARE(frames.size(), beforeSecond + 1);
+
+    client.releaseLevels();
+    client.stop();
+    secondHost->stop();
+    secondHost.reset();
+    QDBusConnection::disconnectFromBus(secondName);
+    qunsetenv("QINDAQT_AUDIO_VBAN_PATH");
+    qunsetenv("QINDAQT_AUDIO_LATENCY_PATH");
 }
 
 QTEST_GUILESS_MAIN(QtAudioTransportTests)

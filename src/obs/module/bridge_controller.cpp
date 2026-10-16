@@ -2,6 +2,7 @@
 #include "bridge_controller.h"
 
 #include "console_dock.h"
+#include "dock_meter_lease.h"
 
 #include <qindaqt/services/audio_client/qt_audio_transport.h>
 
@@ -184,6 +185,7 @@ void BridgeController::start()
         auto *dock = new ConsoleDock;
         if (obs_frontend_add_dock_by_id("qindaqt-console", "QindaQt Console", dock)) {
             m_dock = dock;
+            m_dockLease = std::make_unique<DockMeterLease>(m_client.get(), dock);
         } else {
             delete dock;
         }
@@ -197,6 +199,7 @@ void BridgeController::stop()
         obs_frontend_remove_event_callback(frontendEvent, this);
         m_frontendCallbacks = false;
     }
+    m_dockLease.reset();
     m_dock = nullptr;
     if (m_client) {
         m_client->stop();

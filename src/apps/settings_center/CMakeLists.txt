@@ -8,6 +8,8 @@ find_package(Wayland REQUIRED COMPONENTS Client)
 
 qt_add_library(
     qindaqt_settings_navigation STATIC
+    settings_launch_arguments.h
+    settings_launch_arguments.cpp
     settings_route.h
     settings_route.cpp
     settings_route_registry.h

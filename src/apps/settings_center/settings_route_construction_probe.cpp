@@ -19,10 +19,9 @@ class RouteConstructionObserver final : public QObject {
 
 public:
   RouteConstructionObserver(QString requestedRoute, bool available,
-                            QCoreApplication &application,
-                            QQmlApplicationEngine &engine)
+                            QCoreApplication &application)
       : m_requestedRoute(std::move(requestedRoute)), m_available(available),
-        m_application(application), m_engine(engine) {}
+        m_application(application) {}
 
 public slots:
   void record(const QString &routeId, const QString &state) {
@@ -42,21 +41,20 @@ public slots:
     std::fflush(stdout);
     // Give deferred bindings one short event-loop turn after Loader.Ready;
     // warnings emitted by that route must still reach the package gate.
-    QTimer::singleShot(30, &m_application, [this] {
-      // Root QML must be destroyed while its route models are still alive.
-      // Otherwise normal stack teardown emits binding warnings unrelated to
-      // route construction and masks the warning gate.
-      const auto roots = m_engine.rootObjects();
-      for (QObject *root : roots) delete root;
-      QCoreApplication::quit();
-    });
+    // AGENT-NOTE (ADR-0395): the probe no longer deletes the root objects
+    // itself. It used to, because the normal teardown destroyed the models
+    // before the QML scene and "emits binding warnings unrelated to route
+    // construction". main() now owns that ordering (QmlTeardown), so the
+    // probe quits the loop and lets the REAL shutdown run; the stderr warning
+    // gate in check_route_construction.cmake and the 20-cycle loop in
+    // check_shutdown_loop.cmake therefore cover the production teardown.
+    QTimer::singleShot(30, &m_application, [] { QCoreApplication::quit(); });
   }
 
 private:
   QString m_requestedRoute;
   bool m_available;
   QCoreApplication &m_application;
-  QQmlApplicationEngine &m_engine;
   bool m_reported = false;
 };
 
@@ -67,7 +65,7 @@ namespace QindaQt::Apps::SettingsCenter {
 int runRouteConstructionProbe(
     QCoreApplication &application, QQmlApplicationEngine &engine,
     const QString &page, bool available) {
-  RouteConstructionObserver probe(page, available, application, engine);
+  RouteConstructionObserver probe(page, available, application);
   QObject *root = engine.rootObjects().first();
   const char *const hostNames[] = {"wideSettingsRouteHost",
                                    "compactSettingsRouteHost"};

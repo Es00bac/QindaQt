@@ -735,7 +735,13 @@ scene collection. `qindaqt.obs-bridge-module-load` loads the built
 `obs-qindaqt.so` through `obs_open_module` the way OBS does and creates both
 types. None of them touches the user's OBS or the live console; the installed
 check (OBS lists the buses, a strip meters, a rename follows) is a package
-gate on the desktop.
+gate on the desktop. `qindaqt.obs-console-dock`
+([ADR-0394](../adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md))
+needs no libobs startup and no bus: it drives the dock's meter lease and its
+idle bars over the real audio client on the shared fake transport. On a host where
+`obs_startup` cannot run headless (no display or graphics context, as on a build
+machine's tty) `qindaqt.obs-bridge-libobs` and `qindaqt.obs-bridge-module-load`
+fail at `obs_startup` before reaching any bridge code.
 
 ## Current design-token proof
 
@@ -1542,6 +1548,13 @@ paths from the same live owner within one watcher epoch; root-path population;
 canonical theme-root confinement; and the
 512-pixel bound for theme-decoded and fallback images.
 
+`qindaqt.task-list-update-cost` is a measurement harness rather than a
+correctness row ([Task list](../shell/task-list.md), "Update cost and revision
+fencing"): it prints `QINDAQT_BENCH` lines with thread CPU time and `dataChanged`
+per title update on a 16-window strip over the host's real desktop entries and
+icon themes, asserting only the deterministic row-model traffic, never a
+wall-clock bound. Read its numbers from `ctest -V -R task-list-update-cost`.
+
 The registered task-list applet slice is selected with:
 
 ```sh
@@ -1696,6 +1709,25 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.settings-app-' \
   --output-on-failure
 ```
+
+Four further `settings-app-` and unit rows cover the process boundary
+([ADR-0395](../adr/0395-destroy-the-settings-scene-before-its-models-and-return-from-main.md)):
+`qindaqt.settings-launch-arguments` and `qindaqt.settings-qml-teardown` (with a
+negative control), `qindaqt.settings-app-help-exits` (the real binary's exit
+status and streams for `--help` and usage errors) and
+`qindaqt.settings-app-shutdown-loop` (twenty offscreen open/close cycles under a
+poisoned heap, serial). An AddressSanitizer tree is the stronger form of the
+same rows. Configure a separate tree from the release preset's flags plus
+`-DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer -g1"`,
+`-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer -g1"`, the same
+`-fsanitize=address` for the exe and shared linker flags, and
+`-DQINDAQT_ENABLE_STRICT_WARNINGS=OFF` (the sanitizer build trips
+`-Werror=maybe-uninitialized` in generated qmlcachegen output otherwise), build
+`qindaqt-settings` and the rows' test targets there, and run
+`ASAN_OPTIONS=detect_leaks=0 ctest -R 'settings-(app-(help-exits|shutdown-loop)|qml-teardown|launch-arguments)'`
+(Qt's own exit-time allocations make leak detection report unrelated noise). The
+stability round ran these rows, and the 20-cycle loop on both the offscreen
+and a private headless-Weston Wayland platform, clean under that tree.
 
 The four Appearance rows cover strict typed values and enum metatypes, exact
 active-v2 defaults/constraints plus v1 migration fallback, all six built-in

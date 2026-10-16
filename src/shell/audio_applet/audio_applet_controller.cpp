@@ -99,6 +99,10 @@ AudioAppletController::AudioAppletController(AudioClient *client,
             &AudioAppletController::reproject);
     connect(m_client, &AudioClient::operationCompleted, this,
             &AudioAppletController::handleOperationCompleted);
+    // Meters move on their own narrow channel so a level frame never
+    // reprojects the applet. Frames exist only while a meter holds a lease.
+    connect(m_client, &AudioClient::levelsChanged, this,
+            &AudioAppletController::consoleLevelsChanged);
 
     reproject();
 }

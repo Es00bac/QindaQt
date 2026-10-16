@@ -21,6 +21,7 @@ class QtAudioTransport;
 namespace QindaQt::ObsBridge {
 
 class ConsoleDock;
+class DockMeterLease;
 
 // The bridge's published view: what obs-websocket clients read.
 struct ConsoleMapping {
@@ -74,6 +75,10 @@ private:
     std::unique_ptr<Audio::QtAudioTransport> m_transport;
     std::unique_ptr<Audio::AudioClient> m_client;
     ConsoleDock *m_dock = nullptr;
+    // AGENT-GUARD (ADR-0394): declared after m_client so it is destroyed
+    // before it, and reset by stop() before the client is; the lease borrows
+    // the client.
+    std::unique_ptr<DockMeterLease> m_dockLease;
     bool m_frontendCallbacks = false;
     bool m_frontendReady = true;
     bool m_haveSnapshot = false;
