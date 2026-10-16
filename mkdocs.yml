@@ -577,3 +577,6 @@ nav:
       - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md
       - "0375: Package-owned Android collector bootstrap": adr/0375-bootstrap-the-package-owned-android-collector.md
       - "0376: Complete printing stack": adr/0376-ship-a-complete-printing-stack.md
+      - "0385: Non-dumpable compositor, inherited core limits": adr/0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md
+      - "0386: Supervised locker and capture broker": adr/0386-supervise-compositor-owned-locker-and-capture-broker.md
+      - "0387: Privileged entries by basename and local path": adr/0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md

@@ -37,7 +37,11 @@ supervision and consumers. A request to lock confers no unlock authority.
 Every enabled desktop physical output presents a protected frame before
 `locked`, including mirrored outputs. Black fallback is allowed by the standard.
 No timeout manufactures success. Crash and output changes remain fenced; an
-authorized replacement can recover. Ordinary windows and desktop chrome cannot
+authorized replacement can recover. While locked, the compositor relaunches a
+locker that exits, crashes or fails to start, after 0.5 s doubling to 8 s and
+without a limit, on the same private connection trust
+([ADR-0386](../adr/0386-supervise-compositor-owned-locker-and-capture-broker.md));
+the session never has to re-request a lock to leave a black screen. Ordinary windows and desktop chrome cannot
 appear or receive input while locked. The compositor-owned input method is
 permitted only while a current explicit lock surface has keyboard focus. Native
 role graphics and input remain suppressed until the protected presentation
@@ -71,7 +75,9 @@ supersedes executable-inode-only binding for the PF7 candidate. The compositor
 creates the private locker connection and launches its fixed native executable
 with a whitelist environment. An independently launched copy cannot bind the
 lock global, including one with actual loader injection. Kernel ptrace protection
-and non-dumpable/core-off authority processes protect the inherited transport.
+and non-dumpable authority processes protect the inherited transport; the
+compositor no longer lowers the core limit its session children inherit
+([ADR-0385](../adr/0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md)).
 The separate native PAM worker owns authentication and account approval, using
 a bounded private inherited socket and the real UID account. Each frame carries
 the current lock epoch/request; caller-selected identity/service, malformed

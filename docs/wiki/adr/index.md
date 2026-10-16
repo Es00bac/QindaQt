@@ -428,3 +428,6 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
 - [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.
+- [ADR-0385: Keep the compositor non-dumpable without lowering session core limits](0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md) — Accepted fork source; amends ADR-0299, installed delivery pending.
+- [ADR-0386: Supervise the compositor-owned locker and capture broker](0386-supervise-compositor-owned-locker-and-capture-broker.md) — Accepted fork source; relaunch with bounded backoff, amends ADR-0299 and ADR-0324.
+- [ADR-0387: Resolve privileged desktop entries by basename and local paths only](0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md) — Accepted fork source; amends ADR-0340, installed delivery pending.
