@@ -10,7 +10,9 @@ container-wm:
 - Sync to qinda for building (plain source tree, no .git):
   `rsync -a --delete --exclude=.git --exclude=/build/ --exclude=/.cache/ ~/work_space/container-wm.worktrees/<WT>/ qinda:work_SPaC3/container-wm.worktrees/<WT>-src/`
 - Configure once on qinda:
-  `ssh qinda 'cd ~/work_SPaC3/container-wm.worktrees/<WT>-src && cmake --preset release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'`
+  `ssh qinda 'cd ~/work_SPaC3/container-wm.worktrees/<WT>-src && cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib64 -DKDE_INSTALL_LIBDIR=lib64 -DKDE_INSTALL_LIBEXECDIR=libexec -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'`
+  (The install directories must match the ebuild: the portal capture check compares them with the
+  installed fork header `/usr/include/qindaqt-kwin/capture-authority/launchpaths.h` and fails otherwise.)
 - Build only what you need, under the shared lock:
   `ssh qinda 'cd ~/work_SPaC3/container-wm.worktrees/<WT>-src && nice -n 10 ionice -c3 flock ~/.cache/qindaqt-program-build.lock cmake --build build/release --target <targets> -- -j20 -l24'`
   then `ctest --test-dir build/release -R '<regex>' --output-on-failure`.
