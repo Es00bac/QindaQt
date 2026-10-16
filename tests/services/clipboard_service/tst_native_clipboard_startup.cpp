@@ -165,8 +165,11 @@ private Q_SLOTS:
         QVERIFY(fixture.compositor.unregisterService(QindaQt::Tests::compositorService()));
         ClipboardNativeBackend replacement(fixture.attacker, fixture.client);
         QVERIFY(replacement.expose());
+        // ADR-0379: a same-PID bus-name replacement is published when the
+        // owner watcher delivers it, not by a getter-time daemon call. Kernel
+        // loss and session admission still close the very next getter.
+        QTRY_VERIFY(!host.snapshot().privacyAllowed);
         const auto revoked = host.snapshot();
-        QVERIFY(!revoked.privacyAllowed);
         QCOMPARE(revoked.generation, old.generation + 1);
         QCOMPARE(entries(revoked), 0);
         QTest::qWait(150);

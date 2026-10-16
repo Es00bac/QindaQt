@@ -118,7 +118,25 @@ class DisplayTest(unittest.TestCase):
         finally: replacement.close()
     def test_socket_lineage_loss_revokes_binding(self):
         peer=self.compositor();self.assertTrue(self.attach())
-        self.command(peer,"drop");time.sleep(.3)
+        properties={"org.freedesktop.Secret.Collection.Label":("s","delayed-fixture")}
+        prompt=self.call("org.freedesktop.Secret.Service","/org/freedesktop/secrets",
+                         "CreateCollection","a{sv}s",properties,"")[1]
+        self.call("org.freedesktop.Secret.Prompt",prompt,"Prompt","s","")
+        deadline=time.monotonic()+4
+        while not (self.runtime/"prompt-metadata").exists() and time.monotonic()<deadline: time.sleep(.05)
+        self.assertTrue((self.runtime/"prompt-metadata").exists())
+        # ADR-0379: lineage loss revokes the in-flight approval at once...
+        self.command(peer,"drop");time.sleep(2.3)
+        self.assertEqual(list(self.native("ListCollections")[0]),["session"])
+        self.assertFalse(list(self.storage.glob("*.qkr")))
+        # ...and the retained selection re-proves the same live compositor.
+        self.runtime.joinpath("prompt-metadata").unlink()
+        self.assertFalse(self.collection().is_locked())
+        metadata=json.loads((self.runtime/"prompt-metadata").read_text())
+        self.assertEqual(metadata["pid"],peer.pid)
+    def test_lineage_loss_without_a_valid_owner_stays_revoked(self):
+        peer=self.compositor();self.assertTrue(self.attach())
+        self.command(peer,"release");self.command(peer,"drop");time.sleep(.6)
         self.denied_prompt()
     def test_supervisor_uses_current_native_display_metadata(self):
         self.compositor("qindaqt-7")

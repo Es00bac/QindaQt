@@ -199,7 +199,8 @@ private Q_SLOTS:
         QTRY_VERIFY(observer.contentMayBeShown());
         QVERIFY(server.unregisterService(compositorService()));
         QVERIFY(second.expose());
-        QVERIFY(!observer.contentMayBeShown());
+        // ADR-0379: the replacement is published on owner-watcher delivery.
+        QTRY_VERIFY(!observer.contentMayBeShown());
         QTest::qWait(50);
         QVERIFY(!observer.contentMayBeShown());
     }
