@@ -4,6 +4,7 @@
 # Settings, shell and compositor plugin, so they come first.
 add_subdirectory(services/agent_usage)
 add_subdirectory(compositor_names)
+add_subdirectory(platform/recovery_backoff)
 add_subdirectory(platform/compositor_attachment)
 add_subdirectory(platform/foreign_parent)
 add_subdirectory(platform/idle_observation)

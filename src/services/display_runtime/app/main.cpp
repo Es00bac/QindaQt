@@ -6,10 +6,13 @@
 #include <qindaqt/services/display_service/display_service_ports.h>
 #include <qindaqt/services/display_writer/production_output_management_port.h>
 
+#include "../src/session_wayland_display_p.h"
+
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QElapsedTimer>
+#include <QtCore/QEventLoop>
 #include <QtCore/QUuid>
 #include <QtDBus/QDBusConnection>
 
@@ -102,8 +105,33 @@ int main(int argc, char **argv)
         return 4;
     }
 
+    // AGENT-NOTE (ADR-0379): activation can precede qindaqt-session's
+    // WAYLAND_DISPLAY publication (KWin -> NightLight -> Display1 at login).
+    // Wait, bounded, for the session's socket instead of exiting status 4.
+    DisplayRuntime::WaylandDisplayWait displayWait(
+        sessionConnection, qEnvironmentVariable("WAYLAND_DISPLAY"),
+        qEnvironmentVariable("XDG_RUNTIME_DIR"));
+    {
+        QEventLoop waiting;
+        QObject::connect(&displayWait, &DisplayRuntime::WaylandDisplayWait::done,
+                         &waiting, &QEventLoop::quit);
+        displayWait.start();
+        if (!displayWait.finished()) {
+            waiting.exec();
+        }
+    }
+    if (displayWait.display().isEmpty()) {
+        qCritical("Display1 found no session Wayland display after %d attempts: %s",
+                  displayWait.attempts(), qPrintable(displayWait.failure()));
+        return 4;
+    }
+    if (displayWait.attempts() > 1) {
+        qInfo("Display1 waited for the session Wayland display %s",
+              qPrintable(displayWait.display()));
+    }
+
     auto writer = std::make_unique<DisplayWriter::WriterTransactionPort>(
-        DisplayWriter::makeProductionOutputManagementPort(),
+        DisplayWriter::makeProductionOutputManagementPort(displayWait.display()),
         std::move(journalStore));
     DisplayRuntime::ResidentDisplayRuntime runtime(
         DisplayService::makeCompositorInventorySource(sessionConnection),

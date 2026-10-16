@@ -47,6 +47,21 @@ public:
   bool started = false, acceptSubscription = true,
        queryBeforeSubscription = false;
 };
+// Retries run on injected timers; tests elapse them explicitly (ADR-0379).
+struct ManualTimers {
+  QList<QindaQt::Platform::Recovery::ManualRecoveryTimer *> created;
+  NativeLockMonitorRecovery recovery() {
+    NativeLockMonitorRecovery value;
+    value.timers = [this] {
+      auto timer = std::make_unique<QindaQt::Platform::Recovery::ManualRecoveryTimer>();
+      created.append(timer.get());
+      return timer;
+    };
+    return value;
+  }
+  QindaQt::Platform::Recovery::ManualRecoveryTimer &only() { return *created.first(); }
+};
+using std::chrono::milliseconds;
 class NativeLockMonitorTests final : public QObject {
   Q_OBJECT
 private Q_SLOTS:
@@ -225,6 +240,85 @@ private Q_SLOTS:
                             "denied");
     transport.answer(query, false, false);
     QVERIFY(!monitor.contentMayBeShown());
+  }
+  void failedQueriesRetryWithBoundedBackoffUntilAnswered() {
+    MemoryTransport transport;
+    ManualTimers timers;
+    NativeLockStateMonitor monitor(
+        transport,
+        [](const QString &owner, quint64 pid) {
+          return owner == ":1.10" && pid == 4242;
+        },
+        timers.recovery());
+    QVERIFY(monitor.start());
+    transport.authority();
+    auto &timer = timers.only();
+    for (int attempt = 0; attempt < 3; ++attempt) {
+      const auto query = transport.queries.last();
+      // A timed-out or failed snapshot is Unknown, never permanent.
+      Q_EMIT transport.failed(query.generation, query.serial, query.owner,
+                              "org.freedesktop.DBus.Error.NoReply");
+      QCOMPARE(monitor.state(), LockState::Unknown);
+      QVERIFY(timer.isActive());
+      QVERIFY(timer.fire());
+      QCOMPARE(transport.queries.size(), attempt + 2);
+    }
+    QCOMPARE(timer.requested(), (QList<milliseconds>{milliseconds{250},
+                                                      milliseconds{500},
+                                                      milliseconds{1000}}));
+    transport.answer(transport.queries.last(), false, false);
+    QCOMPARE(monitor.state(), LockState::Unlocked);
+    QVERIFY(!timer.isActive());
+    const auto query = transport.queries.last();
+    Q_EMIT transport.stateInvalidated(":1.10");
+    Q_EMIT transport.failed(query.generation, transport.queries.last().serial,
+                            query.owner, "org.freedesktop.DBus.Error.NoReply");
+    QCOMPARE(timer.requested().last(), milliseconds{250}); // success reset it
+  }
+  void ownerLookupFailureReprobes() {
+    MemoryTransport transport;
+    ManualTimers timers;
+    NativeLockStateMonitor monitor(
+        transport, [](const QString &, quint64) { return true; },
+        timers.recovery());
+    QVERIFY(monitor.start());
+    QCOMPARE(transport.ownerRequests, 1);
+    Q_EMIT transport.failed(transport.generation, 0, {},
+                            "org.freedesktop.DBus.Error.NoReply");
+    QVERIFY(timers.only().fire());
+    QCOMPARE(transport.ownerRequests, 2);
+    transport.authority();
+    transport.answer(transport.queries.last(), true, true);
+    QCOMPARE(monitor.state(), LockState::Locked);
+  }
+  void refusedAdmissionRetriesAndRefreshLeavesUnknownAtOnce() {
+    bool live = false;
+    MemoryTransport transport;
+    ManualTimers timers;
+    NativeLockStateMonitor monitor(
+        transport,
+        [&](const QString &owner, quint64 pid) {
+          return live && owner == ":1.10" && pid == 4242;
+        },
+        timers.recovery());
+    QVERIFY(monitor.start());
+    transport.authority(); // the attachment is gone: refused
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    QVERIFY(transport.queries.isEmpty());
+    auto &timer = timers.only();
+    QVERIFY(timer.fire());
+    QCOMPARE(transport.ownerRequests, 2);
+    transport.authority();
+    QCOMPARE(timer.requested().last(), milliseconds{500});
+    // The owner re-attached: refresh() re-probes at once and restarts the
+    // schedule, so the state leaves Unknown on the compositor's next answer.
+    live = true;
+    monitor.refresh();
+    QCOMPARE(transport.ownerRequests, 3);
+    QVERIFY(!timer.isActive());
+    transport.authority();
+    transport.answer(transport.queries.last(), false, false);
+    QCOMPARE(monitor.state(), LockState::Unlocked);
   }
 };
 QTEST_GUILESS_MAIN(NativeLockMonitorTests)

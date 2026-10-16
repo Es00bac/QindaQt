@@ -6,6 +6,7 @@
 - **Supersedes:** None
 - **Superseded by:** None
 - **Extended by:** [ADR-0256](0256-refresh-audio1-after-package-upgrades.md)
+- **Amended by:** [ADR-0379](0379-make-session-liveness-event-driven-and-self-healing.md): only instances that predate the login or run a replaced executable restart; the Plasma portal backend left the list
 
 ## Context
 

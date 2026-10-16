@@ -36,6 +36,11 @@ public:
   bool handleMessage(const QDBusMessage &m, const QDBusConnection &) override {
     if (m.member() == "GetSession") {
       selectedIds.append(m.arguments().first().toString());
+      if (failSessions > 0) {
+        --failSessions;
+        bus.send(m.createErrorReply(QDBusError::NoReply, QStringLiteral("Fixture is slow")));
+        return true;
+      }
       bus.send(m.createReply(QVariant::fromValue(QDBusObjectPath(path))));
     } else if (m.member() == "GetSessionByPID") {
       selectedPids.append(m.arguments().first().toUInt());
@@ -49,7 +54,10 @@ public:
       bus.send(m.createReply(QVariant::fromValue(properties)));
     } else if (m.member() == "Inhibit") {
       inhibitors.append(m.arguments());
-      if (deferInhibit) deferredInhibit = m;
+      if (failInhibits > 0) {
+        --failInhibits;
+        bus.send(m.createErrorReply(QDBusError::NoReply, QStringLiteral("Fixture is slow")));
+      } else if (deferInhibit) deferredInhibit = m;
       else sendInhibit(m);
     } else if (m.member() == "SetLockedHint") {
       hints.append(m.arguments().first().toBool());
@@ -109,7 +117,7 @@ public:
   QHash<QString, QVariant> capabilityAnswers;
   QStringList capabilityMethods, actionMethods, unsupportedMethods;
   bool malformedActionReply = false;
-  int canCalls = 0, suspendCalls = 0;
+  int canCalls = 0, suspendCalls = 0, failInhibits = 0, failSessions = 0;
   QStringList selectedIds;
   QList<quint32> selectedPids;
   QList<QVariantList> inhibitors;
@@ -154,6 +162,21 @@ public:
   void refresh() override {}
   void revoke() override {}
 };
+// Every transport retry runs on these injected timers; tests fire them.
+struct ManualTimers {
+  QList<Platform::Recovery::ManualRecoveryTimer *> created;
+  Platform::Recovery::RecoveryTimerFactory factory() {
+    return [this] {
+      auto timer = std::make_unique<Platform::Recovery::ManualRecoveryTimer>();
+      created.append(timer.get());
+      return timer;
+    };
+  }
+  bool anyActive() const {
+    for (auto *timer : created) if (timer->isActive()) return true;
+    return false;
+  }
+};
 struct Fixture {
   PrivateSleepBus broker;
   QDBusConnection supervisor = broker.connect("supervisor");
@@ -182,8 +205,15 @@ struct Fixture {
   Services::LockPreferences::PreferencesProvider preferences{settings};
   NoIdle idle;
   Session::NativeLockRuntime::Runtime runtime{preferences, idle, request, monitor, nullptr};
+  ManualTimers timers;
   LogindSleepTransport transport{supervisor, "native1", static_cast<quint32>(getuid()),
-      static_cast<quint32>(getpid()), [this] { return attachment.live(); }, static_cast<quint32>(getuid())};
+      static_cast<quint32>(getpid()), [this] { return supervisorAdmitted && attachment.live(); },
+      static_cast<quint32>(getuid()), SleepTransportRecovery{{}, timers.factory()}};
+  // Admission is event-driven: the owner reports every change (ADR-0379).
+  void setAdmitted(bool value) { supervisorAdmitted = value; transport.reevaluateAdmission(); }
+  // created[0] retries the logind binding, created[1] the delay/hint upkeep.
+  Platform::Recovery::ManualRecoveryTimer &bindRetry() { return *timers.created.at(0); }
+  Platform::Recovery::ManualRecoveryTimer &upkeepRetry() { return *timers.created.at(1); }
   SleepCoordinator coordinator{transport, runtime, monitor};
   SleepService service{supervisor, coordinator, static_cast<quint32>(getuid())};
   void startNative() {

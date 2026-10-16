@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/display_runtime/session_safety_port.h>
 
+#include "qt_session_safety_port_p.h"
+
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
 #include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 
@@ -44,13 +46,25 @@ class QtSessionSafetyPort final : public QObject, public SessionSafetyPort
 
 public:
     QtSessionSafetyPort(QDBusConnection sessionConnection,
-                        QDBusConnection systemConnection)
+                        QDBusConnection systemConnection,
+                        const Platform::Recovery::RecoveryTimerFactory &timers)
         : m_sessionConnection(std::move(sessionConnection))
         , m_systemConnection(std::move(systemConnection))
+        , m_inhibitRetry({}, timers)
     {
+        QObject::connect(&m_inhibitRetry, &Platform::Recovery::RecoveryBackoff::retry,
+                         this, [this] { requestDelayInhibitor(); });
     }
 
-    ~QtSessionSafetyPort() override { stop(); }
+    ~QtSessionSafetyPort() override
+    {
+        stop();
+        // AGENT-GUARD: cleanup() defers deletion, so retired monitors and
+        // transports are still children here. QObject deletes children in
+        // creation order (transport first), but a monitor's destructor still
+        // unsubscribes through its borrowed transport: delete monitors first.
+        qDeleteAll(findChildren<NativeLockStateMonitor *>(Qt::FindDirectChildrenOnly));
+    }
 
     void setObserver(SessionSafetyObserver *observer) override
     {
@@ -165,11 +179,12 @@ private Q_SLOTS:
             if (m_sleepPreparing) {
                 return;
             }
-            if (!delayHeld()) {
-                fail(QStringLiteral("sleep-without-delay-authority"));
-                return;
-            }
+            // AGENT-NOTE (ADR-0379): a new suspend can begin before the
+            // post-resume delay is re-acquired (back-to-back suspends). That
+            // is not lost authority: this sleep proceeds without the delay,
+            // the display state is Unknown, and resume re-acquires it.
             m_sleepPreparing = true;
+            m_inhibitRetry.cancel();
             updateSafety();
             if (m_observer != nullptr) {
                 m_observer->sessionPreparingForSleep();
@@ -247,9 +262,18 @@ private:
                 }
                 m_inhibitPending = false;
                 if (reply.isError() || !reply.value().isValid()) {
-                    fail(QStringLiteral("logind-inhibit-failed"));
+                    // A slow or failing logind is retried, never fatal.
+                    if (!m_sleepPreparing) {
+                        m_inhibitRetry.schedule();
+                    }
                     return;
                 }
+                if (m_sleepPreparing) {
+                    // A sleep began while this request was in flight. Drop
+                    // the late descriptor; resume requests a fresh one.
+                    return;
+                }
+                m_inhibitRetry.reset();
                 m_delayDescriptor = reply.value();
                 updateSafety();
                 if (m_observer != nullptr) {
@@ -302,6 +326,7 @@ private:
         }
         m_running = false;
         ++m_generation;
+        m_inhibitRetry.reset();
         m_inhibitPending = false;
         m_sleepPreparing = false;
         m_delayDescriptor = {};
@@ -344,6 +369,7 @@ private:
 
     QDBusConnection m_sessionConnection;
     QDBusConnection m_systemConnection;
+    Platform::Recovery::RecoveryBackoff m_inhibitRetry;
     std::unique_ptr<QtNativeLockTransport> m_lockTransport;
     std::unique_ptr<NativeLockStateMonitor> m_lockMonitor;
     std::unique_ptr<QDBusServiceWatcher> m_logindWatcher;
@@ -367,8 +393,16 @@ std::unique_ptr<SessionSafetyPort> makeQtSessionSafetyPort(
     const QDBusConnection &sessionConnection,
     const QDBusConnection &systemConnection)
 {
+    return makeQtSessionSafetyPort(sessionConnection, systemConnection, {});
+}
+
+std::unique_ptr<SessionSafetyPort> makeQtSessionSafetyPort(
+    const QDBusConnection &sessionConnection,
+    const QDBusConnection &systemConnection,
+    const Platform::Recovery::RecoveryTimerFactory &timers)
+{
     return std::make_unique<QtSessionSafetyPort>(sessionConnection,
-                                                 systemConnection);
+                                                 systemConnection, timers);
 }
 
 } // namespace QindaQt::DisplayRuntime

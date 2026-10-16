@@ -6,6 +6,8 @@
 #include <QStringList>
 #include <QtDBus/QDBusConnection>
 
+#include <optional>
+
 namespace QindaQt::SessionSupervisor {
 // AGENT-GUARD: Private scope (the default) never mutates the shared broker or
 // user manager without an explicit hermetic endpoint. Only the witnessed
@@ -69,5 +71,12 @@ struct SystemdManagerRoute {
 // call failure.
 [[nodiscard]] bool nativeRestartUnit(const QString &address, const QString &unitName,
                                      bool requiresBusHello = false);
+
+// MainPID of a service unit along the resolved route (ADR-0379): 0 when the
+// unit is not loaded or has no running process, nullopt when the manager
+// could not answer. Bounded like the other manager calls.
+[[nodiscard]] std::optional<quint32> unitMainPid(const SystemdManagerRoute &route,
+                                                 const QDBusConnection &sessionBus,
+                                                 const QString &unitName);
 
 } // namespace QindaQt::SessionSupervisor

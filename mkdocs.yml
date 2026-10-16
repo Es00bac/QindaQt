@@ -167,6 +167,7 @@ nav:
       - Native session lock: architecture/native-session-lock.md
       - Lock greeter lifecycle: architecture/lock-greeter.md
       - Compositor attachment and idle: architecture/compositor-attachment.md
+      - Session resilience: architecture/session-resilience.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
       - Windows Program Runner: apps/windows-program-runner.md
@@ -578,6 +579,7 @@ nav:
       - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md
       - "0375: Package-owned Android collector bootstrap": adr/0375-bootstrap-the-package-owned-android-collector.md
       - "0376: Complete printing stack": adr/0376-ship-a-complete-printing-stack.md
+      - "0379: Event-driven self-healing session liveness": adr/0379-make-session-liveness-event-driven-and-self-healing.md
       - "0382: Start native lock authentication on user input": adr/0382-start-native-lock-authentication-on-user-input.md
       - "0383: Coalesced change signals and title-band chrome": adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md
       - "0384: Per-window visibility degradation and stranded-window rescue": adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md

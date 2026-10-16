@@ -45,6 +45,7 @@ void SleepCoordinator::stop() {
   m_runtime.cancelSuspend();
   refuseManual();
   m_transport.stop();
+  notifyAvailability();
 }
 bool SleepCoordinator::canSuspend() const {
   const auto state = m_state.state();
@@ -66,7 +67,7 @@ bool SleepCoordinator::requestSleep(SleepMode mode) {
   m_manual = true;
   const auto serial = ++m_serial;
   m_deadline.start();
-  Q_EMIT availabilityChanged();
+  notifyAvailability();
   const bool accepted = m_runtime.requestSuspend([this, serial, mode] {
     if (!m_started || !m_manual || serial != m_serial ||
         m_state.state() != LockState::Locked || !m_state.presentationProtected() ||
@@ -106,7 +107,7 @@ void SleepCoordinator::preparing(bool value) {
     refuseManual();
     m_transport.acquireDelayInhibitor();
   }
-  Q_EMIT availabilityChanged();
+  notifyAvailability();
 }
 void SleepCoordinator::authorityChanged() {
   if (!m_started) return;
@@ -115,7 +116,7 @@ void SleepCoordinator::authorityChanged() {
     m_runtime.cancelSuspend(); refuseManual();
   }
   syncLockedHint();
-  Q_EMIT availabilityChanged();
+  notifyAvailability();
 }
 void SleepCoordinator::syncLockedHint() {
   if (!m_started) return;
@@ -125,7 +126,7 @@ void SleepCoordinator::syncLockedHint() {
   else if (state == LockState::Locked && m_state.presentationProtected())
     static_cast<void>(m_transport.setLockedHint(true));
   // Unknown/Locking never forge an unlocked hint or release a delay FD.
-  Q_EMIT availabilityChanged();
+  notifyAvailability();
 }
 void SleepCoordinator::refuseManual() {
   const auto result = m_transport.suspendDispatched() ? SleepResult::Uncertain : SleepResult::Refused;
@@ -134,11 +135,17 @@ void SleepCoordinator::refuseManual() {
   m_transport.cancelSleep();
   finishManual(result);
 }
+void SleepCoordinator::notifyAvailability() {
+  const bool now = canSuspend();
+  if (now == m_published) return;
+  m_published = now;
+  Q_EMIT availabilityChanged();
+}
 void SleepCoordinator::finishManual(SleepResult result) {
   if (!m_manual) return;
   m_manual = false;
   m_deadline.stop();
   Q_EMIT suspendFinished(result);
-  Q_EMIT availabilityChanged();
+  notifyAvailability();
 }
 }

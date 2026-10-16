@@ -32,6 +32,7 @@ bool NativeSleepComposition::start() {
   return true;
 }
 Session::NativeSleep::SleepCoordinator &NativeSleepComposition::coordinator() { return d->coordinator; }
+void NativeSleepComposition::admissionChanged() { d->transport.reevaluateAdmission(); }
 void NativeSleepComposition::stop() {
   d->coordinator.stop();
   d->service.stop();

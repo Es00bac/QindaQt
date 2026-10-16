@@ -8,9 +8,7 @@
 #include <QCommandLineParser>
 #include <QStandardPaths>
 #include <QDir>
-#include <QTimer>
-#include <QDBusConnectionInterface>
-#include <QDBusReply>
+#include <QDBusServiceWatcher>
 #include <QSocketNotifier>
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -19,6 +17,15 @@
 #include <unistd.h>
 
 using namespace qindaqt::keyring::service;
+namespace {
+// Ends the daemon when its constructing bus disconnects; QtDBus delivers this
+// local signal only to string-based slots.
+class BusLoss final : public QObject {
+    Q_OBJECT
+public Q_SLOTS:
+    void disconnected() { QCoreApplication::exit(1); }
+};
+}
 int main(int argc,char **argv) {
     struct rlimit core{0,0};
     if (setrlimit(RLIMIT_CORE,&core) != 0 || prctl(PR_SET_DUMPABLE,0) != 0) return 2;
@@ -77,13 +84,20 @@ int main(int argc,char **argv) {
             signalfd_siginfo info{};
             if (::read(signalFd,&info,sizeof(info)) == static_cast<ssize_t>(sizeof(info))) application.quit();
         });
-        QTimer authority;
-        QObject::connect(&authority,&QTimer::timeout,&application,[&] {
-            if (!bus.isConnected()) { application.exit(1); return; }
-            const auto owner = bus.interface()->serviceOwner("org.freedesktop.secrets");
-            if (!owner.isValid() || owner.value() != bus.baseService()) application.exit(1);
-        });
-        authority.start(250);
+        // AGENT-NOTE (ADR-0379): authority loss is an event. The superseded
+        // 250 ms GetNameOwner poll added four blocking daemon calls per second
+        // for the whole session; losing the name or the bus now ends the daemon
+        // as soon as the daemon reports it.
+        QDBusServiceWatcher authority(QStringLiteral("org.freedesktop.secrets"),bus,
+            QDBusServiceWatcher::WatchForOwnerChange);
+        QObject::connect(&authority,&QDBusServiceWatcher::serviceOwnerChanged,&application,
+            [&bus,&application](const QString &,const QString &,const QString &owner) {
+                if (owner != bus.baseService()) application.exit(1);
+            });
+        BusLoss busLoss;
+        if (!bus.connect(QString(),QStringLiteral("/org/freedesktop/DBus/Local"),
+                QStringLiteral("org.freedesktop.DBus.Local"),QStringLiteral("Disconnected"),
+                &busLoss,SLOT(disconnected())) || !bus.isConnected()) return 2;
         result = application.exec();
         bus.unregisterObject(Root,QDBusConnection::UnregisterTree);
         // Destruction retires all stored/volatile secret pages before releasing names.
@@ -91,3 +105,4 @@ int main(int argc,char **argv) {
     bus.unregisterService(NativeInterface); bus.unregisterService("org.freedesktop.secrets");
     close(signalFd); return result;
 }
+#include "main.moc"

@@ -2,6 +2,7 @@
 
 - **Status:** Accepted; public extraction and consumer migration have separate gates
 - **Date:** 2026-09-30
+- **Amended by:** [ADR-0379](0379-make-session-liveness-event-driven-and-self-healing.md): event-driven liveness replaces the getter-time daemon recheck and periodic check; genuine loss re-attaches the retained selection
 - **Owners:** native lock services and native keyring consumers
 - **Related:** [ADR-0304](0304-native-lock-observation-and-service-policy.md), [ADR-0299](0299-native-locker-private-launch-and-authentication.md)
 

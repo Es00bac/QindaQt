@@ -16,6 +16,10 @@ private Q_SLOTS:
   void delayedCanCannotBypassProtection();
   void selectedSessionRemovalRevokesDescriptor();
   void startingDuringSleepNeverAcquiresDelay();
+  void logindRestartRebindsSubscriptionsAndDelay();
+  void transientBindingErrorRetriesWithBackoff();
+  void transientInhibitFailureKeepsBindingAndRetries();
+  void admissionReturnReacquiresDelay();
 };
 void LogindSleepTests::selectedIdentityAndInhibitWireAreExact() {
   Fixture f; f.start();
@@ -65,12 +69,17 @@ void LogindSleepTests::stoppedGenerationClosesLateDescriptor() {
 }
 void LogindSleepTests::peerLossClosesDescriptorBeforeAnyMutation() {
   Fixture f; f.start(); f.supervisorAdmitted = false;
+  // Admission getters fail closed at once; the owner's event releases the FD.
   QVERIFY(!f.transport.hasDelayInhibitor()); QVERIFY(!f.coordinator.requestSuspend());
+  f.setAdmitted(false);
   QTRY_VERIFY(f.logind.inhibitorClosed()); QCOMPARE(f.logind.suspendCalls, 0);
 }
 void LogindSleepTests::ownerReplacementClosesAndRevalidates() {
   Fixture f; f.start(); f.logindBus.unregisterService("org.freedesktop.login1");
-  QVERIFY(!f.transport.available()); // Revoke getters before queued watcher delivery.
+  // The owner is cached from NameOwnerChanged (ADR-0379). Every call names the
+  // bound unique owner, which can never be reused, so the delivery window can
+  // only fail calls; the watcher then drops the binding and its descriptor.
+  QTRY_VERIFY(!f.transport.available());
   QVERIFY(!f.coordinator.requestSuspend());
   QTRY_VERIFY(f.logind.inhibitorClosed()); QVERIFY(!f.transport.available());
   auto replacementBus = f.broker.connect("replacement"); FakeLogind replacement(replacementBus);
@@ -88,7 +97,7 @@ void LogindSleepTests::delayedCanCannotBypassProtection() {
   Fixture f; f.start(); f.logind.deferCan = true;
   f.native.state(true, true); QTRY_VERIFY(f.monitor.presentationProtected());
   QVERIFY(f.coordinator.requestSuspend()); QTRY_COMPARE(f.logind.canCalls, 1);
-  f.supervisorAdmitted = false;
+  f.setAdmitted(false);
   f.logindBus.send(f.logind.deferredCan.createReply(QStringLiteral("yes")));
   QTest::qWait(100); QCOMPARE(f.logind.suspendCalls, 0);
   QTRY_VERIFY(f.logind.inhibitorClosed());
@@ -104,6 +113,61 @@ void LogindSleepTests::startingDuringSleepNeverAcquiresDelay() {
   QTRY_VERIFY(f.transport.preparingForSleep()); QVERIFY(!f.transport.hasDelayInhibitor());
   QVERIFY(!f.coordinator.requestSuspend()); QVERIFY(f.logind.inhibitors.isEmpty());
   f.logind.prepare(false); QTRY_VERIFY(f.transport.hasDelayInhibitor());
+}
+void LogindSleepTests::logindRestartRebindsSubscriptionsAndDelay() {
+  Fixture f; f.start();
+  QSignalSpy lock(&f.transport, &LogindSleepTransport::lockRequested);
+  QSignalSpy prepare(&f.transport, &LogindSleepTransport::prepareForSleep);
+  f.logindBus.unregisterService("org.freedesktop.login1");
+  QTRY_VERIFY(f.logind.inhibitorClosed());
+  auto restartedBus = f.broker.connect("restarted"); FakeLogind restarted(restartedBus);
+  restarted.claim();
+  // The new owner is re-validated, re-subscribed and a fresh delay is taken
+  // without any timer firing.
+  QTRY_VERIFY(f.transport.hasDelayInhibitor());
+  QCOMPARE(restarted.inhibitors.size(), 1); QCOMPARE(restarted.selectedIds, QStringList{"native1"});
+  QVERIFY(!f.timers.anyActive());
+  prepare.clear();
+  restarted.prepare(true); QTRY_COMPARE(prepare.size(), 1); QVERIFY(prepare.first().first().toBool());
+  restarted.prepare(false); QTRY_COMPARE(prepare.size(), 2);
+  restarted.signal(QStringLiteral("Lock"), restarted.path); QTRY_COMPARE(lock.size(), 1);
+  // The retired owner's signals are fenced.
+  f.logind.signal(QStringLiteral("Lock"), f.logind.path); QTest::qWait(50);
+  QCOMPARE(lock.size(), 1);
+}
+void LogindSleepTests::transientBindingErrorRetriesWithBackoff() {
+  Fixture f; f.startNative(); f.logind.failSessions = 2; f.logind.claim(); f.coordinator.start();
+  QTRY_VERIFY(f.bindRetry().isActive());
+  QVERIFY(!f.transport.available());
+  QVERIFY(f.bindRetry().fire()); QTRY_COMPARE(f.bindRetry().requested().size(), 2);
+  QVERIFY(f.bindRetry().fire());
+  QTRY_VERIFY(f.transport.hasDelayInhibitor());
+  using std::chrono::milliseconds;
+  QCOMPARE(f.bindRetry().requested(), (QList<milliseconds>{milliseconds{250}, milliseconds{500}}));
+  QCOMPARE(f.logind.selectedIds.size(), 3); QVERIFY(!f.bindRetry().isActive());
+}
+void LogindSleepTests::transientInhibitFailureKeepsBindingAndRetries() {
+  Fixture f; f.startNative(); f.logind.failInhibits = 2; f.logind.claim(); f.coordinator.start();
+  QVERIFY(f.service.start());
+  QSignalSpy lock(&f.transport, &LogindSleepTransport::lockRequested);
+  QTRY_VERIFY(f.upkeepRetry().isActive());
+  // A slow logind reply costs the delay lock only; the binding and its
+  // Lock/PrepareForSleep subscriptions stay live.
+  QVERIFY(f.transport.available()); QVERIFY(!f.transport.hasDelayInhibitor());
+  f.logind.signal(QStringLiteral("Lock"), f.logind.path); QTRY_COMPARE(lock.size(), 1);
+  QVERIFY(f.upkeepRetry().fire()); QTRY_COMPARE(f.upkeepRetry().requested().size(), 2);
+  QVERIFY(f.upkeepRetry().fire());
+  QTRY_VERIFY(f.transport.hasDelayInhibitor());
+  QCOMPARE(f.logind.inhibitors.size(), 3); QCOMPARE(f.logind.selectedIds.size(), 1);
+}
+void LogindSleepTests::admissionReturnReacquiresDelay() {
+  Fixture f; f.start(); f.setAdmitted(false);
+  QTRY_VERIFY(f.logind.inhibitorClosed()); QVERIFY(!f.transport.available());
+  f.setAdmitted(true);
+  QTRY_VERIFY(f.transport.hasDelayInhibitor());
+  QCOMPARE(f.logind.readEnds.size(), 2); QVERIFY(!f.logind.inhibitorClosed(1));
+  // Admission flips never re-validated or re-subscribed the logind binding.
+  QCOMPARE(f.logind.selectedIds.size(), 1);
 }
 QTEST_GUILESS_MAIN(LogindSleepTests)
 #include "tst_logind_sleep_transport.moc"

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "src/session_supervisor/src/resident_service_refresh.h"
+#include "src/session_supervisor/src/resident_unit_staleness.h"
 #include <QCoreApplication>
 #include <QStringList>
 
@@ -29,10 +30,16 @@ int main(int argc, char **argv)
     // requested, 6 = nothing requested).
     bool pipeWireProbe = false;
     bool pipeWireHung = false;
+    // `--login-pid <pid>`: the process whose start marks "this login" (the
+    // witnessed compositor in production).
+    QindaQt::SessionSupervisor::ResidentRefreshContext context;
     for (int i = 1; i < argc; ++i) {
         const QString arg = QString::fromLocal8Bit(argv[i]);
         if (arg == QStringLiteral("--socket") && i + 1 < argc) {
             socketPath = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == QStringLiteral("--login-pid") && i + 1 < argc) {
+            context.loginStartTicks = QindaQt::SessionSupervisor::processStartTicks(
+                QString::fromLocal8Bit(argv[++i]).toLongLong());
         } else if (arg == QStringLiteral("--private")) {
             scope = SessionActivationScope::Private;
         } else if (arg == QStringLiteral("--pipewire-hung")) {
@@ -51,5 +58,5 @@ int main(int argc, char **argv)
         return requested ? 0 : 6;
     }
     return QindaQt::SessionSupervisor::refreshResidentServices(
-        QDBusConnection::sessionBus(), unitNames, socketPath, scope) ? 0 : 3;
+        QDBusConnection::sessionBus(), unitNames, socketPath, scope, context) ? 0 : 3;
 }

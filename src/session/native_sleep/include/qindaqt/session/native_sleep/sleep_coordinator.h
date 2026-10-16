@@ -8,6 +8,9 @@ namespace QindaQt::Session::NativeSleep {
 // Same-thread borrowed collaborators must outlive this coordinator. No unlock
 // authority: logind Unlock is observed but cannot authenticate the native lock.
 // A delay inhibitor is finite logind courtesy, never a veto of external sleep.
+// AGENT-CONTRACT (ADR-0379): availabilityChanged() fires exactly when
+// canSuspend() changes value; Sleep1.Changed forwards it one-to-one, so
+// clients re-query only on a real change and an idle session emits nothing.
 class SleepCoordinator final : public QObject {
   Q_OBJECT
 public:
@@ -35,11 +38,13 @@ private:
   void syncLockedHint();
   void finishManual(SleepResult result);
   void refuseManual();
+  void notifyAvailability();
   LogindSleepTransport &m_transport;
   NativeLockRuntime::Runtime &m_runtime;
   Services::SessionLockState::NativeLockStateMonitor &m_state;
   QTimer m_deadline;
   quint64 m_serial = 0;
   bool m_started = false, m_manual = false, m_sleepGate = false;
+  bool m_published = false;
 };
 }

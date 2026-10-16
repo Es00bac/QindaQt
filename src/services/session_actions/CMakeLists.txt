@@ -12,6 +12,7 @@ target_sources(
         src/session_actions_availability.cpp
         src/session_actions_suspend.cpp
         src/session_actions_screen_off.cpp
+        src/session_actions_owners.cpp
         src/session_actions_internal.h
         src/session_actions_state.cpp
     PUBLIC

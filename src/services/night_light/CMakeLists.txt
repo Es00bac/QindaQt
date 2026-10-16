@@ -74,7 +74,8 @@ install(TARGETS qindaqt_night_light_schedule_service
 qt_add_executable(qindaqt-night-light-service app/main.cpp)
 target_link_libraries(qindaqt-night-light-service
     PRIVATE QindaQt::NightLightScheduleService QindaQt::NightLight
-            QindaQt::SettingsClient QindaQt::DisplayClient Qt6::Core Qt6::DBus)
+            QindaQt::SettingsClient QindaQt::DisplayClient QindaQt::RecoveryBackoff
+            Qt6::Core Qt6::DBus)
 qindaqt_enable_warnings(qindaqt-night-light-service)
 
 configure_file(data/org.qindaqt.NightLight.service.in
@@ -82,6 +83,11 @@ configure_file(data/org.qindaqt.NightLight.service.in
 install(TARGETS qindaqt-night-light-service RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.NightLight.service"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services")
+# ADR-0379: NightLight runs in its own user unit, outside dbus.service's cgroup.
+configure_file(data/qindaqt-night-light-service.service.in
+    "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-night-light-service.service" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-night-light-service.service"
+    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}")
 install(FILES data/org.qindaqt.NightLight.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces")
 install(FILES data/org.qindaqt.NightLight.desktop

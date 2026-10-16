@@ -17,12 +17,13 @@
 #include <qindaqt/session/idle_policy/display_off_stage.h>
 #include <qindaqt/session/idle_policy/source_preferences.h>
 #include <QDBusConnection>
-#include <QDBusConnectionInterface>
 #include <QDBusReply>
+#include <QDBusServiceWatcher>
 #include <QDebug>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
-#include <unistd.h>
+#include <QTimer>
+#include <optional>
 #include <utility>
 
 namespace QindaQt::SessionSupervisor {
@@ -30,10 +31,39 @@ using namespace QindaQt;
 using Platform::Compositor::CompositorAttachment;
 using namespace Services::SessionLockState;
 
+namespace {
+const QString SessionName = QStringLiteral("org.qindaqt.Session1");
+// AGENT-NOTE: explicit per-call bounds; never the connection's shared
+// interface timeout, which other session components also use (ADR-0379).
+constexpr int DaemonCallTimeoutMs = 1000;
+QDBusMessage daemonCall(const QString &method, const QString &argument) {
+  auto message = QDBusMessage::createMethodCall(
+      QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+      QStringLiteral("org.freedesktop.DBus"), method);
+  message << argument;
+  return message;
+}
+std::optional<QString> nameOwner(const QDBusConnection &bus, const QString &name) {
+  const QDBusReply<QString> reply =
+      bus.call(daemonCall(QStringLiteral("GetNameOwner"), name), QDBus::Block, DaemonCallTimeoutMs);
+  return reply.isValid() && !reply.value().isEmpty() ? std::optional(reply.value()) : std::nullopt;
+}
+std::optional<uint> ownerPid(const QDBusConnection &bus, const QString &owner) {
+  const QDBusReply<uint> reply = bus.call(
+      daemonCall(QStringLiteral("GetConnectionUnixProcessID"), owner), QDBus::Block,
+      DaemonCallTimeoutMs);
+  return reply.isValid() ? std::optional(reply.value()) : std::nullopt;
+}
+}
+
 class NativeLockComposition::Private final {
 public:
   QDBusConnection bus = QDBusConnection::sessionBus();
   QString sessionOwner;
+  // Cached from NameOwnerChanged; attachment admission never calls the bus.
+  bool session1Owned = false;
+  bool nativePowerExclusive = false, nativePowerStopped = false, nativePowerRestartQueued = false;
+  std::unique_ptr<QDBusServiceWatcher> sessionWatcher;
   std::unique_ptr<CompositorAttachment> attachment;
   std::unique_ptr<Platform::Idle::WaylandIdleObservation> idle;
   std::unique_ptr<NativePowerComposition> nativePower;
@@ -49,6 +79,38 @@ public:
   std::unique_ptr<Session::NativeLockRuntime::Runtime> runtime;
   std::unique_ptr<NativeSleepComposition> sleep;
   bool active = false;
+
+  // AGENT-CONTRACT (ADR-0379): the attachment re-attaches by itself after
+  // genuine loss. Every consumer it feeds follows it here, so idle and manual
+  // lock, the Lock1 and screensaver facades and sleep admission recover
+  // without a new login. Loss publishes Unknown; re-attachment re-probes
+  // immediately.
+  void attachmentChanged() {
+    const bool live = attachment && attachment->live();
+    if (monitor) monitor->refresh();
+    if (idle) {
+      if (live) idle->refresh();
+      else idle->revoke();
+    }
+    if (sleep) sleep->admissionChanged();
+    if (live && nativePowerStopped) queueNativePowerRestart();
+  }
+  void queueNativePowerRestart() {
+    if (!nativePowerExclusive || !nativePower || nativePowerRestartQueued) return;
+    nativePowerRestartQueued = true;
+    // Native power start runs its own bounded readiness loop; never nest it
+    // inside the attachment's signal emission.
+    QTimer::singleShot(0, attachment.get(), [this] {
+      nativePowerRestartQueued = false;
+      if (!active || !nativePowerStopped || !attachment || !attachment->live()) return;
+      if (nativePower->start()) {
+        nativePowerStopped = false;
+        qInfo("qindaqt-session: native power composition resumed after re-attachment");
+      } else {
+        qWarning("qindaqt-session: native power composition did not resume after re-attachment");
+      }
+    });
+  }
 };
 
 NativeLockComposition::NativeLockComposition() : d(std::make_unique<Private>()) {}
@@ -56,25 +118,37 @@ NativeLockComposition::~NativeLockComposition() { stop(); }
 
 bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
   if (d->active) return true;
-  const auto fail = [error](const QString &reason) {
+  const auto fail = [this, error](const QString &reason) {
+    // Leave no partial assembly behind, so a later start() is a clean retry.
+    stop();
     if (error) *error = reason;
     return false;
   };
-  if (!d->bus.isConnected() || !d->bus.interface())
+  if (!d->bus.isConnected())
     return fail(QStringLiteral("session bus is unavailable"));
-  const auto sessionOwner = d->bus.interface()->serviceOwner(QStringLiteral("org.qindaqt.Session1"));
-  if (!sessionOwner.isValid() || sessionOwner.value().isEmpty())
+  // Session1 must belong to this very connection: SessionService registered
+  // it here, so the unique name itself proves the supervisor process.
+  const auto sessionOwner = nameOwner(d->bus, SessionName);
+  if (!sessionOwner || *sessionOwner != d->bus.baseService())
     return fail(QStringLiteral("supervised Session1 owner is unavailable"));
-  const auto sessionPid = d->bus.interface()->servicePid(sessionOwner.value());
-  if (!sessionPid.isValid() || sessionPid.value() != static_cast<uint>(getpid()))
-    return fail(QStringLiteral("Session1 owner is not this supervisor process"));
-  d->sessionOwner = sessionOwner.value();
+  d->sessionOwner = *sessionOwner;
+  d->session1Owned = true;
+  d->sessionWatcher = std::make_unique<QDBusServiceWatcher>(
+      SessionName, d->bus, QDBusServiceWatcher::WatchForOwnerChange);
+  QObject::connect(d->sessionWatcher.get(), &QDBusServiceWatcher::serviceOwnerChanged,
+                   d->sessionWatcher.get(),
+                   [this](const QString &, const QString &, const QString &newOwner) {
+    const bool owned = newOwner == d->sessionOwner;
+    if (owned == d->session1Owned) return;
+    d->session1Owned = owned;
+    if (d->sleep) d->sleep->admissionChanged();
+  });
 
-  const auto compositorOwner = d->bus.interface()->serviceOwner(QString(CompositorNames::service));
-  if (!compositorOwner.isValid() || compositorOwner.value().isEmpty())
+  const auto compositorOwner = nameOwner(d->bus, QString(CompositorNames::service));
+  if (!compositorOwner)
     return fail(QStringLiteral("compositor owner is unavailable"));
-  const auto compositorPid = d->bus.interface()->servicePid(compositorOwner.value());
-  if (!compositorPid.isValid() || compositorPid.value() <= 1)
+  const auto compositorPid = ownerPid(d->bus, *compositorOwner);
+  if (!compositorPid || *compositorPid <= 1)
     return fail(QStringLiteral("compositor PID is unavailable"));
 
   const QString runtimeDirectory = QProcessEnvironment::systemEnvironment().value(QStringLiteral("XDG_RUNTIME_DIR"));
@@ -85,15 +159,11 @@ bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
 
   d->attachment = std::make_unique<CompositorAttachment>(
       d->bus, runtimeDirectory, [this](const QString &owner) {
-        if (!d->bus.interface() || owner != d->sessionOwner) return false;
-        const auto current = d->bus.interface()->serviceOwner(QStringLiteral("org.qindaqt.Session1"));
-        const auto pid = d->bus.interface()->servicePid(owner);
-        return current.isValid() && current.value() == owner && pid.isValid() &&
-               pid.value() == static_cast<uint>(getpid());
+        return d->session1Owned && owner == d->sessionOwner;
       });
   if (!d->attachment->attach(d->sessionOwner, socket,
           Platform::Compositor::PeerExpectation{
-              compositorOwner.value(), static_cast<quint64>(compositorPid.value())}))
+              *compositorOwner, static_cast<quint64>(*compositorPid)}))
     return fail(QStringLiteral("ordinary compositor attachment failed"));
 
   d->idle = std::make_unique<Platform::Idle::WaylandIdleObservation>(
@@ -127,11 +197,11 @@ bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
       *d->preferences, *d->idle, *d->request, *d->monitor, d->power.get());
   d->runtime->start();
   d->sleep = std::make_unique<NativeSleepComposition>(d->bus, *d->runtime, *d->monitor,
-      [this] { return d->attachment && d->attachment->sameBus(d->bus) &&
-                      d->attachment->live(); });
+      [this] { return d->session1Owned && d->attachment && d->attachment->live(); });
   if (!d->sleep->start())
     return fail(QStringLiteral("native sleep handoff registration failed"));
 
+  d->nativePowerExclusive = nativePowerExclusive;
   if (nativePowerExclusive) {
     d->nativePower = std::make_unique<NativePowerComposition>(
         d->bus, *d->attachment, *d->power, *d->runtime, d->sleep->coordinator(),
@@ -139,11 +209,19 @@ bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
           const auto values = d->preferences->preferences();
           return values && (!values->automaticLock || d->runtime->available());
         });
-    if (!d->nativePower->start()) {
-      stop();
+    if (!d->nativePower->start())
       return fail(QStringLiteral("exclusive native power prerequisites/receipts unavailable"));
-    }
   }
+  // Wire recovery only after the first attach: its synchronous attached()
+  // emission precedes every consumer above.
+  QObject::connect(d->attachment.get(), &CompositorAttachment::revoked,
+                   d->attachment.get(), [this] {
+    // NativePowerComposition stops itself on revocation; resume it later.
+    if (d->nativePower) d->nativePowerStopped = true;
+    d->attachmentChanged();
+  });
+  QObject::connect(d->attachment.get(), &CompositorAttachment::attached,
+                   d->attachment.get(), [this] { d->attachmentChanged(); });
   d->active = true;
   if (error) error->clear();
   return true;
@@ -151,8 +229,11 @@ bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
 
 void NativeLockComposition::stop() {
   if (!d) return;
+  d->active = false;
+  if (d->attachment) QObject::disconnect(d->attachment.get(), nullptr, d->attachment.get(), nullptr);
   if (d->nativePower) d->nativePower->stop();
   d->nativePower.reset();
+  d->nativePowerStopped = false;
   if (d->sleep) d->sleep->stop();
   d->sleep.reset();
   if (d->runtime) d->runtime->stop();
@@ -173,6 +254,7 @@ void NativeLockComposition::stop() {
   d->idle.reset();
   if (d->attachment) d->attachment->revoke();
   d->attachment.reset();
-  d->active = false;
+  d->sessionWatcher.reset();
+  d->session1Owned = false;
 }
 }

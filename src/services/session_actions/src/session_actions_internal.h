@@ -1,6 +1,6 @@
 #pragma once
-#include <QDBusConnectionInterface>
-#include <QDBusReply>
+#include <QDBusMessage>
+#include <QString>
 namespace QindaQt::Services::SessionActions::Detail {
 constexpr auto SessionService = "org.qindaqt.Session1";
 constexpr auto SessionPath = "/org/qindaqt/Session1";
@@ -12,15 +12,18 @@ constexpr auto LogindService = "org.freedesktop.login1";
 constexpr auto LogindPath = "/org/freedesktop/login1";
 constexpr auto LogindInterface = "org.freedesktop.login1.Manager";
 
-inline QString serviceOwner(const QDBusConnection &connection, const char *service)
+constexpr auto ScreenPowerService = "org.qindaqt.ScreenPower1";
+// AGENT-NOTE (ADR-0379): owners are cached from QDBusServiceWatcher events
+// plus one asynchronous GetNameOwner at start. Never a blocking owner query
+// and never the connection's shared interface timeout: the shell's UI thread
+// answered every Sleep1.Changed with ~13 blocking GetNameOwner calls.
+inline QDBusMessage daemonCall(const char *method, const QString &argument)
 {
-    if (!connection.isConnected() || connection.interface() == nullptr) {
-        return {};
-    }
-    connection.interface()->setTimeout(250);
-    const QDBusReply<QString> reply =
-        connection.interface()->serviceOwner(QString::fromLatin1(service));
-    return reply.isValid() ? reply.value() : QString{};
+    auto message = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QString::fromLatin1(method));
+    message << argument;
+    return message;
 }
 
 inline bool isSleepAction(SessionAction action) {

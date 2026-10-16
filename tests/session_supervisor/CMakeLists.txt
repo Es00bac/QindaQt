@@ -302,3 +302,17 @@ add_test(NAME qindaqt.session-replaced-power-owner
     COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_replaced_power_owner_tests>)
 set_tests_properties(qindaqt.session-replaced-power-owner
     PROPERTIES TIMEOUT 20 LABELS "session;dbus;power")
+
+# ADR-0379: the real supervisor lock assembly keeps answering through a frozen
+# session bus and re-attaches after genuine compositor loss.
+find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+qt_add_executable(qindaqt_native_lock_recovery_tests tst_native_lock_recovery.cpp)
+target_include_directories(qindaqt_native_lock_recovery_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_native_lock_recovery_tests
+    PRIVATE QindaQt::SessionSupervisorSupport QindaQt::CompositorNames Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_native_lock_recovery_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_native_lock_recovery_tests)
+add_test(NAME qindaqt.session-native-lock-recovery COMMAND qindaqt_native_lock_recovery_tests)
+set_tests_properties(qindaqt.session-native-lock-recovery
+    PROPERTIES TIMEOUT 60 LABELS "session;lock;dbus;private-bus")

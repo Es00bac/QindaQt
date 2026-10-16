@@ -159,15 +159,16 @@ private Q_SLOTS:
     QCOMPARE(backend.stateRequests, 1);
     monitor.stop();
   }
-  void startupRetriesAreBoundedAndAllowlisted_data() {
+  void failedStateRequestsRetryWithBoundedBackoff_data() {
     QTest::addColumn<QString>("mode");
-    QTest::addColumn<int>("requests");
-    QTest::newRow("startup-interface") << QStringLiteral("unknown-interface") << 6;
-    QTest::newRow("access-denied") << QStringLiteral("denied") << 1;
+    QTest::newRow("startup-interface") << QStringLiteral("unknown-interface");
+    QTest::newRow("access-denied") << QStringLiteral("denied");
   }
-  void startupRetriesAreBoundedAndAllowlisted() {
+  void failedStateRequestsRetryWithBoundedBackoff() {
+    // ADR-0379 supersedes the allowlisted five-shot startup retry: every
+    // failure stays Unknown and retries on the bounded schedule, and only a
+    // nonce receipt ever publishes state.
     QFETCH(QString, mode);
-    QFETCH(int, requests);
     PrivateBus bus;
     QVERIFY(bus.start());
     auto server = bus.connect("native-refusal-server-"),
@@ -176,17 +177,38 @@ private Q_SLOTS:
     backend.stateMode = mode;
     QVERIFY(expose(server, backend));
     QtNativeLockTransport transport(client);
+    QList<QindaQt::Platform::Recovery::ManualRecoveryTimer *> timers;
+    NativeLockMonitorRecovery recovery;
+    recovery.timers = [&timers] {
+      auto timer = std::make_unique<QindaQt::Platform::Recovery::ManualRecoveryTimer>();
+      timers.append(timer.get());
+      return timer;
+    };
     NativeLockStateMonitor monitor(
-        transport, [&](const QString &owner, quint64 pid) {
+        transport,
+        [&](const QString &owner, quint64 pid) {
           return owner == server.baseService() &&
                  pid == quint64(QCoreApplication::applicationPid());
-        });
+        },
+        recovery);
     QVERIFY(monitor.start());
-    QTRY_COMPARE_WITH_TIMEOUT(backend.stateRequests, requests, 4000);
-    QTest::qWait(2100);
-    QCOMPARE(backend.stateRequests, requests);
-    QCOMPARE(monitor.state(), LockState::Unknown);
-    QVERIFY(!monitor.contentMayBeShown());
+    auto &timer = *timers.first();
+    QTRY_COMPARE(backend.stateRequests, 1);
+    QTRY_VERIFY(timer.isActive());
+    for (int request = 2; request <= 4; ++request) {
+      QVERIFY(timer.fire());
+      QTRY_COMPARE(backend.stateRequests, request);
+      QTRY_VERIFY(timer.isActive());
+      QCOMPARE(monitor.state(), LockState::Unknown);
+      QVERIFY(!monitor.contentMayBeShown());
+    }
+    using std::chrono::milliseconds;
+    QCOMPARE(timer.requested(), (QList<milliseconds>{milliseconds{250}, milliseconds{500},
+                                                      milliseconds{1000}, milliseconds{2000}}));
+    backend.stateMode = QStringLiteral("valid");
+    QVERIFY(timer.fire());
+    QTRY_COMPARE(monitor.state(), LockState::Unlocked);
+    QVERIFY(!timer.isActive());
     monitor.stop();
   }
   void startupRetryCannotOutliveAdmission() {

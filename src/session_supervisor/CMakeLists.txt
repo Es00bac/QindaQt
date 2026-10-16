@@ -20,6 +20,8 @@ target_sources(
         src/replaced_activation_owner.h
         src/resident_service_refresh.cpp
         src/resident_service_refresh.h
+        src/resident_unit_staleness.cpp
+        src/resident_unit_staleness.h
         src/session_activation_policy.cpp
         src/session_activation_policy.h
         src/systemd_manager_port.cpp
@@ -81,6 +83,7 @@ target_link_libraries(
         QindaQt::SessionSupervisorSupport
         QindaQt::NativeSleep QindaQt::NativeLockRuntime
         QindaQt::NativeLockService
+        QindaQt::RecoveryBackoff
         QindaQt::SessionLockState
         QindaQt::CompositorAttachment
         QindaQt::IdleObservation

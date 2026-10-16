@@ -14,12 +14,14 @@ QDBusMessage screenCall(const QString &owner, const QString &method, const QList
 }
 }
 QString SessionActionsClient::currentScreenPowerOwner() const {
-    const auto owner = Detail::serviceOwner(m_sessionBus, "org.qindaqt.ScreenPower1");
-    if (owner.isEmpty() || owner != Detail::serviceOwner(m_sessionBus, Detail::SessionService) || !m_sessionBus.interface()) return {};
-    const auto uid = m_sessionBus.interface()->serviceUid(owner);
-    return uid.isValid() && uid.value() == static_cast<uint>(::getuid()) ? owner : QString{};
+    // Cached owner, equal to the supervisor's Session1 owner and proven
+    // same-UID once per unique name (session_actions_owners.cpp).
+    const auto owner = cachedOwner(QString::fromLatin1(Detail::ScreenPowerService));
+    return !owner.isEmpty() && owner == cachedOwner(QString::fromLatin1(Detail::SessionService))
+            && owner == m_screenPowerVerified ? owner : QString{};
 }
 void SessionActionsClient::refreshScreenOffAvailability() {
+    // An absent ScreenPower1 costs nothing: no query is sent for it.
     const auto owner = currentScreenPowerOwner();
     if (!m_screenOwner.isEmpty() && owner != m_screenOwner) releaseScreenOff();
     const auto publish = [this](bool available) {

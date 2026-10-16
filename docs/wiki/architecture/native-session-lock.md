@@ -218,21 +218,30 @@ callback. It must consult an independently accepted live compositor attachment,
 matching both exact unique owner and daemon-resolved PID. A supplied PID, same
 UID or same process behind another unique owner is insufficient. Callback
 captures and the borrowed same-thread transport must outlive the monitor.
-Admission is rechecked before queries, replies, public state signals and getters,
-including immediate revocation before the queued owner watcher runs.
+Admission is rechecked before queries, replies, public state signals and getters;
+an admission that turns false hides state immediately. The supervisor's
+admission reads its [compositor attachment](compositor-attachment.md), whose
+getters make no bus call (ADR-0379).
 
 Only an admitted `Locked=false, Protected=false` receipt permits ordinary
 content. `Locked=true, Protected=false` means Locking; both true means physically
 protected Locked. An inconsistent combination, malformed receipt, denied owner,
 owner replacement, bus loss or failed receipt yields Unknown and suppresses
-content/protection. The transport preserves only the exact D-Bus
-`UnknownObject` and `UnknownInterface` startup errors for the monitor's existing
-five-retry budget (50, 100, 250, 500 and 1000 milliseconds). Each retry rechecks
-the exact admitted attachment; state stays Unknown until a genuine receipt and
-void completion both arrive. Other errors, malformed replies and receipt
-timeouts do not enter this startup retry path. Legacy properties remain compatible but
-do not update this monitor. There is no legacy fallback, RequestLock, unlock,
-authentication result or locker launch on this readonly port.
+content/protection.
+
+[ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+replaced the five-retry startup budget for `UnknownObject`/`UnknownInterface`:
+every failed, timed-out or refused probe or query now stays Unknown and retries
+on the bounded [recovery schedule](session-resilience.md) (0.25 s doubling to
+30 s) while the monitor runs, so a slow compositor or bus can no longer leave
+the session Unknown for good. A retry re-queries a still-admitted owner or
+re-resolves the owner from scratch; it never supplies state, which still needs
+a genuine receipt and void completion. `refresh()` re-probes at once and restarts
+the schedule; the supervisor calls it on every attachment change, so lock state
+leaves Unknown as soon as a re-attached compositor answers. Legacy properties
+remain compatible but do not update this monitor. There is no legacy fallback,
+RequestLock, unlock, authentication result or locker launch on this readonly
+port.
 
 This first executable slice is additive. Existing legacy quorum consumers are
 still a separate migration boundary; PF8 lock request, ScreenSaver compatibility,
@@ -310,8 +319,11 @@ accepted**, never physical protection.
 `/org/freedesktop/ScreenSaver`. Partial registration rolls back only objects and
 names this instance claimed. Same-thread borrowed ports must outlive the
 facade; the composition owner controls monitor/admission lifecycle. Actual
-D-Bus sender UID is resolved through the daemon for method admission. There is
-one pending manual call across every facade endpoint, and no queue.
+D-Bus sender UID is resolved through the daemon for method admission, with an
+explicit 1 s bound; a same-user verdict is cached per unique sender name, which
+the daemon never reuses, so frequent `GetActive` callers cost no further daemon
+calls. There is one pending manual call across every facade endpoint, and no
+queue.
 
 | Native Lock1 operation | Contract |
 | --- | --- |
@@ -381,8 +393,20 @@ selects the real supervisor PID/UID and explicit XDG_SESSION_ID, joins
 GetSession/GetSessionByPID with exact Id/User `(uo)` properties, and admits the
 root-owned logind unique owner only while the ordinary compositor attachment
 and Session1 supervisor remain live. One CLOEXEC delay FD is closed on stop,
-revocation and owner replacement; retired asynchronous replies cannot leak it
+unbinding and owner replacement; retired asynchronous replies cannot leak it
 into a restart.
+
+Since [ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+the logind owner is cached from its watcher and nothing polls admission: the
+supervisor reports attachment and Session1 changes (`reevaluateAdmission()`).
+Losing admission releases the delay FD but keeps the PrepareForSleep, Lock,
+Unlock and SessionRemoved subscriptions; regaining it re-acquires the delay.
+A transient error in the binding chain, the Inhibit call or SetLockedHint
+retries on the bounded schedule; a logind restart rebinds the new owner at
+once; a validation mismatch (foreign UID, session or user) is refused until the
+owner changes; a removed session ends the binding. The superseded 250 ms
+admission timer revoked the binding four times a second once the attachment
+was lost, dropping lock-before-sleep entirely.
 
 Selected Lock signals request native admission. Unlock signals only refresh
 observation; they provide no authentication. LockedHint follows authenticated
@@ -397,7 +421,9 @@ Session1. The facade resolves the actual caller UID, serializes one request,
 waits for native protection, repeats logind CanSuspend, and reports the
 conclusive Suspend reply or an explicit Uncertain error after unconfirmed
 dispatch. Advisory Changed invalidations converge asynchronous startup
-availability without polling. Protection is rechecked after CanSuspend; authority
+availability without polling; the coordinator emits them only when
+`canSuspend()` actually changes, so an idle session sends none (the superseded
+revoke loop sent eight per second). Protection is rechecked after CanSuspend; authority
 loss cancels the callback. Unknown/Locking refuses a new manual action. This
 does not enable idle-suspend policy or advertise Power1 inhibitor scopes.
 

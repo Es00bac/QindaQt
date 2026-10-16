@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "portal_session_lifetime.h"
-#include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
-#include <QDBusReply>
 #include <QRegularExpression>
 #include <QUuid>
 #include <unistd.h>
@@ -16,6 +14,9 @@ PortalSessionLifetime::PortalSessionLifetime(bool captureControl, QObject *paren
     : QObject(parent),
       service_(captureControl ? QStringLiteral("org.qindaqt.PortalCapture1") : QString::fromLatin1(Service)),
       path_(captureControl ? QStringLiteral("/org/qindaqt/PortalCapture1") : QString::fromLatin1(Path)) {
+    // AGENT-NOTE (ADR-0379): a bounded 100 ms transport retry of at most
+    // thirty attempts per owner; owner and UID lookups are asynchronous, so the
+    // tick never blocks the supervisor. Owner arrival re-arms it.
     retry_.setInterval(100);
     connect(&retry_, &QTimer::timeout, this, &PortalSessionLifetime::attach);
 }
@@ -58,27 +59,48 @@ void PortalSessionLifetime::begin(const QString &program, const QString &display
     }
     retry_.start(); attach();
 }
+namespace {
+QDBusMessage daemonCall(const char *method, const QString &argument) {
+    auto message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
+        QString::fromLatin1(method));
+    message << argument;
+    return message;
+}
+}
 void PortalSessionLifetime::attach() {
     if (!bus_ || pending_) return;
     if (++attempts_ > 30) { retry_.stop(); return; }
-    const QDBusReply<QString> owner = bus_->interface()->serviceOwner(service_);
-    if (!owner.isValid() || !owner.value().startsWith(QLatin1Char(':'))) return;
-    const QDBusReply<uint> uid = bus_->interface()->serviceUid(owner.value());
-    if (!uid.isValid() || uid.value() != static_cast<uint>(geteuid())) { retry_.stop(); return; }
-    owner_ = owner.value();
-    auto request = QDBusMessage::createMethodCall(owner_, path_, QString::fromLatin1(Service), QStringLiteral("AttachSessionWithDisplay"));
-    request.setArguments({display_}); request.setAutoStartService(false);
     pending_ = true;
     const auto generation = generation_;
-    auto *reply = new QDBusPendingCallWatcher(bus_->asyncCall(request, 500), this);
-    connect(reply, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *done) {
-        const QDBusPendingReply<bool> result = *done;
-        done->deleteLater();
+    auto *lookup = new QDBusPendingCallWatcher(bus_->asyncCall(daemonCall("GetNameOwner", service_), 1000), this);
+    connect(lookup, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *found) {
+        const QDBusPendingReply<QString> owner = *found;
+        found->deleteLater();
         if (!bus_ || generation != generation_) return;
-        pending_ = false;
-        // AGENT-GUARD: a reply does not admit the display. It only stops this
-        // bounded transport retry; replacement starts fresh against its owner.
-        if (!result.isError() && result.value()) retry_.stop();
+        if (owner.isError() || !owner.value().startsWith(QLatin1Char(':'))) { pending_ = false; return; }
+        const QString candidate = owner.value();
+        auto *identity = new QDBusPendingCallWatcher(bus_->asyncCall(daemonCall("GetConnectionUnixUser", candidate), 1000), this);
+        connect(identity, &QDBusPendingCallWatcher::finished, this, [this, generation, candidate](QDBusPendingCallWatcher *checked) {
+            const QDBusPendingReply<uint> uid = *checked;
+            checked->deleteLater();
+            if (!bus_ || generation != generation_) return;
+            if (uid.isError()) { pending_ = false; return; }
+            if (uid.value() != static_cast<uint>(geteuid())) { pending_ = false; retry_.stop(); return; }
+            owner_ = candidate;
+            auto request = QDBusMessage::createMethodCall(owner_, path_, QString::fromLatin1(Service), QStringLiteral("AttachSessionWithDisplay"));
+            request.setArguments({display_}); request.setAutoStartService(false);
+            auto *reply = new QDBusPendingCallWatcher(bus_->asyncCall(request, 500), this);
+            connect(reply, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *done) {
+                const QDBusPendingReply<bool> result = *done;
+                done->deleteLater();
+                if (!bus_ || generation != generation_) return;
+                pending_ = false;
+                // AGENT-GUARD: a reply does not admit the display. It only stops this
+                // bounded transport retry; replacement starts fresh against its owner.
+                if (!result.isError() && result.value()) retry_.stop();
+            });
+        });
     });
 }
 void PortalSessionLifetime::stop() noexcept {
