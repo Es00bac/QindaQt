@@ -26,9 +26,11 @@ key and battery events. The 2026-10-16 stability audit
 
 ## Decision
 
-The overlay package `sys-power/qindaqt-power-defaults`, in the QindaQt profile
-set, installs vendor drop-ins. Lid and power-key behaviour follows the owner's
-decisions of 2026-10-16.
+The overlay package `sys-power/qindaqt-power-defaults` installs vendor
+drop-ins. Lid and power-key behaviour follows the owner's decisions of
+2026-10-16, which were made for the laptop. The package is installed per
+machine, not through the QindaQt profile set, so a workstation keeps the stock
+power key until its owner chooses otherwise.
 
 - **logind:**
   - `HandlePowerKey=suspend`

@@ -466,8 +466,10 @@ hardware hotkeys remain release evidence.
 ## Platform defaults while native policy is not exclusive
 
 Installed builds keep Power1's native lid, idle and critical policies off, so
-logind and UPower act. The `sys-power/qindaqt-power-defaults` package supplies
-battery-safe defaults ([ADR-0378](../adr/0378-ship-battery-safe-platform-power-defaults.md)):
+logind and UPower act. On the laptop, the `sys-power/qindaqt-power-defaults`
+package supplies battery-safe defaults
+([ADR-0378](../adr/0378-ship-battery-safe-platform-power-defaults.md)). It is
+installed per machine, not through the QindaQt profile set:
 
 - a short power-button press suspends, and a long press powers off;
 - a closed lid on battery suspends, then hibernates below 5% battery or after
