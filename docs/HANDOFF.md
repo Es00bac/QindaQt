@@ -22,13 +22,13 @@ Rules for this round:
 | Lane | Owner | Branch / worktree | State |
 | --- | --- | --- | --- |
 | L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` | started |
-| L2 compositor plugin efficiency + window model | Claude (Opus) | `stability/l2-compositor-20261016` | started |
+| L2 compositor plugin efficiency + window model | Claude (Opus) | `stability/l2-compositor-20261016` (`d74f82423`) | integrated `978cc5927` |
 | L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` | started |
-| L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (+ `stability/l4-capture-20261016`) | started |
-| L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` | started |
-| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (b483e8f87); QindaGentoo `stability/power-defaults-20261016` (9cddf9f); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | candidate pushed; integrate at release |
+| L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (`6e8a094a06`) + `stability/l4-capture-20261016` (`f9fd48b03`) | fork main fast-forwarded to `6e8a094a06`; capture half integrated `92fcdc738` |
+| L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` (`4dbde3c2c`) | integrated `9ca08cde8` |
+| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (3c2db419d); QindaGentoo `stability/power-defaults-20261016` (498a914); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | candidate pushed; integrate at release |
 
-Base: container-wm main `1e11e127e`; qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
+Base: container-wm `fb1ca72e9` (the spec commit on `1e11e127e`); qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
 `~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
 
 Next steps:
@@ -43,9 +43,49 @@ Integrated on main during the round:
   missing from main. Keyring tests: 20/22 pass. `keyring_legacy_import` (importer InvalidInput on KWallet
   fixtures) and `keyring_native_ui_journey` (needs a live private compositor) fail in an environment-dependent
   way that the merged code doesn't touch.
-- The integration tree `build/dev` was reconfigured with the ebuild install dirs
-  (`KDE_INSTALL_LIBEXECDIR=libexec`, `CMAKE_INSTALL_LIBDIR=lib64`, `KDE_INSTALL_LIBDIR=lib64`), so the portal
-  capture path check passes.
+- `978cc5927` L2: the compositor plugin built from main loads again. It no longer needs
+  `KWin::WaylandWindow::staticMetaObject`, which the fork doesn't export, and
+  `compositor.kwin-plugin-symbols-resolve` guards this at build time. Title churn is coalesced to 4 Hz and
+  repaints only the title band. Visibility snapshots degrade per window. Stranded windows are rescued after an
+  output is unplugged (ADR-0383/0384).
+- `9ca08cde8` L5: lock authentication starts on user input, and the field is ready in every state. The greeter
+  survives 0×0 configures and output failures. Keyring PAM calls systemd with interface
+  `org.freedesktop.systemd1.Manager` (ADR-0382).
+- `92fcdc738` L4 capture half: the capture backend logs every exit reason; ADR-0385/0386/0387 record the fork
+  decisions. qindaqt-kwin main fast-forwarded to `6e8a094a06` (see the L4 row).
+- `41c503078`: `tests/CMakeLists.txt` finds `QINDAQT_KWIN_WAYLAND` before any test subdirectory, so a fresh
+  tree no longer registers `compositor.kwin-shell-window-actions` with an empty compositor path.
+- Integration tree: `build/release` (release preset + ebuild install dirs + ccache). `build/dev` is stale:
+  it links a removed fork stage (`qindaqt-kwin.worktrees/native-night-light-integrated-gates/stage`) whose
+  `libKGlobalAccelD` no longer resolves.
+- Gates on the integrated tree (main with L2, L4, L5):
+  - 147 of 171 compositor, hybrid, hybrid-chrome, shell-visibility, lock, keyring PAM and portal-capture rows
+    pass;
+  - the other 24 are nested pixel/touch rows that cannot run on qinda. Their harness proves plugin load by
+    reading `/proc/<pid>/maps`, and the fork is deliberately non-dumpable (ADR-0385). This needs a harness
+    follow-up with a non-maps load proof;
+  - validate-docs and `mkdocs build --strict` pass.
+
+After install, check live:
+- `qindaqt-keyring@1000.service` is active after login, and the keyring opens without its own prompt. The login
+  PAM path used the same wrong systemd interface, so the PAM keyring hand-off has never worked.
+- ScreenCast `AvailableSourceTypes` is nonzero, and OBS PipeWire capture works, including after lock cycles.
+- Killing the locker while locked relaunches it.
+- The lock prompt appears on the first key press, and Enter works after a timeout.
+- Idle CPU of the shell and compositor and the bus message rate: the baseline before install was about 26%,
+  26% and 514 msg/s.
+- Owner-assisted: `sudo tools/diagnose-s2idle-wake`. Then align QindaQt Settings `power.lid.*` with the
+  installed logind behaviour.
+
+Follow-ups outside this round:
+- The nested pixel-row harness needs a load proof that doesn't read `/proc/<pid>/maps`.
+- Fork:
+  - `src/utils/executable_path_proc.cpp` still stats the client executable through `symLinkTarget()`;
+    `readlink()` would avoid touching FUSE;
+  - capture setup keeps a few synchronous calls, each capped at 1 s;
+  - the broker's own 50 ms poll in container-wm is unchanged.
+- L2: changes other than titles still trigger a full chrome sync, which now costs nothing when the plan is
+  unchanged; `kwinhybridsession.h` is 421 lines and `tests/compositor/CMakeLists.txt` 791.
 
 Owner decisions (2026-10-16):
 - lid closed on battery: suspend, then hibernate;
