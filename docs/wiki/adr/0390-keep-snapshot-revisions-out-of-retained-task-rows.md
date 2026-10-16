@@ -43,7 +43,7 @@ A title change reaches exactly one row as exactly one `dataChanged`; an
 unchanged row emits nothing; insert, remove and reorder behave as before.
 The benchmark in `tests/shell/task_list/tst_task_list_update_cost.cpp` measures
 200 title updates on 16 windows over the host's real desktop entries and icon
-themes: about 82 ms of CPU and 16 touched rows per update before, about 0.6 ms
+themes: about 82 ms of CPU and 16 touched rows per update before, about 0.5 ms
 and 1 touched row after.
 
 Compatibility: `entry.generationRevision` is gone from first-party QML.

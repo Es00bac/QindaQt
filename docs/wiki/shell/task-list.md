@@ -523,7 +523,7 @@ after 20 warm-ups, and prints one `QINDAQT_BENCH` line with thread CPU time per
 update and `dataChanged` per update. It asserts only the deterministic part (one
 `dataChanged` per update, no structural signal), never a wall-clock bound. On
 the build host: about 82 ms and 16 touched rows per update before the change,
-about 0.6 ms and 1 touched row after.
+about 0.5 ms and 1 touched row after.
 
 ### Popup windows are released on close
 
