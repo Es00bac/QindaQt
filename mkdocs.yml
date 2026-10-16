@@ -583,3 +583,4 @@ nav:
       - "0393: Merge XDG catalog directories": adr/0393-merge-every-xdg-data-directory-for-shell-catalogs.md
       - "0394: Audio meter lease and retry backoff": adr/0394-lease-the-audio-meter-stream-and-back-off-snapshot-retries.md
       - "0395: Settings teardown order and launch parsing": adr/0395-destroy-the-settings-scene-before-its-models-and-return-from-main.md
+      - "0396: Release per-tile popup windows": adr/0396-create-per-tile-popups-on-demand-and-release-their-windows.md

@@ -3,6 +3,7 @@
 #include "../icon_resolution_test_fixture.h"
 
 #include <QAccessible>
+#include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -487,18 +488,24 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("c1"));
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   commitLast();
-  // The retained popup now completes Qt's real exit transition. Previously
-  // delegate destruction forcibly closed it before this next synthetic key.
+  // The popup completes Qt's real exit transition. Previously delegate
+  // destruction forcibly closed it before this next synthetic key.
+  QPointer<QObject> firstMenu(menu);
   QTRY_COMPARE(containerMenuClosed.size(), 1);
-  // Offscreen has no compositor to reactivate the parent after a retained
-  // Popup.Window hides: focusWindow otherwise remains that hidden window.
+  // Offscreen has no compositor to reactivate the parent after a Popup.Window
+  // hides: focusWindow otherwise remains that hidden window.
   window.requestActivate();
   QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
-  QCOMPARE(entryButtonFor(root, QStringLiteral("c1"))->findChild<QObject *>(
-               QStringLiteral("taskListContextMenu")), menu);
+  // ADR-0396: a closed menu is destroyed with its popup window instead of
+  // being retained for the life of the tile; the next open builds a new one.
+  QTRY_VERIFY(firstMenu.isNull());
+  QVERIFY(entryButtonFor(root, QStringLiteral("c1"))->findChild<QObject *>(
+              QStringLiteral("taskListContextMenu")) == nullptr);
 
   menu = openMenuOn(QStringLiteral("c1"));
   QVERIFY(menu != nullptr);
+  // A fresh menu object per open (ADR-0396), so a fresh spy.
+  QSignalSpy secondContainerMenuClosed(menu, SIGNAL(closed()));
   QTRY_VERIFY(menu->property("visible").toBool());
   QVERIFY(triggerItem(menu, QStringLiteral("taskListContextUngroup")));
   QTRY_COMPARE(port.calls.size(), 4);
@@ -506,7 +513,7 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().firstId, QStringLiteral("c1"));
   QCOMPARE(port.lastCall().revision, revision);
   commitLast();
-  QTRY_COMPARE(containerMenuClosed.size(), 2);
+  QTRY_COMPARE(secondContainerMenuClosed.size(), 1);
   window.requestActivate();
   QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
 

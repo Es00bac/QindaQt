@@ -429,7 +429,9 @@ indicator; it does not fabricate pinned entries. The dock
 reserves the full tile before hover magnification, while `reducedMotion`
 disables both movement and scaling.
 Tooltips and task context menus use their own popup window so they are not
-clipped by the panel band. `dockHasLauncherGroup` is a composition-supplied
+clipped by the panel band; both are created when wanted and destroyed once
+closed, so an idle strip owns no popup window (see "Popup windows are released
+on close"). `dockHasLauncherGroup` is a composition-supplied
 truth value: a separator appears only when both a preceding real launcher
 group and at least one task row are present. The default taskbar geometry and
 behavior remain unchanged.
@@ -523,6 +525,28 @@ update and `dataChanged` per update. It asserts only the deterministic part (one
 the build host: about 82 ms and 16 touched rows per update before the change,
 about 0.6 ms and 1 touched row after.
 
+### Popup windows are released on close
+
+A `Popup.Window` popup owns a real window, and with it a GL context and video
+memory, for as long as the popup object exists, even after it closes. Measured
+with the update-cost harness's strip, the first context menu opened on any tile
+takes the window count from 1 to 2 and closing it leaves 2; opening one menu per
+tile on a 16-window strip left 17. A tooltip and a menu per tile therefore cost
+two windows for every tile ever hovered or right-clicked, which is how a
+long-lived shell reached about 54 contexts and 233 MB of video memory
+([ADR-0396](../adr/0396-create-per-tile-popups-on-demand-and-release-their-windows.md)).
+`TaskListEntryButton` (and the Quick Launch `DockItemTile`, see
+[Desktop controls](desktop-controls.md)) now creates both through a `Loader`:
+the context menu (its own `TaskListEntryMenu.qml`, which acts on the tile it is
+given) on `openContextMenu()` (Menu key, right click or touch context) and the
+dock tooltip while it is wanted, each destroyed on the turn after it has closed, so an idle strip owns no popup window and at most one is open at a time.
+Both name `parent:` explicitly, since a Loader would otherwise parent them to
+itself. Rows: `qindaqt.task-list-popup-windows` (on every tile one menu window
+while a menu is open and none after; the dock tooltip's window only while the
+pointer is on its tile) and `qindaqt.desktop-controls-dock-retained-delegates`
+(the Quick Launch tooltip's window is released after the pointer leaves); both
+count `QGuiApplication::allWindows()` around real opens and closes.
+
 ## Current implementation
 
 The source/static slice at `src/shell/task_list` implements the values,
@@ -554,8 +578,9 @@ list exists and is otherwise dropped as redundant. The independent
 Compositor1 inventories remain diagnostic inputs and must not be substituted
 or joined by shell code.
 
-The offscreen keyboard context-menu gate waits for the retained popup's actual
-`closed` signal and reactivates the test host before sending the next key.
-The offscreen platform leaves native focus on the hidden popup window; a real
-compositor restores the parent surface. The test asserts the menu is the same
-retained object and still reopens and dispatches subsequent actions.
+The offscreen keyboard context-menu gate waits for the popup's actual `closed`
+signal and reactivates the test host before sending the next key. The offscreen
+platform leaves native focus on the hidden popup window; a real compositor
+restores the parent surface. The test asserts the closed menu is destroyed with
+its window, that the next open builds a fresh menu, and that it still dispatches
+subsequent actions.

@@ -172,3 +172,14 @@ publications, the revision read at gesture time) and
 `tst_desktop_controls_qml_active_application` (the popup survives an identical
 republish and a spinner on another window, and retires when its own row
 changes). New search surfaces must call `present()` and `dismiss()`.
+
+## Popup windows
+
+Dock tile tooltips are `Popup.Window` popups, and a `Popup.Window` keeps its
+window (a GL context and video memory) for as long as the popup object exists.
+`DockItemTile` therefore creates its tooltip through a `Loader` while it is
+wanted (`dockMode`, hovered, not dragged) and destroys it once it has faded out,
+so an idle dock owns no tooltip window
+([ADR-0396](../adr/0396-create-per-tile-popups-on-demand-and-release-their-windows.md),
+[Task list](task-list.md), "Popup windows are released on close"). The strip's
+single context menu (`DockItemMenu`) was already one shared popup per strip.

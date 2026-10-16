@@ -32,6 +32,7 @@ class DockRetainedDelegateTests final : public QObject {
 private slots:
   void quickLaunchRetainsTilesAcrossRunInsertRemoveAndReorder();
   void taskStripRetainsTilesAndAnimationState();
+  void quickLaunchTooltipWindowIsReleasedAfterHover();
 };
 
 void DockRetainedDelegateTests::quickLaunchRetainsTilesAcrossRunInsertRemoveAndReorder() {
@@ -165,6 +166,52 @@ void DockRetainedDelegateTests::taskStripRetainsTilesAndAnimationState() {
   QVERIFY(tasks.publish(facts) > 0);
   QVERIFY(!current().contains(id));
   QCOMPARE(root->property("previewIndex").toInt(), -1);
+}
+
+// ADR-0396: a Popup.Window keeps its window, and with it a GL context and video
+// memory, for as long as the popup object exists. A tooltip per tile used to
+// cost a window for every tile ever hovered; now the tooltip exists only while
+// it is wanted and takes its window with it.
+void DockRetainedDelegateTests::quickLaunchTooltipWindowIsReleasedAfterHover() {
+  LauncherStack launcher;
+  Shell::Launcher::LauncherAppletController controller(
+      &launcher.scanner, &launcher.persistence, &launcher.executor, true);
+  QVERIFY(launcher.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Editor"),
+                            QStringLiteral("/bin/true")));
+  QVERIFY(launcher.scanner.start());
+  launcher.publishDock(*DockItems::fromItems({DockItem::application(QStringLiteral("editor")),
+                                             DockItem::trash()}));
+  QuickLaunchController quick(&controller, true);
+  AppletHost host;
+  QString error;
+  QVERIFY2(host.create(QStringLiteral("QuickLaunchApplet"), &quick, &error, false,
+                       true, 60, 60), qPrintable(error));
+  const auto current = [&] {
+    return tiles(host.item, QStringLiteral("quickLaunchEntry"), "row",
+                 QStringLiteral("presentationId"));
+  };
+  QTRY_COMPARE(current().size(), 2);
+  QQuickItem *editor = current().value(QStringLiteral("application:editor"));
+  QVERIFY(editor != nullptr);
+  QTRY_COMPARE(editor->property("revealProgress").toReal(), 1.0);
+  // An idle tile owns neither a tooltip nor its window.
+  QVERIFY(editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) == nullptr);
+  const qsizetype idleWindows = QGuiApplication::allWindows().size();
+
+  const QPoint pointer = editor->mapToScene(QPointF(editor->width() / 2,
+                                                    editor->height() / 2)).toPoint();
+  QTest::mouseMove(host.window.get(), pointer);
+  QTRY_VERIFY(editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip")) != nullptr);
+  QPointer<QObject> tooltip =
+      editor->findChild<QObject *>(QStringLiteral("quickLaunchEntryTooltip"));
+  QCOMPARE(tooltip->property("text").toString(), editor->property("label").toString());
+  QTRY_VERIFY(tooltip->property("visible").toBool());
+  QCOMPARE(QGuiApplication::allWindows().size(), idleWindows + 1);
+
+  QTest::mouseMove(host.window.get(),
+                   QPoint(host.window->width() - 2, host.window->height() - 2));
+  QTRY_VERIFY(tooltip.isNull());
+  QTRY_COMPARE(QGuiApplication::allWindows().size(), idleWindows);
 }
 
 QTEST_MAIN(DockRetainedDelegateTests)

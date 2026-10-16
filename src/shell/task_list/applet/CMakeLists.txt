@@ -50,6 +50,7 @@ qt_add_qml_module(
     QML_FILES
         qml/TaskListApplet.qml
         qml/TaskListEntryButton.qml
+        qml/TaskListEntryMenu.qml
         qml/TaskListPreviewPopup.qml
         qml/TaskListUrgentPulse.qml
     DEPENDENCIES
