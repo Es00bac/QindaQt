@@ -50,14 +50,19 @@ if(BUILD_TESTING)
         add_custom_command(OUTPUT ext-session-lock-v1-server-protocol.h
             COMMAND "${QINDAQT_WAYLAND_SCANNER}" server-header "${QINDAQT_SESSION_LOCK_XML}" "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-server-protocol.h"
             DEPENDS "${QINDAQT_SESSION_LOCK_XML}")
-        qt_add_executable(tst_lock_protocol_integration tests/tst_session_lock_integration.cpp
-            tests/fake_lock_compositor.cpp tests/fake_lock_compositor.h
+        # Test-only support library: also linked by the greeter's process-level test
+        # (src/lock_greeter/tests/tst_lock_greeter_process.cpp). Never installed.
+        add_library(qindaqt_lock_fake_compositor STATIC tests/fake_lock_compositor.cpp tests/fake_lock_compositor.h
             "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-server-protocol.h"
             "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-protocol.c")
-        target_include_directories(tst_lock_protocol_integration PRIVATE
-            "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/tests" "${CMAKE_CURRENT_BINARY_DIR}")
+        target_include_directories(qindaqt_lock_fake_compositor PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests" PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+        target_link_libraries(qindaqt_lock_fake_compositor PUBLIC PkgConfig::LockWaylandServer Threads::Threads)
+        qindaqt_enable_warnings(qindaqt_lock_fake_compositor)
+        qt_add_executable(tst_lock_protocol_integration tests/tst_session_lock_integration.cpp)
+        target_include_directories(tst_lock_protocol_integration PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
         target_link_libraries(tst_lock_protocol_integration PRIVATE qindaqt_lock_protocol
-            PkgConfig::LockWaylandServer Qt6::Test Qt6::GuiPrivate Threads::Threads)
+            qindaqt_lock_fake_compositor Qt6::Test Qt6::GuiPrivate)
         target_compile_definitions(tst_lock_protocol_integration PRIVATE
             QINDAQT_PRIVATE_LOCK_PLUGIN_ROOT="${CMAKE_CURRENT_BINARY_DIR}/plugins")
         add_dependencies(tst_lock_protocol_integration qindaqt_session_lock_integration)

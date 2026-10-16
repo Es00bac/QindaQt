@@ -4344,7 +4344,8 @@ the fixture locks into a ready state with no PAM conversation:
 A scenario must send one of them before it waits for `NATIVE_GREETER_PROMPT`.
 The [lock greeter lifecycle](../architecture/lock-greeter.md) lists the
 deterministic `lock.greeter-*`, `lock.protocol-*` and `keyring_pam_manager_calls`
-tests that need no compositor.
+tests that need no compositor session; `lock.greeter-process` runs this fixture
+itself against a fake `ext-session-lock` compositor.
 The fixture keeps fatal Qt warnings enabled. Its compiled public Patrol/Reef
 scenes load on the actual role; the pure OSK model exercises the QML credential
 editing/submit sink. Credential screenshots contain only synthetic test data.

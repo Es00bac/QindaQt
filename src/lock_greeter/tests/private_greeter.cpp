@@ -37,7 +37,9 @@ int main(int argc, char **argv) {
                                     QLibraryInfo::path(QLibraryInfo::PluginsPath)});
   qputenv("QT_QPA_PLATFORM", "wayland");
   qputenv("QT_WAYLAND_SHELL_INTEGRATION", "qindaqt-session-lock");
-  qputenv("QT_FATAL_WARNINGS", "1");
+  // Fatal warnings stay the default; a harness whose scenario logs warnings on
+  // purpose (a skipped 0x0 configure) may export QT_FATAL_WARNINGS=0.
+  if (!qEnvironmentVariableIsSet("QT_FATAL_WARNINGS")) qputenv("QT_FATAL_WARNINGS", "1");
   QGuiApplication app(argc, argv);
   if (app.platformName() != QStringLiteral("wayland")) return 2;
   QTemporaryDir directory;

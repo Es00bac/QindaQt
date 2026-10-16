@@ -83,6 +83,19 @@ if(BUILD_TESTING)
     set_tests_properties(lock.greeter-ui PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1"
         TIMEOUT 120 LABELS "lock;greeter")
+    # The real private greeter binary against a fake ext-session-lock compositor
+    # (the owner's timeout scenario end to end). Needs the fake compositor library
+    # from lock_protocol, which exists only when libwayland-server is available.
+    if(TARGET qindaqt_lock_fake_compositor)
+        qt_add_executable(tst_lock_greeter_process tests/tst_lock_greeter_process.cpp)
+        target_link_libraries(tst_lock_greeter_process PRIVATE qindaqt_lock_fake_compositor Qt6::Test)
+        target_compile_definitions(tst_lock_greeter_process PRIVATE
+            QINDAQT_PRIVATE_GREETER_PATH="$<TARGET_FILE:qindaqt-private-lock-greeter>")
+        add_dependencies(tst_lock_greeter_process qindaqt-private-lock-greeter)
+        qindaqt_enable_warnings(tst_lock_greeter_process)
+        add_test(NAME lock.greeter-process COMMAND tst_lock_greeter_process)
+        set_tests_properties(lock.greeter-process PROPERTIES TIMEOUT 120 LABELS "lock;greeter")
+    endif()
     set_tests_properties(lock.greeter-input lock.greeter-outputs PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1" TIMEOUT 60 LABELS "lock;greeter")
     # Expects the greeter's exit-reason warnings (QTest::ignoreMessage) and fails

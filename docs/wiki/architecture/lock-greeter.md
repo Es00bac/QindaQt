@@ -147,10 +147,11 @@ a person and must come before a prompt is expected. See the
 | `lock.greeter-outputs` | Backoff schedule, per-output retry, removal, reentrancy |
 | `lock.protocol-configure` | The configure decision table |
 | `lock.protocol-integration` | The real Qt Wayland client and integration plugin against a fake compositor: unusable configures, role release, finished lock |
+| `lock.greeter-process` | The real private greeter binary (real plugin, QML, `NativeWindows`, filter and PAM worker with a 3 s deadline) against a fake compositor: ready and silent when locked, a 0x0 configure survived, the first key starts an attempt, the deadline returns to ready and the next key brings the prompt back, an authenticated response unlocks and the process exits 0 |
 | `lock.worker-process`, `lock.worker-channel` | `TimedOut`, kill-before-close, the failure-path witness |
 
-The UI, protocol-integration and worker-process tests were each run against the
-previous behavior (hidden field, `qFatal` on 0x0, an unreleased role, close
-before kill) and fail there; the controller and supervisor tests cover new
-types. The nested compositor scenarios and the live session were not exercised
-by this change.
+The UI, protocol-integration, process and worker-process tests were each run
+against the previous behavior (hidden field, `qFatal` on 0x0, an unreleased role,
+PAM at lock time, close before kill) and fail there; the controller and
+supervisor tests cover new types. The fork's nested compositor scenarios and the
+live session were not exercised by this change.
