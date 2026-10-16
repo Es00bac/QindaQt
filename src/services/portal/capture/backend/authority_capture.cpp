@@ -13,6 +13,7 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <cerrno>
+#include <cstdio>
 #include <limits>
 #include <fcntl.h>
 #include <poll.h>
@@ -24,6 +25,14 @@ namespace QindaQt::Services::Portal {
 bool augmentCaptureTestFrame(QJsonObject &);
 #endif
 namespace {
+// AGENT-NOTE: each authorityLost ends this broker (backend main.cpp), and the
+// compositor forwards its stderr to the session log. Plain stderr, not
+// qWarning: an expected exit is not a warning, and the broker's own tests run
+// with QT_FATAL_WARNINGS.
+void reportLoss(const char *reason) {
+    std::fprintf(stderr, "qindaqt-portal-capture-backend: capture authority lost: %s\n", reason);
+    std::fflush(stderr);
+}
 bool pidAlive(int fd) { pollfd event{fd, POLLIN, 0}; return fd >= 0 && poll(&event, 1, 0) == 0; }
 QString nativeOwner(const QDBusConnection &bus) {
     if (!bus.interface()) return {};
@@ -56,12 +65,16 @@ public:
         : q(port), requests(registry), bus(connection), runtime(std::move(root)),
           channel(fd, CaptureAuthority::Role::Broker, connection), admission(connection, nativeOwner(connection), fd) {
         QObject::connect(&admission, &NativeCaptureAdmission::initializedChanged, &q, &AuthorityCapture::initializedChanged);
-        QObject::connect(&admission, &NativeCaptureAdmission::lost, &q, [this] { q.revoke(); Q_EMIT q.authorityLost(); });
+        QObject::connect(&admission, &NativeCaptureAdmission::lost, &q, [this] {
+            reportLoss("native capture admission lost (session locked, or compositor lineage changed)");
+            q.revoke(); Q_EMIT q.authorityLost();
+        });
         // The existing channel handshake budget starts at broker construction,
         // including native initialization; delaying Channel::start must not
         // leave an unresponsive receipt endpoint alive indefinitely.
         startup.setSingleShot(true);
         QObject::connect(&startup, &QTimer::timeout, &q, [this] {
+            reportLoss("no Hello from the compositor within 5 s of startup");
             channel.stop(); q.revoke(); Q_EMIT q.authorityLost();
         });
         startup.start(5000);
@@ -70,7 +83,10 @@ public:
             // AGENT-GUARD: native initialization precedes channel identity setup;
             // reconciling an unstarted channel would terminally reject its unset PID.
             if (!channelStarted) {
-                if (!admission.lineageLive()) { channel.stop(); Q_EMIT q.authorityLost(); }
+                if (!admission.lineageLive()) {
+                    reportLoss("no compositor launched this broker, or that compositor is gone or replaced");
+                    channel.stop(); Q_EMIT q.authorityLost();
+                }
                 return;
             }
             channel.reconcile();
@@ -81,7 +97,10 @@ public:
     bool start() {
         if (channelStarted || !admission.initialized()) return false;
         channelStarted = true;
-        return channel.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] { q.revoke(); Q_EMIT q.authorityLost(); });
+        return channel.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] {
+            reportLoss("the compositor control channel failed or closed");
+            q.revoke(); Q_EMIT q.authorityLost();
+        });
     }
     bool live(const Job &job) const {
         if (!q.admitted() || !pidAlive(job.callerPidfd) || job.frontend != requests.frontendOwner() || !bus.interface()) return false;
@@ -110,7 +129,10 @@ public:
         if (!job) {
             // A cancelled Start may race JobStarted. Its FDs close with packet;
             // revoke again, never resurrect a removed registry/session token.
-            if (packet.packet.job > next) { channel.stop(); q.revoke(); Q_EMIT q.authorityLost(); }
+            if (packet.packet.job > next) {
+                reportLoss("the compositor sent a packet for a job this broker never started");
+                channel.stop(); q.revoke(); Q_EMIT q.authorityLost();
+            }
             else if (packet.packet.message == Message::JobStarted && channel.live()) channel.send(Message::RevokeJob, packet.packet.job);
             // Terminal acknowledgments for already retired IDs are idempotent;
             // replying to each one would create an endless Revoke/Revoked loop.
