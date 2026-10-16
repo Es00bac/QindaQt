@@ -34,7 +34,11 @@ int main(int argc, char **argv) {
   passwd account{}; passwd *found = nullptr;
   if (getpwuid_r(getuid(), &account, accountBuffer.data(), accountBuffer.size(), &found) ||
       !found || !found->pw_name) return 2;
-  WorkerChannel channel(3, std::chrono::seconds(90));
+  // AGENT-GUARD: backstop only. The greeter times an attempt out at
+  // attemptDeadline and kills this process while it waits for the user; a
+  // shorter worker deadline here would fail the PAM conversation first and
+  // count an abandoned attempt toward pam_faillock (see authentication.h).
+  WorkerChannel channel(3, workerBackstopDeadline);
   auto begin = channel.receive();
   if (!begin || begin->kind != WireKind::Begin || !begin->payload.empty()) return 2;
   WorkerConversation conversation(channel, begin->token);

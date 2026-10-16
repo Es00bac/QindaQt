@@ -4,6 +4,7 @@
 // it.
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <string>
@@ -35,6 +36,14 @@ extern "C" int pam_sm_authenticate(pam_handle_t *handle, int, int argc,
   const int result = conv->conv(messages.size(), messages.data(), &response,
                                 conv->appdata_ptr);
   if (result != PAM_SUCCESS) {
+    // "witness <path>": record that pam_authenticate observed a failed
+    // conversation. In production that is exactly where pam_unix reports
+    // failure and `pam_faillock authfail` counts a login attempt, so an
+    // abandoned or cancelled attempt must never get here (see ADR-0382).
+    if (mode == "witness" && argc > 1) {
+      const int marker = open(argv[1], O_WRONLY | O_CREAT | O_CLOEXEC, 0600);
+      if (marker >= 0) close(marker);
+    }
     return PAM_AUTH_ERR;
   }
   bool expected = response && response[0].resp &&

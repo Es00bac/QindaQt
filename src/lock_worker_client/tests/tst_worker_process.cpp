@@ -2,6 +2,7 @@
 #include "worker_process.h"
 #include "process_protection.h"
 #include <QFile>
+#include <QFileInfo>
 #include <QTemporaryDir>
 #include <QtTest>
 using namespace QindaQt::LockAuthentication;
@@ -20,7 +21,7 @@ private Q_SLOTS:
     QTest::newRow("bad-password") << "deny" << "permit" << false << int(Outcome::Denied);
     QTest::newRow("account-denied") << "permit" << "account-deny" << false << int(Outcome::AccountDenied);
     QTest::newRow("cancel-at-prompt") << "permit" << "permit" << true << int(Outcome::Cancelled);
-    QTest::newRow("kill-blocked-pam-module") << "block" << "permit" << false << int(Outcome::Unavailable);
+    QTest::newRow("kill-blocked-pam-module") << "block" << "permit" << false << int(Outcome::TimedOut);
   }
   void process() {
     QFETCH(QString, mode); QFETCH(QString, account); QFETCH(bool, cancel); QFETCH(int, expected);
@@ -45,6 +46,48 @@ private Q_SLOTS:
     else QVERIFY(!prompts.isEmpty());
     // Completion cannot be duplicated by delayed process/socket notifications.
     QTest::qWait(10); QCOMPARE(done.size(), 1);
+  }
+  void deadlineOutlivesTheWorkerBackstop() {
+    // The whole-attempt deadline is the greeter's, and it must stay ahead of the
+    // worker's own channel deadline (authentication.h AGENT-GUARD).
+    QVERIFY(QindaQt::LockAuthentication::workerBackstopDeadline > QindaQt::LockAuthentication::attemptDeadline);
+    QCOMPARE(std::chrono::duration_cast<std::chrono::seconds>(QindaQt::LockAuthentication::attemptDeadline).count(), 90);
+  }
+  void abandonedAttempt_data() {
+    QTest::addColumn<bool>("byDeadline");
+    QTest::newRow("cancel-at-prompt") << false;
+    QTest::newRow("deadline-at-prompt") << true;
+  }
+  void abandonedAttempt() {
+    // AGENT-NOTE: pam_faillock counts a login failure when a conversation fails
+    // inside pam_authenticate. The witness module stands in for that failure
+    // path; an attempt the user cancels or abandons must kill the worker while
+    // it is still blocked in conversation so the path never runs. Several rounds
+    // make a regression of the kill-before-close ordering visible without
+    // sleeping; an absent marker after the child is gone is a hard proof.
+    QFETCH(bool, byDeadline);
+    for (int round = 0; round < 15; ++round) {
+      QTemporaryDir conf; QVERIFY(conf.isValid());
+      const QString marker = conf.filePath("failure-path-reached");
+      QFile service(conf.filePath("qindaqt-lock")); QVERIFY(service.open(QIODevice::WriteOnly));
+      const QByteArray module = QINDAQT_PRIVATE_PAM_MODULE_PATH;
+      service.write("auth required " + module + " witness " + marker.toUtf8() + "\naccount required " + module +
+                    " permit\nsession optional " + module + " permit\n"); service.close();
+      WorkerProcess worker(QStringLiteral(QINDAQT_PRIVATE_WORKER_PATH), conf.path(), byDeadline ? 250 : 3000);
+      QSignalSpy done(&worker, &WorkerProcess::completed);
+      bool prompted = false;
+      QObject::connect(&worker, &WorkerProcess::prompt, &worker, [&](MessageKind kind, const QString &) {
+        if (kind != MessageKind::Secret) return;
+        prompted = true;
+        if (!byDeadline) worker.cancel();
+      });
+      QVERIFY(worker.start({95, static_cast<std::uint64_t>(round) + 1}));
+      QTRY_COMPARE_WITH_TIMEOUT(done.size(), 1, 5000);
+      QVERIFY(prompted);
+      QCOMPARE(int(qvariant_cast<Outcome>(done[0][1])), int(byDeadline ? Outcome::TimedOut : Outcome::Cancelled));
+      // completed() is emitted only after the child exited, so the marker is final.
+      QVERIFY2(!QFileInfo::exists(marker), "PAM observed a failed conversation for an abandoned attempt");
+    }
   }
   void productionPathAndInjection() {
     QVERIFY(QindaQt::LockPlatform::rootManagedPath(QStringLiteral("/usr/bin/true")));
