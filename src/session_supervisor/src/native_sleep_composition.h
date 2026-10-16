@@ -18,6 +18,9 @@ public:
   ~NativeSleepComposition();
   bool start();
   void stop();
+  // The admission owner calls this when supervisor/attachment liveness
+  // changes; admission is never polled (ADR-0379).
+  void admissionChanged();
   // Borrowed same-thread coordinator remains owned by this composition.
   Session::NativeSleep::SleepCoordinator &coordinator();
 private:

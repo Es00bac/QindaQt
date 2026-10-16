@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "resident_service_refresh.h"
+#include "resident_unit_staleness.h"
 #include "systemd_manager_port.h"
 #include <QDebug>
 #include <QElapsedTimer>
@@ -89,7 +90,6 @@ QStringList residentServiceRefreshUnits()
         QString::fromLatin1(AudioUnitName),
         QStringLiteral("qindaqt-clipboard-host.service"),
         QStringLiteral("qindaqt-display-service.service"),
-        QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
         QStringLiteral("xdg-desktop-portal.service"),
     };
 }
@@ -97,13 +97,33 @@ QStringList residentServiceRefreshUnits()
 bool refreshResidentServices(const QDBusConnection &bus,
                              const QStringList &unitNames,
                              const QString &systemdPrivateSocketPath,
-                                  const SessionActivationScope scope)
+                             const SessionActivationScope scope,
+                             const ResidentRefreshContext &context)
 {
     if (scope == SessionActivationScope::Private && systemdPrivateSocketPath.isEmpty()) return true;
     const SystemdManagerRoute route = resolveSystemdManagerRoute(bus, systemdPrivateSocketPath, scope);
     bool audioSafeToProceed = true;
     for (const QString &unitName : unitNames) {
         if (unitName.isEmpty()) continue;
+        ResidentUnitInstance instance;
+        instance.unit = unitName;
+        const auto mainPid = unitMainPid(route, bus, unitName);
+        instance.mainPid = mainPid.value_or(0);
+        if (instance.mainPid != 0) {
+            instance.startTicks = processStartTicks(instance.mainPid, context.procRoot);
+            instance.executableReplaced =
+                processExecutableReplaced(instance.mainPid, context.procRoot);
+        }
+        const ResidentUnitState state = mainPid
+            ? classifyResidentUnit(instance, context.loginStartTicks)
+            : ResidentUnitState::Unobservable;
+        if (!residentUnitIsStale(state)) {
+            qInfo("Kept resident session unit %s: %s", qUtf8Printable(unitName),
+                  residentUnitStateName(state));
+            continue;
+        }
+        qInfo("Restarting resident session unit %s: %s", qUtf8Printable(unitName),
+              residentUnitStateName(state));
         const bool audioUnit = unitName == QString::fromLatin1(AudioUnitName);
         std::optional<QString> previousAudioOwner;
         if (audioUnit) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "attachment_socket_p.h"
 #include <QFile>
+#include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <poll.h>
@@ -10,6 +11,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 namespace QindaQt::Platform::Compositor::Private {
+namespace {
 struct Descriptor {
   int value = -1;
   explicit Descriptor(int fd = -1) : value(fd) {}
@@ -25,6 +27,13 @@ struct Descriptor {
     return fd;
   }
 };
+PeerConnection status(PeerStatus value) { return PeerConnection{value, -1, -1}; }
+bool transientErrno(int error) {
+  return error == ENOENT || error == ECONNREFUSED || error == EAGAIN ||
+         error == EINTR || error == EMFILE || error == ENFILE ||
+         error == ENOBUFS || error == ENOMEM;
+}
+} // namespace
 bool nativeName(const QString &name) {
   const auto prefix = QString(QindaQt::CompositorNames::waylandSocketPrefix);
   if (!name.startsWith(prefix))
@@ -59,29 +68,31 @@ int privateDirectory(const QString &path) {
     return -1;
   return current.release();
 }
-int connectPeer(const QString &runtime, const QString &name, qint64 expected,
-                int *pidfd) {
+PeerConnection connectPeer(const QString &runtime, const QString &name,
+                           qint64 expected, bool wantPidfd) {
   Descriptor directory(privateDirectory(runtime));
   if (directory.value < 0)
-    return -1;
+    return status(PeerStatus::Mismatch);
   struct stat entry{};
   const auto file = QFile::encodeName(name);
   // AGENT-GUARD: KWin creates a 0755 socket. The pinned 0700 runtime
   // directory controls traversal; reject outside write access here, then
   // bind the actual peer to the compositor's bus PID below.
   if (fstatat(directory.value, file.constData(), &entry, AT_SYMLINK_NOFOLLOW) !=
-          0 ||
-      !S_ISSOCK(entry.st_mode) || entry.st_uid != geteuid() ||
+      0)
+    return status(errno == ENOENT ? PeerStatus::Unavailable
+                                  : PeerStatus::Mismatch);
+  if (!S_ISSOCK(entry.st_mode) || entry.st_uid != geteuid() ||
       entry.st_nlink != 1 || (entry.st_mode & 0022) != 0)
-    return -1;
+    return status(PeerStatus::Mismatch);
   Descriptor socketFd(
       socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0));
   if (socketFd.value < 0)
-    return -1;
+    return status(PeerStatus::Unavailable);
   if (socketFd.value < 3) {
     const int duplicate = fcntl(socketFd.value, F_DUPFD_CLOEXEC, 3);
     if (duplicate < 0)
-      return -1;
+      return status(PeerStatus::Unavailable);
     close(socketFd.value);
     socketFd.value = duplicate;
   }
@@ -90,28 +101,34 @@ int connectPeer(const QString &runtime, const QString &name, qint64 expected,
   const auto endpoint = QByteArray("/proc/self/fd/") +
                         QByteArray::number(directory.value) + '/' + file;
   if (endpoint.size() >= static_cast<qsizetype>(sizeof(address.sun_path)))
-    return -1;
+    return status(PeerStatus::Mismatch);
   std::memcpy(address.sun_path, endpoint.constData(),
               static_cast<std::size_t>(endpoint.size()) + 1);
   if (::connect(socketFd.value, reinterpret_cast<sockaddr *>(&address),
                 sizeof(address)) != 0)
-    return -1;
+    return status(transientErrno(errno) ? PeerStatus::Unavailable
+                                        : PeerStatus::Mismatch);
   ucred peer{};
   socklen_t size = sizeof(peer);
-  if (getsockopt(socketFd.value, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 ||
-      peer.uid != geteuid() || peer.pid != expected)
-    return -1;
+  if (getsockopt(socketFd.value, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0)
+    return status(PeerStatus::Unavailable);
+  // AGENT-GUARD: a live listener with another UID/PID behind the selected
+  // pathname is a replacement, never a transient condition (ADR-0305).
+  if (peer.uid != geteuid() || peer.pid != expected)
+    return status(PeerStatus::Mismatch);
   int held = -1;
   socklen_t heldSize = sizeof(held);
   if (getsockopt(socketFd.value, SOL_SOCKET, SO_PEERPIDFD, &held, &heldSize) !=
       0)
-    return -1;
+    return status(PeerStatus::Unavailable);
   Descriptor life(held);
-  pollfd status{held, POLLIN, 0};
-  if (heldSize != sizeof(held) || poll(&status, 1, 0) != 0)
-    return -1;
-  if (pidfd)
-    *pidfd = life.release();
-  return socketFd.release();
+  pollfd lifetime{held, POLLIN, 0};
+  if (heldSize != sizeof(held) || poll(&lifetime, 1, 0) != 0)
+    return status(PeerStatus::Unavailable);
+  PeerConnection connected{PeerStatus::Connected, -1, -1};
+  if (wantPidfd)
+    connected.pidfd = life.release();
+  connected.fd = socketFd.release();
+  return connected;
 }
 } // namespace QindaQt::Platform::Compositor::Private

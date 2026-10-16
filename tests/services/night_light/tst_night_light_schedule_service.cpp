@@ -11,8 +11,11 @@
 #include <qindaqt/services/settings_protocol/settings_wire_status.h>
 
 #include <QDBusConnection>
+#include <QDBusMessage>
+#include <QFile>
 #include <QProcess>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QtTest>
 
 using namespace QindaQt::Services::NightLight;
@@ -103,11 +106,71 @@ public:
 };
 }
 
+// A private bus whose policy can refuse, then (after ReloadConfig) grant,
+// the NightLight name.
+class PolicyBus final {
+public:
+    explicit PolicyBus(bool refuse)
+    {
+        write(refuse);
+        process.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+            {QStringLiteral("--config-file=") + directory.filePath(QStringLiteral("bus.conf")),
+             QStringLiteral("--nofork"), QStringLiteral("--print-address=1")});
+        if (!process.waitForStarted() || !process.waitForReadyRead()) return;
+        address = QString::fromUtf8(process.readLine()).trimmed();
+    }
+    ~PolicyBus() { process.terminate(); process.waitForFinished(); }
+    void write(bool refuse)
+    {
+        QFile config(directory.filePath(QStringLiteral("bus.conf")));
+        if (!config.open(QIODevice::WriteOnly | QIODevice::Truncate)) return;
+        config.write(QByteArray("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen>"
+            "<auth>EXTERNAL</auth><policy context=\"default\"><allow send_destination=\"*\"/>"
+            "<allow receive_sender=\"*\"/><allow own=\"*\"/>")
+            + (refuse ? QByteArray("<deny own=\"org.qindaqt.NightLight\"/>") : QByteArray())
+            + QByteArray("</policy></busconfig>"));
+    }
+    QTemporaryDir directory;
+    QProcess process;
+    QString address;
+};
+
 class NightLightScheduleServiceTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void residentServicePublishesSettingsBackedTargetedScheduleReceipt();
+    void refusedNameReportsTheRealFailureAndRetrySucceeds();
 };
+
+void NightLightScheduleServiceTests::refusedNameReportsTheRealFailureAndRetrySucceeds()
+{
+    PolicyBus daemon(true);
+    QVERIFY(!daemon.address.isEmpty());
+    auto serviceBus = QDBusConnection::connectToBus(daemon.address, QStringLiteral("refused-night-light"));
+    QVERIFY(serviceBus.isConnected());
+    FakeTransport transport;
+    SettingsClient settings(transport, nightLightSettingKeys());
+    QindaQt::DisplayClient::TestSupport::FakeDisplayTransport displayTransport;
+    QindaQt::DisplayClient::Client displayClient(&displayTransport);
+    FakeLocationProvider location;
+    NightLightScheduleService service(serviceBus, settings, displayClient, location);
+    QString error;
+    QCOMPARE(service.start(&error), ScheduleServiceStart::Failed);
+    // ADR-0379: the login journal said "startup failed: " with nothing after.
+    QVERIFY2(error.contains(QStringLiteral("org.freedesktop.DBus.Error.AccessDenied")),
+             qPrintable(error));
+    QVERIFY(error.contains(ServiceName));
+    // A later attempt on the same object succeeds once the bus grants the name.
+    daemon.write(false);
+    auto reload = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("ReloadConfig"));
+    QCOMPARE(serviceBus.call(reload).type(), QDBusMessage::ReplyMessage);
+    error.clear();
+    QCOMPARE(service.start(&error), ScheduleServiceStart::Started);
+    service.stop();
+    QDBusConnection::disconnectFromBus(QStringLiteral("refused-night-light"));
+}
 
 void NightLightScheduleServiceTests::residentServicePublishesSettingsBackedTargetedScheduleReceipt()
 {

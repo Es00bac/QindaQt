@@ -50,3 +50,13 @@ install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Settings1.service"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services"
 )
+# ADR-0379: Settings1 runs in its own user unit, outside dbus.service's cgroup.
+configure_file(
+    data/qindaqt-settings-service.service.in
+    "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-settings-service.service"
+    @ONLY
+)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-settings-service.service"
+    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
+)

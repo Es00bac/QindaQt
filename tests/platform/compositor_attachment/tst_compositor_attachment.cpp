@@ -1,181 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "qindaqt/platform/compositor_attachment/compositor_attachment.h"
-#include <QDBusConnectionInterface>
-#include <QFile>
-#include <QProcess>
-#include <QSignalSpy>
-#include <QTemporaryDir>
-#include <QtTest>
-#include <cstdio>
-#include <cstring>
-#include <fcntl.h>
-#include <qindaqt/compositor_names/compositor_names.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#include <unistd.h>
-using namespace QindaQt::Platform::Compositor;
-class Bus final {
-public:
-  inline static int next = 0;
-  int id = ++next;
-  Bus() {
-    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
-                 {"--session", "--nofork", "--print-address=1"});
-    if (!daemon.waitForStarted() || !daemon.waitForReadyRead())
-      return;
-    address = QString::fromUtf8(daemon.readLine()).trimmed();
-  }
-  ~Bus() {
-    for (const auto &name : names)
-      QDBusConnection::disconnectFromBus(name);
-    daemon.terminate();
-    daemon.waitForFinished(5000);
-  }
-  QDBusConnection connect(const QString &suffix) {
-    const auto name = QStringLiteral("attachment-%1-%2-%3")
-                          .arg(QCoreApplication::applicationPid())
-                          .arg(id)
-                          .arg(suffix);
-    names.append(name);
-    return QDBusConnection::connectToBus(address, name);
-  }
-  QProcess daemon;
-  QString address;
-  QStringList names;
-};
-class Listener final {
-public:
-  explicit Listener(QString value) : path(std::move(value)) {
-    fd = create(path);
-  }
-  ~Listener() {
-    if (fd >= 0)
-      close(fd);
-    QFile::remove(path);
-  }
-  static int create(const QString &path) {
-    const int socketFd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-    if (socketFd < 0)
-      return -1;
-    sockaddr_un address{};
-    address.sun_family = AF_UNIX;
-    const auto bytes = QFile::encodeName(path);
-    if (bytes.size() >= qsizetype(sizeof(address.sun_path))) {
-      close(socketFd);
-      return -1;
-    }
-    std::memcpy(address.sun_path, bytes.constData(), size_t(bytes.size()) + 1);
-    if (bind(socketFd, reinterpret_cast<sockaddr *>(&address),
-             sizeof(address)) != 0 ||
-        listen(socketFd, 16) != 0) {
-      close(socketFd);
-      return -1;
-    }
-    // Match the 0755 socket created by the production QindaQt compositor.
-    QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner |
-                                    QFileDevice::ExeOwner | QFileDevice::ReadGroup |
-                                    QFileDevice::ExeGroup | QFileDevice::ReadOther |
-                                    QFileDevice::ExeOther);
-    return socketFd;
-  }
-  QString path;
-  int fd = -1;
-};
-class OtherProcessListener final {
-public:
-  explicit OtherProcessListener(const QString &path) {
-    int ready[2], done[2];
-    if (pipe2(ready, O_CLOEXEC) != 0)
-      return;
-    if (pipe2(done, O_CLOEXEC) != 0) {
-      close(ready[0]);
-      close(ready[1]);
-      return;
-    }
-    const auto bytes = QFile::encodeName(path);
-    sockaddr_un address{};
-    address.sun_family = AF_UNIX;
-    if (bytes.size() >= qsizetype(sizeof(address.sun_path))) {
-      close(ready[0]);
-      close(ready[1]);
-      close(done[0]);
-      close(done[1]);
-      return;
-    }
-    std::memcpy(address.sun_path, bytes.constData(), size_t(bytes.size()) + 1);
-    child = fork();
-    if (child == 0) {
-      close(ready[0]);
-      close(done[1]);
-      // Only async-signal-safe syscalls after fork from a Qt process.
-      const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-      char result = fd >= 0 &&
-                            bind(fd, reinterpret_cast<sockaddr *>(&address),
-                                 sizeof(address)) == 0 &&
-                            listen(fd, 16) == 0 &&
-                            chmod(bytes.constData(), 0600) == 0
-                        ? 1
-                        : 0;
-      {
-        const auto ioResult = write(ready[1], &result, 1);
-        (void)ioResult;
-      }
-      close(ready[1]);
-      char finish = 0;
-      {
-        const auto ioResult = read(done[0], &finish, 1);
-        (void)ioResult;
-      }
-      if (fd >= 0)
-        close(fd);
-      close(done[0]);
-      _exit(0);
-    }
-    close(ready[1]);
-    close(done[0]);
-    if (child < 0) {
-      close(ready[0]);
-      close(done[1]);
-      return;
-    }
-    char result = 0;
-    available = read(ready[0], &result, 1) == 1 && result == 1;
-    close(ready[0]);
-    completion = done[1];
-  }
-  ~OtherProcessListener() {
-    if (completion >= 0) {
-      const char value = 1;
-      {
-        const auto ioResult = write(completion, &value, 1);
-        (void)ioResult;
-      }
-      close(completion);
-    }
-    if (child > 0) {
-      int status = 0;
-      (void)waitpid(child, &status, 0);
-    }
-  }
-  pid_t child = -1;
-  int completion = -1;
-  bool available = false;
-};
+#include "attachment_test_support.h"
+using namespace AttachmentTestSupport;
 class AttachmentTest final : public QObject {
   Q_OBJECT
 private slots:
   void pinsActualOrdinaryPeerAndTransfersCloexecDescriptor();
-  void initialAdvertisementDoesNotRevokeButActualLossDoes();
+  void initialAdvertisementDoesNotRevokeAndActualLossReattaches();
   void separateDaemonCannotReuseOwnerAndPid();
   void rejectsDeniedSelectionAndIncorrectIndependentPeer();
-  void authorityLossRevokesBeforeQueuedWatchers();
+  void admissionLossIsImmediateAndOwnerLossFollowsTheWatcher();
   void rejectsUnsafePathsAndCanonicalNameViolations();
   void sameUidWrongProcessAndPathReplacementCannotAttach();
   void reentrantRevocationCannotReportSuccessfulAttachment();
   void kernelPeerDeathRevokesWithoutWaitingForOwnerWatcher();
-  void selectedSessionOwnerLossRevokesIdentity();
+  void kernelPeerDeathIsPublishedWithoutPolling();
+  void selectedSessionOwnerLossRetiresTheSelection();
 };
 void AttachmentTest::pinsActualOrdinaryPeerAndTransfersCloexecDescriptor() {
   Bus fixture;
@@ -212,7 +51,7 @@ void AttachmentTest::pinsActualOrdinaryPeerAndTransfersCloexecDescriptor() {
   QCOMPARE(attachment.openConnection(), -1);
   QCOMPARE(revoked.count(), 1);
 }
-void AttachmentTest::initialAdvertisementDoesNotRevokeButActualLossDoes() {
+void AttachmentTest::initialAdvertisementDoesNotRevokeAndActualLossReattaches() {
   Bus fixture;
   auto compositor = fixture.connect("compositor"),
        session = fixture.connect("session"), client = fixture.connect("client");
@@ -226,6 +65,7 @@ void AttachmentTest::initialAdvertisementDoesNotRevokeButActualLossDoes() {
       [&](const QString &owner) { return owner == session.baseService(); });
   QTest::qWait(10);
   QSignalSpy revoked(&attachment, &CompositorAttachment::revoked);
+  QSignalSpy attached(&attachment, &CompositorAttachment::attached);
   QVERIFY(
       compositor.registerService(QString(QindaQt::CompositorNames::service)));
   QVERIFY(attachment.attach(session.baseService(), name));
@@ -236,8 +76,12 @@ void AttachmentTest::initialAdvertisementDoesNotRevokeButActualLossDoes() {
       compositor.unregisterService(QString(QindaQt::CompositorNames::service)));
   QVERIFY(
       compositor.registerService(QString(QindaQt::CompositorNames::service)));
+  // Actual loss revokes even though the same owner reclaimed the name; the
+  // retained selection then re-proves that owner (ADR-0379).
   QTRY_COMPARE(revoked.size(), 1);
-  QVERIFY(!attachment.live());
+  QTRY_COMPARE(attached.size(), 2);
+  QVERIFY(attachment.live());
+  QVERIFY(!attachment.recovering());
 }
 void AttachmentTest::separateDaemonCannotReuseOwnerAndPid() {
   Bus first, second;
@@ -293,7 +137,7 @@ void AttachmentTest::rejectsDeniedSelectionAndIncorrectIndependentPeer() {
       PeerExpectation{compositor.baseService(), quint64(getpid()) + 1}));
   QVERIFY(attachment.attach(session.baseService(), name));
 }
-void AttachmentTest::authorityLossRevokesBeforeQueuedWatchers() {
+void AttachmentTest::admissionLossIsImmediateAndOwnerLossFollowsTheWatcher() {
   Bus fixture;
   auto compositor = fixture.connect("compositor"),
        session = fixture.connect("session");
@@ -313,12 +157,18 @@ void AttachmentTest::authorityLossRevokesBeforeQueuedWatchers() {
   QVERIFY(!attachment.live());
   QVERIFY(!attachment.identity());
   QCOMPARE(attachment.openConnection(), -1);
+  // Admission is consumer state: refusal hides the binding immediately but
+  // is not compositor loss, so the attachment answers again once admitted.
   admitted = true;
+  QVERIFY(attachment.live());
   QVERIFY(attachment.attach(session.baseService(), name));
   QVERIFY(
       compositor.unregisterService(QString(QindaQt::CompositorNames::service)));
-  QVERIFY(!attachment.identity());
+  // Bus ownership is cached from NameOwnerChanged; loss is published when the
+  // watcher delivers it, never by polling the daemon (ADR-0379).
+  QTRY_VERIFY(!attachment.identity());
   QCOMPARE(attachment.openConnection(), -1);
+  QVERIFY(attachment.recovering());
 }
 void AttachmentTest::rejectsUnsafePathsAndCanonicalNameViolations() {
   Bus fixture;
@@ -399,7 +249,7 @@ void AttachmentTest::reentrantRevocationCannotReportSuccessfulAttachment() {
   QVERIFY(!attachment.attach(session.baseService(), name));
   QVERIFY(!attachment.identity());
 }
-void AttachmentTest::selectedSessionOwnerLossRevokesIdentity() {
+void AttachmentTest::selectedSessionOwnerLossRetiresTheSelection() {
   Bus fixture;
   auto compositor = fixture.connect("compositor"),
        session = fixture.connect("session");
@@ -413,17 +263,17 @@ void AttachmentTest::selectedSessionOwnerLossRevokesIdentity() {
   CompositorAttachment attachment(
       compositor, runtime.path(),
       [&](const QString &owner) { return owner == selected; });
+  QSignalSpy revoked(&attachment, &CompositorAttachment::revoked);
   QVERIFY(attachment.attach(selected, name));
   QDBusConnection::disconnectFromBus(session.name());
   session = QDBusConnection(QStringLiteral("disconnected-fixture"));
-  // Confirm daemon-observed loss synchronously; do not pump the object's
-  // queued owner watcher before checking the public getter.
-  const auto registered = compositor.interface()->isServiceRegistered(selected);
-  QVERIFY(registered.isValid());
-  QVERIFY(!registered.value());
+  // The selected unique owner can never return, so its loss retires the
+  // selection when the watcher delivers it instead of scheduling recovery.
+  QTRY_COMPARE(revoked.size(), 1);
   QVERIFY(!attachment.live());
   QVERIFY(!attachment.identity());
   QCOMPARE(attachment.openConnection(), -1);
+  QVERIFY(!attachment.recovering());
 }
 
 void AttachmentTest::kernelPeerDeathRevokesWithoutWaitingForOwnerWatcher() {
@@ -451,6 +301,37 @@ void AttachmentTest::kernelPeerDeathRevokesWithoutWaitingForOwnerWatcher() {
   QVERIFY(!attachment.live());
   QVERIFY(!attachment.identity());
   QCOMPARE(attachment.openConnection(), -1);
+}
+void AttachmentTest::kernelPeerDeathIsPublishedWithoutPolling() {
+  Bus fixture;
+  auto client = fixture.connect("client"), session = fixture.connect("session");
+  QTemporaryDir runtime;
+  const auto name =
+      QString(QindaQt::CompositorNames::waylandSocketPrefix) + "0";
+  QProcess peer;
+  peer.start(QCoreApplication::applicationFilePath(),
+             {"--peer", fixture.address, runtime.filePath(name)});
+  QVERIFY(peer.waitForStarted());
+  QVERIFY(peer.waitForReadyRead());
+  const auto owner = QString::fromUtf8(peer.readLine()).trimmed();
+  CompositorAttachment attachment(client, runtime.path(),
+                                  [&](const QString &selected) {
+                                    return selected == session.baseService();
+                                  });
+  QSignalSpy revoked(&attachment, &CompositorAttachment::revoked);
+  QVERIFY(attachment.attach(session.baseService(), name,
+                            PeerExpectation{owner, quint64(peer.processId())}));
+  // Freeze the daemon so its NameOwnerChanged cannot announce the death: only
+  // the kernel PIDFD/probe notifiers can publish it, and no getter runs.
+  FrozenDaemon frozen(fixture);
+  QVERIFY(frozen.frozen);
+  peer.kill();
+  QVERIFY(peer.waitForFinished(5000));
+  QTRY_COMPARE(revoked.size(), 1);
+  // The independently expected peer is dead, so the selection retires.
+  QVERIFY(!attachment.recovering());
+  QVERIFY(!attachment.live());
+  frozen.thaw();
 }
 int main(int argc, char **argv) {
   QCoreApplication app(argc, argv);

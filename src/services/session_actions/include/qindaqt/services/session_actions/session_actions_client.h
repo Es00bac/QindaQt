@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
@@ -54,6 +55,13 @@ struct SessionActionResult final {
 // session controls and the supervisor-owned protected Sleep1 handoff. Both bus connections are injected and borrowed by value;
 // tests may point them at one private broker. Owner changes trigger one
 // coalesced refresh, never a recurring poll.
+//
+// AGENT-CONTRACT (ADR-0379): service owners are cached from watcher events
+// (plus one asynchronous lookup at start); the client never makes a blocking
+// bus call and never changes a connection's shared interface timeout. A
+// refresh runs only on start, an owner change, a real Sleep1.Changed or a
+// ScreenPower1 AvailabilityChanged; a burst collapses into at most one
+// running refresh plus one follow-up. Absent services are not queried.
 //
 // AGENT-CONTRACT: cached capability results are presentation facts only. Lock
 // repeats its interface probe and every Can* action repeats its admission query
@@ -150,6 +158,15 @@ private:
     QString currentScreenPowerOwner() const;
     void refreshScreenOffAvailability();
     void finishScreenOff(ActionStatus status);
+    void installWatcher(QDBusServiceWatcher *&slot, const char *service,
+                        const QDBusConnection &connection, SessionAction authority);
+    void noteOwner(const QString &key, const QString &owner);
+    void resolveInitialOwner(const QDBusConnection &connection, const QString &key,
+                             const QString &service);
+    void verifyScreenPowerOwner();
+    [[nodiscard]] QString cachedOwner(const QString &key) const;
+    [[nodiscard]] bool refreshInFlight() const noexcept;
+    void refreshFinished();
 
     QDBusConnection m_sessionBus;
     QDBusConnection m_systemBus;
@@ -174,6 +191,15 @@ private:
     quint64 m_sessionEpoch = 0;
     quint64 m_logindEpoch = 0;
     quint64 m_sleepEpoch = 0;
+    // Owner cache keyed by well-known name; the system-bus logind owner uses
+    // the "system:" prefix. Serials fence the start-up lookups against newer
+    // watcher events.
+    QHash<QString, QString> m_owners;
+    QHash<QString, quint64> m_ownerSerials;
+    QString m_screenPowerVerified;
+    quint64 m_screenPowerCheck = 0;
+    quint64 m_inFlightSerial = 0;
+    bool m_refreshAgain = false;
     bool m_running = false;
 };
 

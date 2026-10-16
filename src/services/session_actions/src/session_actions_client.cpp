@@ -99,25 +99,20 @@ void SessionActionsClient::start()
         return;
     }
     m_running = true;
-    auto installWatcher = [this](QDBusServiceWatcher *&slot,
-                                 const char *service,
-                                 const QDBusConnection &connection,
-                                 SessionAction authority) {
-        slot = new QDBusServiceWatcher(QString::fromLatin1(service), connection,
-                                       QDBusServiceWatcher::WatchForOwnerChange,
-                                       this);
-        connect(slot, &QDBusServiceWatcher::serviceOwnerChanged, this,
-                [this, authority](const QString &, const QString &, const QString &) {
-                    advanceAuthorityEpoch(authority);
-                    ++m_refreshSerial;
-                    publishAvailability({});
+    if (m_sessionBus.isConnected()) {
+        const QString screenPower = QString::fromLatin1(ScreenPowerService);
+        m_screenPowerWatcher = new QDBusServiceWatcher(screenPower,
+            m_sessionBus, QDBusServiceWatcher::WatchForOwnerChange, this);
+        connect(m_screenPowerWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
+                [this, screenPower](const QString &, const QString &, const QString &owner) {
+                    if (cachedOwner(screenPower) == owner && m_ownerSerials.value(screenPower) != 0) {
+                        return;
+                    }
+                    noteOwner(screenPower, owner);
+                    verifyScreenPowerOwner();
                     scheduleRefresh();
                 });
-    };
-    if (m_sessionBus.isConnected()) {
-        m_screenPowerWatcher = new QDBusServiceWatcher(QStringLiteral("org.qindaqt.ScreenPower1"),
-            m_sessionBus, QDBusServiceWatcher::WatchForOwnerChange, this);
-        connect(m_screenPowerWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this, [this] { scheduleRefresh(); });
+        resolveInitialOwner(m_sessionBus, screenPower, screenPower);
         m_sessionBus.connect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
             QStringLiteral("AvailabilityChanged"), this, SLOT(screenPowerChanged(QDBusMessage)));
         m_sessionBus.connect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
@@ -172,6 +167,15 @@ void SessionActionsClient::stop()
     m_screenSaverWatcher = nullptr;
     m_logindWatcher = nullptr;
     m_sleepWatcher = nullptr;
+    // Fence in-flight start-up lookups and owner proofs of this run.
+    for (auto it = m_ownerSerials.begin(); it != m_ownerSerials.end(); ++it) {
+        ++it.value();
+    }
+    m_owners.clear();
+    m_screenPowerVerified.clear();
+    ++m_screenPowerCheck;
+    m_inFlightSerial = 0;
+    m_refreshAgain = false;
     publishAvailability({});
 }
 
@@ -180,28 +184,6 @@ void SessionActionsClient::refresh()
     if (m_running) {
         scheduleRefresh();
     }
-}
-
-void SessionActionsClient::scheduleRefresh()
-{
-    if (m_running && !m_refreshDebounce.isActive()) {
-        m_refreshDebounce.start();
-    }
-}
-
-QString SessionActionsClient::currentOwner(SessionAction action) const
-{
-    if (action == SessionAction::Lock) {
-        return serviceOwner(m_sessionBus, ScreenSaverService);
-    }
-    if (isSleepAction(action)) {
-        const auto owner = serviceOwner(m_sessionBus, SleepService);
-        return owner == serviceOwner(m_sessionBus, SessionService) ? owner : QString{};
-    }
-    if (action == SessionAction::Logout) {
-        return serviceOwner(m_sessionBus, SessionService);
-    }
-    return serviceOwner(m_systemBus, LogindService);
 }
 
 quint64 SessionActionsClient::authorityEpoch(SessionAction action) const noexcept

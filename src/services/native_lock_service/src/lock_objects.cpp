@@ -75,13 +75,15 @@ bool LockObjectBase::authorized() {
   if (!calledFromDBus())
     return false;
   const auto sender = message().service();
+  if (sender.startsWith(QLatin1Char(':')) && m_sameUser.contains(sender))
+    return true;
   auto query =
       QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
                                      QStringLiteral("/org/freedesktop/DBus"),
                                      QStringLiteral("org.freedesktop.DBus"),
                                      QStringLiteral("GetConnectionUnixUser"));
   query << sender;
-  const QDBusReply<uint> uid = m_bus.call(query, QDBus::Block, 250);
+  const QDBusReply<uint> uid = m_bus.call(query, QDBus::Block, 1000);
   if (!sender.startsWith(QLatin1Char(':')) || !uid.isValid() ||
       uid.value() != uint(geteuid())) {
     sendErrorReply(
@@ -89,6 +91,9 @@ bool LockObjectBase::authorized() {
         QStringLiteral("Caller is not a live same-user session peer"));
     return false;
   }
+  if (m_sameUser.size() >= 64)
+    m_sameUser.clear();
+  m_sameUser.insert(sender, true);
   return true;
 }
 void LockObjectBase::unsupported() {

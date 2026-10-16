@@ -21,12 +21,15 @@
 #include <QtDBus/QDBusConnection>
 
 #include "qindaqt/session_supervisor/polkit_agent_selection.h"
+#include <qindaqt/platform/recovery_backoff/recovery_backoff.h>
 
 #include "../src/activation_environment.h"
 #include "../src/resident_service_refresh.h"
+#include "../src/resident_unit_staleness.h"
 #include "../src/native_lock_composition.h"
 #include "../src/replaced_activation_owner.h"
 
+#include <chrono>
 #include <utility>
 
 using namespace QindaQt::SessionSupervisor;
@@ -131,8 +134,11 @@ int main(int argc, char *argv[])
     // AGENT-CONTRACT: must run after publishActivationEnvironment (so the
     // restarted unit reads the just-published environment) and before any
     // desktop consumer starts. See resident_service_refresh.h.
+    // ADR-0379: only units whose instance predates this login (the witnessed
+    // compositor's start) or runs a replaced executable are restarted.
     refreshResidentServices(QDBusConnection::sessionBus(),
-                            residentServiceRefreshUnits(), {}, activationScope);
+                            residentServiceRefreshUnits(), {}, activationScope,
+                            ResidentRefreshContext{processStartTicks(*compositorProcessId), {}});
     // Same boundary: an update may have replaced a D-Bus-activated service
     // that is still running from the previous login (replaced_activation_owner.h).
     static_cast<void>(retireReplacedActivationOwners(
@@ -191,6 +197,27 @@ int main(int argc, char *argv[])
     // share the supervisor's selected session owner and ordinary compositor
     // attachment. The lock path degrades closed without blocking login.
     NativeLockComposition nativeLock;
+    // AGENT-NOTE (ADR-0379): a failed first assembly (slow bus, compositor not
+    // yet answering) is retried with bounded backoff instead of leaving the
+    // whole login without a screen lock. The assembly makes bounded blocking
+    // daemon queries, so retries start at one second (doubling to 30 s).
+    QindaQt::Platform::Recovery::RecoveryBackoff nativeLockRetry(
+        {std::chrono::milliseconds{1'000}, std::chrono::milliseconds{30'000}});
+    QObject::connect(&nativeLockRetry, &QindaQt::Platform::Recovery::RecoveryBackoff::retry,
+                     &application, [&nativeLock, &nativeLockRetry] {
+                         QString retryError;
+                         if (nativeLock.start(&retryError, false)) {
+                             QTextStream(stderr) << QCoreApplication::applicationName()
+                                                 << ": native lock runtime recovered\n";
+                             nativeLockRetry.reset();
+                             return;
+                         }
+                         const auto delay = nativeLockRetry.schedule();
+                         QTextStream(stderr) << QCoreApplication::applicationName()
+                                             << ": native lock runtime still unavailable: "
+                                             << retryError << "; retrying in "
+                                             << delay.count() << " ms\n";
+                     });
     if (!nativeLock.start(&error, nativePowerExclusive)) {
         QTextStream(stderr) << QCoreApplication::applicationName()
                             << ": native lock runtime unavailable: " << error << '\n';
@@ -201,6 +228,7 @@ int main(int argc, char *argv[])
             supervisor.stop();
             return 2;
         }
+        nativeLockRetry.schedule();
     }
     QObject::connect(&application, &QCoreApplication::aboutToQuit,
                      &application, [&nativeLock] { nativeLock.stop(); });

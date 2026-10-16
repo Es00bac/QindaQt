@@ -330,6 +330,31 @@ class SecretServiceTest(unittest.TestCase):
         self.assertEqual(self.daemon.returncode,1)
         self.assertFalse((self.runtime/"keyring"/"control").exists())
 
+    def test_owner_liveness_is_event_driven_not_polled(self):
+        # ADR-0379: name and bus loss arrive as events. The superseded 250 ms
+        # GetNameOwner poll made about six daemon calls in this window.
+        daemon_address = DBusAddress("/org/freedesktop/DBus","org.freedesktop.DBus","org.freedesktop.DBus")
+        owner = self.connection.send_and_get_reply(new_method_call(
+            daemon_address,"GetNameOwner","s",("org.freedesktop.secrets",))).body[0]
+        monitor = subprocess.Popen(["dbus-monitor","--address",self.env["DBUS_SESSION_BUS_ADDRESS"],
+            "type='method_call',sender='%s'" % owner],stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,env=self.env)
+        try:
+            seen = b""
+            deadline = time.monotonic()+5
+            while b"NameLost" not in seen and time.monotonic()<deadline:
+                ready,_,_ = select.select([monitor.stdout],[],[],0.1)
+                if ready: seen += os.read(monitor.stdout.fileno(),65536)
+            self.assertIn(b"NameLost",seen)
+            time.sleep(1.5)
+            self.assertIsNone(self.daemon.poll())
+        finally:
+            monitor.terminate()
+            out = seen + monitor.communicate(timeout=5)[0]
+        driver_calls = [line for line in out.decode(errors="replace").splitlines()
+                        if "destination=org.freedesktop.DBus " in line and "sender="+owner+" " in line]
+        self.assertEqual(driver_calls,[])
+
     def test_sole_writer_on_independent_private_bus(self):
         self.collection()
         config = self.root/"second.conf"

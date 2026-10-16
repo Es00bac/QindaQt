@@ -7,6 +7,7 @@
 
 #include "qt_wayland_output_objects_p.h"
 
+#include <QtCore/QFile>
 #include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
@@ -62,6 +63,9 @@ class QtWaylandOutputManagementPort final : public QObject,
                                             public OutputManagementPort
 {
 public:
+    // Empty selects libwayland's WAYLAND_DISPLAY lookup.
+    explicit QtWaylandOutputManagementPort(QByteArray name = {}) : m_displayName(std::move(name)) {}
+
     void setObserver(OutputManagementObserver *observer) override
     {
         m_observer = observer;
@@ -73,7 +77,8 @@ public:
             return PortStartStatus::AlreadyStarted;
         }
         m_peerProcessId = 0;
-        m_display = wl_display_connect(nullptr);
+        m_display = wl_display_connect(
+            m_displayName.isEmpty() ? nullptr : m_displayName.constData());
         if (m_display == nullptr) {
             return PortStartStatus::ConnectionUnavailable;
         }
@@ -563,6 +568,7 @@ private:
     }
 
     OutputManagementObserver *m_observer = nullptr;
+    QByteArray m_displayName;
     wl_display *m_display = nullptr;
     wl_registry *m_registry = nullptr;
     std::unique_ptr<Management> m_management;
@@ -617,6 +623,11 @@ void ConfigurationProxy::kde_output_configuration_v2_failed()
 std::unique_ptr<OutputManagementPort> makeProductionOutputManagementPort()
 {
     return std::make_unique<QtWaylandOutputManagementPort>();
+}
+
+std::unique_ptr<OutputManagementPort> makeProductionOutputManagementPort(const QString &display)
+{
+    return std::make_unique<QtWaylandOutputManagementPort>(QFile::encodeName(display));
 }
 
 } // namespace QindaQt::DisplayWriter

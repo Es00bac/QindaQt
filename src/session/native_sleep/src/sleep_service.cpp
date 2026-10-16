@@ -4,6 +4,7 @@
 #include <QDBusError>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusReply>
 #include <QDBusServiceWatcher>
 #include <QPointer>
 namespace QindaQt::Session::NativeSleep {
@@ -23,9 +24,15 @@ SleepService::SleepService(QDBusConnection bus, SleepCoordinator &coordinator,
 SleepService::~SleepService() { stop(); }
 bool SleepService::start() {
   if (m_started) return true;
-  if (!m_bus.interface()) return false;
-  m_bus.interface()->setTimeout(250);
-  const auto owner = m_bus.interface()->serviceOwner(Session);
+  if (!m_bus.isConnected()) return false;
+  // AGENT-NOTE: one explicitly bounded query; the supervisor watcher below
+  // keeps ownership current afterwards. Never change the connection's shared
+  // interface timeout (ADR-0379).
+  auto query = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+      QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
+      QStringLiteral("GetNameOwner"));
+  query << Session;
+  const QDBusReply<QString> owner = m_bus.call(query, QDBus::Block, 1000);
   if (!owner.isValid() || owner.value() != m_bus.baseService() ||
       !m_bus.registerVirtualObject(Path, this)) return false;
   if (!m_bus.registerService(Service)) { m_bus.unregisterObject(Path); return false; }
@@ -85,7 +92,7 @@ bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnect
       QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
       QStringLiteral("GetConnectionUnixUser"));
   call.setArguments({message.service()});
-  auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 250), this);
+  auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 1000), this);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
       [this, watcher, generation, id, query, mode = *mode] {
     const QDBusPendingReply<quint32> reply = *watcher;
@@ -95,10 +102,11 @@ bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnect
     const auto denied = [this, query, id] {
       if (query) finishQuery(id, false); else finish(SleepResult::Refused);
     };
-    if (!m_bus.isConnected() || !m_bus.interface()) { denied(); return; }
-    const auto owner = m_bus.interface()->serviceOwner(Session);
-    if (!owner.isValid() || owner.value() != m_bus.baseService() || reply.isError() ||
-        reply.value() != m_uid) { denied(); return; }
+    // Supervisor ownership is watched: losing Session1 stops this service, so
+    // m_started already proves it without another daemon round trip.
+    if (!m_bus.isConnected() || reply.isError() || reply.value() != m_uid) {
+      denied(); return;
+    }
     if (query) {
       m_coordinator.queryCapability(mode, [self = QPointer<SleepService>(this), generation, id](bool capable) {
         if (self && self->m_started && generation == self->m_generation) self->finishQuery(id, capable);

@@ -25,7 +25,7 @@ target_sources(
             include/qindaqt/services/session_lock_state/session_lock_state_monitor.h
             include/qindaqt/services/session_lock_state/session_lock_transport.h
 )
-target_link_libraries(qindaqt_session_lock_state PUBLIC Qt6::Core Qt6::DBus PRIVATE $<BUILD_INTERFACE:qindaqt_compositor_names>)
+target_link_libraries(qindaqt_session_lock_state PUBLIC Qt6::Core Qt6::DBus QindaQt::RecoveryBackoff PRIVATE $<BUILD_INTERFACE:qindaqt_compositor_names>)
 target_compile_features(qindaqt_session_lock_state PUBLIC cxx_std_20)
 set_target_properties(qindaqt_session_lock_state PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_session_lock_state)

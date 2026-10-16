@@ -63,6 +63,27 @@ add_test(
     COMMAND qindaqt_session_safety_private_bus_tests
 )
 
+# ADR-0379: bounded Wayland display wait and recoverable logind delay.
+foreach(test IN ITEMS session_wayland_display session_safety_recovery)
+    qt_add_executable(qindaqt_display_runtime_${test}_tests
+        tst_${test}.cpp ../display_service/support/private_bus_test_support.h)
+    target_link_libraries(qindaqt_display_runtime_${test}_tests
+        PRIVATE QindaQt::DisplayRuntime QindaQt::CompositorNames QindaQt::RecoveryBackoff
+                Qt6::Core Qt6::DBus Qt6::Test)
+    target_compile_definitions(qindaqt_display_runtime_${test}_tests PRIVATE
+        QINDAQT_DBUS_DAEMON_EXECUTABLE="${QINDAQT_DISPLAY_RUNTIME_DBUS_DAEMON_EXECUTABLE}")
+    qindaqt_enable_warnings(qindaqt_display_runtime_${test}_tests)
+endforeach()
+add_test(NAME qindaqt.display-runtime-wayland-display-wait
+    COMMAND qindaqt_display_runtime_session_wayland_display_tests)
+add_test(NAME qindaqt.display-runtime-session-safety-recovery
+    COMMAND qindaqt_display_runtime_session_safety_recovery_tests)
+set_tests_properties(
+    qindaqt.display-runtime-wayland-display-wait
+    qindaqt.display-runtime-session-safety-recovery
+    PROPERTIES LABELS "service;display;private-dbus;isolated-runtime" TIMEOUT 30
+)
+
 add_test(
     NAME qindaqt.display-runtime-boundary
     COMMAND

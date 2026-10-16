@@ -164,7 +164,9 @@ Shutdown only to the still-current exact admitted unique owner, and disconnects
 that bus connection. A replacement that has not accepted attachment never
 receives Shutdown. See [ADR-0348](../adr/0348-reattach-keyring-after-owner-replacement.md).
 Bus loss or loss of Secret Service ownership also terminates the
-daemon. Source units use `PartOf=graphical-session.target`; that alone is
+daemon. Both are events since ADR-0379 — a name watcher and the bus's local
+`Disconnected` signal — replacing a 250 ms `GetNameOwner` poll; the supervisor's
+attachment batches use asynchronous owner/UID lookups. Source units use `PartOf=graphical-session.target`; that alone is
 insufficient because QindaQt does not activate that target. D-Bus activation
 and explicit supervisor ownership are the startup paths. Distribution
 `gnome-keyring-daemon` Exec entries are superseded only when this native
@@ -178,7 +180,11 @@ prefix and canonical slots0–4095; absolute paths, malformed names, symlinks,
 nonprivate runtime roots and peers that differ from the active native compositor
 bus PID/UID are rejected. The session and compositor unique-owner lineage,
 probe connection and kernel peer pidfd remain pinned. Owner loss or dead/socket
-lineage loss revokes in-flight approval. Every prompt gets a fresh validated
+lineage loss revokes in-flight approval. Since
+[ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+the retained selection then re-proves the compositor for the same display and
+binds a new lineage; prompts resume only after that full proof, and a different
+or missing compositor keeps them denied. Every prompt gets a fresh validated
 connection inherited as WAYLAND_SOCKET; no helper reconnects by pathname.
 Replacing the socket path after admission cannot substitute a different process.
 Failed metadata admission permanently disables inherited-display fallback;

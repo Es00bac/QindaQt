@@ -25,9 +25,9 @@ void SessionActionsClient::refreshAvailability()
     auto query = std::make_shared<RefreshQuery>();
     query->serial = serial;
 
-    const QString screenSaverOwner = serviceOwner(m_sessionBus, ScreenSaverService);
-    const QString sessionOwner = serviceOwner(m_sessionBus, SessionService);
-    const QString logindOwner = serviceOwner(m_systemBus, LogindService);
+    const QString screenSaverOwner = currentOwner(SessionAction::Lock);
+    const QString sessionOwner = currentOwner(SessionAction::Logout);
+    const QString logindOwner = currentOwner(SessionAction::Reboot);
     query->screenSaverEpoch = m_screenSaverEpoch;
     query->sessionEpoch = m_sessionEpoch;
     query->logindEpoch = m_logindEpoch;
@@ -39,9 +39,11 @@ void SessionActionsClient::refreshAvailability()
         + (sleepOwner.isEmpty() ? 0 : 2);
     if (query->outstanding == 0) {
         publishAvailability(query->availability);
+        refreshFinished();
         return;
     }
 
+    m_inFlightSerial = serial;
     m_refreshDeadline.start();
     QObject::disconnect(&m_refreshDeadline, nullptr, this, nullptr);
     connect(&m_refreshDeadline, &QTimer::timeout, this,
@@ -49,6 +51,7 @@ void SessionActionsClient::refreshAvailability()
                 if (m_running && query->serial == m_refreshSerial) {
                     ++m_refreshSerial;
                     publishAvailability(query->availability);
+                    refreshFinished();
                 }
             }, Qt::SingleShotConnection);
 
@@ -67,7 +70,7 @@ void SessionActionsClient::refreshAvailability()
                     // AGENT-GUARD: Name ownership alone does not prove that the
                     // standard /ScreenSaver lock interface exists.
                     query->availability.lock = !reply.isError()
-                        && serviceOwner(m_sessionBus, ScreenSaverService) == screenSaverOwner
+                        && currentOwner(SessionAction::Lock) == screenSaverOwner
                         && m_screenSaverEpoch == query->screenSaverEpoch;
                     completeRefresh(query);
                 });
@@ -86,7 +89,7 @@ void SessionActionsClient::refreshAvailability()
                         return;
                     }
                     query->availability.logout = !reply.isError() && reply.value()
-                        && serviceOwner(m_sessionBus, SessionService) == sessionOwner
+                        && currentOwner(SessionAction::Logout) == sessionOwner
                         && m_sessionEpoch == query->sessionEpoch;
                     completeRefresh(query);
                 });
@@ -129,7 +132,7 @@ void SessionActionsClient::refreshAvailability()
                     }
                     const bool admitted = !reply.isError()
                         && reply.value() == QStringLiteral("yes")
-                        && serviceOwner(m_systemBus, LogindService) == logindOwner
+                        && currentOwner(SessionAction::Reboot) == logindOwner
                         && m_logindEpoch == query->logindEpoch;
                     switch (action) {
                     case SessionAction::Suspend: query->availability.suspend = admitted; break;
@@ -150,6 +153,7 @@ void SessionActionsClient::completeRefresh(const std::shared_ptr<RefreshQuery> &
     if (query->outstanding == 0 && query->serial == m_refreshSerial) {
         m_refreshDeadline.stop();
         publishAvailability(query->availability);
+        refreshFinished();
     }
 }
 

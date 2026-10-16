@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-qt_add_executable(qindaqt_session_actions_tests tst_session_actions_client.cpp)
+qt_add_executable(qindaqt_session_actions_tests tst_session_actions_client.cpp
+    session_actions_fakes.h)
 target_link_libraries(
     qindaqt_session_actions_tests
     PRIVATE QindaQt::SessionActions Qt6::Core Qt6::DBus Qt6::Test
@@ -12,6 +13,24 @@ add_test(
 )
 set_tests_properties(
     qindaqt.session-actions-client
+    PROPERTIES
+        TIMEOUT 25
+        LABELS "session;service;dbus"
+        ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
+# ADR-0379: watcher-cached owners, coalesced refreshes, no absent-service polls.
+qt_add_executable(qindaqt_session_actions_bus_discipline_tests
+    tst_session_actions_bus_discipline.cpp session_actions_fakes.h)
+target_link_libraries(qindaqt_session_actions_bus_discipline_tests
+    PRIVATE QindaQt::SessionActions Qt6::Core Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_session_actions_bus_discipline_tests)
+add_test(
+    NAME qindaqt.session-actions-bus-discipline
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_session_actions_bus_discipline_tests>
+)
+set_tests_properties(
+    qindaqt.session-actions-bus-discipline
     PROPERTIES
         TIMEOUT 25
         LABELS "session;service;dbus"

@@ -4,6 +4,7 @@
 #include "qindaqt/services/session_lock_state/native_lock_state_monitor.h"
 #include <QDBusConnection>
 #include <QDBusContext>
+#include <QHash>
 #include <QVariantMap>
 namespace QindaQt::Services::NativeLock {
 class LockSnapshot final : public QObject {
@@ -38,6 +39,13 @@ protected:
   void request(bool nativeReply);
   QDBusConnection m_bus;
   ManualLockGateway &m_gateway;
+
+private:
+  // AGENT-NOTE: a bus daemon never reuses a unique name, so a same-user
+  // answer for one stays true for that name's lifetime. Caching it keeps
+  // frequent GetActive callers off the daemon (ADR-0379). Bounded; cleared
+  // wholesale when full.
+  QHash<QString, bool> m_sameUser;
 };
 class NativeLockObject final : public LockObjectBase {
   Q_OBJECT

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "src/session_supervisor/src/replaced_activation_owner.h"
 #include "src/session_supervisor/src/resident_service_refresh.h"
+#include "src/session_supervisor/src/resident_unit_staleness.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -10,6 +11,7 @@
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusObjectPath>
+#include <QtDBus/QDBusVariant>
 #include <QtDBus/QDBusVirtualObject>
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtTest>
@@ -19,6 +21,9 @@ namespace {
 
 // Fakes just enough of org.freedesktop.systemd1.Manager to observe
 // RestartUnit calls without a real systemd user manager or real services.
+// Every unit's MainPID defaults to this test process, which started before
+// any login marker a test passes (stale); tests map units to fresher
+// processes, to 0 (stopped) or to a missing unit.
 class FakeUserManager final : public QDBusVirtualObject {
 public:
     QStringList requestedUnits;
@@ -26,11 +31,34 @@ public:
     QString failingUnit;
     QString delayedRetireUnit;
     int delayedRetireMilliseconds = 300;
+    QHash<QString, quint32> mainPids;
+    QStringList missingUnits;
 
     QString introspect(const QString &) const override { return {}; }
 
     bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override
     {
+        if (message.member() == QStringLiteral("GetUnit")) {
+            const QString unit = message.arguments().value(0).toString();
+            if (missingUnits.contains(unit)) {
+                connection.send(message.createErrorReply(
+                    QStringLiteral("org.freedesktop.systemd1.NoSuchUnit"), unit));
+                return true;
+            }
+            const QString path = QStringLiteral("/org/freedesktop/systemd1/unit/u%1")
+                                     .arg(unitPaths.size());
+            unitPaths.insert(path, unit);
+            connection.send(message.createReply(QVariant::fromValue(QDBusObjectPath(path))));
+            return true;
+        }
+        if (message.member() == QStringLiteral("Get") && unitPaths.contains(message.path())) {
+            const QString unit = unitPaths.value(message.path());
+            const quint32 pid = mainPids.value(
+                unit, static_cast<quint32>(QCoreApplication::applicationPid()));
+            connection.send(message.createReply(
+                QVariant::fromValue(QDBusVariant(QVariant::fromValue(pid)))));
+            return true;
+        }
         if (message.member() != QStringLiteral("RestartUnit")) return false;
         const QString unit = message.arguments().value(0).toString();
         const QString mode = message.arguments().value(1).toString();
@@ -52,6 +80,26 @@ public:
             QVariant::fromValue(QDBusObjectPath(QStringLiteral("/job/1")))));
         return true;
     }
+
+private:
+    QHash<QString, QString> unitPaths;
+};
+
+// A process started after this test process: its start is "this login".
+struct LoginMarker {
+    QProcess process;
+    LoginMarker()
+    {
+        QTest::qWait(30); // at least one clock tick after the test process
+        process.start(QStringLiteral("sleep"), {QStringLiteral("60")});
+        process.waitForStarted();
+    }
+    ~LoginMarker()
+    {
+        process.kill();
+        process.waitForFinished(3000);
+    }
+    QString pid() const { return QString::number(process.processId()); }
 };
 
 // Stands up a standalone dbus-daemon on an explicit unix:path and registers
@@ -81,7 +129,8 @@ struct PrivateManagerBus {
             QStringLiteral("unix:path=") + socket, connectionName);
         if (!bus.isConnected()) return false;
         if (!bus.registerService(QStringLiteral("org.freedesktop.systemd1"))) return false;
-        return bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager);
+        return bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                         QDBusConnection::SubPath);
     }
 
     ~PrivateManagerBus()
@@ -106,7 +155,8 @@ private Q_SLOTS:
         QVERIFY(bus.isConnected());
         FakeUserManager manager;
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
 
         QProcess hung;
         hung.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
@@ -199,7 +249,8 @@ private Q_SLOTS:
         auto bus = QDBusConnection::sessionBus();
         FakeUserManager manager;
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
         QProcess publisher;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--private"), QStringLiteral("xdg-desktop-portal.service")});
@@ -222,7 +273,8 @@ private Q_SLOTS:
         QVERIFY(bus.isConnected());
         FakeUserManager manager;
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
 
         QProcess publisher;
         // No environment values are set here at all: this exercises only the
@@ -231,8 +283,10 @@ private Q_SLOTS:
         // Force the session-bus fallback lane: no private socket there, and
         // the fake manager owns the session-bus name. Production's native
         // lane is covered by the private-socket test below.
+        LoginMarker login;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--login-pid"), login.pid(),
                          QStringLiteral("qindaqt-test-resident-a.service"),
                          QStringLiteral("qindaqt-test-resident-b.service")});
         QVERIFY(publisher.waitForStarted());
@@ -269,8 +323,10 @@ private Q_SLOTS:
         QVERIFY(managerBus.bind());
 
         QProcess publisher;
+        LoginMarker login;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--private"), QStringLiteral("--socket"), managerBus.socket,
+                         QStringLiteral("--login-pid"), login.pid(),
                          QStringLiteral("qindaqt-test-resident-a.service"),
                          QStringLiteral("qindaqt-test-resident-b.service")});
         QVERIFY(publisher.waitForStarted());
@@ -295,7 +351,8 @@ private Q_SLOTS:
         FakeUserManager manager;
         manager.delayedRetireUnit = QStringLiteral("qindaqt-audio-service.service");
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
         QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Audio1")));
         QDBusMessage ownerQuery = QDBusMessage::createMethodCall(
             QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
@@ -308,8 +365,10 @@ private Q_SLOTS:
         QElapsedTimer elapsed;
         elapsed.start();
         QProcess publisher;
+        LoginMarker login;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--login-pid"), login.pid(),
                          QStringLiteral("qindaqt-audio-service.service")});
         QVERIFY(publisher.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
@@ -334,14 +393,17 @@ private Q_SLOTS:
         manager.delayedRetireUnit = QStringLiteral("qindaqt-audio-service.service");
         manager.delayedRetireMilliseconds = 2500;
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
         QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Audio1")));
 
         QElapsedTimer elapsed;
         elapsed.start();
         QProcess publisher;
+        LoginMarker login;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--login-pid"), login.pid(),
                          QStringLiteral("qindaqt-audio-service.service")});
         QVERIFY(publisher.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
@@ -361,11 +423,14 @@ private Q_SLOTS:
         FakeUserManager manager;
         manager.failingUnit = QStringLiteral("qindaqt-test-resident-a.service");
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
-        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
 
         QProcess publisher;
+        LoginMarker login;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
                         {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--login-pid"), login.pid(),
                          QStringLiteral("qindaqt-test-resident-a.service"),
                          QStringLiteral("qindaqt-test-resident-b.service")});
         QVERIFY(publisher.waitForStarted());
@@ -388,12 +453,88 @@ private Q_SLOTS:
     // other D-Bus-only Settings services remain outside this list.
     void residentUnitListNamesOnlyReviewedResidentServices()
     {
+        // ADR-0379 removed the retired Plasma portal backend.
         const QStringList units = QindaQt::SessionSupervisor::residentServiceRefreshUnits();
         QCOMPARE(units, QStringList({QStringLiteral("qindaqt-audio-service.service"),
                                      QStringLiteral("qindaqt-clipboard-host.service"),
                                      QStringLiteral("qindaqt-display-service.service"),
-                                     QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
                                      QStringLiteral("xdg-desktop-portal.service")}));
+    }
+
+    void stalenessRuleClassifiesInstances()
+    {
+        using namespace QindaQt::SessionSupervisor;
+        const auto state = [](quint32 pid, std::optional<quint64> ticks, bool replaced,
+                              std::optional<quint64> login) {
+            ResidentUnitInstance instance;
+            instance.unit = QStringLiteral("u.service");
+            instance.mainPid = pid;
+            instance.startTicks = ticks;
+            instance.executableReplaced = replaced;
+            return classifyResidentUnit(instance, login);
+        };
+        QCOMPARE(state(0, 5, true, 10), ResidentUnitState::NotRunning);
+        QCOMPARE(state(42, 5, false, 10), ResidentUnitState::PredatesLogin);
+        QCOMPARE(state(42, 10, false, 10), ResidentUnitState::StartedThisLogin);
+        QCOMPARE(state(42, 11, false, 10), ResidentUnitState::StartedThisLogin);
+        QCOMPARE(state(42, 11, true, 10), ResidentUnitState::ExecutableReplaced);
+        QCOMPARE(state(42, std::nullopt, false, 10), ResidentUnitState::Unobservable);
+        QCOMPARE(state(42, 5, false, std::nullopt), ResidentUnitState::Unobservable);
+        QVERIFY(residentUnitIsStale(ResidentUnitState::PredatesLogin));
+        QVERIFY(residentUnitIsStale(ResidentUnitState::ExecutableReplaced));
+        QVERIFY(!residentUnitIsStale(ResidentUnitState::StartedThisLogin));
+        QVERIFY(!residentUnitIsStale(ResidentUnitState::NotRunning));
+        QVERIFY(!residentUnitIsStale(ResidentUnitState::Unobservable));
+        const auto self = processStartTicks(QCoreApplication::applicationPid());
+        QVERIFY(self.has_value());
+        QVERIFY(!processExecutableReplaced(QCoreApplication::applicationPid()));
+    }
+
+    // Owner, 2026-10-16: the login refresh restarted xdg-desktop-portal 3.5 s
+    // after it started, killing the screen-capture broker. Only an instance
+    // that predates this login is restarted.
+    void restartsOnlyUnitsWhoseInstancePredatesThisLogin()
+    {
+        auto bus = QDBusConnection::sessionBus();
+        FakeUserManager manager;
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager,
+                                          QDBusConnection::SubPath));
+        LoginMarker login;
+        QProcess fresh;
+        fresh.start(QStringLiteral("sleep"), {QStringLiteral("60")});
+        QVERIFY(fresh.waitForStarted());
+        manager.mainPids.insert(QStringLiteral("fresh.service"),
+                                static_cast<quint32>(fresh.processId()));
+        manager.mainPids.insert(QStringLiteral("stopped.service"), 0);
+        manager.missingUnits.append(QStringLiteral("missing.service"));
+        QProcess publisher;
+        publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                        {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--login-pid"), login.pid(),
+                         QStringLiteral("stale.service"), QStringLiteral("fresh.service"),
+                         QStringLiteral("stopped.service"), QStringLiteral("missing.service")});
+        QVERIFY(publisher.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(publisher.exitCode(), 0);
+        QCOMPARE(manager.requestedUnits, QStringList{QStringLiteral("stale.service")});
+        const QByteArray log = publisher.readAllStandardError();
+        QVERIFY(log.contains("Kept resident session unit fresh.service: started in this login"));
+        QVERIFY(log.contains("Kept resident session unit stopped.service: not running"));
+        QVERIFY(log.contains("Restarting resident session unit stale.service: predates this login"));
+        // Without a login reference only replaced executables would restart.
+        manager.requestedUnits.clear();
+        QProcess unanchored;
+        unanchored.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                         {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                          QStringLiteral("stale.service")});
+        QVERIFY(unanchored.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(unanchored.state() == QProcess::NotRunning, 6000);
+        QVERIFY(manager.requestedUnits.isEmpty());
+        fresh.kill();
+        fresh.waitForFinished(3000);
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"), QDBusConnection::UnregisterTree);
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
     }
 };
 QTEST_GUILESS_MAIN(ResidentServiceRefreshTests)

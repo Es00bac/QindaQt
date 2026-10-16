@@ -28,6 +28,16 @@ produce a fail-neutral frame so an opted-out display never receives a tint. When
 exits successfully after observing that the service name is owned. Both paths
 share one owner and teardown behavior.
 
+D-Bus activation runs it in its own systemd user unit,
+`qindaqt-night-light-service.service` (`SystemdService=` in the activation
+file), not inside `dbus.service`'s cgroup where one OOM kill stops the whole
+session bus (ADR-0379). Settings1 and Display1 are awaited asynchronously by
+their clients, so their late arrival never fails startup. If the bus refuses or
+delays the service name, the process logs the actual D-Bus error (the old
+message ended in an empty "startup failed: ") and retries from 1 s doubling to
+4 s, five tries, inside the unit's 20 s start timeout. See
+[session resilience](session-resilience.md).
+
 ## Values and schedule
 
 The Settings1 keys are `display.nightLight.active` (false), `mode`

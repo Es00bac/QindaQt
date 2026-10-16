@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "sleep_test_support.h"
 using namespace SleepTest;
+// Counts Sleep1.Changed exactly as a shell client receives it on the bus.
+class ChangedCounter final : public QObject {
+  Q_OBJECT
+public:
+  explicit ChangedCounter(QDBusConnection bus) {
+    QVERIFY(bus.connect(QString(), QStringLiteral("/org/qindaqt/Sleep1"),
+        QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("Changed"), this, SLOT(changed())));
+  }
+  int count = 0;
+public Q_SLOTS:
+  void changed() { ++count; }
+};
 class SleepCoordinatorTests final : public QObject {
   Q_OBJECT
 private Q_SLOTS:
@@ -19,6 +31,7 @@ private Q_SLOTS:
   void dispatchedSleepTimeoutIsUncertainWithoutReplay();
   void facadeAuthenticatesActualCallerUid();
   void stoppedFacadeCannotLeaveLateSleepDispatch();
+  void changedFollowsRealAvailabilityOnly();
 };
 void SleepCoordinatorTests::exactOwnedRequestCancellationCannotCancelReplacement() {
   Fixture f; f.start();
@@ -140,6 +153,34 @@ void SleepCoordinatorTests::stoppedFacadeCannotLeaveLateSleepDispatch() {
   QVERIFY(!reply.arguments().first().toBool());
   f.logindBus.send(f.logind.deferredCan.createReply(QStringLiteral("yes")));
   QTest::qWait(100); QCOMPARE(f.logind.suspendCalls, 0);
+}
+void SleepCoordinatorTests::changedFollowsRealAvailabilityOnly() {
+  QList<bool> published; // outlives the fixture, whose stop() may still publish
+  Fixture f; f.start(); QTRY_VERIFY(f.coordinator.canSuspend());
+  ChangedCounter counter(f.attacker);
+  connect(&f.coordinator, &SleepCoordinator::availabilityChanged, &f.coordinator,
+          [&] { published.append(f.coordinator.canSuspend()); });
+  // Idle: nothing is re-announced and no retry is armed. The superseded
+  // 250 ms revoke loop emitted Sleep1.Changed eight times per second.
+  QTest::qWait(1200);
+  QCOMPARE(counter.count, 0); QVERIFY(published.isEmpty()); QVERIFY(!f.timers.anyActive());
+  // A simulated idle minute: elapse every injected timer once per second.
+  for (int second = 0; second < 60; ++second) {
+    for (auto *timer : std::as_const(f.timers.created)) timer->fire();
+    QCoreApplication::processEvents();
+  }
+  QCOMPARE(counter.count, 0); QVERIFY(published.isEmpty());
+  f.native.state(true, false); QTRY_COMPARE(f.monitor.state(), LockState::Locking);
+  f.native.state(true, true); QTRY_VERIFY(f.monitor.presentationProtected());
+  f.native.state(false, false); QTRY_COMPARE(f.monitor.state(), LockState::Unlocked);
+  f.setAdmitted(false); QTRY_VERIFY(!f.coordinator.canSuspend());
+  f.setAdmitted(true); QTRY_VERIFY(f.coordinator.canSuspend());
+  // Every emission is a real flip of canSuspend(), and the bus carried each
+  // exactly once.
+  QVERIFY(published.size() >= 4);
+  for (qsizetype i = 0; i < published.size(); ++i) QCOMPARE(published.at(i), i % 2 == 1);
+  QTRY_COMPARE(counter.count, int(published.size()));
+  QTest::qWait(300); QCOMPARE(counter.count, int(published.size()));
 }
 QTEST_GUILESS_MAIN(SleepCoordinatorTests)
 #include "tst_sleep_coordinator.moc"

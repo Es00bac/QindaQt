@@ -428,3 +428,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
 - [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.
+- [ADR-0379: Make session liveness event-driven and self-healing](0379-make-session-liveness-event-driven-and-self-healing.md) — Accepted watcher/kernel liveness, bounded retry and automatic re-attachment for the lock, sleep and session-supervision path; amends ADR-0305 and ADR-0094.

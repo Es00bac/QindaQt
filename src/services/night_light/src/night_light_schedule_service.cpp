@@ -6,6 +6,7 @@
 #include <qindaqt/services/display_protocol/display_types.h>
 
 #include <QDBusContext>
+#include <QDBusError>
 #include <QDBusMessage>
 #include <QDBusMetaType>
 #include <QDBusServiceWatcher>
@@ -249,9 +250,19 @@ ScheduleServiceStart NightLightScheduleService::start(QString *error)
         if (error) *error = QStringLiteral("could not subscribe to D-Bus owner lifecycle");
         return ScheduleServiceStart::Failed;
     }
-    if (!d->connection.registerService(kService))
-        return d->connection.lastError().name() == QLatin1String("org.freedesktop.DBus.Error.NameHasOwner")
+    if (!d->connection.registerService(kService)) {
+        const QDBusError failure = d->connection.lastError();
+        // AGENT-NOTE (ADR-0379): name the real failure. A blank reason left
+        // two login failures undiagnosable ("startup failed: ").
+        if (error) {
+            *error = failure.isValid()
+                ? QStringLiteral("could not own %1: %2: %3")
+                      .arg(kService, failure.name(), failure.message())
+                : QStringLiteral("could not own %1").arg(kService);
+        }
+        return failure.name() == QLatin1String("org.freedesktop.DBus.Error.NameHasOwner")
             ? ScheduleServiceStart::NameAlreadyOwned : ScheduleServiceStart::Failed;
+    }
     if (!d->connection.registerObject(kPath, &d->object, QDBusConnection::ExportAllSlots)) {
         d->connection.unregisterService(kService);
         if (error) *error = d->connection.lastError().message();

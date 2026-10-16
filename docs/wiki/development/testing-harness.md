@@ -4383,6 +4383,13 @@ daemon with QCoreApplication only: independently registered same-PID owners and
 forged signals cannot disclose state; accepted native Locked/Protected changes,
 denied attachment and bus loss are exercised. Its fixture exposes no RequestLock
 method. The native and legacy Qt transport tests share one isolated bus fixture.
+Since ADR-0379 both rows also prove that every failed, refused or timed-out probe
+and query retries on injected manual timers (0.25 s doubling) and that
+`refresh()` leaves Unknown at once after re-attachment.
+`qindaqt.session-native-lock-recovery` runs the real supervisor lock assembly on
+a private bus: `ScreenSaver.GetActive` keeps answering through a 700 ms frozen
+daemon, reports Unavailable on genuine compositor loss, answers again after the
+owner returns and manual lock is admitted, all without a new login.
 Run these focused rows with `QT_FATAL_WARNINGS=1` and `--no-tests=error`.
 
 These gates qualify the [readonly native API](../architecture/native-session-lock.md),
@@ -4412,8 +4419,13 @@ Settings UI, runtime policy, live lock/sleep or installed rollout.
 prove current caller session admission, actual owner/PID/kernel peer/PIDFD,
 optional independently accepted peer expectation, CLOEXEC transfer, unsafe path
 and symlink/name rejection, same-UID wrong process and pathname replacement,
-synchronous admission/owner loss, reentrant revocation and real owned-process
-death before owner watchers. No live compositor or session is contacted.
+synchronous admission loss, watcher-delivered owner loss, reentrant revocation
+and real owned-process death published by the kernel notifiers while the daemon
+is frozen. `qindaqt.compositor-attachment-recovery` (ADR-0379) freezes the
+private daemon with SIGSTOP to prove getters never wait for it, then drives
+genuine loss, automatic re-attachment, growing retry delays on injected manual
+timers, stalled re-proofs and every retirement rule. No live compositor or
+session is contacted.
 
 `qindaqt.wayland-idle-observation` uses a real private libwayland server/socketpair
 to prove actual protocol idled/resumed, elapsed-local-time non-authority, exact
@@ -4647,6 +4659,13 @@ mismatch, daemon UID, foreign signals, owner/peer/supervisor loss, unknown and
 incomplete protection, Lock/Unlock/LockedHint, resume rearming and protected
 Sleep1 dispatch are covered without host bus/power actions. SessionActions also
 proves native handoff and refuses suspend when only logind is available.
+ADR-0379 adds logind restart rebinding, transient binding and Inhibit retries on
+injected manual timers, admission events that release and re-acquire the delay,
+and a count of `Sleep1.Changed` on the bus that equals real `canSuspend()`
+flips and stays zero across an idle window.
+`qindaqt.session-actions-bus-discipline` runs `dbus-monitor` on the private
+broker to prove a 40-signal burst triggers at most two refreshes and no
+`GetNameOwner`, `NameHasOwner`, `GetConnectionUnixUser` or `CanScreenOff` call.
 These gates do not qualify installed logind delay timing, physical DRM output
 protection, PAM or hardware resume. Keep those separate managed runtime gates.
 

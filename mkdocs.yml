@@ -166,6 +166,7 @@ nav:
       - Testing harness: development/testing-harness.md
       - Native session lock: architecture/native-session-lock.md
       - Compositor attachment and idle: architecture/compositor-attachment.md
+      - Session resilience: architecture/session-resilience.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
       - Windows Program Runner: apps/windows-program-runner.md
@@ -577,3 +578,4 @@ nav:
       - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md
       - "0375: Package-owned Android collector bootstrap": adr/0375-bootstrap-the-package-owned-android-collector.md
       - "0376: Complete printing stack": adr/0376-ship-a-complete-printing-stack.md
+      - "0379: Event-driven self-healing session liveness": adr/0379-make-session-liveness-event-driven-and-self-healing.md

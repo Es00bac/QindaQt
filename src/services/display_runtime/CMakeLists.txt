@@ -11,7 +11,10 @@ target_sources(
     qindaqt_display_runtime
     PRIVATE
         src/qt_session_safety_port.cpp
+        src/qt_session_safety_port_p.h
         src/resident_display_runtime.cpp
+        src/session_wayland_display.cpp
+        src/session_wayland_display_p.h
         src/state_root.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -27,6 +30,7 @@ target_link_libraries(
         QindaQt::DisplayService
         QindaQt::DisplayTransaction
         QindaQt::DisplayWriter
+        QindaQt::RecoveryBackoff
         Qt6::Core
         Qt6::DBus
     PRIVATE QindaQt::SessionLockState

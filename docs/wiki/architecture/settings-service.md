@@ -6,6 +6,15 @@ session-bus name `org.qindaqt.Settings1` and is independently D-Bus activatable;
 it is not an essential `qindaqt-session` child and has no compositor,
 notification-presenter, or lock authority.
 
+Activation runs it in its own systemd user unit,
+`qindaqt-settings-service.service` (`SystemdService=` in
+`org.qindaqt.Settings1.service`), not inside `dbus.service`'s cgroup, where one
+OOM kill stops the whole session bus (ADR-0379,
+[session resilience](session-resilience.md)). The unit keeps the home
+read-only for the legacy PowerDevil/KScreenLocker imports and makes only
+`$XDG_CONFIG_HOME/qindaqt` (owner-only, `ConfigurationDirectory=`) writable for
+`settings-v2.json`.
+
 An activated process is bound to the exact session-bus connection that created
 its owner and epoch. Permanent local connection loss terminates that process
 promptly; it does not reconnect a repository whose in-memory authority belongs

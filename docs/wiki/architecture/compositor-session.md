@@ -712,13 +712,12 @@ bus endpoint.
 
 Republishing the environment only changes what *future* activations receive.
 A systemd user service that is already resident from a prior desktop and
-either opens its own direct Wayland connection or is itself a Wayland
-client — today `qindaqt-clipboard-host`, `qindaqt-display-service`, and
-the `plasma-xdg-desktop-portal-kde` backend (also a screencast/remote-desktop
-consumer) — or independently caches desktop-scoped environment or routing
-state at its own startup — today the `xdg-desktop-portal` frontend, which
-selects and caches which backend it routes to — keeps that stale connection
-or routing until the process itself restarts.
+either opens its own direct Wayland connection — today `qindaqt-clipboard-host`
+and `qindaqt-display-service` — or independently caches desktop-scoped
+environment or routing state at its own startup — today the
+`xdg-desktop-portal` frontend, which selects and caches which backend it routes
+to — keeps that stale connection or routing until the process itself restarts.
+The retired Plasma portal backend is no longer listed (ADR-0379).
 
 Audio1 is a narrow package-upgrade exception to that session-state rule: an
 install can replace its executable while the systemd user manager keeps the
@@ -737,16 +736,22 @@ that case but cannot guarantee its retirement.
 In a physical desktop, immediately after publishing the environment and before any desktop consumer
 starts, the supervisor calls `refreshResidentServices` with the fixed,
 reviewed unit list from `residentServiceRefreshUnits()`, in order (Audio1,
-then the portal backend before the frontend that routes to it), requesting a
-restart of each one through systemd's `RestartUnit` (routed through sd-bus
-exactly like the `SetEnvironment` publication above). Each restart request
-enqueues a job; it does not itself wait for the restart to finish. The
+clipboard host, Display1, then the portal frontend). For each unit it asks the
+user manager for the `MainPID` (routed through sd-bus exactly like the
+`SetEnvironment` publication above) and reads that process's `/proc` start
+time and executable link. Since
+[ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+it requests `RestartUnit` only when the instance is stale: it started before
+the witnessed compositor (this login) or its executable was replaced. A unit
+started during this login keeps running — restarting `xdg-desktop-portal`
+3.5 s after it started had killed the screen-capture broker — and a unit with
+no running process is left to D-Bus activation, which starts it with the
+published environment. Unreadable facts never cause a restart; each decision is
+logged ("Kept resident session unit … started in this login"). Each restart
+request enqueues a job; it does not itself wait for the restart to finish. The
 Audio1-specific owner wait closes the stale-package race before consumer
-startup. This starts a unit that has not yet run in this session and restarts
-one that already holds a stale socket or cached routing, without a full logout
-and without touching any other resident service or its preferences. Each
-D-Bus call is bounded and best-effort; a missing unit or transport failure is
-logged and does not stop the session. See
+startup. Each D-Bus call is bounded and best-effort; a missing unit or
+transport failure is logged and does not stop the session. See
 [ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md).
 
 Right after that refresh the supervisor retires any D-Bus-activated Settings1,
@@ -771,9 +776,10 @@ and restarts the PipeWire stack only when the daemon does not answer.
 
 The private-bus `qindaqt.session-resident-service-refresh` gate covers both the
 mechanism (against a fake user manager, including one unit failing to restart
-without stopping the request for the rest) and the fixed production list, and
-a second lane drives sd-bus `RestartUnit` calls against a fake manager on an
-explicit bus endpoint.
+without stopping the request for the rest), the stale/fresh/stopped/missing
+selection against real processes started around a login marker, and the fixed
+production list; a second lane drives sd-bus `GetUnit`, `MainPID` and
+`RestartUnit` calls against a fake manager on an explicit bus endpoint.
 
 ### Private desktop isolation
 
@@ -814,6 +820,22 @@ The fork server and native client/service boundaries are defined by
 [Native session locking](native-session-lock.md) and
 [ADR-0294](../adr/0294-native-session-lock-authority.md). Candidate server proof
 does not replace released greeter/PAM/session-service readiness.
+
+### Supervisor lock assembly recovery
+
+`NativeLockComposition` selects the supervisor's own Session1 connection (the
+unique name proves the process) and attaches to the compositor through the
+public [ordinary attachment](compositor-attachment.md). Its attachment
+admission reads Session1 ownership cached from a watcher and makes no bus call.
+Under [ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+every attachment change refreshes the native lock monitor and idle
+observation, re-evaluates logind sleep admission and, in native-exclusive power
+mode, resumes the native power composition after re-attachment. When the first
+assembly fails in the default power mode, `qindaqt-session` logs why and
+retries it from 1 s doubling to 30 s instead of running the whole login without
+a lock. The keyring and portal session lifetimes keep their bounded 30-attempt
+admission batches, but every owner and UID lookup in them is asynchronous. See
+[session resilience](session-resilience.md).
 
 ## Current accepted fork delivery receipt
 

@@ -1,0 +1,53 @@
+[Unit]
+Description=QindaQt Settings1 service
+Documentation=https://qindaqt.org/
+
+[Service]
+Type=dbus
+BusName=org.qindaqt.Settings1
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-settings-service
+Restart=on-failure
+RestartSec=1s
+# AGENT-NOTE (ADR-0379): Settings1 used to be spawned by D-Bus activation into
+# dbus.service's own cgroup. dbus.service has OOMPolicy=stop, so one OOM kill
+# there stopped the whole session bus on 2026-10-02. This unit gives Settings1
+# its own cgroup; org.qindaqt.Settings1.service names it with SystemdService=.
+# AGENT-NOTE: systemd's Type=dbus default TimeoutStartSec is 90s. On a
+# private session bus (ADR-0170) the user manager never observes this unit
+# acquiring BusName=, so it always waits out the full timeout before D-Bus
+# activation replaces it with an unmanaged process. 20s bounds that noisy
+# wait; it does not remove it -- the underlying Type=dbus/private-bus
+# mismatch is ADR-0170's, not this unit's alone.
+TimeoutStartSec=20
+NoNewPrivileges=true
+PrivateDevices=true
+# AGENT-NOTE: no PrivateTmp here. The QindaQt session runs its own session
+# bus with the socket under /tmp, and PrivateTmp gives the unit a private
+# tmpfs where that socket does not exist, so the service can never reach
+# its constructing bus and fails to start entirely.
+ProtectClock=true
+ProtectControlGroups=true
+# AGENT-GUARD: `true` would hide /run/user and the session-bus socket. The
+# home stays read-only (legacy powerdevilrc/kscreenlockerrc are only read);
+# ConfigurationDirectory= creates and binds $XDG_CONFIG_HOME/qindaqt, which
+# holds settings-v2.json and its QSaveFile temporaries, writable at 0700.
+ProtectHome=read-only
+ConfigurationDirectory=qindaqt
+ConfigurationDirectoryMode=0700
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+TasksMax=16
+UMask=0077

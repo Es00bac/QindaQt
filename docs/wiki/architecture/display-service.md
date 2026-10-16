@@ -245,9 +245,27 @@ delay descriptor is held, and no suspend is pending.
 the descriptor through a forward `Applying` request, then releases it as soon
 as that forward state ends; any later rollback remains covered by D5 recovery
 truth. Resume reacquires the descriptor before restoring safety. Session/system
-bus loss, logind owner replacement, failed inhibitor acquisition, invalid
-Wayland peer identity, and writer startup failure are fail-closed; terminal
-session-authority loss makes the process exit rather than reuse an old lineage.
+bus loss, logind owner replacement, invalid Wayland peer identity, and writer
+startup failure are fail-closed; terminal session-authority loss makes the
+process exit rather than reuse an old lineage.
+
+Since [ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
+two conditions are recoverable instead of terminal. A failed or slow `Inhibit`
+retries on the bounded [recovery schedule](session-resilience.md) while safety
+stays Unknown. A new `PrepareForSleep(true)` that arrives before the
+post-resume descriptor returns (back-to-back suspends) is tolerated: that
+sleep proceeds without the delay, safety is Unknown, a late grant is dropped,
+and the next resume requests a fresh descriptor. The superseded
+`sleep-without-delay-authority` exit ended Display1 on such suspends.
+
+The packaged process can be activated (KWin → NightLight → Display1) before
+`qindaqt-session` publishes the session's `WAYLAND_DISPLAY`. Instead of exiting
+with status 4 it waits, bounded: it uses its own `WAYLAND_DISPLAY` when that
+socket exists, otherwise the value the systemd user manager now publishes
+(`org.freedesktop.systemd1.Manager.Environment`), checking about ten times over
+roughly 15 s — inside the unit's 20 s start timeout — before exiting with the
+reason. The writer then connects to that explicit display name; nothing guesses
+or scans for a socket.
 All callbacks and collaborators remain on the constructing Qt thread. Stop
 detaches the safety observer, withdraws D2, and stops D4 so late replies cannot
 cross the lifetime boundary.

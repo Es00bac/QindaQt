@@ -4,6 +4,10 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QtDBus/QDBusConnectionInterface>
+#include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusObjectPath>
+#include <QtDBus/QDBusReply>
+#include <QtDBus/QDBusVariant>
 
 #include <systemd/sd-bus.h>
 
@@ -139,6 +143,80 @@ bool nativeRestartUnit(const QString &address, const QString &unitName,
 {
     return callManager(address, requiresBusHello, "RestartUnit", "ss",
                        {unitName, QStringLiteral("replace")});
+}
+
+namespace {
+constexpr auto NoSuchUnit = "org.freedesktop.systemd1.NoSuchUnit";
+
+std::optional<quint32> nativeUnitMainPid(const QString &address, const bool requiresBusHello,
+                                         const QString &unitName)
+{
+    sd_bus *bus = openManagerBus(address, requiresBusHello);
+    if (bus == nullptr) {
+        return std::nullopt;
+    }
+    sd_bus_set_method_call_timeout(bus, kManagerCallTimeoutUsec);
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    sd_bus_message *reply = nullptr;
+    const QByteArray unit = unitName.toUtf8();
+    std::optional<quint32> result;
+    int status = sd_bus_call_method(bus, "org.freedesktop.systemd1", "/org/freedesktop/systemd1",
+                                    "org.freedesktop.systemd1.Manager", "GetUnit", &error,
+                                    &reply, "s", unit.constData());
+    if (status < 0) {
+        if (sd_bus_error_has_name(&error, NoSuchUnit)) result = 0;
+    } else {
+        const char *path = nullptr;
+        quint32 pid = 0;
+        sd_bus_error_free(&error);
+        if (sd_bus_message_read(reply, "o", &path) >= 0 && path != nullptr
+            && sd_bus_get_property_trivial(bus, "org.freedesktop.systemd1", path,
+                                           "org.freedesktop.systemd1.Service", "MainPID",
+                                           &error, 'u', &pid) >= 0) {
+            result = pid;
+        }
+    }
+    sd_bus_error_free(&error);
+    if (reply != nullptr) sd_bus_message_unref(reply);
+    sd_bus_unref(bus);
+    return result;
+}
+
+std::optional<quint32> sessionBusUnitMainPid(const QDBusConnection &bus, const QString &unitName)
+{
+    QDBusMessage getUnit = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.systemd1"), QStringLiteral("/org/freedesktop/systemd1"),
+        QStringLiteral("org.freedesktop.systemd1.Manager"), QStringLiteral("GetUnit"));
+    getUnit << unitName;
+    const QDBusMessage unit = bus.call(getUnit, QDBus::Block, 2'000);
+    if (unit.type() == QDBusMessage::ErrorMessage) {
+        return unit.errorName() == QLatin1String(NoSuchUnit) ? std::optional<quint32>(0)
+                                                             : std::nullopt;
+    }
+    const auto path = unit.arguments().value(0).value<QDBusObjectPath>().path();
+    if (path.isEmpty()) return std::nullopt;
+    QDBusMessage get = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.systemd1"), path,
+        QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
+    get << QStringLiteral("org.freedesktop.systemd1.Service") << QStringLiteral("MainPID");
+    const QDBusReply<QDBusVariant> pid = bus.call(get, QDBus::Block, 2'000);
+    if (!pid.isValid()) return std::nullopt;
+    bool valid = false;
+    const uint value = pid.value().variant().toUInt(&valid);
+    return valid ? std::optional<quint32>(value) : std::nullopt;
+}
+}
+
+std::optional<quint32> unitMainPid(const SystemdManagerRoute &route,
+                                   const QDBusConnection &sessionBus, const QString &unitName)
+{
+    if (route.kind == SystemdManagerRoute::Kind::Native) {
+        return nativeUnitMainPid(route.address, route.requiresBusHello, unitName);
+    }
+    if (route.kind == SystemdManagerRoute::Kind::SessionBusName) {
+        return sessionBusUnitMainPid(sessionBus, unitName);
+    }
+    return std::nullopt;
 }
 
 } // namespace QindaQt::SessionSupervisor
