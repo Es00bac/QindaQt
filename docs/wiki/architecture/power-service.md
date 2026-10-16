@@ -479,6 +479,11 @@ battery-safe defaults ([ADR-0378](../adr/0378-ship-battery-safe-platform-power-d
 Settings1 lid choices take effect only when native exclusivity ships. Until then
 these drop-ins govern the hardware.
 
+`tools/diagnose-s2idle-wake` runs one timed suspend with kernel PM debugging on,
+then reports the wake IRQ, the wakeup sources and GPEs that fired, and amd_pmc
+s0i3 residency. Run it only with the owner's consent. It refuses to run until the
+loaded `systemd-suspend.service` carries the no-freeze override.
+
 The session bus survives an OOM kill of one helper that shares its cgroup
 ([ADR-0377](../adr/0377-keep-the-session-bus-alive-through-helper-oom-kills.md)).
 
