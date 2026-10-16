@@ -124,6 +124,13 @@ Multi-collection prompts wait for matching attempts before asking again. This
 preserves imported collection identities and item paths while giving a
 one-password login experience. See [ADR-0343](../adr/0343-unlock-matching-keyring-collections-with-one-password.md).
 
+Authentication helpers are serialized across callers. Waiting standard and
+portal unlock requests recheck the shared collection state before showing a
+helper, including after KDF pacing: a collection unlocked by another application
+or PAM needs no second password prompt. Each caller retains its own prompt and
+completion; explicit reveal still requires fresh authentication. A queued portal
+request cannot relock a collection it did not unlock when cancelled.
+
 ## Native control and session lifetime
 
 Keyring1 provides `ListCollections() -> a{sv}`, `ChangePassword(o,secret,secret)
@@ -198,6 +205,7 @@ The default helper is the compiled `qindaqt-keyring-prompt`. It creates a
 uses QindaTK password fields, confirmation for creation, accessible field
 names, Enter and Escape, and clears fields after each attempt. Offscreen or
 unsupported platforms fail closed; no ordinary password window fallback.
+A newly active prompt focuses its initial password field (or delete confirmation).
 A missing helper cancels, never creates an empty-password collection.
 The minimal factory is replaceable by later PK4 scripted/native policy.
 Helper arguments contain bounded non-secret request metadata only; approved

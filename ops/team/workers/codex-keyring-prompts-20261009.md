@@ -1,0 +1,18 @@
+# Codex keyring prompt repair
+
+- Status: available — laptop fix installed and verified; protected canonical integration awaits owner approval
+- Provider: OpenAI Codex
+- Base: `c05721d48388ce36512172ff6886f9ebd0ffea42` (fresh qinda `origin/main`)
+- Branch: `fix/keyring-prompts-20261009`
+- Worktree: `.cache/keyring-prompts-20261009`
+- Owns: the minimal keyring prompt/unlock correction, focused regression evidence, and affected keyring wiki documentation
+- Acceptance: establish the live cause; one login or first-use unlock must serve ordinary clients without repeated prompts; correct password-field focus; preserve source on qinda and install through Portage if necessary
+
+## Updates
+
+- 2026-10-10T01:58:00Z — Claimed the owner-requested minimal keyring repair. Existing checkout changes remain untouched. Both machines have exactly one native Secret Service provider; laptop has one persistent collection, desktop has three. Inspecting unlock requests, lock policy, and login integration before choosing a change.
+- 2026-10-10T02:06:00Z — Private three-client reproduction fails on installed daemon (two callers dismissed). Corrected helper serialization, stale unlock admission, queued portal cancellation, and activation focus in the isolated tree. Documentation links pass (551 pages), strict MkDocs passes. Automatic approval review rejected disabling idle/screen-lock relocking; requested explicit approval and left both settings unchanged. Focused target build in progress.
+- 2026-10-10T02:24:00Z — Owner confirmed laptop-only and explicitly approved session-lifetime unlock. Settings1 commit/readback and native policy confirm screen-lock relocking false, idle timeout zero, login unlocked. Peer review caught and rechecked the third-client queue drain; private shared-unlock/owner-cancel/matching-collection cases pass 3/3 in 12.656 seconds. Strict Release build passes after a two-line existing signalfd read correction; focus check passes 1/1, strengthening the focus-loss setup before final candidate freeze. R25 base signature and all 2,622 paths verified; preparing signed Portage R27 replacing only daemon/prompt. R26 remains an unreleased, superseded candidate.
+- 2026-10-10T02:55:32Z — Exact source a9c9768f4 and overlay e3b515d are independently accepted. Normal Portage signed R28 build/install both exit zero; full signature/embedded-recipe/2,622-path verification proves exactly daemon and prompt changed. Both installed file hashes match the signed image; live policy remains zero idle timeout/false screen relock and login unlocked. Original keyring PID is preserved, so queue code adopts at next login. Preserving signed artifacts on qinda and running one installed private-bus smoke before final handoff; no real secrets or prompts were used.
+- 2026-10-10T03:03:24Z — Installed-binary private three-client smoke passes 1/1 in 4.338 seconds; exactly one synthetic helper and all callers complete. Qinda has the exact signed gpkg SHA256 cc5fd4e7ea7a4e6bca40eeb0da7b12767997728509a860c32be6a8b793dc436f, source/base archives, and verification records. All work is preserved on dedicated source/overlay hub branches. Current unlocked process remains unchanged; new queue code adopts at next login. Available for a concrete keyring regression; no unrelated outcome claimed.
+- 2026-10-10T03:10:34Z — Automatic approval review rejected canonical source main/overlay master fast-forward pushes: integration branches are manager-owned and outside the current feature-worker scope. No canonical ref was changed. Requested explicit owner approval after completed installation/review/verification; accepted branches and signed artifacts remain preserved on qinda.

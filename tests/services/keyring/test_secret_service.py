@@ -10,10 +10,12 @@ import sys
 import tempfile
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 import xml.etree.ElementTree as ET
 import secretstorage
 from jeepney import DBusAddress, new_method_call, DBusErrorResponse, MessageType
 from secretstorage.util import DBusAddressWrapper
+from secretstorage.util import exec_prompt
 
 DAEMON = pathlib.Path(sys.argv.pop(1)).resolve()
 HELPER = pathlib.Path(__file__).with_name("scripted_prompt.py")
@@ -219,6 +221,28 @@ class SecretServiceTest(unittest.TestCase):
             time.sleep(0.05)
         self.assertFalse(imported.is_locked())
         self.assertEqual(list(imported.get_all_items())[0].get_secret(),b"preserved")
+
+    def test_concurrent_unlock_requests_share_one_password_prompt(self):
+        collection = secretstorage.create_collection(self.connection,"delayed-fixture","default")
+        item = collection.create_item("saved",{"service":"concurrent"},b"preserved")
+        collection.lock()
+        count = self.runtime/"prompt-count"
+        count.write_text("")
+        connections = [secretstorage.dbus_init() for _ in range(3)]
+        try:
+            prompts = [self.call("org.freedesktop.Secret.Service","/org/freedesktop/secrets",
+                       "Unlock","ao",[collection.collection_path],connection=connection)[1]
+                       for connection in connections]
+            with ThreadPoolExecutor(max_workers=3) as workers:
+                results = list(workers.map(lambda request: exec_prompt(*request,timeout=8),
+                                          zip(connections,prompts)))
+            self.assertEqual([result[0] for result in results],[False,False,False])
+            self.assertEqual(count.read_text().splitlines(),["prompt"])
+            self.assertFalse(collection.is_locked())
+            self.assertEqual(item.get_secret(),b"preserved")
+        finally:
+            for connection in connections:
+                connection.close()
 
     def test_consolidation_copies_before_retiring_and_survives_restart(self):
         login = self.collection()

@@ -5,6 +5,7 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickWindow>
+#include <QQuickItem>
 #include <QSignalSpy>
 #include <QtTest>
 #include <unistd.h>
@@ -65,6 +66,31 @@ private Q_SLOTS:
         QVERIFY(!prompt.approve("synthetic","different"));
         QVERIFY(!prompt.approve("",""));
         QCOMPARE(cleared.size(),2);
+    }
+    void activatedPromptRestoresPasswordFocus() {
+        PromptController prompt;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty("prompt",&prompt);
+        QQmlComponent component(&engine,QUrl::fromLocalFile(QStringLiteral(QINDAQT_KEYRING_PROMPT_QML)));
+        std::unique_ptr<QObject> root(component.create());
+        QVERIFY2(root != nullptr,qPrintable(component.errorString()));
+        auto *window = qobject_cast<QQuickWindow *>(root.get());
+        auto *password = root->findChild<QQuickItem *>("keyringPasswordField");
+        auto *button = root->findChild<QQuickItem *>("keyringApproveButton");
+        QVERIFY(window); QVERIFY(password); QVERIFY(button);
+        window->show(); window->requestActivate();
+        QTRY_VERIFY(window->isActive());
+        QTRY_VERIFY(password->hasActiveFocus());
+        password->setProperty("text",QStringLiteral("synthetic"));
+        button->forceActiveFocus();
+        QTRY_VERIFY(button->hasActiveFocus());
+        QQuickWindow other;
+        other.show(); other.requestActivate();
+        QTRY_VERIFY(other.isActive());
+        QTRY_VERIFY(!window->isActive());
+        window->requestActivate();
+        QTRY_VERIFY(window->isActive());
+        QTRY_VERIFY(password->hasActiveFocus());
     }
 };
 QTEST_MAIN(KeyringPromptTest)

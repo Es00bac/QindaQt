@@ -10,6 +10,12 @@ Window {
     color: "transparent"
     title: qsTr("Passwords & Keys")
     onClosing: prompt.cancel()
+    function focusInitialField() {
+        if (prompt.confirming) approveButton.forceActiveFocus()
+        else if (prompt.changing) oldPassword.forceActiveFocus()
+        else password.forceActiveFocus()
+    }
+    onActiveChanged: { if (active) focusInitialField() }
     Rectangle {
         anchors.fill: parent
         color: Tk.Theme.color.bg
@@ -75,6 +81,7 @@ Window {
                     Layout.alignment: Qt.AlignRight
                     Tk.Button { text: qsTr("Cancel"); onClicked: prompt.cancel() }
                     Tk.Button {
+                        id: approveButton
                         objectName: "keyringApproveButton"
                         Component.onCompleted: { if (prompt.confirming) forceActiveFocus() }
                         text: prompt.confirming ? qsTr("Delete") : prompt.changing ? qsTr("Change password") : prompt.revealing ? qsTr("Reveal") : prompt.creation ? qsTr("Create") : qsTr("Unlock")
@@ -87,6 +94,6 @@ Window {
     }
     Connections {
         target: prompt
-        function onClearFields() { oldPassword.clear(); password.clear(); confirmation.clear(); password.forceActiveFocus() }
+        function onClearFields() { oldPassword.clear(); password.clear(); confirmation.clear(); root.focusInitialField() }
     }
 }
