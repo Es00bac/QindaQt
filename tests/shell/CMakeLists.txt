@@ -232,6 +232,7 @@ if(TARGET qindaqt-shell)
     qindaqt_enable_warnings(qindaqt_catalog_paths_tests)
     add_test(NAME qindaqt.shell-catalog-paths COMMAND qindaqt_catalog_paths_tests)
 
+    include("${CMAKE_CURRENT_LIST_DIR}/catalog_merge_e2e.cmake")
 
     qt_add_executable(
         qindaqt_shell_startup_preferences_tests

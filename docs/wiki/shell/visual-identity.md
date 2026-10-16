@@ -66,6 +66,10 @@ a color theme pairs with and the user may swap.
 | Qinda Classic Grey | Bevelled greys, navy title bar (Program Groups) | Inline: bevel squares on the right; minimize rolls up to an icon |
 | Qinda Graphite | Mid greys, black title bar (Workspace Dock) | Inline: bold grey squares on the right |
 
+The shell finds themes by merging every XDG data directory, user last, so a
+user directory can add or override a theme by id but can never hide the
+installed set ([Layout profiles](layout-profiles.md), "Catalog directories").
+
 The six schema v1 themes keep their authored chrome and paint every surface
 opaque. Text never sits on a material the contrast gate has not checked:
 QST raises a surface's opacity until both text roles pass over black and

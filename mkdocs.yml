@@ -580,3 +580,4 @@ nav:
       - "0390: Snapshot revisions out of task rows": adr/0390-keep-snapshot-revisions-out-of-retained-task-rows.md
       - "0391: Present controllers only while visible": adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md
       - "0392: Memoised icon availability": adr/0392-memoise-icon-availability-beside-the-uncached-locator.md
+      - "0393: Merge XDG catalog directories": adr/0393-merge-every-xdg-data-directory-for-shell-catalogs.md

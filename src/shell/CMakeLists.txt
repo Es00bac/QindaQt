@@ -230,6 +230,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shelldevelopmentevidence.h
         runtime/shellruntimeapplication.cpp
         runtime/shellruntimeapplication_applets.cpp
+        runtime/shellruntimeapplication_catalogs.cpp
         runtime/shellruntimeapplication_desktopmenu.cpp
         runtime/shellruntimeapplication_development.cpp
         runtime/shellruntimeapplication_surfaces.cpp

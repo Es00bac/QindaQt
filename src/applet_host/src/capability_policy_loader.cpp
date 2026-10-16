@@ -10,6 +10,8 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 
+#include <algorithm>
+
 namespace QindaQt::AppletHost {
 namespace {
 
@@ -27,6 +29,50 @@ CapabilityPolicyLoadResult CapabilityPolicyLoader::fromFile(const QString &path)
         return failure(path, file.errorString());
     }
     return fromJson(file.readAll(), path);
+}
+
+CapabilityPolicyLoadResult CapabilityPolicyLoader::fromFiles(const QStringList &paths,
+                                                              QStringList *skipped)
+{
+    if (paths.isEmpty()) {
+        return failure(QStringLiteral("capability policy"),
+                       QStringLiteral("no policy file was found"));
+    }
+    CapabilityPolicyLoadResult base = fromFile(paths.constFirst());
+    if (!base.ok) {
+        return base;
+    }
+    CapabilityPolicy merged = base.policy;
+    for (qsizetype index = 1; index < paths.size(); ++index) {
+        const CapabilityPolicyLoadResult layer = fromFile(paths.at(index));
+        if (!layer.ok) {
+            if (skipped != nullptr) {
+                skipped->append(layer.error);
+            }
+            continue;
+        }
+        merged.auditedBuiltinDefault = layer.policy.auditedBuiltinDefault;
+        merged.thirdPartyDefault = layer.policy.thirdPartyDefault;
+        for (const CapabilityRule &rule : layer.policy.rules) {
+            const auto existing = std::find_if(
+                merged.rules.begin(), merged.rules.end(),
+                [&rule](const CapabilityRule &candidate) {
+                    return candidate.trust == rule.trust
+                        && candidate.packageId == rule.packageId
+                        && candidate.capability == rule.capability;
+                });
+            if (existing == merged.rules.end()) {
+                merged.rules.append(rule);
+            } else {
+                *existing = rule;
+            }
+        }
+    }
+    const PolicyValidation validation = merged.validate();
+    if (!validation.isValid()) {
+        return failure(paths.join(QLatin1Char(':')), validation.summary());
+    }
+    return {.ok = true, .policy = merged, .error = {}};
 }
 
 CapabilityPolicyLoadResult CapabilityPolicyLoader::fromJson(const QByteArray &json,

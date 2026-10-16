@@ -318,6 +318,9 @@ private:
     // Catalog directories captured at startup for live layout adoption; the
     // user store participates last, so Apply's saved copy wins on reload.
     QStringList m_profileCatalogDirectories;
+    // Theme catalog directories, low to high precedence; named by the saved
+    // theme fallback warning so a shadowing directory is visible in the log.
+    QStringList m_themeCatalogDirectories;
     bool m_profileLockedByCli = false;
     QFileSystemWatcher m_profileStoreWatch;
     QTimer m_profileAdoptDebounce;
