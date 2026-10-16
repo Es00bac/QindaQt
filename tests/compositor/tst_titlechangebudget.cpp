@@ -317,6 +317,7 @@ class TitleChangeBudgetTest final : public QObject
 
 private Q_SLOTS:
     void spinnerTitleStaysWithinTheBudget();
+    void titleUpdatesRefuseAnythingButText();
 };
 
 void TitleChangeBudgetTest::spinnerTitleStaysWithinTheBudget()
@@ -350,6 +351,46 @@ void TitleChangeBudgetTest::spinnerTitleStaysWithinTheBudget()
     QCOMPARE(before.fullFrameRenders, quint64(100));
     QCOMPARE(before.taskFactsSamples, 200);
     QVERIFY(after.uploadedBytes * 30 < before.uploadedBytes);
+}
+
+// KWinChromeManager::updateTitles skips topology validation, so it must
+// never let geometry, focus or tab structure through.
+void TitleChangeBudgetTest::titleUpdatesRefuseAnythingButText()
+{
+    const auto container = terminalContainer();
+    QString error;
+    auto topology = Hybrid::WindowTopology::create({}, {container}, 7, &error);
+    QVERIFY2(topology, qPrintable(error));
+    const QHash<QString, QString> titles{{TerminalId, QStringLiteral("a")},
+                                         {EditorId, QStringLiteral("b")}};
+    RasterOverlayFactory factory(false);
+    KWinChromeManager chrome(factory);
+    const auto published = planFor(container, titles);
+    QVERIFY2(chrome.updateFromSnapshot(*topology, {{ContainerId, published}}, {}, &error),
+             qPrintable(error));
+
+    auto moved = published;
+    moved.outerFrame.translate(10.0, 0.0);
+    QVERIFY(!chrome.updateTitles(ContainerId, moved, &error));
+    QVERIFY(error.contains(QStringLiteral("more than text")));
+    auto refocused = published;
+    refocused.containerFocused = false;
+    QVERIFY(!chrome.updateTitles(ContainerId, refocused, &error));
+    auto retabbed = published;
+    retabbed.tabs[1].rect.translate(5.0, 0.0);
+    QVERIFY(!chrome.updateTitles(ContainerId, retabbed, &error));
+    QVERIFY(!chrome.updateTitles(QStringLiteral("unknown"), published, &error));
+    QCOMPARE(chrome.plan(ContainerId)->outerFrame, published.outerFrame);
+
+    auto retitled = published;
+    retitled.tabs[0].title = QStringLiteral("⠙ Claude Code");
+    const quint64 bandRendersBefore = factory.raster->counters().bandRenders;
+    QVERIFY2(chrome.updateTitles(ContainerId, retitled, &error), qPrintable(error));
+    QCOMPARE(chrome.plan(ContainerId)->tabs[0].title, QStringLiteral("⠙ Claude Code"));
+    QCOMPARE(factory.raster->counters().bandRenders, bandRendersBefore + 1);
+    // An unchanged title is accepted and repaints nothing.
+    QVERIFY(chrome.updateTitles(ContainerId, retitled, &error));
+    QCOMPARE(factory.raster->counters().bandRenders, bandRendersBefore + 1);
 }
 
 QTEST_MAIN(TitleChangeBudgetTest)
