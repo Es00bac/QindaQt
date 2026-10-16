@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# AGENT-GUARD: nested rows in compositor/, services/portal/* and
+# services/keyring/journey pass QINDAQT_KWIN_WAYLAND to add_test() when they
+# register. Find it before any subdirectory: otherwise the first configure of a
+# fresh tree registers those rows with an empty compositor path ("pinned KWin
+# 6.6.6 unavailable") until CMake happens to run again. session/ repeats the
+# lookup with its ADR-0291 note; the cached result makes that a no-op.
+find_program(QINDAQT_KWIN_WAYLAND NAMES qindaqt-kwin kwin_wayland)
+
 add_subdirectory(core)
 add_subdirectory(workspaces)
 add_subdirectory(workspaces_ui)
