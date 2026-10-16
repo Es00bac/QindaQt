@@ -99,8 +99,11 @@ and crash-black recovery on the compositor-created connection.
 
 The owned native worker client bounds framing, handles partial writes, accepts
 only its current token/result plus normal worker exit, and kills its own child
-at the whole-attempt deadline even inside a blocked PAM module. Cancellation
-invalidates the controller token before child termination. After authentication
+at the 90 s whole-attempt deadline even inside a blocked PAM module, reporting
+`TimedOut`. Every abort kills the child before closing the channel, so a
+cancelled or abandoned attempt never reaches PAM's failure path (see
+[Lock greeter lifecycle](lock-greeter.md#timeouts-and-pam_faillock)).
+Cancellation invalidates the controller token before child termination. After authentication
 and account approval, the worker invokes the optional handle-bound keyring PAM
 session notification, closes it and ends PAM while its conversation is alive,
 then reports approval. Keyring failure permits its later prompt fallback; it
@@ -119,9 +122,10 @@ The locker does not change passwords or create another login/logind session.
 
 A missing named service can fall back to `/etc/pam.d/other`. Gentoo's deny-only
 fallback returns authentication denial without asking for a password. The greeter
-then has no pending response and hides its credential field; launching the
-executable, acquiring a lock role and submitting a frame do not establish prompt
-readiness. The `lock.worker-channel` private-confdir regression covers this exact
+then has no pending response: it reports that authentication was refused before
+asking for a password (its credential field is never hidden) and only an explicit
+Enter retries; launching the executable, acquiring a lock role and submitting a
+frame do not establish prompt readiness. The `lock.worker-channel` private-confdir regression covers this exact
 missing-service/no-conversation failure independently of the host PAM tree.
 Its explicit synthetic service row proves a secret prompt followed by native
 worker authentication and account approval.
@@ -137,16 +141,21 @@ policy, cached credential or reported protected frame replaces that proof.
 
 The candidate `src/lock_greeter` composition root constructs a real QtQuick
 view for each physical output. Each view obtains the native standard lock role
-before loading/showing its compiled QML. A role or QML load failure exits the
-locker and preserves the compositor's black/input/capture fence; there is no
-ordinary window or layer-shell fallback. Output removal deletes its view before
-Qt can move it to another output. The QindaTK prompt displays a clock, real-UID
+before loading/showing its compiled QML. A role or QML load failure leaves that
+output covered by the compositor's black/input/capture fence and is retried with
+bounded backoff while the other outputs stay locked; there is no ordinary window
+or layer-shell fallback. The locker ends only when the lock ends, and logs why.
+Output removal deletes its view before Qt can move it to another output. The
+prompt's lifecycle (PAM starts on the first key, click or touch, never at lock
+time, and a failure or timeout returns to a ready field) is owned by
+[Lock greeter lifecycle](lock-greeter.md). The QindaTK prompt displays a clock, real-UID
 account name, bounded PAM prompt/status and password field, plus the compositor's
 actual current XKB layout name. All views clear credential fields together.
 
 The native controller receives lock state solely from its borrowed protocol
-client and authentication solely from its owned worker. Its QML-facing methods
-are begin, respond and cancel; protocol/worker objects are never exposed to QML.
+client and authentication solely from its owned worker, through two narrow ports.
+Its QML-facing methods are input notification, submit, respond, begin and cancel;
+protocol/worker objects are never exposed to QML.
 The only authenticated-unlock call site consumes the coordinator's current
 epoch/request approval. Server sync completes before the locker quits.
 
