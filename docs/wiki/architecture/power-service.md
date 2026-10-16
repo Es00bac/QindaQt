@@ -463,6 +463,25 @@ activation API signatures; retry exhaustion; and simultaneous-supervisor
 convergence. Physical devices, polkit subjects, suspend/resume, DDC/CI, and
 hardware hotkeys remain release evidence.
 
+## Platform defaults while native policy is not exclusive
+
+Installed builds keep Power1's native lid, idle and critical policies off, so
+logind and UPower act. The `sys-power/qindaqt-power-defaults` package supplies
+battery-safe defaults ([ADR-0378](../adr/0378-ship-battery-safe-platform-power-defaults.md)):
+
+- a short power-button press suspends, and a long press powers off;
+- a closed lid on battery suspends, then hibernates below 5% battery or after
+  90 minutes;
+- on AC the laptop stays suspended, and a docked lid is ignored;
+- user sessions are not frozen during sleep, so FUSE network locations cannot
+  hang suspend.
+
+Settings1 lid choices take effect only when native exclusivity ships. Until then
+these drop-ins govern the hardware.
+
+The session bus survives an OOM kill of one helper that shares its cgroup
+([ADR-0377](../adr/0377-keep-the-session-bus-alive-through-helper-oom-kills.md)).
+
 ## Non-claims
 
 This contract proves production adapter behavior only against injected private

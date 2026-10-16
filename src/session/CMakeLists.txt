@@ -88,3 +88,11 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
     COMPONENT QindaQt
 )
+
+# Session-bus hardening (ADR-0377): one OOM-killed helper inside the user
+# dbus.service cgroup must not stop the whole session bus.
+install(
+    FILES "${PROJECT_SOURCE_DIR}/data/session/bus/qindaqt-session-bus.conf"
+    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}/dbus.service.d"
+    COMPONENT QindaQt
+)
