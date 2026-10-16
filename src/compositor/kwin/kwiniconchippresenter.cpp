@@ -98,10 +98,14 @@ bool KWinIconChipPresenter::publish(const QString &windowId,
 
 void KWinIconChipPresenter::setPointerHover(std::optional<IconChipPointerHit> hit)
 {
-    if (hit && (!hit->isValid() || !m_entries.contains(hit->windowId))) {
-        hit.reset();
+    // AGENT-NOTE: emplace/reset rather than reset-then-move-assign. GCC 15 at
+    // -O3 reports the optional move-assignment of a just-reset value as
+    // maybe-uninitialized, which -Werror turns into a failed release build.
+    if (hit && hit->isValid() && m_entries.contains(hit->windowId)) {
+        m_hover.emplace(std::move(*hit));
+    } else {
+        m_hover.reset();
     }
-    m_hover = std::move(hit);
     for (auto &[windowId, entry] : m_entries) {
         const bool hovered = m_hover && m_hover->windowId == windowId;
         const bool closeHovered = hovered
