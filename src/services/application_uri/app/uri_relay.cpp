@@ -44,7 +44,10 @@ bool launch(const QJsonObject &object) {
     const pid_t child = fork();
     if (child == 0) {
         close(errors[0]);
-        auto fail = [&] { const int code = errno ? errno : EINVAL; write(errors[1], &code, sizeof(code)); _exit(2); };
+        // Best effort: the 4-byte report fits the empty pipe atomically and can fail only once the
+        // parent has stopped reading. glibc marks write() warn_unused_result; strict builds reject a bare call.
+        auto fail = [&] { const int code = errno ? errno : EINVAL;
+                          [[maybe_unused]] const ssize_t reported = write(errors[1], &code, sizeof(code)); _exit(2); };
         if (setsid() < 0) fail();
         const pid_t grandchild = fork(); if (grandchild < 0) fail(); if (grandchild > 0) _exit(0);
         if (changeDirectory && chdir(directoryBytes) != 0) fail();
