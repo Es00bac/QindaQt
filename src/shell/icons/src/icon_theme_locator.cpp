@@ -14,23 +14,6 @@ namespace QindaQt::Shell::Icons
 namespace
 {
 
-[[nodiscard]] int clampedSize(int size)
-{
-    if (size < kMinIconLogicalSize || size > kMaxIconLogicalSize) {
-        return qBound(kMinIconLogicalSize, size, kMaxIconLogicalSize);
-    }
-    return size;
-}
-
-[[nodiscard]] double clampedScale(double scale)
-{
-    if (!(scale >= kMinIconScale) || scale > kMaxIconScale) {
-        // NaN and non-finite inputs land on the documented default.
-        return scale == scale && scale > kMaxIconScale ? kMaxIconScale : kMinIconScale;
-    }
-    return scale;
-}
-
 [[nodiscard]] int parsePositiveInt(const QString &line, int fallback)
 {
     const qsizetype separator = line.indexOf(QLatin1Char('='));
@@ -75,8 +58,8 @@ QString IconThemeLocator::locate(const QString &iconName, int size, double scale
     if (!isAcceptableIconName(iconName)) {
         return {};
     }
-    const int target = clampedSize(size);
-    const double effectiveScale = clampedScale(scale);
+    const int target = normalizedSize(size);
+    const double effectiveScale = normalizedScale(scale);
 
     QStringList names;
     if (symbolic && !iconName.endsWith(QLatin1String("-symbolic"))) {
@@ -112,6 +95,20 @@ bool IconThemeLocator::hasIcon(const QString &iconName, int size, double scale,
                                bool symbolic) const
 {
     return !locate(iconName, size, scale, symbolic).isEmpty();
+}
+
+int IconThemeLocator::normalizedSize(int size)
+{
+    return qBound(kMinIconLogicalSize, size, kMaxIconLogicalSize);
+}
+
+double IconThemeLocator::normalizedScale(double scale)
+{
+    if (!(scale >= kMinIconScale) || scale > kMaxIconScale) {
+        // NaN and non-finite inputs land on the documented default.
+        return scale == scale && scale > kMaxIconScale ? kMaxIconScale : kMinIconScale;
+    }
+    return scale;
 }
 
 bool IconThemeLocator::isAcceptableIconName(const QString &iconName)

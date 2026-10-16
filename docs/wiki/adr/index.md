@@ -428,3 +428,6 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0375: Bootstrap the package-owned Android collector](0375-bootstrap-the-package-owned-android-collector.md) — Accepted concrete native helper/session/recipe composition and dependency-qualified setup menu; guest facts remain unavailable.
 - [ADR-0376: Ship a complete printing stack](0376-ship-a-complete-printing-stack.md) — Accepted Portage dependency and activation default; physical-device qualification remains separate.
+- [ADR-0390: Keep snapshot revisions out of retained task-list rows](0390-keep-snapshot-revisions-out-of-retained-task-rows.md) — Accepted `volatileRoles` on `KeyedRowModel` and a facade-level `generationRevision`; a title change is one row, one `dataChanged`.
+- [ADR-0391: Present shell search and dock controllers only while visible or changed](0391-present-shell-search-and-dock-controllers-only-while-visible.md) — Accepted counted presentation lease for command search and skip-if-unchanged Quick Launch and Active Application.
+- [ADR-0392: Memoise icon availability beside the uncached locator](0392-memoise-icon-availability-beside-the-uncached-locator.md) — Accepted bounded expiring yes/no memo for presentation hints only; the locator and the image provider stay uncached.

@@ -78,7 +78,15 @@ QVariantList TaskListAppletController::entryRows() const {
 }
 
 QVariantList TaskListAppletController::windowRows() const {
+  if (m_windowRowsStale) {
+    m_windowRows = rowsToVariant(m_projection.windowRows);
+    m_windowRowsStale = false;
+  }
   return m_windowRows;
+}
+
+quint64 TaskListAppletController::generationRevision() const noexcept {
+  return m_projectedRevision;
 }
 
 QVariantList TaskListAppletController::rowsToVariant(
@@ -308,9 +316,12 @@ void TaskListAppletController::reproject() {
   // AGENT-GUARD: QML sequence length/index reads call these property getters
   // repeatedly during dock layout/animation. Resolve metadata once per
   // publication, never per read, or filesystem icon scans grow quadratically
-  // with the number of windows. Publish both snapshots before notifying.
+  // with the number of windows. The grouped snapshot is published before
+  // notifying; the ungrouped one is built by its first read (windowRows()),
+  // which a handler of stateReprojected may make, so it is never stale.
+  m_projectedRevision = m_source.revision();
   m_entryRows = rowsToVariant(m_projection.rows);
-  m_windowRows = rowsToVariant(m_projection.windowRows);
+  m_windowRowsStale = true;
   Q_EMIT stateReprojected();
 }
 

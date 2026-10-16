@@ -21,6 +21,8 @@ target_sources(
         src/active_application_controller.cpp
         src/applet_grants.cpp
         src/command_search_controller.cpp
+        src/command_search_collectors.cpp
+        src/command_search_targets.h
         src/command_search_types.cpp
         src/desktop_controls_access.cpp
         src/file_manager_dock_paths.cpp

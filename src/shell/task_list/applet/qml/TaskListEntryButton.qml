@@ -10,8 +10,13 @@ import QindaQt.Tokens 1.0
 
 // One task-list strip row: standalone window or collapsed container. The row
 // renders only controller-projected values and dispatches intents with the
-// exact generationRevision it displays, so the T0 stale-id arbitration can
-// refuse actions against a generation the user no longer sees.
+// controller's generationRevision, the revision of the generation the strip is
+// showing, so the T0 stale-id arbitration can refuse actions against a
+// generation the user no longer sees.
+//
+// AGENT-CONTRACT (ADR-0390): `entry` carries no revision. The snapshot
+// revision advances for every row on every publication, so a retained row
+// cannot hold it; it is read from `access` at the moment of the gesture.
 //
 // AGENT-CONTRACT: all visuals derive from semantic QST-1 roles (QindaQt.Tokens)
 // and the QindaQt.Controls focus ring; no applet-owned palette or fallback
@@ -118,9 +123,9 @@ T.ToolButton {
     function dispatchActivate() {
         if (targetWindowId.length > 0)
             access.activateTaskWindow(entry.taskId, targetWindowId,
-                                      entry.generationRevision)
+                                      access.generationRevision)
         else
-            access.activateTask(entry.taskId, entry.generationRevision)
+            access.activateTask(entry.taskId, access.generationRevision)
     }
 
     function activate() {
@@ -395,7 +400,7 @@ T.ToolButton {
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
             onTriggered: button.access.minimizeTask(
-                             button.entry.taskId, button.entry.generationRevision)
+                             button.entry.taskId, button.access.generationRevision)
         }
         T.MenuItem {
             objectName: "taskListContextClose"
@@ -406,10 +411,10 @@ T.ToolButton {
                 if (button.targetWindowId.length > 0)
                     button.access.closeTaskWindow(button.entry.taskId,
                                                   button.targetWindowId,
-                                                  button.entry.generationRevision)
+                                                  button.access.generationRevision)
                 else
                     button.access.closeTask(button.entry.taskId,
-                                            button.entry.generationRevision)
+                                            button.access.generationRevision)
             }
         }
         T.MenuItem {
@@ -418,7 +423,7 @@ T.ToolButton {
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
             onTriggered: button.access.raiseTask(
-                             button.entry.taskId, button.entry.generationRevision)
+                             button.entry.taskId, button.access.generationRevision)
         }
         T.MenuSeparator {
             visible: button.entry.kind === "container"
@@ -430,7 +435,7 @@ T.ToolButton {
             enabled: button.access !== null && button.access.canManage
                      && !button.entry.pending
             onTriggered: button.access.ungroupContainer(
-                             button.entry.taskId, button.entry.generationRevision)
+                             button.entry.taskId, button.access.generationRevision)
         }
         // Keep in Dock (ADR-0265) pins this window's application; the dock
         // then shows it with a running indicator instead of this tile. The

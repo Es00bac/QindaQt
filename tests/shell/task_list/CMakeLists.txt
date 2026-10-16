@@ -375,6 +375,9 @@ set_tests_properties(
         TIMEOUT 300
 )
 
+# Per-update cost of the task list (ADR-0390); registration lives in its own file.
+include("${CMAKE_CURRENT_LIST_DIR}/update_cost.cmake")
+
 # Focused Dock magnification-envelope fixture, split from the dock QML
 # fixture above (source-shape repair for candidate c5664c01). Same harness,
 # one narrow behavior: above-shelf growth inside the reserved envelope.

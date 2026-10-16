@@ -17,7 +17,7 @@
 #include "qindaqt/shell/task_list/task_list_source.h"
 #include "qindaqt/shell/icons/desktop_entry_icon_resolver.h"
 #include "qindaqt/shell/icons/icon_runtime.h"
-#include "qindaqt/shell/icons/icon_theme_locator.h"
+#include "qindaqt/shell/icons/icon_availability_cache.h"
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QList>
@@ -439,7 +439,7 @@ TaskListAppletComposition::TaskListAppletComposition(
               *m_ownedOperationAdapter))
     , m_iconResolver(std::make_unique<Icons::DesktopEntryIconResolver>(
           std::move(applicationRoots)))
-    , m_iconThemeLocator(std::make_unique<Icons::IconThemeLocator>(
+    , m_iconAvailability(std::make_unique<Icons::IconAvailabilityCache>(
           std::move(iconRoots), std::move(iconThemes)))
 {
     compose(catalog, policy, *m_ownedSource, *m_ownedProducer,
@@ -477,11 +477,11 @@ TaskListAppletComposition::iconNameResolver() const
         // ADR-0230: no desktop entry claims the id, so a Wine/Proton window
         // may still have a PE-extracted icon in the shared cache root the
         // compositor writes.
-        if (m_iconThemeLocator) {
+        if (m_iconAvailability) {
             const QString cacheName =
                 Icons::IconRuntime::wineCacheIconNameForAppId(applicationId);
             if (!cacheName.isEmpty()
-                && m_iconThemeLocator->hasIcon(cacheName, 18, 1.0, false)) {
+                && m_iconAvailability->hasIcon(cacheName, 18, 1.0, false)) {
                 return cacheName;
             }
         }
@@ -503,8 +503,8 @@ void TaskListAppletComposition::compose(
         source, authority, *m_router, taskListGrants(catalog, policy),
         iconNameResolver(),
         [this](const QString &iconName) {
-            return m_iconThemeLocator
-                && m_iconThemeLocator->hasIcon(iconName, 18, 1.0, false);
+            return m_iconAvailability
+                && m_iconAvailability->hasIcon(iconName, 18, 1.0, false);
         },
         [this](const QString &applicationId, const QString &reportedName) {
             return m_iconResolver
@@ -524,7 +524,7 @@ TaskListAppletComposition::desktopEntryResolver() const
 
 void TaskListAppletComposition::setIconThemes(const QStringList &roots, const QStringList &themes)
 {
-    m_iconThemeLocator = std::make_unique<Icons::IconThemeLocator>(roots, themes);
+    m_iconAvailability = std::make_unique<Icons::IconAvailabilityCache>(roots, themes);
     if (m_access) m_access->refreshIconPresentation();
 }
 

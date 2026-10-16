@@ -41,7 +41,7 @@ class ShellWindowActionsClient;
 
 namespace QindaQt::Shell::Icons {
 class DesktopEntryIconResolver;
-class IconThemeLocator;
+class IconAvailabilityCache;
 }
 
 namespace QindaQt::Shell {
@@ -121,7 +121,12 @@ private:
         m_ownedContainerBridge;
     std::unique_ptr<TaskListWindowOperationRouter> m_router;
     std::unique_ptr<Icons::DesktopEntryIconResolver> m_iconResolver;
-    std::unique_ptr<Icons::IconThemeLocator> m_iconThemeLocator;
+    // AGENT-CONTRACT: icon availability is a presentation hint the controller
+    // asks about on every publication; it is answered from a bounded, expiring
+    // memo (IconAvailabilityCache) so a title-spinner window cannot make the
+    // shell walk the icon themes ten times a second. setIconThemes() replaces
+    // the whole object, which is what invalidates the memo.
+    std::unique_ptr<Icons::IconAvailabilityCache> m_iconAvailability;
     std::unique_ptr<ShellTaskListApplet::TaskListAppletController> m_access;
 };
 

@@ -76,16 +76,34 @@ void DesktopControlsQmlActiveApplicationTests::popupRetiresWithItsDisplayedTask(
     QCOMPARE(title->property("text").toString(), QStringLiteral("Title w-editor"));
 
     // Regression control: the facade reprojects with the same task identity
-    // and displayed revision. That emission must not dismiss the popup.
+    // and the same displayed row. That must not dismiss the popup (and, since
+    // nothing the indicator shows changed, it does not even notify).
     const quint64 editorRevision = active.revision();
+    const quint64 editorRow = active.rowRevision();
     QSignalSpy stateSpy(&active, &ActiveApplicationController::stateChanged);
     Q_EMIT tasks.authority.stateChanged();
-    QVERIFY(stateSpy.size() >= 1);
+    QCOMPARE(stateSpy.size(), 0);
     QCOMPARE(active.taskId(), QStringLiteral("w-editor"));
     QCOMPARE(active.revision(), editorRevision);
+    QCOMPARE(active.rowRevision(), editorRow);
     QTest::qWait(50);
     QVERIFY2(popup->property("opened").toBool(),
-             "an unchanged task identity and revision must not dismiss the popup");
+             "an unchanged task identity and displayed row must not dismiss the popup");
+
+    // ADR-0391: a new GENERATION that leaves the displayed row alone (a
+    // spinner title on another window, ten times a second) must not dismiss
+    // it either, and its actions still work: the intent fences with the
+    // generation now shown, not the one the popup opened at.
+    auto spinner = TaskListStack::activeEditorFacts();
+    spinner[1].title = QStringLiteral("spinner on the other window");
+    const quint64 spinnerRevision = tasks.publish(spinner);
+    QVERIFY(spinnerRevision > editorRevision);
+    QCOMPARE(active.revision(), spinnerRevision);
+    QCOMPARE(active.rowRevision(), editorRow);
+    QCOMPARE(stateSpy.size(), 0);
+    QTest::qWait(50);
+    QVERIFY2(popup->property("opened").toBool(),
+             "a publication that changes nothing displayed must not dismiss the popup");
 
     // Focus moves to the terminal while the editor's popup is open. Checked on
     // the publishing turn, before any event could reach a row.
@@ -105,11 +123,14 @@ void DesktopControlsQmlActiveApplicationTests::popupRetiresWithItsDisplayedTask(
         return;
     QCOMPARE(title->property("text").toString(), QStringLiteral("Title w-terminal"));
 
-    // A new displayed revision of the same task retires the popup as well.
-    const quint64 republished = tasks.publish(terminalActiveFacts());
+    // A change to what the popup displays, even for the same task, retires it:
+    // the user must not act on a title or window count they did not see.
+    auto retitled = terminalActiveFacts();
+    retitled[1].title = QStringLiteral("A different title");
+    const quint64 republished = tasks.publish(retitled);
     QCOMPARE(active.taskId(), QStringLiteral("w-terminal"));
     QCOMPARE(active.revision(), republished);
-    QVERIFY2(!popupShown(popup), "a new displayed revision must retire the popup");
+    QVERIFY2(!popupShown(popup), "a changed displayed row must retire the popup");
     QTRY_VERIFY(!popup->property("opened").toBool());
 
     // The active window disappears: the popup closes and cannot reopen.

@@ -46,6 +46,14 @@ inline constexpr int kMaxThemeChainLength = 16;
 // dropped; lookup results never depend on cache residency.
 inline constexpr int kMaxCachedThemeIndexes = 64;
 
+// IconAvailabilityCache bounds. A positive verdict is trusted this long before
+// one metadata check of the remembered file; a negative verdict is trusted for
+// a much shorter time, because a missing icon (a Wine program's extracted icon
+// is written after its window appears) must be noticed without a theme change.
+inline constexpr qint64 kAvailabilityPositiveTtlMs = 30'000;
+inline constexpr qint64 kAvailabilityNegativeTtlMs = 5'000;
+inline constexpr int kMaxAvailabilityEntries = 512;
+
 // Requested icon geometry bounds. The 512-pixel logical ceiling mirrors the
 // status-notifier renderer contract; scale is bounded so device-pixel sizes
 // cannot explode.

@@ -158,7 +158,8 @@ endforeach()
 require_icon("src/shell/desktop_controls/qml/QuickLaunchApplet.qml" "applications-other")
 require_icon("src/shell/desktop_controls/qml/DashboardApplet.qml" "dashboard-show")
 foreach(icon_name IN ITEMS virtual-desktops user-desktop)
-    require_icon("src/shell/desktop_controls/src/command_search_controller.cpp" "${icon_name}")
+    # The workspace candidates (and their icons) live in the collectors file.
+    require_icon("src/shell/desktop_controls/src/command_search_collectors.cpp" "${icon_name}")
 endforeach()
 
 foreach(theme IN ITEMS qinda-dark qinda-dusk qinda-high-contrast qinda-light qinda-macos qinda-bliss)

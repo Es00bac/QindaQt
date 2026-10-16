@@ -577,3 +577,6 @@ nav:
       - "0374: Separate Android renderer lifetimes": adr/0374-bind-separate-android-renderers-to-held-lifetimes.md
       - "0375: Package-owned Android collector bootstrap": adr/0375-bootstrap-the-package-owned-android-collector.md
       - "0376: Complete printing stack": adr/0376-ship-a-complete-printing-stack.md
+      - "0390: Snapshot revisions out of task rows": adr/0390-keep-snapshot-revisions-out-of-retained-task-rows.md
+      - "0391: Present controllers only while visible": adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md
+      - "0392: Memoised icon availability": adr/0392-memoise-icon-availability-beside-the-uncached-locator.md

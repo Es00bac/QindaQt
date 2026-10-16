@@ -29,6 +29,7 @@ QHash<int, QByteArray> KeyedRowModel::roleNames() const {
 
 QVariantList KeyedRowModel::sourceRows() const { return m_sourceRows; }
 QStringList KeyedRowModel::identityRoles() const { return m_identityRoles; }
+QStringList KeyedRowModel::volatileRoles() const { return m_volatileRoles; }
 
 void KeyedRowModel::setSourceRows(const QVariantList &rows) {
   // AGENT-GUARD: upstream owns admission; never retain an unbounded QML list
@@ -50,6 +51,28 @@ void KeyedRowModel::setIdentityRoles(const QStringList &roles) {
   Q_EMIT identityRolesChanged();
 }
 
+void KeyedRowModel::setVolatileRoles(const QStringList &roles) {
+  const QStringList bounded = roles.size() <= 8 ? roles : QStringList{};
+  if (m_volatileRoles == bounded)
+    return;
+  m_volatileRoles = bounded;
+  reconcile();
+  Q_EMIT volatileRolesChanged();
+}
+
+QVariantMap KeyedRowModel::published(const QVariantMap &source) const {
+  if (m_volatileRoles.isEmpty())
+    return source;
+  QVariantMap result = source;
+  for (const QString &role : m_volatileRoles) {
+    // AGENT-GUARD: identity is what retains a delegate; it cannot be a
+    // snapshot field, so an overlapping name is ignored rather than honored.
+    if (!m_identityRoles.contains(role))
+      result.remove(role);
+  }
+  return result;
+}
+
 void KeyedRowModel::reconcile() {
   QList<Row> next;
   QSet<QStringList> keys;
@@ -68,7 +91,7 @@ void KeyedRowModel::reconcile() {
       break;
     }
     keys.insert(key);
-    next.append({key, map});
+    next.append({key, published(map)});
   }
 
   // Remove obsolete identities first; all surviving delegates retain their

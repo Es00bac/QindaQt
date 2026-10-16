@@ -57,7 +57,13 @@ class ActiveApplicationController final : public QObject {
   Q_PROPERTY(bool minimized READ minimized NOTIFY stateChanged)
   Q_PROPERTY(bool pending READ pending NOTIFY stateChanged)
   Q_PROPERTY(QString taskId READ taskId NOTIFY stateChanged)
+  // The task-list generation the indicator would fence an intent with.
   Q_PROPERTY(quint64 revision READ revision NOTIFY stateChanged)
+  // Advances exactly when the published row changes. A popup compares it to
+  // the value it was opened with to know that what it displays has changed;
+  // the generation cannot serve, because it advances for every publication
+  // (a terminal spinner on any window) while the popup's content did not.
+  Q_PROPERTY(quint64 rowRevision READ rowRevision NOTIFY stateChanged)
   Q_PROPERTY(bool canManage READ canManage NOTIFY stateChanged)
   Q_PROPERTY(QString accessibleName READ accessibleName NOTIFY stateChanged)
   Q_PROPERTY(QString accessibleDescription READ accessibleDescription NOTIFY stateChanged)
@@ -85,6 +91,7 @@ public:
   [[nodiscard]] bool pending() const;
   [[nodiscard]] QString taskId() const;
   [[nodiscard]] quint64 revision() const;
+  [[nodiscard]] quint64 rowRevision() const noexcept { return m_rowRevision; }
   [[nodiscard]] bool canManage() const;
   [[nodiscard]] QString accessibleName() const;
   [[nodiscard]] QString accessibleDescription() const;
@@ -108,6 +115,12 @@ private:
   GlobalMenu::GlobalMenuAppletAccess *m_globalMenu = nullptr;
   ActiveApplicationGrants m_grants;
   QVariantMap m_row;
+  // What the last stateChanged published besides the row, so a reprojection
+  // that changes none of the three is silent.
+  bool m_published = false;
+  quint64 m_rowRevision = 0;
+  QString m_publishedPhase;
+  bool m_publishedManageable = false;
   QString m_feedback;
 };
 

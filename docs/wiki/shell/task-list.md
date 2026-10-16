@@ -351,11 +351,13 @@ withholds all observation (phase `unavailable`, no rows, no dispatch);
 `windows.activate` and `windows.manage` gate their intents independently with
 pre-dispatch refusals and user feedback.
 
-The controller materializes both QML row lists once per reprojection, including
-application names and icon availability, before emitting `stateReprojected`.
-The `entryRows` and `windowRows` getters return bounded, implicitly shared
-snapshots; QML sequence length/index reads during dock layout and magnification
-must never repeat desktop-entry or filesystem icon resolution. Each new
+The controller materializes the `entryRows` list once per reprojection,
+including application names and icon availability, before emitting
+`stateReprojected`; `windowRows` is materialized once on its first read after a
+reprojection, since only an ungrouped strip reads it. The `entryRows` and
+`windowRows` getters return bounded, implicitly shared snapshots; QML sequence
+length/index reads during dock layout and magnification must never repeat
+desktop-entry or filesystem icon resolution. Each new
 publication refreshes the metadata and revision together, including previously
 missing icons. Read denial still publishes empty lists without resolving names
 or icons. The focused row-snapshot regression exercises QV4 reads with 1, 12,
@@ -397,13 +399,15 @@ count and no Ungroup action. A
 dock host raises the presentation bound so every row is projected and the
 zone viewport scrolls instead of truncating
 ([Dock interactions](dock-interactions.md)). Every
-row carries its generation revision and echoes it into each intent, so the T0
-arbitration refuses actions against a generation the user no longer sees.
+intent echoes the controller's `generationRevision`, the revision of the
+generation the strip is showing (see "Update cost and revision fencing"), so
+the T0 arbitration refuses actions against a generation the user no longer
+sees.
 Context actions per row are Activate, Minimize/Unminimize, Close, Raise, and —
 for container rows — Ungroup, which maps to the T1 `releaseContainer`. Close
 uses the hosted Close All policy. Shell composition injects one
 `DesktopEntryIconResolver` built from explicit freedesktop application roots
-and one `IconThemeLocator` over the icon roots used by QML. Standalone rows resolve
+and one `IconAvailabilityCache` over the icon roots used by QML. Standalone rows resolve
 the compositor-provided application id to the desktop entry's `Icon=` name;
 container rows use `window-restore-symbolic`. Every row's `applicationName`
 and the application part of its `accessibleName` come from the same
@@ -473,6 +477,51 @@ fatal-warning-clean offscreen QML state/keyboard and horizontal/vertical
 dispatcher rows, a static boundary poison probe, and a relocated
 installed-package/source-poison proof of the `TaskListAppletRuntime` component.
 No focused row contacts a host bus, display, or compositor.
+
+### Update cost and revision fencing
+
+A producer republishes the whole generation whenever any window fact changes,
+and a terminal that retitles its tab ten times a second is an ordinary source
+of that. The cost of one publication must be proportional to what changed, not
+to the number of windows. The stability round of 2026-10-16 traced the shell's
+sustained CPU to this path and fixed it in four places:
+
+- **Row diffing.** Projected rows carry no per-snapshot field.
+  `generationRevision` is a controller property
+  (`TaskListAppletController::generationRevision`): the revision of the **last
+  reprojection**, not the source's live revision, because between a publication
+  and its reprojection the strip still shows the previous generation and a
+  gesture must fence against what is shown. The strip reads it at the moment of
+  a gesture (activate, minimize, close, raise, ungroup, reorder, preview) and
+  echoes it into the intent. `KeyedRowModel.volatileRoles` makes the rule
+  structural: a name listed there (the strip lists `generationRevision`) is
+  dropped from the published row and never counts as a change, and an identity
+  role can never be volatile. A title change is one `dataChanged` for one row;
+  an unchanged row emits nothing
+  ([ADR-0390](../adr/0390-keep-snapshot-revisions-out-of-retained-task-rows.md)).
+- **Icon hints.** The controller asks whether each row's icon resolves on every
+  publication; the composition answers from `IconAvailabilityCache`, a bounded
+  expiring memo in front of the uncached locator, so a spinner does not walk
+  the theme chain ten times a second
+  ([Shell iconography](iconography.md),
+  [ADR-0392](../adr/0392-memoise-icon-availability-beside-the-uncached-locator.md)).
+- **Window rows.** `windowRows` is built on first read after a reprojection,
+  not on every reprojection; only an ungrouped strip reads it.
+- **Neighbouring controllers.** Command search, Quick Launch and the active
+  application control no longer do their full work on every publication
+  ([Desktop controls](desktop-controls.md),
+  [ADR-0391](../adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md)).
+
+`tests/shell/task_list/tst_task_list_update_cost.cpp` (`ctest -R
+'^qindaqt\.task-list-update-cost$'`) is the measurement harness. It drives the
+production controller, the production icon and name resolvers over the host's
+real desktop entries and icon themes, and the compiled strip with 16 windows
+(12 with a desktop entry, 4 without) through 200 title-spinner publications
+after 20 warm-ups, and prints one `QINDAQT_BENCH` line with thread CPU time per
+update and `dataChanged` per update. It asserts only the deterministic part (one
+`dataChanged` per update, no structural signal), never a wall-clock bound. On
+the build host: about 82 ms and 16 touched rows per update before the change,
+about 0.6 ms and 1 touched row after.
 
 ## Current implementation
 

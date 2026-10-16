@@ -115,7 +115,10 @@ QString ActiveApplicationController::taskId() const
 
 quint64 ActiveApplicationController::revision() const
 {
-  return m_row.value(QStringLiteral("generationRevision")).toULongLong();
+  // The snapshot revision is not part of the row (ADR-0390): the row is kept
+  // free of it so an unchanged active window is recognizably unchanged. The
+  // generation the indicator shows is the facade's own.
+  return m_taskList != nullptr ? m_taskList->generationRevision() : 0;
 }
 
 bool ActiveApplicationController::canManage() const
@@ -213,6 +216,27 @@ void ActiveApplicationController::reproject()
       }
     }
   }
+  // AGENT-GUARD (ADR-0391): the task list reprojects on every publication, and
+  // a spinner title on ANY window republishes. Everything this indicator
+  // shows comes from the active row plus the facade's phase and manage
+  // fences, so a publication that leaves those equal notifies nobody. The
+  // snapshot revision is stripped first: it differs on every publication and
+  // would make every row look new.
+  active.remove(QStringLiteral("generationRevision"));
+  const QString phase = phaseText();
+  const bool manageable = m_taskList != nullptr && m_grants.windowsManage
+      && !active.isEmpty() && m_taskList->canManage()
+      && !active.value(QStringLiteral("pending")).toBool();
+  if (m_published && active == m_row && phase == m_publishedPhase
+      && manageable == m_publishedManageable) {
+    return;
+  }
+  if (!m_published || active != m_row) {
+    ++m_rowRevision;
+  }
+  m_published = true;
+  m_publishedPhase = phase;
+  m_publishedManageable = manageable;
   m_row = active;
   Q_EMIT stateChanged();
 }

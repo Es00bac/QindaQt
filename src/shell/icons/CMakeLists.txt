@@ -16,6 +16,7 @@ target_sources(
     qindaqt_shell_icons
     PRIVATE
         src/desktop_entry_icon_resolver.cpp
+        src/icon_availability_cache.cpp
         src/icon_image_provider.cpp
         src/icon_lookup.cpp
         src/icon_runtime.cpp
@@ -25,6 +26,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/shell/icons/desktop_entry_icon_resolver.h
+            include/qindaqt/shell/icons/icon_availability_cache.h
             include/qindaqt/shell/icons/icon_image_provider.h
             include/qindaqt/shell/icons/icon_lookup.h
             include/qindaqt/shell/icons/icon_runtime.h

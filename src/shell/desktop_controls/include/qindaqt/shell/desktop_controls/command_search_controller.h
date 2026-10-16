@@ -35,11 +35,25 @@ namespace QindaQt::Shell::DesktopControls {
 // its facade exists, its grant is held, and its kind is enabled here. The
 // controller never caches an activation target beyond the current result
 // list, so a stale row can never be dispatched with a newer revision.
+//
+// AGENT-CONTRACT (ADR-0391): the controller does work only for a surface that
+// is showing it. The task list reprojects ten or more times a second under a
+// title spinner, and the launcher projects the whole application catalog on
+// every consultation, so a facade change while nothing is presented only
+// marks the affected source stale: no collection, no ranking, no signal. A
+// surface calls present() when it shows the results and dismiss() when it
+// hides them (a counted lease: one controller serves every panel instance).
+// The first present() brings the cache up to date and notifies once; while
+// presented, each facade change refreshes just the source that changed. Any
+// read (results, resultCount, phaseText, rankedCandidates, activate) refreshes
+// a stale cache first, so a caller that never presents still reads current
+// truth; only the change SIGNALS depend on presentation.
 class CommandSearchController final : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
   Q_PROPERTY(QVariantList results READ results NOTIFY resultsChanged)
   Q_PROPERTY(int resultCount READ resultCount NOTIFY resultsChanged)
+  Q_PROPERTY(bool presented READ presented NOTIFY presentedChanged)
   Q_PROPERTY(QString phaseText READ phaseText NOTIFY stateChanged)
   Q_PROPERTY(QString phaseReasonText READ phaseReasonText NOTIFY stateChanged)
   Q_PROPERTY(bool available READ available NOTIFY stateChanged)
@@ -74,20 +88,22 @@ public:
   // Rows: {id, kind, text, detail, iconName, accessibleName, enabled, index,
   // generation}. Menu rows carry the global-menu publication generation.
   [[nodiscard]] QVariantList results() const;
-  [[nodiscard]] int resultCount() const noexcept
-  {
-    return static_cast<int>(m_results.size());
-  }
+  [[nodiscard]] int resultCount() const;
+  // True while at least one surface holds the presentation lease.
+  [[nodiscard]] bool presented() const noexcept { return m_presentations > 0; }
+  // Counted presentation lease; see the class contract. dismiss() without a
+  // matching present() is ignored.
+  Q_INVOKABLE void present();
+  Q_INVOKABLE void dismiss();
+  // Full source collections performed so far; diagnostics and tests only.
+  [[nodiscard]] int collectionCount() const noexcept { return m_collections; }
   [[nodiscard]] QString phaseText() const;
   [[nodiscard]] QString phaseReasonText() const;
   [[nodiscard]] bool available() const noexcept;
   [[nodiscard]] QStringList sourceKinds() const;
   [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
   [[nodiscard]] QString feedback() const { return m_feedback; }
-  [[nodiscard]] const QList<CommandCandidate> &rankedCandidates() const noexcept
-  {
-    return m_results;
-  }
+  [[nodiscard]] const QList<CommandCandidate> &rankedCandidates() const;
 
   // Activates one displayed result. QML supplies the generation carried by
   // its rendered menu row; an empty generation keeps the C++ convenience API
@@ -102,9 +118,16 @@ Q_SIGNALS:
   void resultsChanged();
   void stateChanged();
   void feedbackChanged();
+  void presentedChanged();
 
 private:
   [[nodiscard]] bool sourceActive(CommandSourceKind kind) const;
+  // Marks one source stale; refreshes and notifies at once only while
+  // presented. A kind this instance does not consult is ignored outright.
+  void sourceChanged(CommandSourceKind kind);
+  void ensureFresh() const;
+  void refreshSources() const;
+  void publishRefresh();
   [[nodiscard]] QList<CommandCandidate> collectApplications(const QString &query) const;
   [[nodiscard]] QList<CommandCandidate> collectMenuActions() const;
   [[nodiscard]] QList<CommandCandidate> collectWindows() const;
@@ -118,8 +141,16 @@ private:
   Grants m_grants;
   QList<CommandSourceKind> m_enabled;
   QString m_query;
-  QList<CommandCandidate> m_results;
   QString m_feedback;
+  int m_presentations = 0;
+  // AGENT-GUARD: everything below is a derived cache of the borrowed facades,
+  // mutable so a const read can bring it up to date without a signal. A set
+  // bit in m_staleSources means that source's candidates must be collected
+  // again; all four start stale because nothing has been collected yet.
+  mutable unsigned m_staleSources = 0xFu;
+  mutable QList<CommandCandidate> m_sourceCandidates[4];
+  mutable QList<CommandCandidate> m_results;
+  mutable int m_collections = 0;
 };
 
 } // namespace QindaQt::Shell::DesktopControls

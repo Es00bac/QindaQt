@@ -130,3 +130,45 @@ New dock tiles use a short token-duration opacity fade; reduced motion makes
 this immediate. Removed delegates retire immediately, and the animation never
 changes layout sizes or input targets. The shared presentation contract is
 [ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md).
+
+## Update cost
+
+The task list reprojects ten or more times a second under a title spinner, and
+three controllers listen to every reprojection. Their work follows visibility
+and inputs, not the publication rate
+([ADR-0391](../adr/0391-present-shell-search-and-dock-controllers-only-while-visible.md)):
+
+- **Command search.** `CommandSearchController` keeps one derived cache per
+  source (applications, menu actions, windows, workspaces) with a per-source
+  staleness bit. While no surface presents it, a facade change only marks its
+  source stale: no collection, no ranking, no signal. A surface takes a counted
+  lease with `present()` when it shows results and gives it back with
+  `dismiss()`; one controller serves every panel's popup, so the count matters.
+  The first `present()` brings the cache up to date and notifies once; while
+  presented, each facade change refreshes only the source that changed. Every
+  read refreshes a stale cache first, so a caller that never presents still reads
+  current truth; only the change signals depend on presentation.
+  `CommandSearchPopup` takes the lease in `aboutToShow` and returns it exactly
+  once on close or destruction, before clearing the query (clearing a presented
+  controller would collect results nobody will see). The launcher projects its
+  whole application catalog on each consultation, which is why an idle
+  re-collection was the expensive part.
+- **Quick Launch.** The controller compares the running-window signature (which
+  windows of which application run, and which one is active) and returns before
+  building any row when nothing it presents changed. It stores no snapshot
+  revision: `activate()` asks the task-list facade for the revision it is
+  showing at the moment of the gesture
+  ([Task list](task-list.md), "Update cost and revision fencing").
+- **Active application.** The controller publishes only when its row, phase or
+  manageability changed, and exposes `rowRevision`, which advances exactly when
+  the displayed row changes. The popup retires itself by comparing `rowRevision`
+  with the value it was opened with. Comparing the generation would close the
+  popup every time any other window's title changed.
+
+Focused rows: `tst_command_search_controller` (collection counts across
+presented and idle changes, the lease count, fresh reads without a lease),
+`tst_quick_launch_and_active_application` (rebuild counts, silent identical
+publications, the revision read at gesture time) and
+`tst_desktop_controls_qml_active_application` (the popup survives an identical
+republish and a spinner on another window, and retires when its own row
+changes). New search surfaces must call `present()` and `dismiss()`.

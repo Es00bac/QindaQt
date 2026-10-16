@@ -133,8 +133,18 @@ void DockRetainedDelegateTests::taskStripRetainsTilesAndAnimationState() {
     QCOMPARE(current().value(id), tile);
     QCOMPARE(tile->property("revealProgress").toReal(), 1.0);
   }
-  QCOMPARE(tile->property("entry").toMap().value(QStringLiteral("generationRevision")).toULongLong(),
-           tasks.source.revision());
+  // AGENT-CONTRACT (ADR-0390): a retained row carries no snapshot revision, so
+  // 100 publications cannot have left it stale. The strip fences a gesture
+  // with the controller's revision, which is the generation currently shown.
+  QVERIFY(!tile->property("entry").toMap().contains(QStringLiteral("generationRevision")));
+  QCOMPARE(controller.generationRevision(), tasks.source.revision());
+  const qsizetype callsBefore = tasks.port.calls.size();
+  QVERIFY(QMetaObject::invokeMethod(tile, "activate"));
+  QCOMPARE(tasks.port.calls.size(), callsBefore + 1);
+  QCOMPARE(tasks.port.lastCall().revision, tasks.source.revision());
+  tasks.port.complete(tasks.port.lastCall(),
+                      ShellTaskList::Operations::TaskListOperationStatus::Committed,
+                      QStringLiteral("ok"), {});
   QVERIFY(QMetaObject::invokeMethod(root, "previewHover",
       Q_ARG(QVariant, tile->property("index")), Q_ARG(QVariant, true)));
   QCOMPARE(root->property("previewTaskId").toString(), id);

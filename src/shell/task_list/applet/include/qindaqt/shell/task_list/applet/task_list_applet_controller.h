@@ -55,6 +55,13 @@ class TaskListAppletController : public QObject {
   Q_PROPERTY(QVariantList windowRows READ windowRows NOTIFY stateReprojected)
   Q_PROPERTY(int windowOverflowCount READ windowOverflowCount
                  NOTIFY stateReprojected)
+  // The source revision the published rows were projected from. Every intent
+  // echoes it so the T0 arbitration can refuse an action against a generation
+  // the user no longer sees. It belongs to the SNAPSHOT, not to a row: a
+  // retained delegate keeps its row while this advances on every publication,
+  // so presentation reads it here at the moment of the gesture (ADR-0390).
+  Q_PROPERTY(quint64 generationRevision READ generationRevision
+                 NOTIFY stateReprojected)
   // Presentation bound for the strip projection (default
   // kMaxPresentedTaskEntries). A scrolling dock host raises it (up to
   // kMaxPresentedDockEntries) so overflow scrolls instead of truncating;
@@ -131,6 +138,10 @@ public:
   [[nodiscard]] int overflowCount() const noexcept;
   [[nodiscard]] QVariantList windowRows() const;
   [[nodiscard]] int windowOverflowCount() const noexcept;
+  // The revision of the last reprojection, never the source's live revision:
+  // between a publication and its reprojection the strip still shows the
+  // previous generation, and a gesture then must fence against what is shown.
+  [[nodiscard]] quint64 generationRevision() const noexcept;
   [[nodiscard]] int presentationLimit() const noexcept;
   void setPresentationLimit(int limit);
   [[nodiscard]] bool windowsReadGranted() const noexcept;
@@ -284,7 +295,13 @@ private:
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
   QVariantList m_entryRows;
-  QVariantList m_windowRows;
+  // AGENT-NOTE: built on first read after each reprojection, not on every
+  // reprojection: only an ungrouped strip (`grouping: "never"`) reads it, and
+  // building it resolves icon and application names a second time per row.
+  // Still resolved once per publication, never per sequence read.
+  mutable QVariantList m_windowRows;
+  mutable bool m_windowRowsStale = true;
+  quint64 m_projectedRevision = 0;
   int m_presentationLimit = kMaxPresentedTaskEntries;
   QStringList m_userTaskOrder;
 

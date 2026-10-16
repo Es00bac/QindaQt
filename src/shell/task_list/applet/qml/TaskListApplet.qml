@@ -168,7 +168,7 @@ Item {
             return
         }
         const beforeId = target >= rows.length ? "" : String(rows[target].taskId)
-        access.reorderTask(taskId, beforeId, rows[from].generationRevision)
+        access.reorderTask(taskId, beforeId, access.generationRevision)
     }
 
     // Hover preview state (ADR-0119). At most one tile preview is visible;
@@ -238,7 +238,7 @@ Item {
             return
         }
         const row = rows[previewIndex]
-        access.requestTaskPreview(String(row.taskId), row.generationRevision,
+        access.requestTaskPreview(String(row.taskId), access.generationRevision,
                                   320, 200)
     }
 
@@ -308,7 +308,7 @@ Item {
             ? String(rows[index - 1].taskId)
             : (index + 2 < rows.length ? String(rows[index + 2].taskId) : "")
         access.reorderTask(String(rows[index].taskId), beforeId,
-                           rows[index].generationRevision)
+                           access.generationRevision)
         const focused = entryRepeater.itemAt(index + direction)
         if (focused !== null) {
             focused.forceActiveFocus(Qt.TabFocusReason)
@@ -444,6 +444,11 @@ Item {
             id: entryRepeater
             model: TaskListTypes.KeyedRowModel {
                 identityRoles: ["taskId", "windowId"]
+                // The snapshot revision advances for every row on every
+                // publication. Left in the rows it would make each publication
+                // rewrite every delegate; it is read from `access` when a
+                // gesture needs it (ADR-0390).
+                volatileRoles: ["generationRevision"]
                 sourceRows: root.stripVisible ? root.taskRows : []
             }
 

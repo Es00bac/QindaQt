@@ -36,6 +36,11 @@ qindaqt_add_shell_icons_test(
     tst_shell_icons_resolver.cpp
     qindaqt.shell-icons-resolver
 )
+qindaqt_add_shell_icons_test(
+    qindaqt_shell_icons_availability_cache_tests
+    tst_shell_icons_availability_cache.cpp
+    qindaqt.shell-icons-availability-cache
+)
 
 # Provider rows render offscreen under fatal warnings.
 qindaqt_add_shell_icons_test(

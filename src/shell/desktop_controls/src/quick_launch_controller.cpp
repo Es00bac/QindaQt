@@ -112,7 +112,7 @@ void QuickLaunchController::setWindowSource(
   m_windowGrants = grants;
   if (m_taskList != nullptr && m_windowGrants.windowsRead) {
     connect(m_taskList, &ShellTaskListApplet::TaskListAppletController::stateReprojected,
-            this, &QuickLaunchController::rebuild);
+            this, &QuickLaunchController::handleTasksChanged);
   }
   rebuild();
 }
@@ -181,19 +181,33 @@ QVariantMap QuickLaunchController::applicationRow(const QString &entryId, int in
   };
 }
 
-void QuickLaunchController::rebuild()
+QuickLaunchController::RunningWindows QuickLaunchController::runningWindows() const
 {
   // Running windows by desktop-entry id. Container rows are QindaQt window
   // groups the user built; they stay task-list tiles and never count here.
-  m_running.clear();
+  RunningWindows running;
   if (m_taskList != nullptr && m_windowGrants.windowsRead) {
     for (const auto &row : m_taskList->projection().rows) {
       if (row.kind != ShellTaskList::TaskEntryKind::Window)
         continue;
-      m_running[desktopEntryForWindow(row.applicationId)].append(
-          RunningWindow{row.taskId, row.generationRevision, row.active});
+      running[desktopEntryForWindow(row.applicationId)].append(
+          RunningWindow{row.taskId, row.active});
     }
   }
+  return running;
+}
+
+void QuickLaunchController::handleTasksChanged()
+{
+  if (runningWindows() == m_running)
+    return;
+  rebuild();
+}
+
+void QuickLaunchController::rebuild()
+{
+  ++m_rebuilds;
+  m_running = runningWindows();
 
   QVariantList rows;
   QVariantList applicationRows;
@@ -398,7 +412,10 @@ bool QuickLaunchController::activate(const QString &entryId)
       }
     }
     const RunningWindow &window = windows.at(next);
-    if (m_taskList->activateTask(window.taskId, window.revision)) {
+    // The revision is read now, not remembered from the last rebuild: this
+    // controller deliberately skips publications that change nothing it
+    // presents, so a remembered one would be refused as stale.
+    if (m_taskList->activateTask(window.taskId, m_taskList->generationRevision())) {
       clearFeedback();
       return true;
     }
