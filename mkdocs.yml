@@ -581,3 +581,6 @@ nav:
       - "0382: Start native lock authentication on user input": adr/0382-start-native-lock-authentication-on-user-input.md
       - "0383: Coalesced change signals and title-band chrome": adr/0383-coalesce-compositor-change-signals-and-repaint-titles-in-the-title-band.md
       - "0384: Per-window visibility degradation and stranded-window rescue": adr/0384-degrade-the-visibility-snapshot-per-window-and-rescue-stranded-windows.md
+      - "0385: Non-dumpable compositor, inherited core limits": adr/0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md
+      - "0386: Supervised locker and capture broker": adr/0386-supervise-compositor-owned-locker-and-capture-broker.md
+      - "0387: Privileged entries by basename and local path": adr/0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md

@@ -83,8 +83,17 @@ result files. Created/selected sessions expire after60 seconds; starting request
 have a bounded100-second registry budget for consent plus the protected operation.
 Screenshot files live at most5 minutes in owned private temporary directories.
 
-The compositor launches the fixed protected broker and helper. The broker owns
-publication but never opens an ambient display or launches a helper. The helper
+The compositor launches the fixed protected broker and helper, and keeps the
+broker running while it is the selected compositor: a broker that exits, is
+retired or cannot start is relaunched after 2 s, doubling to 60 s, without a
+limit, and at once when the portal frontend appears or a foreign owner releases
+the backend name ([ADR-0386](../adr/0386-supervise-compositor-owned-locker-and-capture-broker.md)).
+Locking ends a broker whose admission had already admitted content (its native
+admission reports loss), so each lock costs one relaunch. Every broker exit states its reason on stderr
+(`qindaqt-portal-capture-backend: exiting with status N: ...`, preceded by the
+specific authority loss), which the compositor forwards to the session log.
+The broker owns publication but never opens an ambient display or launches a
+helper. The helper
 uses separate ordinary GUI/foreign-parent fd4 and tagged capture fd5; control fd3
 joins actual kernel credentials, current native bus owner and PIDFD. Authenticated
 read-only NativeLockStateMonitor receipts additionally gate consent, operation and

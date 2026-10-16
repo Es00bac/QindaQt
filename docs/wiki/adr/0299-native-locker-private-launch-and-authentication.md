@@ -4,6 +4,7 @@
 - **Date:** 2026-09-29
 - **Owners:** compositor fork, native locker, lock authentication
 - **Supersedes:** ADR-0294's executable-inode-only production binding restriction
+- **Amended by:** [ADR-0385](0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md) (the compositor's core protection) and [ADR-0386](0386-supervise-compositor-owned-locker-and-capture-broker.md) (locker relaunch while locked)
 
 ## Context
 

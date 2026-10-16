@@ -3,6 +3,7 @@
 - Status: Accepted for the bounded native source slice; installed/full PF19 delivery remains
 - Date: 2026-10-01
 - Amends: [ADR-0318](0318-native-portal-foundation.md), [ADR-0289](0289-native-screenshot-and-record-tool.md)
+- Amended by: [ADR-0386](0386-supervise-compositor-owned-locker-and-capture-broker.md) (broker relaunch with bounded backoff)
 
 ## Context
 

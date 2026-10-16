@@ -137,7 +137,41 @@ private Q_SLOTS:
         QVERIFY(endpoint->sendReply());
         QTRY_COMPARE_WITH_TIMEOUT(broker.state(), QProcess::NotRunning, 6000);
         assertUnpublished();
+        // Stability round 2026-10-16: an exiting broker states why on stderr,
+        // which the compositor forwards to the session log. Nothing else may
+        // appear there (cleanup() still requires the rest to be empty).
+        const QByteArray reasons = broker.readAllStandardError();
+        QVERIFY2(reasons.contains("qindaqt-portal-capture-backend: capture authority lost: "), reasons.constData());
+        QVERIFY2(reasons.endsWith("qindaqt-portal-capture-backend: exiting with status 0: compositor capture authority lost\n"), reasons.constData());
+        QCOMPARE(reasons.count('\n'), 2);
         QVERIFY(replacement.unregisterService(QString(QindaQt::CompositorNames::service)));
+    }
+    void exitsStateTheirReason_data() {
+        QTest::addColumn<QStringList>("arguments");
+        QTest::addColumn<int>("status");
+        QTest::addColumn<QByteArray>("reasons");
+        QTest::newRow("arguments") << QStringList{QStringLiteral("--unexpected")} << 2
+            << QByteArray("qindaqt-portal-capture-backend: exiting with status 2: unexpected arguments; only the compositor launches this broker\n");
+        // Started by hand: fd 3 is not a compositor's control channel.
+        QTest::newRow("not-compositor-launched") << QStringList{} << 0
+            << QByteArray("qindaqt-portal-capture-backend: capture authority lost: no compositor launched this broker, or that compositor is gone or replaced\n"
+                          "qindaqt-portal-capture-backend: exiting with status 0: compositor capture authority lost\n");
+    }
+    void exitsStateTheirReason() {
+        // Stability round 2026-10-16: these exits used to say nothing.
+        QFETCH(QStringList, arguments);
+        QFETCH(int, status);
+        QFETCH(QByteArray, reasons);
+        QProcess exiting;
+        exiting.setProcessEnvironment(environment);
+        QProcess::UnixProcessParameters parameters;
+        parameters.flags = QProcess::UnixProcessFlag::CloseFileDescriptors; // no inherited fd 3
+        exiting.setUnixProcessParameters(parameters);
+        exiting.start(QString::fromUtf8(QINDAQT_CAPTURE_STARTUP_BACKEND), arguments);
+        QVERIFY(exiting.waitForFinished(10000));
+        QCOMPARE(exiting.exitStatus(), QProcess::NormalExit);
+        QCOMPARE(exiting.exitCode(), status);
+        QCOMPARE(exiting.readAllStandardError(), reasons);
     }
 private:
     bool sendPacket(const Packet &packet) {

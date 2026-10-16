@@ -4,6 +4,7 @@
 - **Date:** 2026-10-02
 - **Owners:** Compositor, Platform, Program Manager
 - **Amends:** [ADR-0291](0291-run-on-qindaqt-kwin.md)
+- **Amended by:** [ADR-0387](0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md) (executable discovery by basename and local paths)
 
 ## Context
 
