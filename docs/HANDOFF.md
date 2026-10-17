@@ -70,8 +70,6 @@ Integrated on main during the round:
   - `rename-identity --check` passes.
 - `03e218941`: `uri_relay.cpp` builds under strict warnings; its best-effort failure report ignored
   `write()`'s result.
-- `03e218941`: `uri_relay.cpp` builds under strict warnings; its best-effort failure report ignored
-  `write()`'s result.
 - `c5e350695` L3:
   - a title change publishes one task-list row: about 82 ms and 16 rows per update before, about 0.45 ms and
     1 row after (ADR-0390..0392);
