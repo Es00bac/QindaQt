@@ -31,6 +31,22 @@ apply it during implementation.
 The permitted dependency direction is documented in
 [Module boundaries](../architecture/module-boundaries.md).
 
+## Link the module whose header you include
+
+A target that includes a `<qindaqt/...>` header links the target that provides
+it, and a library whose headers expose another module's types links that
+module PUBLIC. Without the link the compiler can fall back to an installed,
+possibly older copy of the same header in `/usr/include/qindaqt`, and the
+object then disagrees with the library it links about class layout. That is
+how the power service's lid and critical-battery runtime ran a corrupted
+`SessionActionsClient` after the 2026-10-16 stability round.
+[ADR-0388](../adr/0388-fail-the-build-when-a-qindaqt-header-resolves-outside-the-tree.md)
+makes the build enforce the rule: `QINDAQT_HEADER_ISOLATION` (default ON)
+places an `#error` stub for every QindaQt public header after all `-I`
+directories, so a missing link fails at compile time. The
+`qindaqt.header-isolation-guard` test proves the stub loses to a linked module
+and stops an unlinked include.
+
 ## Document for a future agent
 
 Assume the next maintainer is an AI agent with the repository but none of the

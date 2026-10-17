@@ -46,6 +46,19 @@ outside the session-supervisor support condition; native RemoteDesktop tests
 remain conditional on that support. These configure checks validate dependency
 composition separately from runtime authorization.
 
+Every compile also runs under the header-isolation guard
+([ADR-0388](../adr/0388-fail-the-build-when-a-qindaqt-header-resolves-outside-the-tree.md)):
+a `<qindaqt/...>` include that its target does not link fails to compile
+instead of resolving an installed copy. `qindaqt.header-isolation-guard`
+checks that a linked module beats the guard's stub and that an unlinked
+include is stopped. To audit a built tree directly, list objects that depend
+on installed QindaQt headers; the expected output is empty apart from
+`_autogen/timestamp` entries:
+
+```sh
+ninja -C build/release -t deps | awk '/^[^ ].*: #deps/ {o=$1} /\/usr\/include\/qindaqt\// {print o, $1}'
+```
+
 ## First-party material verification
 
 The `qindaqt.apps-native-material-matrix` row renders the real File Manager,

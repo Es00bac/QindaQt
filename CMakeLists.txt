@@ -90,6 +90,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(QindaQtCompiler)
+# ADR-0388: an unlinked <qindaqt/...> include fails instead of compiling
+# against an installed, possibly older copy of the header.
+include(QindaQtHeaderIsolation)
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Widgets)
 if(BUILD_TESTING)
