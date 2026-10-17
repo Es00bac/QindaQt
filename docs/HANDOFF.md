@@ -21,12 +21,12 @@ Rules for this round:
 
 | Lane | Owner | Branch / worktree | State |
 | --- | --- | --- | --- |
-| L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` | started |
+| L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` (`a16f91c41`) | integrated `b4d4a1e70` (+ consumer tests `5f955677d`) |
 | L2 compositor plugin efficiency + window model | Claude (Opus) | `stability/l2-compositor-20261016` (`d74f82423`) | integrated `978cc5927` |
-| L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` | started |
+| L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` (`7209b9cd1`) | integrated `c5e350695` |
 | L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (`6e8a094a06`) + `stability/l4-capture-20261016` (`f9fd48b03`) | fork main fast-forwarded to `6e8a094a06`; capture half integrated `92fcdc738` |
 | L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` (`4dbde3c2c`) | integrated `9ca08cde8` |
-| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (3c2db419d); QindaGentoo `stability/power-defaults-20261016` (498a914); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | candidate pushed; integrate at release |
+| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (3c2db419d); QindaGentoo `stability/power-defaults-20261016` (498a914); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | container-wm half integrated `8dae76534`; overlay and gabbee halves land with the release |
 
 Base: container-wm `fb1ca72e9` (the spec commit on `1e11e127e`); qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
 `~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
@@ -55,6 +55,54 @@ Integrated on main during the round:
   decisions. qindaqt-kwin main fast-forwarded to `6e8a094a06` (see the L4 row).
 - `41c503078`: `tests/CMakeLists.txt` finds `QINDAQT_KWIN_WAYLAND` before any test subdirectory, so a fresh
   tree no longer registers `compositor.kwin-shell-window-actions` with an empty compositor path.
+- `b4d4a1e70` L1: session liveness is event-driven and self-healing (ADR-0379; the timer audit is in
+  `architecture/session-resilience.md`). Compositor attachment, keyring authority, session actions and lock state
+  follow bus owner changes, and a lost compositor re-attaches without a new login. `Sleep1.Changed` fires once
+  per real change. The idle keyring daemon makes 0 bus calls instead of 318 per 10 s. Settings1 and NightLight
+  run as their own user units.
+- `5f955677d`: the clipboard, shell lock-observer and keyring prompt-display rows wait for owner-watcher
+  delivery, one event-loop turn (L1 handoff patch).
+- qindaqt-kwin main `d3d54af3d8`: the private-greeter scenarios send the greeter's `input` command first
+  (ADR-0382). With the integrated greeter:
+  - `nativeQtCrashPendingWorker` passes;
+  - `nativeQtAuthentication` passes in full at 100% and 150% scale when its Circuit Reef saver step is
+    skipped. That step's scene doesn't reach `Loader.Ready` within 10 s under software GL (follow-up);
+  - `rename-identity --check` passes.
+- `03e218941`: `uri_relay.cpp` builds under strict warnings; its best-effort failure report ignored
+  `write()`'s result.
+- `03e218941`: `uri_relay.cpp` builds under strict warnings; its best-effort failure report ignored
+  `write()`'s result.
+- `c5e350695` L3:
+  - a title change publishes one task-list row: about 82 ms and 16 rows per update before, about 0.45 ms and
+    1 row after (ADR-0390..0392);
+  - catalogs merge every XDG data directory (ADR-0393);
+  - Audio Levels flow only under a lease held while a meter is visible (ADR-0394). This removes the stream
+    that most likely wedged Settings' QtDBus connection and grew the session bus to 4 GB;
+  - Settings tears down its scene before its models (ADR-0395);
+  - tile menus and dock tooltips are created on demand (ADR-0396);
+  - the field Settings aborts did not reproduce, so the 20-cycle loop is a regression guard only.
+- `8dae76534` L6 (container-wm half): a `dbus.service` drop-in with `OOMPolicy=continue` (ADR-0377), ADR-0378
+  for the per-machine power defaults, and `tools/diagnose-s2idle-wake`.
+- Integrated gate on `8dae76534` (all six lanes, `build/release`):
+  - full build: every production target builds. Four pre-existing test files fail strict GCC 15: three
+    `tests/services/android_runtime` fixtures ignore `read()`/`write()` results, and
+    `tst_login_screen_settings_model.cpp` hits a `maybe-uninitialized` false positive;
+  - full ctest, serial: 1404 of 1486 pass. Rerun with `QT_QPA_PLATFORM=offscreen`, the session lifetime rows
+    pass too. The remaining failures:
+    - 28 nested pixel rows blocked by the non-dumpable fork;
+    - 12 shell QML rows without an `AgentUsageApplet` double;
+    - 4 Not Run (the strict-build files above);
+    - 2 libobs rows;
+    - installed/staged-tree rows;
+    - rows skipped for missing prerequisites;
+    - rows that fail the same way on a build of `fb1ca72e9` (worktree `stab-base-check`): portal
+      native-frontend, print-conversion, remote-screencast and remote-legacy-input; network-radio-outcomes;
+      Settings customize-window-lifecycle and color-navigation-page (their harness never links the Keyring QML
+      plugin that `Main.qml` imports); file-manager browsing-ui, remote-copy-guard, file-actions-mutation and
+      file-actions-ui.
+  - **Open regression, blocks release:** `qindaqt.power-lid-runtime` and `qindaqt.power-critical-battery-runtime`
+    pass at `fb1ca72e9` and fail here. `power_service` is unchanged; it constructs `SessionActionsClient` for
+    its lid and critical policies, and L1 reworked `session_actions`. Routed to the L1 implementer.
 - Integration tree: `build/release` (release preset + ebuild install dirs + ccache). `build/dev` is stale:
   it links a removed fork stage (`qindaqt-kwin.worktrees/native-night-light-integrated-gates/stage`) whose
   `libKGlobalAccelD` no longer resolves.
@@ -74,6 +122,8 @@ After install, check live:
 - The lock prompt appears on the first key press, and Enter works after a timeout.
 - Idle CPU of the shell and compositor and the bus message rate: the baseline before install was about 26%,
   26% and 514 msg/s.
+- Owner decision: nothing turns the display off when idle. `ScreenPower1` (the idle policy) exists only with
+  `QINDAQT_NATIVE_POWER_EXCLUSIVE=ON`, which is the whole native power cutover, and PowerDevil is gone.
 - Owner-assisted: `sudo tools/diagnose-s2idle-wake`. Then align QindaQt Settings `power.lid.*` with the
   installed logind behaviour.
 
@@ -84,6 +134,19 @@ Follow-ups outside this round:
     `readlink()` would avoid touching FUSE;
   - capture setup keeps a few synchronous calls, each capped at 1 s;
   - the broker's own 50 ms poll in container-wm is unchanged.
+- L3 leftovers:
+  - Audio1 still meters internally until `AcquireMeters`/`ReleaseMeters` (ADR-0174) exist;
+  - other once-per-surface `Popup.Window` users keep their windows;
+  - ten shell QML rows lack an `AgentUsageApplet` test double;
+  - `audio_settings_model.h` reached the size-review threshold.
+- Stale pre-existing rows:
+  - `session.gabbee-interop-unit` expects the KDE-only portal line that `ae33a9f6f` replaced;
+  - `session.daily-controls-runner-unit` is registered without the runner's required arguments.
+- L1 leftovers:
+  - the shell and clipboard notification observers check Session1 admission with a blocking call and change
+    a shared 250 ms timeout; they should watch Session1 (shell area);
+  - manual native lock requests still make two blocking 250 ms calls;
+  - the display writer port file is 586 non-blank lines and is due a decomposition review.
 - L2: changes other than titles still trigger a full chrome sync, which now costs nothing when the plan is
   unchanged; `kwinhybridsession.h` is 421 lines and `tests/compositor/CMakeLists.txt` 791.
 
