@@ -21,22 +21,25 @@ Rules for this round:
 
 | Lane | Owner | Branch / worktree | State |
 | --- | --- | --- | --- |
-| L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` (`a16f91c41`) | integrated `b4d4a1e70` (+ consumer tests `5f955677d`) |
+| L1 session resilience + bus discipline | Claude (Opus) | `stability/l1-session-20261016` (`a16f91c41`) | integrated `b4d4a1e70` (+ consumer tests `5f955677d`; power fix `67efddb79`) |
 | L2 compositor plugin efficiency + window model | Claude (Opus) | `stability/l2-compositor-20261016` (`d74f82423`) | integrated `978cc5927` |
 | L3 shell, Settings, audio client | Claude (Sonnet) | `stability/l3-shell-20261016` (`7209b9cd1`) | integrated `c5e350695` |
 | L4 qindaqt-kwin fork robustness + capture backend logging | Claude (Opus) | `stability/l4-fork-20261016` (`6e8a094a06`) + `stability/l4-capture-20261016` (`f9fd48b03`) | fork main fast-forwarded to `6e8a094a06`; capture half integrated `92fcdc738` |
 | L5 lock greeter + lock PAM | Claude (Sonnet) | `stability/l5-greeter-20261016` (`4dbde3c2c`) | integrated `9ca08cde8` |
-| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (3c2db419d); QindaGentoo `stability/power-defaults-20261016` (498a914); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | container-wm half integrated `8dae76534`; overlay and gabbee halves land with the release |
+| L6 packaging + system power policy | Claude (manager) | container-wm `stability/l6-packaging-20261016` (3c2db419d); QindaGentoo `stability/power-defaults-20261016` (498a914); gabbee `stability/no-qindaqt-dropins-20261016` (ad9bd02 + r7 ebuild) | container-wm half integrated `8dae76534`; gabbee main fast-forwarded to `c6bd2af`; overlay half lands with the release |
 
 Base: container-wm `fb1ca72e9` (the spec commit on `1e11e127e`); qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
 `~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
 
 Next steps:
-- Integrate each lane into main as it lands and rerun the affected gates.
-- When every lane has landed, build one full qindaqt-desktop revision from a single commit (ending the
-  R23/R25/R28/R29 patchwork), a new qindaqt-kwin revision and `sys-power/qindaqt-power-defaults`.
-- Install on the laptop once through Portage; the owner logs out and back in.
-- Owner-assisted: identify the s2idle wake source with the diagnostic script from L6.
+- Every lane has landed. `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r30` is cut from the commit that adds this
+  line: one full build of main, ending the R23/R25/R28/R29 patchwork. It ships with
+  `gui-wm/qindaqt-kwin-6.6.6_p1-r7` (fork `d3d54af3d8`, pinned in `88df138b2`), Gabbee r7 and
+  `virtual/notification-daemon-0-r1`. `sys-power/qindaqt-power-defaults` is already installed on the laptop
+  (2026-10-16, applied without a reboot).
+- Gate the integrated tree (power, session actions, keyring, shell session rows, the header guard), build on
+  qinda, install on the laptop through Portage; the owner reboots (frees swap so hibernate is available).
+- Owner-assisted after the reboot: identify the s2idle wake source with the diagnostic script from L6.
 
 Integrated on main during the round:
 - `3367d7ce0`: merges `fix/keyring-prompts-20261009`, the R28-installed keyring prompt serialization that was
@@ -98,9 +101,16 @@ Integrated on main during the round:
       Settings customize-window-lifecycle and color-navigation-page (their harness never links the Keyring QML
       plugin that `Main.qml` imports); file-manager browsing-ui, remote-copy-guard, file-actions-mutation and
       file-actions-ui.
-  - **Open regression, blocks release:** `qindaqt.power-lid-runtime` and `qindaqt.power-critical-battery-runtime`
-    pass at `fb1ca72e9` and fail here. `power_service` is unchanged; it constructs `SessionActionsClient` for
-    its lid and critical policies, and L1 reworked `session_actions`. Routed to the L1 implementer.
+  - The power regression found here is fixed. `qindaqt.power-lid-runtime` and
+    `qindaqt.power-critical-battery-runtime` passed at `fb1ca72e9` and failed after the L1 merge.
+    `qindaqt_power_service` linked `QindaQt::SessionActions` PRIVATE, so `app/main.cpp` compiled
+    `session_actions_client.h` from the installed r13 copy in `/usr/include/qindaqt` and disagreed with the new
+    library about class layout. The keyring daemon and two test targets had the same fallback. The R30 package
+    is built on qinda, so it would have shipped them mismatched. `67efddb79` merges the link fixes (`6c77df2d3`)
+    and the ADR-0388 header-isolation guard (`7558c9691`): an unlinked `<qindaqt/...>` include now fails to
+    compile. Branch evidence: no object depends on `/usr/include/qindaqt`; power_service 21/21, session_actions
+    4/4, keyring 19/19, shell session menu, start menu, power applet and desktop menu rows pass. The shell was
+    never affected.
 - Integration tree: `build/release` (release preset + ebuild install dirs + ccache). `build/dev` is stale:
   it links a removed fork stage (`qindaqt-kwin.worktrees/native-night-light-integrated-gates/stage`) whose
   `libKGlobalAccelD` no longer resolves.
@@ -132,6 +142,11 @@ Follow-ups outside this round:
     `readlink()` would avoid touching FUSE;
   - capture setup keeps a few synchronous calls, each capped at 1 s;
   - the broker's own 50 ms poll in container-wm is unchanged.
+- Keyring: `keyring_resident_policy` is flaky at `fb1ca72e9` and after (4 of 10 runs failed on the L1 tree).
+  `test_native_screen_privacy_ignores_disabled_collection_lock_policy` drops the display at 0.7 s expecting
+  the delayed reveal in flight, but the reveal prompt carries the collection label ("Synthetic login"), so
+  `native_scripted_prompt.py` never applies its delay and answers at about 0.6 s. Fix in the test: create the
+  late item in a collection labelled `delayed-reveal-fixture`.
 - L3 leftovers:
   - Audio1 still meters internally until `AcquireMeters`/`ReleaseMeters` (ADR-0174) exist;
   - other once-per-surface `Popup.Window` users keep their windows;
