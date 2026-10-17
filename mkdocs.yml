@@ -154,6 +154,7 @@ nav:
   - Development:
       - Implementation roadmap: development/implementation-roadmap.md
       - Everyday desktop audit: development/everyday-desktop-audit.md
+      - October 17 reboot service audit: development/reboot-service-audit-20261017.md
       - Everyday desktop delivery plan: development/everyday-desktop-plan.md
       - Android and Windows integration plan: development/foreign-app-integration-plan.md
       - Coding practices: development/coding-practices.md

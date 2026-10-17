@@ -22,6 +22,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 
 ## Start here
 
+- [October 17 post-reboot service audit](development/reboot-service-audit-20261017.md)
+  records the actual Bluetooth/dictation failures, runtime recoveries, and
+  remaining suspend and memory-pressure evidence after the stability release.
+
 - [Everyday desktop audit](development/everyday-desktop-audit.md) records the
   October 7 usability gaps, existing capabilities and verification limits; its
   [delivery plan](development/everyday-desktop-plan.md) defines the subsequently

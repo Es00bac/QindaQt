@@ -1,3 +1,14 @@
+## Post-reboot service incident — 2026-10-17
+
+The owner's Bluetooth/dictation report is reproduced in the
+[current boot audit](wiki/development/reboot-service-audit-20261017.md).
+Selected-index unblock restores radio power; saved Media Next and an idle-only
+provider restart restore active compositor bindings. The helper sandbox's
+session-bus denial has a bounded unit repair pending Portage delivery. Physical
+dictation confirmation, stale-binding watchdog detection, s2idle early wakes
+and attribution of the six OOM kills remain open. This is not acceptance of
+all stability or everyday-desktop journeys.
+
 ## Non-game publication complete — 2026-10-12T20:06:06Z
 
 All eleven new public repositories are published. QindaLLM's creation cooldown cleared, and its public main is verified at `91a294cd967f0331bbef13f95b74920a27cd2d7e`, matching the licensed source on qinda. The catalog and release procedure now link it. This closes the remaining repository-publication gate in the 19:45 record below; its verified package archive and overlay recipe are unchanged.

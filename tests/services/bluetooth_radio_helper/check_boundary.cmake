@@ -6,7 +6,8 @@ set(root "${SOURCE_ROOT}/src/services/bluetooth_radio_helper")
 file(READ "${root}/data/qindaqt-bluetooth-radio-helper.service.in" unit)
 foreach(required IN ITEMS "PrivateUsers=yes" "PrivateDevices=yes" "NoNewPrivileges=yes"
     "BindPaths=/dev/rfkill" "DevicePolicy=closed" "DeviceAllow=/dev/rfkill rw"
-    "ProtectSystem=strict" "ProtectHome=yes" "RestrictAddressFamilies=AF_UNIX" "Restart=no")
+    "ProtectSystem=strict" "ProtectHome=tmpfs" "BindReadOnlyPaths=%t/bus"
+    "RestrictAddressFamilies=AF_UNIX" "Restart=no")
     string(FIND "${unit}" "${required}" found)
     if(found LESS 0)
         message(FATAL_ERROR "Radio helper lost sandbox requirement: ${required}")

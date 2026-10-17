@@ -252,6 +252,14 @@ disable retains direct BlueZ behavior. The helper checks same-bus owner/caller,
 complete issued intent, exact BlueZ Address, pinned HCI/rfkill parent identity
 and existing user ACLs. Its separate unit leaves the daemon sandbox untouched.
 
+The helper hides home and user-runtime contents with `ProtectHome=tmpfs`, then
+binds only `%t/bus` read-only so it can connect to the ordinary session bus.
+`ProtectHome=yes` hid that socket and made the installed helper exit before
+acquiring its name. The October 17 laptop probe reproduced `connect` returning
+`EACCES` under the original settings; the corrected namespace connected to both
+buses and held the helper name. The selected `/dev/rfkill` bind, user ACL,
+private users/devices, and no-write-before-admitted-RPC rules are unchanged.
+
 One selected unblock may precede one independently admitted BlueZ power call.
 Definitive no-write absence/unobservable state can retain legacy direct
 behavior; known block/refusal or possible-write uncertainty cannot. No startup

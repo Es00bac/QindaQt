@@ -99,6 +99,14 @@ error messages enter those messages.
 
 ## Packaging and qualification
 
+October 17 correction: `ProtectHome=yes` also hides `/run/user`, so the ordinary
+session-bus socket was inaccessible in the installed helper. Use
+`ProtectHome=tmpfs` with only `%t/bus` bound read-only. This preserves hidden
+home/runtime contents and existing radio authority while admitting the
+session connection required by this decision. A real laptop sandbox probe
+reproduced the original `EACCES` and successful connections after the change;
+that startup evidence does not by itself qualify selected-index radio writes.
+
 The helper user unit uses PrivateUsers, PrivateDevices, an explicit /dev/rfkill
 bind, closed device policy for that node only, NoNewPrivileges, protected
 system/home and AF_UNIX only. Existing ACLs remain authoritative: the unit adds

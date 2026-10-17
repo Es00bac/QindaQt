@@ -19,7 +19,10 @@ BindPaths=/dev/rfkill
 DevicePolicy=closed
 DeviceAllow=/dev/rfkill rw
 ProtectSystem=strict
-ProtectHome=yes
+# AGENT-GUARD: ProtectHome=yes makes /run/user inaccessible, including the
+# session bus. Keep home/runtime contents hidden, exposing only this socket.
+ProtectHome=tmpfs
+BindReadOnlyPaths=%t/bus
 PrivateTmp=no
 ProtectKernelTunables=yes
 ProtectKernelModules=yes

@@ -1,3 +1,13 @@
+## October 17 post-reboot incident
+
+The [current boot audit](wiki/development/reboot-service-audit-20261017.md)
+supersedes any assumption that reboot alone verified the stability release.
+Bluetooth was soft-blocked and its helper sandbox could not reach the user
+bus. Selected unblock restored power. Voice1 remained alive with Media Previous
+and no active compositor bindings; saved Media Next and an idle-only restart
+restored both actions. The unit repair is source-ready, not yet installed.
+Residual sleep/memory findings and physical verification limits are in the audit.
+
 ## October 16 stability round: RESUME HERE (Claude ⇄ Codex, kept current)
 
 The owner reported daily-driving instability and asked: "Fix the problems … I need a stable desktop." A
