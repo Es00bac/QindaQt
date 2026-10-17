@@ -31,15 +31,29 @@ Rules for this round:
 Base: container-wm `fb1ca72e9` (the spec commit on `1e11e127e`); qindaqt-kwin main `24d0c6a6fe`. Worktrees live under
 `~/work_SPaC3/container-wm.worktrees/stab-*` and `~/work_SPaC3/qindaqt-kwin.worktrees/stab-*`.
 
-Next steps:
-- Every lane has landed. `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r30` is cut from the commit that adds this
-  line: one full build of main, ending the R23/R25/R28/R29 patchwork. It ships with
-  `gui-wm/qindaqt-kwin-6.6.6_p1-r7` (fork `d3d54af3d8`, pinned in `88df138b2`), Gabbee r7 and
-  `virtual/notification-daemon-0-r1`. `sys-power/qindaqt-power-defaults` is already installed on the laptop
-  (2026-10-16, applied without a reboot).
-- Gate the integrated tree (power, session actions, keyring, shell session rows, the header guard), build on
-  qinda, install on the laptop through Portage; the owner reboots (frees swap so hibernate is available).
-- Owner-assisted after the reboot: identify the s2idle wake source with the diagnostic script from L6.
+Released 2026-10-17 (installed on qinda and the laptop):
+- `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r30`: one full build of main `4930c053f`, ending the
+  R23/R25/R28/R29 patchwork. Archive 40,312,436 bytes, cut twice byte-identically. QindaGentoo `5161441` adds
+  the recipe and moves the shared delivery list. The recipe leaves the Windows runner and the Android manager
+  and collector to `gui-apps/qindaqt-windows-runner` and `gui-apps/qindaqt-android-applications`, which own
+  those files on the laptop.
+- `gui-wm/qindaqt-kwin-6.6.6_p1-r7` (fork `d3d54af3d8`, pinned in `88df138b2`), Gabbee r7 (gabbee main
+  `c6bd2af`, no restart-limit drop-ins on QindaQt units) and `virtual/notification-daemon-0-r1[qindaqt]`.
+  `x11-misc/notification-daemon` is depcleaned on the laptop.
+- `sys-power/qindaqt-power-defaults-1` is on the laptop only (2026-10-16, applied without a reboot).
+- Integrated gate on `4930c053f`: 81 of 82 power, session-actions, keyring, display-power, Settings
+  screen-lock, shell session-menu, start-menu, power-applet, desktop-menu and tools rows pass, including
+  `qindaqt.power-lid-runtime`, `qindaqt.power-critical-battery-runtime` and `qindaqt.header-isolation-guard`.
+  `qindaqt.dev-harness` needs `xdg-desktop-portal-kde`, which qinda lacks. The Portage build compiled all
+  5,342 edges with the guard on (805 guarded headers).
+- On qinda, the R30 merge replaced nine unowned Settings QML files under
+  `/usr/lib64/qt6/qml/QindaQt/SettingsApp/{Audio,Network}/qml/` (no package claimed them; probably an
+  earlier hand copy). The laptop merge had no collisions.
+- Rollback on the laptop, from a text console: `emerge --oneshot --usepkgonly
+  =gui-wm/qindaqt-kwin-6.6.6_p1-r6 =gui-wm/qindaqt-desktop-0.1.0_pre20261002-r29
+  =app-accessibility/gabbee-0.1.0_p20261002-r6` (r29 and Gabbee r6 saved with quickpkg before the install).
+- Next: the owner reboots the laptop (clears the 4 GB session bus and frees swap so hibernate is available),
+  then run the checks below.
 
 Integrated on main during the round:
 - `3367d7ce0`: merges `fix/keyring-prompts-20261009`, the R28-installed keyring prompt serialization that was
@@ -122,7 +136,9 @@ Integrated on main during the round:
     follow-up with a non-maps load proof;
   - validate-docs and `mkdocs build --strict` pass.
 
-After install, check live:
+After install, check live. On the laptop, `~/.cache/qindaqt-stability-20261016/post-reboot-check.sh` runs
+the read-only checks; compare with `pre-install-snapshot.txt` there (before: ScreenCast source types 0,
+session bus 4.2 GB virtual, Gabbee drop-ins present, CanHibernate `na` with swap 14 of 15 GiB used):
 - `qindaqt-keyring@1000.service` is active after login, and the keyring opens without its own prompt. The login
   PAM path used the same wrong systemd interface, so the PAM keyring hand-off has never worked.
 - ScreenCast `AvailableSourceTypes` is nonzero, and OBS PipeWire capture works, including after lock cycles.
@@ -132,8 +148,9 @@ After install, check live:
   26% and 514 msg/s.
 - Owner decision: nothing turns the display off when idle. `ScreenPower1` (the idle policy) exists only with
   `QINDAQT_NATIVE_POWER_EXCLUSIVE=ON`, which is the whole native power cutover, and PowerDevil is gone.
-- Owner-assisted: `sudo tools/diagnose-s2idle-wake`. Then align QindaQt Settings `power.lid.*` with the
-  installed logind behaviour.
+- Owner-assisted, consented for after the reboot: `sudo ~/.cache/qindaqt-stability-20261016/diagnose-s2idle-wake`
+  (a copy of `tools/diagnose-s2idle-wake`). Then align QindaQt Settings `power.lid.*` with the installed logind
+  behaviour.
 
 Follow-ups outside this round:
 - The nested pixel-row harness needs a load proof that doesn't read `/proc/<pid>/maps`.
@@ -142,6 +159,11 @@ Follow-ups outside this round:
     `readlink()` would avoid touching FUSE;
   - capture setup keeps a few synchronous calls, each capped at 1 s;
   - the broker's own 50 ms poll in container-wm is unchanged.
+- Gabbee r7 still runs `gabbee-voice-watchdog.timer` every 30 s. It checks seven QindaQt units and Settings1 and
+  restarts a unit whose bus name has no owner. Now that QindaQt services heal themselves (ADR-0379), measure
+  whether it still helps or only competes with systemd's own restarts.
+- The laptop's deep update skips KDE Frameworks 6.29 (`kdbusaddons-6.29` is `~amd64`-masked and qqterm pins
+  `kwindowsystem` subslot 6.27). This predates the release, which installed against 6.27.
 - Keyring: `keyring_resident_policy` is flaky at `fb1ca72e9` and after (4 of 10 runs failed on the L1 tree).
   `test_native_screen_privacy_ignores_disabled_collection_lock_policy` drops the display at 0.7 s expecting
   the delayed reveal in flight, but the reveal prompt carries the collection label ("Synthetic login"), so
