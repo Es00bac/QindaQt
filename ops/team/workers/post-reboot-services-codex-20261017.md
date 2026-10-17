@@ -20,3 +20,5 @@
   saving Media Next; both dictation and command bindings are now active in the
   compositor. Original helper sandbox returns EACCES connecting to the user bus;
   tmpfs home/runtime with an explicit socket bind connects to both buses.
+
+- 2026-10-17T17:59:57+00:00 — Source candidate 37988eb8f independently accepted. Unit verification, selected-radio boundary, strict MkDocs and 572-document validation pass. Corrected transient unit directly owned BluetoothRadio1. Gabbee candidate be99a1b passes 69 recovery tests and reads both current portal Session endpoints; package candidate 8dfc954 is under exact review. Both-host r31 source archives have identical SHA256 7c0260ae. No installed-unit or physical-key completion claim.
