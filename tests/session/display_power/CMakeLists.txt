@@ -6,7 +6,10 @@ add_test(NAME qindaqt.scoped-display-power COMMAND qindaqt_scoped_display_power_
 set_tests_properties(qindaqt.scoped-display-power PROPERTIES LABELS "session;power;dbus;private-fixture" TIMEOUT 30 RUN_SERIAL TRUE)
 
 qt_add_executable(qindaqt_screen_power_service_tests tst_screen_power_service.cpp)
-target_link_libraries(qindaqt_screen_power_service_tests PRIVATE QindaQt::DisplayPower QindaQt::NativeSleep qindaqt_compositor_names Qt6::Test)
+# The shared native-sleep fixture includes the screensaver model test support,
+# whose headers belong to qindaqt_settings_screensaver (ADR-0388).
+target_link_libraries(qindaqt_screen_power_service_tests PRIVATE QindaQt::DisplayPower QindaQt::NativeSleep
+    qindaqt_compositor_names qindaqt_settings_screensaver Qt6::Test)
 target_compile_definitions(qindaqt_screen_power_service_tests PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
 qindaqt_enable_warnings(qindaqt_screen_power_service_tests)
 add_test(NAME qindaqt.screen-power-service COMMAND qindaqt_screen_power_service_tests)

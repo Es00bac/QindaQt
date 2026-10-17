@@ -38,3 +38,22 @@ set_tests_properties(
     qindaqt.agent-input-installed
     PROPERTIES LABELS "unit;install;tools;portal"
 )
+
+# ADR-0388: an unlinked <qindaqt/...> include must fail to compile rather than
+# resolve an installed copy (the 2026-10-16 power-service layout mismatch).
+if(QINDAQT_HEADER_ISOLATION AND NOT MSVC)
+    add_test(
+        NAME qindaqt.header-isolation-guard
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DCOMPILER=${CMAKE_CXX_COMPILER}"
+            "-DGUARD_DIR=${QINDAQT_HEADER_ISOLATION_DIR}"
+            "-DHEADER=qindaqt/services/session_actions/session_actions_client.h"
+            "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/header-isolation-guard"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_header_isolation_guard.cmake"
+    )
+    set_tests_properties(
+        qindaqt.header-isolation-guard
+        PROPERTIES LABELS "unit;tools;build;poison"
+    )
+endif()

@@ -72,10 +72,16 @@ target_sources(
             include/qindaqt/services/power_service/adapters/upower_battery_collaborator.h
             include/qindaqt/services/power_service/adapters/upstream_composition.h
 )
+# AGENT-GUARD: LidPolicy and CriticalBatteryPolicy take SessionActionsClient in
+# their public constructors, so every target that builds them (app/main.cpp,
+# the private lid resident) needs this module's include directory. Linked
+# PRIVATE, the compiler fell back to an installed, older
+# session_actions_client.h and the resident ran with a mismatched class layout
+# (ADR-0388).
 target_link_libraries(
     qindaqt_power_service
-    PUBLIC QindaQt::PowerProtocol QindaQt::SettingsClient Qt6::Core Qt6::DBus
-    PRIVATE QindaQt::SessionActions
+    PUBLIC QindaQt::PowerProtocol QindaQt::SettingsClient QindaQt::SessionActions
+        Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_power_service PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_power_service PRIVATE QT_NO_KEYWORDS)
