@@ -58,7 +58,11 @@ add_subdirectory(pam)
 target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::CompositorAttachment QindaQt::IdleObservation)
 
 target_sources(qindaqt_keyring_service PRIVATE daemon/lock_policy.h daemon/lock_policy.cpp)
-target_link_libraries(qindaqt_keyring_service PRIVATE QindaQt::SettingsClient QindaQt::SessionLockState)
+# AGENT-GUARD: daemon/lock_policy.h includes both modules' headers and reaches
+# app/main.cpp and tst_keyring_lock_policy through resident_lock_policy.h.
+# PUBLIC keeps them on those targets' include paths instead of an installed
+# copy (ADR-0388).
+target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::SettingsClient QindaQt::SessionLockState)
 
 target_sources(qindaqt_keyring_service PRIVATE daemon/resident_lock_policy.h daemon/resident_lock_policy.cpp)
 
