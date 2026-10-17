@@ -5,7 +5,12 @@ supersedes any assumption that reboot alone verified the stability release.
 Bluetooth was soft-blocked and its helper sandbox could not reach the user
 bus. Selected unblock restored power. Voice1 remained alive with Media Previous
 and no active compositor bindings; saved Media Next and an idle-only restart
-restored both actions. The unit repair is source-ready, not yet installed.
+restored both actions. Gabbee r8 is Portage-installed and verified (262 objects,
+zero mismatches); the watchdog verifies both portal Session endpoints. The
+installed Bluetooth helper now runs with the reviewed scoped user override;
+public enable succeeds and preserves the connected controller. The r31 default
+package is still building on qinda in `qindaqt-reboot-repair-build-20261017.service`
+(8 CPU / 12 GiB / no swap); no desktop restart is needed for this runtime repair.
 Residual sleep/memory findings and physical verification limits are in the audit.
 
 ## October 16 stability round: RESUME HERE (Claude ⇄ Codex, kept current)

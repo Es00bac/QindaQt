@@ -4,9 +4,10 @@ The owner's Bluetooth/dictation report is reproduced in the
 [current boot audit](wiki/development/reboot-service-audit-20261017.md).
 Selected-index unblock restores radio power; saved Media Next and an idle-only
 provider restart restore active compositor bindings. The helper sandbox's
-session-bus denial has a bounded unit repair pending Portage delivery. Physical
-dictation confirmation, stale-binding watchdog detection, s2idle early wakes
-and attribution of the six OOM kills remain open. This is not acceptance of
+session-bus denial is corrected in the live installed service through a scoped
+user setting; its r31 default package is building on qinda. Gabbee r8 is installed
+and verifies both portal Session endpoints. Physical dictation confirmation,
+s2idle early wakes and attribution of the six OOM kills remain open. This is not acceptance of
 all stability or everyday-desktop journeys.
 
 ## Non-game publication complete — 2026-10-12T20:06:06Z
