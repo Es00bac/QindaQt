@@ -839,10 +839,18 @@ admission batches, but every owner and UID lookup in them is asynchronous. See
 
 ## Current accepted fork delivery receipt
 
-The current source manifest and immutable Gentoo fork `6.6.6_p1-r6` pin
-`24d0c6a6fedc68256a20a480bc3fe8b5d871a1ae`, tree
-`3a257b8d991777247970c83ce9ae8ca265448db3`, retaining exact plugin ABI
+The current source manifest and immutable Gentoo fork `6.6.6_p1-r7` pin
+`d3d54af3d844507748f352ee540389624f6eae07`, tree
+`9b4d0a5f4466eca24a1c1906570f50dd5043be59`, retaining exact plugin ABI
 `6.6.6.1`. The object and tree were checked against qinda's bare fork hub;
-the historical source pins above remain decision history. This delivery fixes
-native desktop-entry permission-list decoding. It does not qualify physical
-lock authentication or the native-exclusive power receipt barrier.
+the historical source pins above remain decision history. This delivery is the
+2026-10-16 stability round. Permission checks never walk network, FUSE or
+autofs mounts ([ADR-0387](../adr/0387-resolve-privileged-desktop-entries-by-basename-and-local-paths.md)).
+Display power follows bus owner changes instead of polling. The locker and the
+capture broker are relaunched with backoff
+([ADR-0386](../adr/0386-supervise-compositor-owned-locker-and-capture-broker.md)), and
+children keep their inherited core limit
+([ADR-0385](../adr/0385-keep-the-compositor-non-dumpable-without-lowering-session-core-limits.md)).
+It descends from the `6.6.6_p1-r6` pin `24d0c6a6`, which fixed native
+desktop-entry permission-list decoding. It does not qualify physical lock
+authentication or the native-exclusive power receipt barrier.

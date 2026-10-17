@@ -4,8 +4,8 @@
         "project": "qindaqt-kwin",
         "repository": "qinda:git/qindaqt-kwin.git",
         "branch": "main",
-        "commit": "24d0c6a6fedc68256a20a480bc3fe8b5d871a1ae",
-        "tree": "3a257b8d991777247970c83ce9ae8ca265448db3",
+        "commit": "d3d54af3d844507748f352ee540389624f6eae07",
+        "tree": "9b4d0a5f4466eca24a1c1906570f50dd5043be59",
         "version": "6.6.6.1",
         "package": "gui-wm/qindaqt-kwin-6.6.6_p1"
     },
