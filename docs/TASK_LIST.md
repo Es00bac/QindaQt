@@ -1,3 +1,14 @@
+## Laptop playback and screensaver frame stalls — 2026-10-17
+
+Controller process inspection blocked the compositor for roughly 450 ms once
+per second. Source `b331c826c` moves it to one coalesced worker and preserves
+game priority, current-result fencing and neutral resume. The signed r32 package
+is Portage-installed and its controller plugin is live without restarting the
+compositor or shell. Five controller test groups (28 QtTest cases), complete
+installed-file verification, strict docs and local links pass. The final trace
+has no long stalls; the controller had disconnected by then, so connected-device
+playback confirmation is separate. See [acceptance evidence](wiki/architecture/controller-input.md#october-17-frame-timing-acceptance).
+
 ## Post-reboot service incident — 2026-10-17
 
 The owner's Bluetooth/dictation report is reproduced in the
@@ -5,7 +16,8 @@ The owner's Bluetooth/dictation report is reproduced in the
 Selected-index unblock restores radio power; saved Media Next and an idle-only
 provider restart restore active compositor bindings. The helper sandbox's
 session-bus denial is corrected in the live installed service through a scoped
-user setting; its r31 default package is building on qinda. Gabbee r8 is installed
+user setting; the signed r31 default image is now inherited by installed r32,
+with override retirement/default-unit verification still separate. Gabbee r8 is installed
 and verifies both portal Session endpoints. Physical dictation confirmation,
 s2idle early wakes and attribution of the six OOM kills remain open. This is not acceptance of
 all stability or everyday-desktop journeys.

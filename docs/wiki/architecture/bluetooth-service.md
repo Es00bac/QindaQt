@@ -258,8 +258,10 @@ binds only `%t/bus` read-only so it can connect to the ordinary session bus.
 acquiring its name. The October 17 laptop probe reproduced `connect` returning
 `EACCES` under the original settings; the corrected namespace connected to both
 buses and held the helper name. The installed laptop helper now runs with
-the same settings in a scoped user override until Desktop r31 finishes its
-Portage build. An explicit public enable request succeeds with an existing
+the same settings in a scoped user override. Desktop r31's signed Portage build
+completed and its image is inherited by the installed r32 controller repair;
+retiring the override still requires separate default-unit verification.
+An explicit public enable request succeeds with an existing
 controller connection preserved; no new selected-index write was exercised.
 The selected `/dev/rfkill` bind, user ACL,
 private users/devices, and no-write-before-admitted-RPC rules are unchanged.

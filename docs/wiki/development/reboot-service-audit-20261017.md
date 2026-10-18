@@ -9,7 +9,7 @@ It does not establish that the stability release fixed every daily-use journey.
 
 | Area | Direct evidence | Current boundary |
 | --- | --- | --- |
-| Bluetooth radio | The HCI radio was soft-blocked; BlueZ reported `off-blocked`. The installed helper exited with status 1. Its effective sandbox returned `EACCES` connecting to the ordinary session bus. | Unblocking only the selected HCI index restored `Powered=true`; a controller subsequently connected. The reviewed sandbox setting is applied to the existing installed unit through a scoped per-user override. That effective unit owns BluetoothRadio1 and runs successfully; a public SetPowered(true) request succeeds while the controller remains connected. Desktop r31 is still building on qinda, so its default unit is not yet adopted. |
+| Bluetooth radio | The HCI radio was soft-blocked; BlueZ reported `off-blocked`. The installed helper exited with status 1. Its effective sandbox returned `EACCES` connecting to the ordinary session bus. | Unblocking only the selected HCI index restored `Powered=true`; a controller subsequently connected. The reviewed sandbox setting is applied to the existing installed unit through a scoped per-user override. That effective unit owns BluetoothRadio1 and runs successfully; a public SetPowered(true) request succeeds while the controller remains connected. Desktop r31 completed and its authenticated image underlies the installed r32 controller repair; the matching scoped helper override remains effective pending separate default-unit verification. |
 | Dictation shortcut | Voice1 was idle and enabled, but advertised `Media Previous`. Neither Gabbee action existed in the compositor's live Shortcuts1 bindings, despite an existing portal session. | Saved the owner's `Media Next` preference and gracefully restarted only the idle provider. Both dictation and command bindings are present and active. Gabbee r8 is installed through Portage; all 262 package objects match and its installed watcher matches reviewed source. The new probe verifies both current Session endpoints, and the watchdog exits successfully. Physical-key/text-delivery confirmation remains separate. |
 | Suspend | The kernel recorded 65 s2idle entries between 22:49 and 23:23, generally waking about six seconds later. `suspend-then-hibernate` returned each time. | Still unresolved. The installed 90-minute hibernation delay does not demonstrate that repeated early wakes reach hibernation. No suspend was requested during this audit. |
 | Memory pressure | Six global OOM kills between 10:48 and 11:17: three Python processes and three browser content processes. | The process names do not identify the Python workloads. At inspection, about 8 GiB RAM was available and the user bus occupied about 3 MiB RSS. Do not attribute these kills to a Qinda service without evidence. |
@@ -33,11 +33,12 @@ The Bluetooth helper is likewise on demand, but its failed activation was real.
 
 ## Follow-up work
 
-1. Finish the [helper-unit package](../architecture/bluetooth-service.md#selected-adapter-power-recovery)
-   build already running as `qindaqt-reboot-repair-build-20261017.service` on qinda.
+1. The [helper-unit package](../architecture/bluetooth-service.md#selected-adapter-power-recovery)
+   build `qindaqt-reboot-repair-build-20261017.service` finished successfully on qinda.
    Source `37988eb8f`, archive SHA256 `7c0260aeb2f14c5349c7e389b1326b5abc3313bf386cb993a5c3dabced2c1d16`,
-   overlay `8dfc954`, Desktop r31. It is capped at eight CPUs, 12 GiB and zero swap.
-   Adopt through Portage once its signed artifact passes. Then remove only the
+   overlay `8dfc954`, Desktop r31. Its signed image is authenticated and inherited
+   by the laptop's installed [r32 controller repair](../architecture/controller-input.md#october-17-frame-timing-acceptance).
+   Default helper-unit adoption still needs verification. Remove only the
    matching incident override
    `~/.config/systemd/user/qindaqt-bluetooth-radio-helper.service.d/90-reboot-bus-visibility.conf`
    and verify the default unit again; do not remove unrelated user settings.

@@ -147,3 +147,26 @@ replaces that plugin under a fresh filename so Qt's retained old library mapping
 does not prevent live adoption. All other base-image files are verified against
 their ledger. A normal full source release continues to use the standard plugin
 filename; Controllers1 and saved profiles do not change.
+
+### October 17 frame-timing acceptance
+
+Source `b331c826c` is integrated and the signed r32 repair is Portage-installed
+on the laptop. The original compositor and shell processes stayed alive while
+only the controller plugin was reloaded. Controllers1 responds, its observation
+thread uses normal scheduling, and the saved controller file is byte-identical.
+All 2,374 installed files/symlinks match the authenticated package image; its
+other 2,652 base-image paths retain their r31 contents and modes.
+
+The initial twelve-second DRM/scheduler trace caught twelve 28–29-refresh gaps
+(up to 483 ms), aligned with 438–454 ms controller scans on the compositor
+thread. The final twelve-second sample has a 16.667 ms median frame-delivery
+interval, a 33.355 ms maximum, a 10.903 ms maximum compositor CPU run, and no
+CPU run above 100 ms. The controller disconnected between those samples, so
+the live comparison alone does not establish connected-controller playback
+acceptance. The blocked-scanner fixture directly verifies the threading repair,
+and SDL virtual fixtures retain controller/Steam/neutral-resume coverage.
+
+The focused standalone build and five controller CTest groups pass (28 QtTest
+cases, zero failures/skips). Strict MkDocs and local link/navigation validation
+pass. The signed artifact is 63,313,920 bytes, SHA-256
+`83637df1d16e3af764a4a87027093f1b80ec5475682c5cfc3d2b08ec6b84f5ca`.

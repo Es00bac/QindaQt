@@ -1,3 +1,17 @@
+## October 17 playback/saver compositor repair delivered
+
+Source `b331c826c` removes the controller plugin's approximately 450 ms
+once-per-second process scan from the compositor thread. One owned normal-priority
+worker coalesces requests; invalidation releases controls and fences stale results.
+Steam, pre-existing consumers and neutral resume remain covered. QindaGentoo
+`10fd1bb` packages the bounded r32 repair over the authenticated signed r31 image.
+The laptop is Portage-installed and running `qindaqt_controllers_r32`; compositor
+and shell identities and controller-file bytes are preserved. Five controller
+CTest groups/28 QtTest cases and all 2,374 installed file/symlink checks pass.
+Strict docs/local links pass. The final trace has no half-second gaps, but its
+controller was disconnected; retain that limit on connected-playback claims.
+Exact artifact and timing evidence are in [Controller input](wiki/architecture/controller-input.md#october-17-frame-timing-acceptance).
+
 ## October 17 post-reboot incident
 
 The [current boot audit](wiki/development/reboot-service-audit-20261017.md)
@@ -9,8 +23,9 @@ restored both actions. Gabbee r8 is Portage-installed and verified (262 objects,
 zero mismatches); the watchdog verifies both portal Session endpoints. The
 installed Bluetooth helper now runs with the reviewed scoped user override;
 public enable succeeds and preserves the connected controller. The r31 default
-package is still building on qinda in `qindaqt-reboot-repair-build-20261017.service`
-(8 CPU / 12 GiB / no swap); no desktop restart is needed for this runtime repair.
+package finished building on qinda and now supplies the base of the laptop's
+installed r32 image. Its matching scoped helper override remains in place;
+default-unit verification/override retirement is still a separate follow-up.
 Residual sleep/memory findings and physical verification limits are in the audit.
 
 ## October 16 stability round: RESUME HERE (Claude ⇄ Codex, kept current)
