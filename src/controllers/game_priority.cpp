@@ -4,6 +4,10 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QThread>
+#include <array>
+#include <dirent.h>
+#include <memory>
 #include <unistd.h>
 
 namespace QindaQt::Controllers {
@@ -18,6 +22,9 @@ bool matchesId(const QString &dir, quint16 vendor, quint16 product) {
     const auto p = readSmall(dir + "/id/product").toUInt(&pOk, 16);
     return vOk && pOk && v == vendor && p == product;
 }
+struct CloseDirectory {
+    void operator()(DIR *directory) const { closedir(directory); }
+};
 }
 GamePriorityState inspectGamePriority(const QSet<QString> &paths, const QString &root, qint64 self) {
     if (self < 0) self = QCoreApplication::applicationPid();
@@ -25,16 +32,28 @@ GamePriorityState inspectGamePriority(const QSet<QString> &paths, const QString 
     const QDir proc(root);
     const auto processes = proc.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
     for (const auto &process : processes) {
+        if (QThread::currentThread()->isInterruptionRequested()) break;
         bool numeric = false;
         const auto pid = process.fileName().toLongLong(&numeric);
         if (!numeric || pid == self || process.ownerId() != ::getuid()) continue;
         const auto name = readSmall(process.absoluteFilePath() + "/comm").toLower();
         if (name == "steam" || name == "steamwebhelper" || name == "steam.exe") state.steam = true;
         if (paths.isEmpty()) continue;
-        const QDir fds(process.absoluteFilePath() + "/fd");
-        for (const auto &fd : fds.entryInfoList(QDir::Files | QDir::System | QDir::NoDotAndDotDot)) {
-            const auto target = fd.symLinkTarget();
-            if (paths.contains(target)) state.busyPaths.insert(target);
+        const auto fdPath = process.absoluteFilePath() + "/fd";
+        const std::unique_ptr<DIR, CloseDirectory> fds(opendir(QFile::encodeName(fdPath).constData()));
+        if (!fds) continue;
+        while (const auto *fd = readdir(fds.get())) {
+            if (QThread::currentThread()->isInterruptionRequested()) break;
+            if (fd->d_name[0] == '.') continue;
+            // AGENT-GUARD (ADR-0397): inspect the proc link itself. QFileInfo
+            // directory filtering follows every FD's target, including network
+            // files, and used nearly half a second per poll on the compositor.
+            std::array<char, 4096> target{};
+            const auto size = readlinkat(dirfd(fds.get()), fd->d_name, target.data(), target.size());
+            if (size <= 0 || size == static_cast<ssize_t>(target.size())) continue;
+            auto path = QFile::decodeName(QByteArray(target.data(), size));
+            if (!path.startsWith('/')) path = QDir::cleanPath(fdPath + '/' + path);
+            if (paths.contains(path)) state.busyPaths.insert(path);
         }
     }
     return state;

@@ -11,7 +11,9 @@ struct GamePriorityState {
 };
 // Linux observation only: never grabs a controller or modifies a game. One
 // scan collects all same-user consumers. Injected roots make pre-existing
-// opens and Steam startup reproducible without touching live processes.
+// opens and Steam startup reproducible without touching live processes. Reads
+// FD link text without following targets; cooperative QThread interruption is
+// checked between entries. Call off the GUI thread for real process trees.
 GamePriorityState inspectGamePriority(const QSet<QString> &paths,
                                      const QString &procRoot = "/proc",
                                      qint64 selfPid = -1);

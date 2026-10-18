@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/controllers/controller_runtime.h"
 #include "qindaqt/controllers/game_priority.h"
+#include "game_priority_observer_p.h"
 #include <SDL3/SDL.h>
 #include <QCryptographicHash>
 #include <QElapsedTimer>
@@ -52,12 +53,26 @@ public:
         SDL_JoystickID instance = 0;
     };
     Private(ControllerRuntime &owner, InputSink &sink, QString path, RuntimeEnvironment env)
-        : q(owner), sink(sink), store(std::move(path)), environment(std::move(env)) {
+        : q(owner), sink(sink), store(std::move(path)), observer(std::move(env.procRoot)) {
+        QObject::connect(&observer, &GamePriorityObserver::invalidated, &q, [this] {
+            priorityReady = false;
+            for (auto &[id, device] : devices) { Q_UNUSED(id); release(device); }
+        });
+        QObject::connect(&observer, &GamePriorityObserver::observed, &q, [this](const GamePriorityState &state) {
+            priorityReady = true;
+            const bool steamChanged = state.steam != game.steam;
+            game = state;
+            if (game.steam && initialized) close();
+            if (steamChanged) bump();
+            // SDL and input delivery stay on the compositor thread. A fresh
+            // result never bypasses process()'s neutral-control resume gate.
+            q.tick();
+        });
         sample.setTimerType(Qt::PreciseTimer);
         sample.setInterval(16);
         QObject::connect(&sample, &QTimer::timeout, &q, &ControllerRuntime::tick);
         priority.setInterval(1000);
-        QObject::connect(&priority, &QTimer::timeout, &q, &ControllerRuntime::refreshPriority);
+        QObject::connect(&priority, &QTimer::timeout, &q, [this] { refreshPriority(false); });
         fd = inotify_init1(IN_CLOEXEC | IN_NONBLOCK);
         if (fd >= 0) {
             notifier = std::make_unique<QSocketNotifier>(fd, QSocketNotifier::Read);
@@ -70,6 +85,11 @@ public:
         elapsed.start();
     }
     ~Private() { close(); if (fd >= 0) ::close(fd); }
+    void refreshPriority(bool invalidate) {
+        QSet<QString> paths;
+        for (const auto &[id, device] : devices) { Q_UNUSED(id); for (const auto &path : device.paths) paths.insert(path); }
+        observer.refresh(std::move(paths), invalidate);
+    }
     void bump() { ++revision; Q_EMIT q.changed(revision); }
     void release(Device &device) {
         sink.reset(device.id + '/' + QString::number(device.instance));
@@ -141,16 +161,19 @@ public:
             bump();
         }
         SDL_free(ids);
+        bool removed = false;
         for (auto it = devices.begin(); it != devices.end();) {
             if (present.contains(it->first)) { ++it; continue; }
             release(it->second);
             SDL_CloseGamepad(it->second.pad);
             it = devices.erase(it);
+            removed = true;
             bump();
         }
+        if (removed) q.refreshPriority();
     }
     void process(SDL_JoystickID instance, Device &dev, double dt) {
-        QString reason = !context ? contextReason : !dev.profile.enabled ? "disabled" : QString{};
+        QString reason = !priorityReady ? "checking-game" : !context ? contextReason : !dev.profile.enabled ? "disabled" : QString{};
         for (const auto &path : dev.paths) if (game.busyPaths.contains(path)) reason = "game";
         if (!reason.isEmpty()) {
             if (dev.armed || !dev.down.isEmpty()) release(dev);
@@ -201,14 +224,14 @@ public:
     ControllerRuntime &q;
     InputSink &sink;
     ProfileStore store;
-    RuntimeEnvironment environment;
+    GamePriorityObserver observer;
     QTimer sample, priority;
     QElapsedTimer elapsed;
     qint64 lastDiscover = -1000, lastSample = 0;
     std::map<SDL_JoystickID, Device> devices;
     GamePriorityState game;
     quint64 revision = 1;
-    bool initialized = false, context = true;
+    bool initialized = false, context = true, priorityReady = false;
     QString contextReason, error;
     int fd = -1;
     QList<int> watches;
@@ -232,25 +255,12 @@ void ControllerRuntime::setContext(bool allowed, QString reason) {
     tick();
 }
 void ControllerRuntime::refreshPriority() {
-    QSet<QString> paths;
-    for (const auto &[id, dev] : d->devices) { Q_UNUSED(id); for (const auto &path : dev.paths) paths.insert(path); }
-    const auto game = inspectGamePriority(paths, d->environment.procRoot);
-    const bool steamChanged = game.steam != d->game.steam;
-    d->game = game;
-    if (game.steam && d->initialized) d->close();
-    if (steamChanged) d->bump();
-    for (auto &[id, dev] : d->devices) {
-        Q_UNUSED(id);
-        for (const auto &path : dev.paths) if (game.busyPaths.contains(path)) {
-            d->release(dev);
-            if (dev.reason != "game") { dev.reason = "game"; d->bump(); }
-            break;
-        }
-    }
+    d->refreshPriority(true);
 }
 void ControllerRuntime::tick() {
     if (d->game.steam) { d->sample.setInterval(250); return; }
     if (!d->initialized) {
+        if (!d->priorityReady) return;
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
         if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) { d->error = "controller-backend-unavailable"; d->sample.setInterval(1000); return; }
         d->initialized = true;

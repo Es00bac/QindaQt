@@ -89,8 +89,17 @@ received during a snapshot queues another read, so suppression/reconnect changes
 cannot strand the next edit on an old revision. Interactive controls rebind to
 confirmed settings after a gesture and when controller selection changes.
 
-All runtime, endpoint, SDL handles, delivery and Settings models stay on their
-owning Qt GUI thread. The SDL runtime borrows a sink that outlives it; each held
+Runtime state, endpoints, SDL handles, delivery and Settings models stay on their
+owning Qt GUI thread. One owned worker performs read-only process inspection at
+normal scheduling priority; it neither follows FD targets nor touches input or
+SDL. Periodic requests coalesce. Initial observation, device changes and
+open/close notifications suppress desktop input until a current scan completes;
+an invalidated result cannot restore authority. This transient state reports
+`checking-game`. Periodic polling retains the last observation while its scan
+runs, so held controls do not drop once a second. Destruction interrupts and
+joins the worker before unloading plugin code
+([ADR-0397](../adr/0397-observe-controller-consumers-off-the-compositor-thread.md)).
+The SDL runtime borrows a sink that outlives it; each held
 token must be released on suppression/disconnect/destruction. Voice1 requests
 use its exact unique bus owner and current revision, with no replay after an
 owner replacement. [ADR-0347](../adr/0347-controller-desktop-integration.md)
@@ -110,6 +119,9 @@ installed QindaQt KWin SDK. It does not compile the desktop or KWin.
   edits gated by authority, readback, Steam status, owner loss.
 - `qindaqt.controller-runtime`: SDL virtual DualSense buttons, dictation action,
   stick/touchpad/gyro motion, suppression releases, neutral resume, Steam startup.
+- `qindaqt.controller-observation`: a blocked scan leaves the event loop live,
+  coalesced requests, invalidated-result rejection, normal scheduling and joined
+  interrupted teardown.
 - `qindaqt.controller-bus`: private out-of-process provider, change-during-read
   convergence, mutation completion after readback, and dictation start/release.
 
@@ -128,3 +140,10 @@ Unchanged desktop programs keep their existing binary content. This is a bounded
 ABI-compatible repair over the same Qt/KWin dependencies, not a general release
 recipe: later changes outside these modules require the ordinary source build.
 The result is a complete new signed desktop package with normal Portage ownership.
+
+The r32 frame-timing repair uses the same bounded mechanism over the exact signed
+r31 image, compiling only the controller plugin with the installed SDK. It
+replaces that plugin under a fresh filename so Qt's retained old library mapping
+does not prevent live adoption. All other base-image files are verified against
+their ledger. A normal full source release continues to use the standard plugin
+filename; Controllers1 and saved profiles do not change.

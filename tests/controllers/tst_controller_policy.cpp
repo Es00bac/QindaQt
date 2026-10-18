@@ -62,6 +62,20 @@ private Q_SLOTS:
         const auto ignoreSelf = inspectGamePriority({device}, dir.path(), 43);
         QVERIFY(ignoreSelf.steam); QVERIFY(ignoreSelf.busyPaths.isEmpty());
     }
+    void gamePriorityReadsDescriptorLinksWithoutFollowingTargets() {
+        QTemporaryDir dir; QVERIFY(dir.isValid());
+        QVERIFY(QDir().mkpath(dir.filePath("42/fd")));
+        QFile comm(dir.filePath("42/comm")); QVERIFY(comm.open(QIODevice::WriteOnly));
+        comm.write("game\n"); comm.close();
+        // Proc FD links can name missing/deleted/unreachable targets. Their
+        // text, not a target stat or canonicalization, identifies the consumer.
+        const auto device = dir.filePath("unavailable/event17");
+        QVERIFY(QFile::link(device, dir.filePath("42/fd/5")));
+        QVERIFY(QFile::link("socket:[123]", dir.filePath("42/fd/6")));
+        const auto state = inspectGamePriority({device}, dir.path(), 99);
+        QCOMPARE(state.busyPaths, QSet<QString>{device});
+        QVERIFY(!state.steam);
+    }
 };
 QTEST_MAIN(ControllerPolicyTest)
 #include "tst_controller_policy.moc"

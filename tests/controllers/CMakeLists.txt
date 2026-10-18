@@ -25,6 +25,11 @@ add_test(NAME qindaqt.controller-bus COMMAND ${QINDAQT_CONTROLLER_DBUS_RUN_SESSI
 set_tests_properties(qindaqt.controller-bus PROPERTIES TIMEOUT 15)
 
 if(TARGET qindaqt_controller_runtime)
+    add_executable(qindaqt_game_priority_observer_test tst_game_priority_observer.cpp)
+    target_include_directories(qindaqt_game_priority_observer_test PRIVATE ../../src/controllers)
+    target_link_libraries(qindaqt_game_priority_observer_test PRIVATE qindaqt_controller_runtime Qt6::Test)
+    add_test(NAME qindaqt.controller-observation COMMAND qindaqt_game_priority_observer_test)
+    set_tests_properties(qindaqt.controller-observation PROPERTIES TIMEOUT 15)
     add_executable(qindaqt_controller_runtime_test tst_controller_runtime.cpp)
     target_link_libraries(qindaqt_controller_runtime_test PRIVATE qindaqt_controller_runtime Qt6::Test)
     add_test(NAME qindaqt.controller-runtime COMMAND qindaqt_controller_runtime_test)

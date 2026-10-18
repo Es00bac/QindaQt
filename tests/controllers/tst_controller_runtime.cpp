@@ -35,6 +35,11 @@ class ControllerRuntimeTest final : public QObject {
             if (entry.toObject().value("connected").toBool()) return entry.toObject().value("id").toString();
         return {};
     }
+    QString connectedReason(ControllerRuntime &runtime) {
+        for (const auto &entry : snapshot(runtime).value("controllers").toArray())
+            if (entry.toObject().value("connected").toBool()) return entry.toObject().value("reason").toString();
+        return {};
+    }
     void button(SDL_GamepadButton b, bool down, ControllerRuntime &runtime) {
         QVERIFY(SDL_SetJoystickVirtualButton(m_joystick, b, down)); SDL_UpdateGamepads(); runtime.tick();
     }
@@ -61,7 +66,7 @@ private Q_SLOTS:
     void dictationAndHeldButtonSuppression() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
         ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
-        runtime.start(); QVERIFY(!connectedId(runtime).isEmpty());
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         button(SDL_GAMEPAD_BUTTON_BACK, true, runtime);
         QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.events.last().first, "dictate");
         button(SDL_GAMEPAD_BUTTON_BACK, false, runtime); QVERIFY(sink.held.isEmpty());
@@ -74,20 +79,25 @@ private Q_SLOTS:
     void steamStartupClosesDesktopInput() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
         ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
-        runtime.start(); button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(!sink.held.isEmpty());
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(!sink.held.isEmpty());
         QDir().mkpath(dir.filePath("proc/42/fd")); QFile comm(dir.filePath("proc/42/comm"));
         QVERIFY(comm.open(QIODevice::WriteOnly)); comm.write("steam\n"); comm.close();
-        runtime.refreshPriority(); QVERIFY(snapshot(runtime).value("steam").toBool()); QVERIFY(sink.held.isEmpty());
+        runtime.refreshPriority(); QVERIFY(sink.held.isEmpty());
+        QTRY_VERIFY(snapshot(runtime).value("steam").toBool());
         const auto count = sink.events.size(); runtime.tick(); QCOMPARE(sink.events.size(), count);
         QVERIFY(QDir(dir.filePath("proc/42")).removeRecursively()); runtime.refreshPriority(); runtime.tick();
-        QVERIFY(!snapshot(runtime).value("steam").toBool()); QCOMPARE(sink.events.size(), count);
+        QTRY_VERIFY(!snapshot(runtime).value("steam").toBool());
+        QTRY_COMPARE(connectedReason(runtime), "release-controls");
+        QCOMPARE(sink.events.size(), count);
         button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime); button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
         QVERIFY(sink.events.size() > count);
     }
     void stickTouchpadAndGyro() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
         ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
-        runtime.start(); const auto id = connectedId(runtime); QVERIFY(!id.isEmpty());
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        const auto id = connectedId(runtime); QVERIFY(!id.isEmpty());
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFTX, 22000));
         QTest::qWait(20); runtime.tick(); QVERIFY(!sink.moves.isEmpty());
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFTX, 0)); runtime.tick();

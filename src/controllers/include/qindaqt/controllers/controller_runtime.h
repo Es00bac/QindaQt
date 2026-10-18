@@ -9,7 +9,9 @@ namespace QindaQt::Controllers {
 struct RuntimeEnvironment { QString procRoot = QStringLiteral("/proc"); };
 // Owns SDL controller handles, profiles, and their sampling timer on the Qt
 // GUI thread. Sink must outlive this object. No background input thread can
-// outlive the compositor. Steam closes every owned handle and SDL subsystem;
+// outlive the compositor. Read-only proc scans run on one owned, joined worker;
+// invalidated ownership suppresses output until a current result returns.
+// Steam closes every owned handle and SDL subsystem;
 // other consumers, locked/inactive sessions, and fullscreen apps gate output.
 class ControllerRuntime final : public QObject {
     Q_OBJECT
@@ -23,6 +25,7 @@ public:
     QString apply(const QString &id, const QString &patch, quint64 expectedRevision);
     QString resetProfile(const QString &id, quint64 expectedRevision);
     void tick();
+    // Asynchronously invalidate consumer ownership and request a fresh scan.
     void refreshPriority();
 Q_SIGNALS:
     void changed(qulonglong revision);
