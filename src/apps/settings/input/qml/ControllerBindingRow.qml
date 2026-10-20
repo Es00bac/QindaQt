@@ -12,7 +12,8 @@ FormRow {
     property string chosenAction: binding.action
     signal captureActivityChanged(bool active)
     label: binding.label
-    description: chosenAction === "dictate" ? qsTr("Hold while speaking; release to insert the text") : ""
+    description: chosenAction === "dictate" ? qsTr("Hold while speaking; release to insert the text")
+               : chosenAction === "voice-command" ? qsTr("Hold while speaking; release to run the command") : ""
     editor: RowLayout {
         spacing: Tokens.space["2"]
         ComboBox {

@@ -12,7 +12,7 @@ ColumnLayout {
     readonly property var selected: controllers.selected
     readonly property var config: selected.config ?? ({})
     readonly property bool editable: controllers.available && !controllers.busy
-    readonly property bool playstation: selected.family === "playstation"
+    readonly property bool playstation: selected.family === "playstation" || selected.family === "dualsense"
     readonly property bool hasTouchpad: Boolean(selected.hasTouchpad ?? (selected.template && playstation))
     readonly property bool hasGyro: Boolean(selected.hasGyro ?? (selected.template && (playstation || selected.family === "nintendo")))
     readonly property Item firstFocusTarget: controllers.available ? controllerChoice : retryButton
