@@ -1,5 +1,23 @@
 ## Laptop playback and screensaver frame stalls — 2026-10-17
 
+## October 20 — Requested DualSense desktop layout
+
+The controller-only slice from `4e886968b` is integrated here with identical
+controller, Settings Input and test blobs. DualSense has its own family defaults,
+all 19 requested bindings, held Voice1 command/dictation modes, a persistent gyro
+toggle, and Meta+Shift held mouse actions. Other controller families and saved
+motion preferences retain their values. ADR-0426 records the contract.
+
+The standalone plugin build and six controller CTest groups pass (41 QtTest
+results, no failures/skips); the real QML controller section exposes DualSense
+motion controls in an offscreen capability smoke (3 results). The implementation
+was reviewed in the selected Codex session; no other model or worker was
+requested or launched. The signed r38 Portage build is in progress over the
+laptop's exact signed r35 image, rebuilding Settings Input/Settings and the
+controller plugin. Installed adoption and authoritative 19-binding readback are
+still pending. This controller integration does not integrate the separate
+Desktop Harmony or animation work.
+
 Controller process inspection blocked the compositor for roughly 450 ms once
 per second. Source `b331c826c` moves it to one coalesced worker and preserves
 game priority, current-result fencing and neutral resume. The signed r32 package
