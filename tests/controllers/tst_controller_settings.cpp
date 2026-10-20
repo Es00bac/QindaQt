@@ -62,6 +62,26 @@ private Q_SLOTS:
         gyro = model.setOption("gyro", true);
         QVERIFY(touch); QVERIFY(dictate); QVERIFY(gyro);
     }
+    void dualSenseLabelsAndActionsReachable() {
+        FakePort port; ControllersModel model(port);
+        auto data = snapshot(); auto row = data.value("controllers").toArray().first().toObject();
+        row["id"] = "default:dualsense"; row["family"] = "dualsense"; row["name"] = "DualSense defaults";
+        row["config"] = QindaQt::Controllers::profileJson(QindaQt::Controllers::defaultProfile("dualsense"));
+        data["controllers"] = QJsonArray{row}; Q_EMIT port.snapshotReceived(data);
+        QMap<QString, QVariantMap> buttons;
+        for (const auto &entry : model.buttons()) buttons[entry.toMap().value("id").toString()] = entry.toMap();
+        QCOMPARE(buttons["south"].value("label").toString(), "Cross (south)");
+        QCOMPARE(buttons["touchpad"].value("action").toString(), "toggle-gyro");
+        QCOMPARE(buttons["west"].value("action").toString(), "voice-command");
+        QCOMPARE(buttons["dpup"].value("shortcut").toString(), "Ctrl+K");
+        QSet<QString> actions;
+        for (const auto &entry : model.actions()) {
+            QVERIFY(!entry.toMap().value("label").toString().isEmpty());
+            actions.insert(entry.toMap().value("value").toString());
+        }
+        for (const auto &action : QStringList{"voice-command", "toggle-gyro", "left-click-meta-shift", "right-click-meta-shift"})
+            QVERIFY(actions.contains(action));
+    }
 };
 QTEST_MAIN(ControllerSettingsTest)
 #include "tst_controller_settings.moc"

@@ -2,6 +2,7 @@
 #pragma once
 #include "qindaqt/controllers/input_sink.h"
 #include "voice_button.h"
+#include "../held_input_state_p.h"
 #include <core/inputdevice.h>
 #include <QMap>
 
@@ -30,12 +31,11 @@ public:
 Q_SIGNALS:
     void dictationFailed(const QString &reason);
 private:
-    struct Held { QList<quint32> keys; quint32 mouse = 0; bool voice = false; };
+    void deliver(const QList<InputChange> &changes);
     QList<quint32> sequenceKeys(const QString &sequence) const;
     void release(const QString &token, bool cancel);
     bool m_enabled = true;
-    QMap<QString, Held> m_held;
-    QMap<quint32, int> m_keys, m_buttons;
+    HeldInputState m_held;
     VoiceButton m_voice;
 };
 } // namespace QindaQt::Controllers

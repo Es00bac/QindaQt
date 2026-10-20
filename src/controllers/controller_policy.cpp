@@ -15,13 +15,14 @@ QStringList buttonIds() {
             "misc2", "misc3", "misc4", "misc5", "misc6", "lefttrigger", "righttrigger"};
 }
 QStringList actionIds() {
-    return {"none", "dictate", "left-click", "right-click", "middle-click",
+    return {"none", "dictate", "voice-command", "toggle-gyro", "left-click", "right-click", "middle-click",
+            "left-click-meta-shift", "right-click-meta-shift",
             "accept", "back", "up", "down", "left", "right", "overview",
             "launcher", "next-window", "previous-window", "maximize",
             "close-window", "desktop-left", "desktop-right", "show-desktop",
             "screenshot", "shortcut"};
 }
-Profile defaultProfile() {
+Profile defaultProfile(const QString &family) {
     Profile p;
     for (const auto &button : buttonIds()) p.bindings.insert(button, {});
     const QMap<QString, QString> defaults{
@@ -34,6 +35,21 @@ Profile defaultProfile() {
         {"touchpad", "left-click"}, {"lefttrigger", "right-click"},
         {"righttrigger", "left-click"}};
     for (auto it = defaults.begin(); it != defaults.end(); ++it) p.bindings[it.key()].action = it.value();
+    if (family == "dualsense") {
+        const QMap<QString, Binding> dualSense{
+            {"back", {"back", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
+            {"dpleft", {"shortcut", "Ctrl+C"}}, {"dpright", {"shortcut", "Ctrl+J"}},
+            {"dpdown", {"accept", {}}}, {"leftstick", {"previous-window", {}}},
+            {"guide", {"launcher", {}}}, {"start", {"back", {}}},
+            {"north", {"maximize", {}}}, {"east", {"overview", {}}},
+            {"west", {"voice-command", {}}}, {"south", {"dictate", {}}},
+            {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
+            {"touchpad", {"toggle-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
+            {"righttrigger", {"left-click-meta-shift", {}}},
+            {"leftshoulder", {"right-click", {}}},
+            {"lefttrigger", {"right-click-meta-shift", {}}}};
+        for (auto it = dualSense.begin(); it != dualSense.end(); ++it) p.bindings[it.key()] = it.value();
+    }
     return p;
 }
 QJsonObject profileJson(const Profile &p) {
@@ -110,7 +126,7 @@ QPointF gyroMotion(QPointF v, double sensitivity, double dt) {
 QString defaultFamilyId(const QString &family) { return QStringLiteral("default:") + family; }
 QString controllerProfileId(const QString &guid, const QString &serial, quint16 vendor, quint16 product, const QString &family) {
     auto stableSerial = serial.trimmed().toLower();
-    if (family == "playstation") { stableSerial.remove(':'); stableSerial.remove('-'); }
+    if (family == "playstation" || family == "dualsense") { stableSerial.remove(':'); stableSerial.remove('-'); }
     const QString identity = stableSerial.isEmpty() ? guid + ':' + serial
         : QString("hardware:%1:%2:%3").arg(vendor).arg(product).arg(stableSerial);
     return "pad:" + QString::fromLatin1(QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha256).toHex().left(32));

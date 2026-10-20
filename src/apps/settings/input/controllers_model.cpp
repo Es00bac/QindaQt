@@ -7,7 +7,7 @@
 namespace QindaQt::Apps::SettingsInput {
 namespace {
 QString label(const QString &id, const QString &family) {
-    const bool ps = family == "playstation", nintendo = family == "nintendo";
+    const bool ps = family == "playstation" || family == "dualsense", nintendo = family == "nintendo";
     if (id == "south") return ps ? "Cross (south)" : nintendo ? "B (south)" : "A (south)";
     if (id == "east") return ps ? "Circle (east)" : nintendo ? "A (east)" : "B (east)";
     if (id == "west") return ps ? "Square (west)" : nintendo ? "Y (west)" : "X (west)";
@@ -92,7 +92,7 @@ QVariantList ControllersModel::buttons() const {
     else {
         ids = Controllers::buttonIds();
         for (const auto &id : QStringList{"misc2", "misc3", "misc4", "misc5", "misc6"}) ids.removeAll(id);
-        if (family != "playstation") ids.removeAll("touchpad");
+        if (family != "playstation" && family != "dualsense") ids.removeAll("touchpad");
     }
     const auto bindings = row.value("config").toMap().value("bindings").toMap();
     QVariantList result;
@@ -105,6 +105,8 @@ QVariantList ControllersModel::buttons() const {
 }
 QVariantList ControllersModel::actions() const {
     const QMap<QString, QString> labels{{"none", tr("No desktop action")}, {"dictate", tr("Hold to dictate")},
+        {"voice-command", tr("Hold for voice commands")}, {"toggle-gyro", tr("Toggle gyro mouse")},
+        {"left-click-meta-shift", tr("Left mouse + Meta + Shift")}, {"right-click-meta-shift", tr("Right mouse + Meta + Shift")},
         {"left-click", tr("Left mouse button")}, {"right-click", tr("Right mouse button")}, {"middle-click", tr("Middle mouse button")},
         {"accept", tr("Enter / accept")}, {"back", tr("Escape / back")}, {"up", tr("Up arrow")}, {"down", tr("Down arrow")},
         {"left", tr("Left arrow")}, {"right", tr("Right arrow")}, {"overview", tr("Window overview")},

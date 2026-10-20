@@ -30,8 +30,40 @@ private Q_SLOTS:
         store.set("pad:test", changed, {{"id", "pad:test"}, {"name", "Test pad"}});
         QVERIFY(store.save(reason));
         ProfileStore readback(dir.filePath("config/controllers.json")); QVERIFY(readback.load(reason));
-        QCOMPARE(readback.profile("pad:test"), changed); QCOMPARE(readback.ids().size(), 5);
+        QCOMPARE(readback.profile("pad:test"), changed); QCOMPARE(readback.ids().size(), 6);
         QCOMPARE(readback.description("pad:test").value("name").toString(), "Test pad");
+    }
+    void dualSenseDefaultsMatchRequestedLayout() {
+        const auto p = defaultProfile("dualsense");
+        const QMap<QString, Binding> expected{
+            {"back", {"back", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
+            {"dpleft", {"shortcut", "Ctrl+C"}}, {"dpright", {"shortcut", "Ctrl+J"}},
+            {"dpdown", {"accept", {}}}, {"leftstick", {"previous-window", {}}},
+            {"guide", {"launcher", {}}}, {"start", {"back", {}}},
+            {"north", {"maximize", {}}}, {"east", {"overview", {}}},
+            {"west", {"voice-command", {}}}, {"south", {"dictate", {}}},
+            {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
+            {"touchpad", {"toggle-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
+            {"righttrigger", {"left-click-meta-shift", {}}},
+            {"leftshoulder", {"right-click", {}}}, {"lefttrigger", {"right-click-meta-shift", {}}}};
+        for (auto it = expected.begin(); it != expected.end(); ++it) QCOMPARE(p.bindings.value(it.key()), it.value());
+        Profile restored; QString reason;
+        QVERIFY(applyPatch(profileJson(p), restored, reason)); QCOMPARE(restored, p);
+        for (const auto &family : QStringList{"xbox", "playstation", "nintendo", "generic"})
+            QCOMPARE(defaultProfile(family), defaultProfile());
+        QCOMPARE(controllerProfileId("usb", "0C-27-56-59-E8-33", 0x054c, 0x0ce6, "dualsense"),
+                 controllerProfileId("bt", "0c:27:56:59:e8:33", 0x054c, 0x0ce6, "playstation"));
+    }
+    void legacyDualSenseProfileRetainsPreferencesAndGetsCorrectFamily() {
+        QTemporaryDir dir; QString reason;
+        auto saved = defaultProfile(); saved.pointerStick = "right"; saved.gyro = true;
+        ProfileStore before(dir.filePath("controllers.json"));
+        before.set("pad:legacy", saved, {{"name", "DualSense Wireless Controller"}, {"family", "playstation"}});
+        QVERIFY(before.save(reason));
+        ProfileStore after(dir.filePath("controllers.json")); QVERIFY(after.load(reason));
+        QCOMPARE(after.profile("pad:legacy"), saved);
+        QCOMPARE(after.description("pad:legacy").value("family").toString(), "dualsense");
+        QCOMPARE(after.profile("pad:new", "dualsense"), defaultProfile("dualsense"));
     }
     void rejectsAtomicMalformedPatches() {
         auto p = defaultProfile(); const auto before = p; QString reason;

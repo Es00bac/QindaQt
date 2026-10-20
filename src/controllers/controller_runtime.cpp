@@ -19,7 +19,8 @@ namespace QindaQt::Controllers {
 namespace {
 QString family(SDL_GamepadType type) {
     if (type == SDL_GAMEPAD_TYPE_XBOX360 || type == SDL_GAMEPAD_TYPE_XBOXONE) return "xbox";
-    if (type == SDL_GAMEPAD_TYPE_PS3 || type == SDL_GAMEPAD_TYPE_PS4 || type == SDL_GAMEPAD_TYPE_PS5) return "playstation";
+    if (type == SDL_GAMEPAD_TYPE_PS5) return "dualsense";
+    if (type == SDL_GAMEPAD_TYPE_PS3 || type == SDL_GAMEPAD_TYPE_PS4) return "playstation";
     if (type >= SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO && type <= SDL_GAMEPAD_TYPE_GAMECUBE) return "nintendo";
     return "generic";
 }
@@ -91,6 +92,20 @@ public:
         observer.refresh(std::move(paths), invalidate);
     }
     void bump() { ++revision; Q_EMIT q.changed(revision); }
+    void toggleGyro(Device &device) {
+        if (!SDL_GamepadHasSensor(device.pad, SDL_SENSOR_GYRO)) return;
+        auto profile = device.profile;
+        profile.gyro = !profile.gyro;
+        const auto before = store;
+        store.set(device.id, profile);
+        if (!store.save(error)) { store = before; bump(); return; }
+        for (auto &[instance, peer] : devices) {
+            Q_UNUSED(instance);
+            if (peer.id == device.id) peer.profile.gyro = profile.gyro;
+        }
+        error.clear();
+        bump();
+    }
     void release(Device &device) {
         sink.reset(device.id + '/' + QString::number(device.instance));
         device.armed = false;
@@ -200,8 +215,12 @@ public:
         }
         if (dev.reason != "active") { dev.reason = "active"; bump(); }
         const QString tokenPrefix = dev.id + '/' + QString::number(instance) + '/';
-        for (auto b = buttons.begin(); b != buttons.end(); ++b) if (dev.down.value(b.key()) != b.value())
-            sink.button(tokenPrefix + b.key(), dev.profile.bindings.value(b.key()), b.value());
+        for (auto b = buttons.begin(); b != buttons.end(); ++b) if (dev.down.value(b.key()) != b.value()) {
+            const auto binding = dev.profile.bindings.value(b.key());
+            if (binding.action == "toggle-gyro") {
+                if (b.value()) toggleGyro(dev);
+            } else sink.button(tokenPrefix + b.key(), binding, b.value());
+        }
         dev.down = buttons;
         if (dev.profile.pointerStick != "off") {
             const bool useLeft = dev.profile.pointerStick == "left";
@@ -306,6 +325,7 @@ QString ControllerRuntime::apply(const QString &id, const QString &patch, quint6
     return result(true, "ok");
 }
 QString ControllerRuntime::resetProfile(const QString &id, quint64 expected) {
-    return apply(id, json(profileJson(defaultProfile())), expected);
+    const auto family = d->store.description(id).value("family").toString();
+    return apply(id, json(profileJson(defaultProfile(family))), expected);
 }
 } // namespace QindaQt::Controllers

@@ -8,11 +8,12 @@
 
 namespace QindaQt::Controllers {
 ProfileStore::ProfileStore(QString path) : m_path(std::move(path)) {
-    for (const auto &family : QStringList{"xbox", "playstation", "nintendo", "generic"}) {
+    for (const auto &family : QStringList{"xbox", "playstation", "dualsense", "nintendo", "generic"}) {
         const auto id = defaultFamilyId(family);
-        m_profiles.insert(id, defaultProfile());
+        m_profiles.insert(id, defaultProfile(family));
         m_descriptions.insert(id, {{"id", id}, {"family", family}, {"template", true},
             {"name", family == "xbox" ? "Xbox defaults" : family == "playstation" ? "PlayStation defaults"
+                 : family == "dualsense" ? "DualSense defaults"
                  : family == "nintendo" ? "Nintendo defaults" : "Other controller defaults"}});
     }
 }
@@ -34,11 +35,18 @@ bool ProfileStore::load(QString &reason) {
         const auto obj = row.toObject();
         const auto id = obj.value("id").toString();
         if (id.isEmpty() || id.toUtf8().size() > 160 || !obj.value("config").isObject()) { reason = "config-invalid"; return false; }
-        Profile p = defaultProfile();
+        auto description = obj.value("description").toObject();
+        // AGENT-CONTRACT: older Controllers1 profiles grouped PS5 with PS3/4.
+        // Reclassify known DualSense metadata without changing saved bindings
+        // or serial-based IDs, so Reset uses the correct family defaults.
+        if (description.value("family") == "playstation"
+            && description.value("name").toString().contains("DualSense", Qt::CaseInsensitive))
+            description["family"] = "dualsense";
+        Profile p = defaultProfile(description.value("family").toString());
         if (!applyPatch(obj.value("config").toObject(), p, reason)) return false;
         profiles[id] = p;
         if (obj.value("description").isObject() && !id.startsWith("default:"))
-            descriptions[id] = obj.value("description").toObject();
+            descriptions[id] = description;
     }
     m_profiles = profiles;
     m_descriptions = descriptions;

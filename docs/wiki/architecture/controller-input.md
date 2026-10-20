@@ -1,6 +1,6 @@
 # Controller desktop input
 
-**Settings → Input → Controllers** configures Xbox, PlayStation, Nintendo and
+**Settings → Input → Controllers** configures Xbox, DualSense, other PlayStation, Nintendo and
 other SDL-mapped game controllers. Family defaults are available before hardware
 is connected; a connected controller gets its own remembered profile.
 The page selects a connected controller initially and labels remembered offline
@@ -8,7 +8,45 @@ profiles as disconnected. Serial-backed identity is shared across USB and
 Bluetooth; changing transport keeps the same preferences. A serial-less device
 keeps its GUID identity. Existing matching legacy profiles are migrated on discovery.
 
-## Desktop controls
+## DualSense controls
+
+DualSense and DualSense Edge use a separate `dualsense` family with the requested
+layout. Other controller families retain the defaults in the next section.
+
+| Control | Default |
+| --- | --- |
+| Create / Options | Escape |
+| D-pad up / left / right / down | Ctrl+K / Ctrl+C / Ctrl+J / Enter |
+| L3 / R3 | Previous / next window |
+| PS | Open application launcher |
+| Triangle | Maximize / restore the current window or focused container tile |
+| Circle | Window overview |
+| Square | Hold for voice commands; release to finish |
+| Cross | Hold for voice dictation; release to insert |
+| Mute | No desktop action |
+| Touchpad click | Toggle gyro mouse |
+| R1 / L1 | Left / right mouse button |
+| R2 / L2 | Left / right mouse button held with Meta+Shift |
+
+The gyro toggle changes the saved `gyro` preference once per press, publishes a
+new revision, and works while gyro is off. Holding or releasing the button does
+not toggle again. A failed save leaves the preference unchanged. Suppressed
+input never toggles gyro; resuming still requires neutral controls. Controllers
+without a gyro ignore this action. Gyro remains off in fresh defaults.
+
+Mouse-chord actions press Meta and Shift before mouse-down and keep them held
+until mouse-up. Shared controller keys/buttons use reference counts. Suppression,
+disconnect, disable and unload release all owned input. Voice commands use
+Voice1 `StartCommand`; dictation uses `StartDictation`. Both finish on release
+and cancel when desktop control is suppressed.
+
+Existing saved bindings and pointer, scroll, touchpad and sensitivity preferences
+are preserved when the new defaults are introduced. Older saved DualSense rows
+are reclassified from `playstation` without changing their stable IDs or config.
+Reset uses the device's factory family defaults. Applying the requested button
+layout to existing devices is an explicit Controllers1 binding patch.
+
+## Other controller defaults
 
 | Control | Default |
 | --- | --- |
@@ -28,7 +66,8 @@ keeps its GUID identity. Existing matching legacy profiles are migrated on disco
 | PlayStation touchpad click | Left mouse button |
 
 Every available button can be reassigned to an enumerated action, including
-maximize, close, workspace switching and a keyboard chord. Button names use
+maximize, close, workspace switching, voice commands, gyro toggle, modified mouse
+clicks and a keyboard chord. Button names use
 the controller family's labels and physical face-button positions. Dictation
 binds directly to Voice1 and does not change the keyboard shortcut. Stick choice,
 speed and dead zone are configurable. Supported controller touchpads move the
@@ -100,10 +139,12 @@ runs, so held controls do not drop once a second. Destruction interrupts and
 joins the worker before unloading plugin code
 ([ADR-0397](../adr/0397-observe-controller-consumers-off-the-compositor-thread.md)).
 The SDL runtime borrows a sink that outlives it; each held
-token must be released on suppression/disconnect/destruction. Voice1 requests
+token must be released on suppression/disconnect/destruction. Voice1 dictation and command requests
 use its exact unique bus owner and current revision, with no replay after an
 owner replacement. [ADR-0347](../adr/0347-controller-desktop-integration.md)
-records the dependency and priority decision.
+records the dependency and priority decision;
+[ADR-0426](../adr/0426-dualsense-desktop-layout-and-held-actions.md) records the
+DualSense family, gyro persistence and held action contract.
 Qt method-return messages do not supply the service owner through `service()`.
 Controller dictation resolves the activated Voice1 name through the bus and reads
 that unique owner before starting the capture.
@@ -115,15 +156,18 @@ installed QindaQt KWin SDK. It does not compile the desktop or KWin.
 
 - `qindaqt.controller-policy`: profile defaults, atomic hostile-patch refusal,
   save/load round trip, motion bounds, Steam and pre-existing device consumers.
+- `qindaqt.controller-input-state`: modifier/mouse event ordering, shared-trigger
+  modifiers and duplicate mouse holds.
 - `qindaqt.controller-settings`: family/default display, available buttons/actions,
   edits gated by authority, readback, Steam status, owner loss.
-- `qindaqt.controller-runtime`: SDL virtual DualSense buttons, dictation action,
+- `qindaqt.controller-runtime`: SDL virtual DualSense layout, both voice actions, trigger chords,
+  gyro press/hold/release and persisted preference, family-correct reset,
   stick/touchpad/gyro motion, suppression releases, neutral resume, Steam startup.
 - `qindaqt.controller-observation`: a blocked scan leaves the event loop live,
   coalesced requests, invalidated-result rejection, normal scheduling and joined
   interrupted teardown.
 - `qindaqt.controller-bus`: private out-of-process provider, change-during-read
-  convergence, mutation completion after readback, and dictation start/release.
+  convergence, mutation completion after readback, and dictation/command start, release and cancellation.
 
 Physical controller and USB microphone qualification is recorded separately;
 passing virtual fixtures does not claim that hardware was connected.

@@ -57,15 +57,15 @@ void VoiceButton::operation(const QString &method, quint64 revision, std::functi
         w->deleteLater(); done(ok);
     });
 }
-void VoiceButton::press(const QString &token) {
+void VoiceButton::press(const QString &token, Mode mode) {
     if (!m_token.isEmpty() || m_pending) return;
     m_token = token; m_held = true; m_cancel = false; m_pending = true; m_owner.clear();
-    snapshot([this, token](QVariantMap payload) {
+    snapshot([this, token, mode](QVariantMap payload) {
         if (token != m_token || !m_held) { m_pending = false; m_token.clear(); return; }
         if (payload.value("state").toInt() != 1 || !payload.value("enabled").toBool()) {
             m_pending = false; m_token.clear(); Q_EMIT failed("voice-unavailable"); return;
         }
-        operation("StartDictation", payload.value("revision").toULongLong(), [this, token](bool ok) {
+        operation(mode == Mode::Command ? "StartCommand" : "StartDictation", payload.value("revision").toULongLong(), [this, token](bool ok) {
             m_pending = false;
             if (token != m_token) return;
             m_active = ok;

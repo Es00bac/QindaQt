@@ -526,7 +526,9 @@ and [session resilience](session-resilience.md).
 Linux game-consumer observation, SDL3 sampling and its independent KWin plugin.
 Its policy target exposes only value types and validation to Settings. The
 runtime borrows an input sink; the compositor sink owns key/button reference
-counts and exact-owner Voice1 hold requests. Settings Input uses its
+counts with modifiers surrounding mouse holds, and exact-owner Voice1 dictation
+and command hold requests. The runtime owns the persistent gyro-toggle action;
+DualSense has separate family defaults. Settings Input uses its
 asynchronous `ControllerPort` and authoritative Controllers1 snapshots;
 models and QML never access SDL, process descriptors, compositor internals or
 profile files. [Controller input](controller-input.md) and

@@ -67,14 +67,93 @@ private Q_SLOTS:
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
         ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
-        button(SDL_GAMEPAD_BUTTON_BACK, true, runtime);
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
         QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.events.last().first, "dictate");
-        button(SDL_GAMEPAD_BUTTON_BACK, false, runtime); QVERIFY(sink.held.isEmpty());
-        button(SDL_GAMEPAD_BUTTON_BACK, true, runtime); const auto count = sink.events.size();
+        button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime); QVERIFY(sink.held.isEmpty());
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); const auto count = sink.events.size();
         runtime.setContext(false, "fullscreen"); QVERIFY(sink.held.isEmpty());
         runtime.setContext(true, {}); runtime.tick(); QCOMPARE(sink.events.size(), count);
-        button(SDL_GAMEPAD_BUTTON_BACK, false, runtime); button(SDL_GAMEPAD_BUTTON_BACK, true, runtime);
+        button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime); button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
         QVERIFY(sink.events.size() > count);
+    }
+    void dualSenseButtonsTriggersAndReset() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        const auto id = connectedId(runtime); QVERIFY(!id.isEmpty());
+        const QMap<SDL_GamepadButton, QString> actions{
+            {SDL_GAMEPAD_BUTTON_BACK, "back"}, {SDL_GAMEPAD_BUTTON_START, "back"},
+            {SDL_GAMEPAD_BUTTON_GUIDE, "launcher"}, {SDL_GAMEPAD_BUTTON_DPAD_UP, "shortcut"},
+            {SDL_GAMEPAD_BUTTON_DPAD_LEFT, "shortcut"}, {SDL_GAMEPAD_BUTTON_DPAD_RIGHT, "shortcut"},
+            {SDL_GAMEPAD_BUTTON_DPAD_DOWN, "accept"}, {SDL_GAMEPAD_BUTTON_LEFT_STICK, "previous-window"},
+            {SDL_GAMEPAD_BUTTON_RIGHT_STICK, "next-window"}, {SDL_GAMEPAD_BUTTON_NORTH, "maximize"},
+            {SDL_GAMEPAD_BUTTON_EAST, "overview"}, {SDL_GAMEPAD_BUTTON_WEST, "voice-command"},
+            {SDL_GAMEPAD_BUTTON_SOUTH, "dictate"}, {SDL_GAMEPAD_BUTTON_MISC1, "none"},
+            {SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, "right-click"}, {SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, "left-click"}};
+        for (auto it = actions.begin(); it != actions.end(); ++it) {
+            button(it.key(), true, runtime); QCOMPARE(sink.events.last().first, it.value());
+            button(it.key(), false, runtime);
+        }
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 32767)); runtime.tick();
+        QCOMPARE(sink.events.last().first, "left-click-meta-shift");
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 32767)); runtime.tick();
+        QCOMPARE(sink.events.last().first, "right-click-meta-shift");
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, -32768));
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, -32768)); runtime.tick();
+        auto revision = snapshot(runtime).value("revision").toString().toULongLong();
+        QVERIFY(QJsonDocument::fromJson(runtime.apply(id, "{\"bindings\":{\"south\":{\"action\":\"accept\"}}}", revision).toUtf8()).object().value("ok").toBool());
+        revision = snapshot(runtime).value("revision").toString().toULongLong();
+        QVERIFY(QJsonDocument::fromJson(runtime.resetProfile(id, revision).toUtf8()).object().value("ok").toBool());
+        runtime.tick(); button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
+        QCOMPARE(sink.events.last().first, "dictate");
+    }
+    void touchpadTogglesGyroOncePerPressAndPersists() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        const auto id = connectedId(runtime);
+        auto revision = snapshot(runtime).value("revision").toString().toULongLong();
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
+        QCOMPARE(snapshot(runtime).value("revision").toString().toULongLong(), revision + 1);
+        QVERIFY(sink.events.isEmpty());
+        ProfileStore readback(dir.filePath("controllers.json")); QString reason;
+        QVERIFY(readback.load(reason)); QVERIFY(readback.profile(id).gyro);
+        runtime.tick(); runtime.tick();
+        QCOMPARE(snapshot(runtime).value("revision").toString().toULongLong(), revision + 1);
+        const auto gyroCount = sink.moves.size(); const float values[3]{0, 1, 0};
+        QVERIFY(SDL_SendJoystickVirtualSensorData(m_joystick, SDL_SENSOR_GYRO, 1, values, 3));
+        QTest::qWait(20); runtime.tick(); QVERIFY(sink.moves.size() > gyroCount);
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, false, runtime);
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
+        QCOMPARE(snapshot(runtime).value("revision").toString().toULongLong(), revision + 2);
+        QVERIFY(readback.load(reason)); QVERIFY(!readback.profile(id).gyro);
+        const auto offCount = sink.moves.size(); QTest::qWait(20); runtime.tick(); QCOMPARE(sink.moves.size(), offCount);
+        runtime.setContext(false, "locked"); runtime.setContext(true, {}); runtime.tick();
+        QCOMPARE(connectedReason(runtime), "release-controls");
+        QVERIFY(readback.load(reason)); QVERIFY(!readback.profile(id).gyro);
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, false, runtime);
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
+        QVERIFY(readback.load(reason)); QVERIFY(readback.profile(id).gyro);
+    }
+    void failedGyroSaveKeepsConfirmedPreference() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
+        const auto path = dir.filePath("controllers.json");
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")});
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        const auto id = connectedId(runtime);
+        QVERIFY(QFile::remove(path)); QVERIFY(QDir().mkdir(path));
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
+        QCOMPARE(snapshot(runtime).value("error").toString(), "config-unsaved");
+        for (const auto &entry : snapshot(runtime).value("controllers").toArray()) {
+            const auto row = entry.toObject();
+            if (row.value("id").toString() == id) QVERIFY(!row.value("config").toObject().value("gyro").toBool());
+        }
+        QVERIFY(QDir().rmdir(path));
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, false, runtime);
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
+        ProfileStore readback(path); QString reason;
+        QVERIFY(readback.load(reason)); QVERIFY(readback.profile(id).gyro);
+        QVERIFY(snapshot(runtime).value("error").toString().isEmpty());
     }
     void steamStartupClosesDesktopInput() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));

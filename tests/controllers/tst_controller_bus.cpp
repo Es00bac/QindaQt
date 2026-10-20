@@ -32,7 +32,7 @@ Q_SIGNALS:
 class VoiceFixture final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Voice1")
-    int starts = 0, finishes = 0;
+    int starts = 0, finishes = 0, commands = 0, cancels = 0;
     quint64 revision = 1;
 public Q_SLOTS:
     QVariantMap GetSnapshot() { return {{"state", starts > finishes ? 3 : 1}, {"enabled", true}, {"revision", QVariant::fromValue<qulonglong>(revision)}}; }
@@ -40,13 +40,24 @@ public Q_SLOTS:
         if (expected != revision) return {{"status", 1}};
         ++starts; ++revision; return {{"status", 0}};
     }
+    QVariantMap StartCommand(qulonglong id, qulonglong expected) {
+        auto result = StartDictation(id, expected);
+        if (result.value("status").toInt() == 0) ++commands;
+        return result;
+    }
     QVariantMap Finish(qulonglong, qulonglong expected) {
         if (expected != revision) return {{"status", 1}};
         ++finishes; ++revision; return {{"status", 0}};
     }
-    QVariantMap Cancel(qulonglong id, qulonglong expected) { return Finish(id, expected); }
+    QVariantMap Cancel(qulonglong id, qulonglong expected) {
+        auto result = Finish(id, expected);
+        if (result.value("status").toInt() == 0) ++cancels;
+        return result;
+    }
     int Starts() const { return starts; }
     int Finishes() const { return finishes; }
+    int Commands() const { return commands; }
+    int Cancels() const { return cancels; }
 };
 class ControllerBusTest final : public QObject {
     Q_OBJECT
@@ -75,6 +86,26 @@ private Q_SLOTS:
         QTRY_COMPARE_WITH_TIMEOUT(service.call("Starts").arguments().value(0).toInt(), 1, 2000);
         button.release("controller/back");
         QTRY_COMPARE_WITH_TIMEOUT(service.call("Finishes").arguments().value(0).toInt(), 1, 2000);
+        QCOMPARE(failures.count(), 0);
+    }
+    void commandsUseCommandModeAndFinishOnRelease() {
+        VoiceButton button; QSignalSpy failures(&button, &VoiceButton::failed);
+        QDBusInterface service("org.qindaqt.Voice1", "/org/qindaqt/Voice1", "org.qindaqt.Voice1");
+        button.press("controller/square", VoiceButton::Mode::Command);
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Commands").arguments().value(0).toInt(), 1, 2000);
+        button.release("controller/cross");
+        QCOMPARE(service.call("Finishes").arguments().value(0).toInt(), 1);
+        button.release("controller/square");
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Finishes").arguments().value(0).toInt(), 2, 2000);
+        QCOMPARE(failures.count(), 0);
+    }
+    void commandSuppressionCancels() {
+        VoiceButton button; QSignalSpy failures(&button, &VoiceButton::failed);
+        QDBusInterface service("org.qindaqt.Voice1", "/org/qindaqt/Voice1", "org.qindaqt.Voice1");
+        button.press("controller/square", VoiceButton::Mode::Command);
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Commands").arguments().value(0).toInt(), 2, 2000);
+        button.cancel();
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Cancels").arguments().value(0).toInt(), 1, 2000);
         QCOMPARE(failures.count(), 0);
     }
     void cleanupTestCase() { fixture.terminate(); fixture.waitForFinished(2000); }

@@ -4,6 +4,12 @@ target_link_libraries(qindaqt_controller_policy_test PRIVATE qindaqt_controller_
 add_test(NAME qindaqt.controller-policy COMMAND qindaqt_controller_policy_test)
 set_tests_properties(qindaqt.controller-policy PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
 
+add_executable(qindaqt_controller_input_state_test tst_held_input_state.cpp)
+target_include_directories(qindaqt_controller_input_state_test PRIVATE ../../src/controllers)
+target_link_libraries(qindaqt_controller_input_state_test PRIVATE qindaqt_controller_policy Qt6::Test)
+add_test(NAME qindaqt.controller-input-state COMMAND qindaqt_controller_input_state_test)
+set_tests_properties(qindaqt.controller-input-state PROPERTIES TIMEOUT 15)
+
 add_library(qindaqt_controller_settings_test_support STATIC
     ../../src/apps/settings/input/controllers_model.cpp
     ../../src/apps/settings/input/qt_controller_port.cpp

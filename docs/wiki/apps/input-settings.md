@@ -12,7 +12,8 @@ records how a desk tablet keeps the screen's up and how its areas are mapped.
 ## Tabs
 
 The [Controllers destination](../architecture/controller-input.md) adds family
-defaults and per-controller button bindings, hold-to-dictate, stick mouse and
+defaults (including a separate DualSense layout) and per-controller button
+bindings, hold-to-dictate or voice commands, Meta+Shift mouse holds, gyro toggle, stick mouse and
 scrolling, supported touchpad and gyro controls. Steam and game consumers have
 priority under [ADR-0347](../adr/0347-controller-desktop-integration.md).
 

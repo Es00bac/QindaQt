@@ -60,27 +60,32 @@ void ControllerInputDevice::button(const QString &token, const Binding &binding,
     if (!down) { release(token, false); return; }
     if (!m_enabled || !contextAllowed() || m_held.contains(token) || binding.action == "none") return;
     KWin::input()->simulateUserActivity();
-    Held held;
-    if (binding.action == "dictate") { held.voice = true; m_voice.press(token); }
-    else if (binding.action == "left-click") held.mouse = BTN_LEFT;
-    else if (binding.action == "right-click") held.mouse = BTN_RIGHT;
-    else if (binding.action == "middle-click") held.mouse = BTN_MIDDLE;
+    QList<quint32> keys;
+    quint32 mouse = 0;
+    if (binding.action == "dictate" || binding.action == "voice-command")
+        m_voice.press(token, binding.action == "voice-command" ? VoiceButton::Mode::Command : VoiceButton::Mode::Dictation);
+    else if (binding.action == "left-click" || binding.action == "left-click-meta-shift") mouse = BTN_LEFT;
+    else if (binding.action == "right-click" || binding.action == "right-click-meta-shift") mouse = BTN_RIGHT;
+    else if (binding.action == "middle-click") mouse = BTN_MIDDLE;
     else if (binding.action == "maximize") { KWin::workspace()->slotWindowMaximize(); return; }
     else if (binding.action == "close-window") { KWin::workspace()->slotWindowClose(); return; }
     else if (binding.action == "show-desktop") { KWin::workspace()->slotToggleShowDesktop(); return; }
-    else held.keys = sequenceKeys(binding.action == "shortcut" ? binding.shortcut : shortcutFor(binding.action));
-    m_held[token] = held;
-    if (held.mouse && ++m_buttons[held.mouse] == 1) Q_EMIT pointerButtonChanged(held.mouse, KWin::PointerButtonState::Pressed, now(), this);
-    for (quint32 key : held.keys) if (++m_keys[key] == 1) Q_EMIT keyChanged(key, KWin::KeyboardKeyState::Pressed, now(), this);
-    Q_EMIT pointerFrame(this);
+    else keys = sequenceKeys(binding.action == "shortcut" ? binding.shortcut : shortcutFor(binding.action));
+    if (binding.action == "left-click-meta-shift" || binding.action == "right-click-meta-shift")
+        keys = {KEY_LEFTMETA, KEY_LEFTSHIFT};
+    deliver(m_held.press(token, keys, mouse));
 }
 void ControllerInputDevice::release(const QString &token, bool cancel) {
     if (!m_held.contains(token)) return;
-    const auto held = m_held.take(token);
-    if (held.voice) m_voice.release(token, cancel);
-    if (held.mouse && --m_buttons[held.mouse] == 0) Q_EMIT pointerButtonChanged(held.mouse, KWin::PointerButtonState::Released, now(), this);
-    for (auto it = held.keys.crbegin(); it != held.keys.crend(); ++it)
-        if (--m_keys[*it] == 0) Q_EMIT keyChanged(*it, KWin::KeyboardKeyState::Released, now(), this);
+    m_voice.release(token, cancel);
+    deliver(m_held.release(token));
+}
+void ControllerInputDevice::deliver(const QList<InputChange> &changes) {
+    for (const auto &change : changes) {
+        if (change.kind == InputChange::Mouse)
+            Q_EMIT pointerButtonChanged(change.code, change.down ? KWin::PointerButtonState::Pressed : KWin::PointerButtonState::Released, now(), this);
+        else Q_EMIT keyChanged(change.code, change.down ? KWin::KeyboardKeyState::Pressed : KWin::KeyboardKeyState::Released, now(), this);
+    }
     Q_EMIT pointerFrame(this);
 }
 void ControllerInputDevice::motion(QPointF delta) {
@@ -96,7 +101,7 @@ void ControllerInputDevice::scroll(QPointF delta) {
     Q_EMIT pointerFrame(this);
 }
 void ControllerInputDevice::reset(const QString &id) {
-    for (const auto &token : m_held.keys()) if (id.isEmpty() || token.startsWith(id + '/')) release(token, true);
+    for (const auto &token : m_held.tokens()) if (id.isEmpty() || token.startsWith(id + '/')) release(token, true);
     if (id.isEmpty()) m_voice.cancel();
 }
 } // namespace QindaQt::Controllers

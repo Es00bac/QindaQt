@@ -11,8 +11,9 @@ namespace QindaQt::Controllers {
 class VoiceButton final : public QObject {
     Q_OBJECT
 public:
+    enum class Mode { Dictation, Command };
     explicit VoiceButton(QObject *parent = nullptr);
-    void press(const QString &token);
+    void press(const QString &token, Mode mode = Mode::Dictation);
     void release(const QString &token, bool cancel = false);
     void cancel();
 Q_SIGNALS:

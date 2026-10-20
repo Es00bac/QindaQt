@@ -32,7 +32,9 @@ struct Profile {
 // bounded and atomic; no action is a command or executable path (ADR-0347).
 QStringList buttonIds();
 QStringList actionIds();
-Profile defaultProfile();
+// DualSense has its own defaults; all other families retain the generic map.
+// Saved per-device overrides remain authoritative across default changes.
+Profile defaultProfile(const QString &family = {});
 QJsonObject profileJson(const Profile &profile);
 bool applyPatch(const QJsonObject &patch, Profile &profile, QString &reason);
 QPointF stickMotion(QPointF stick, double deadzone, double speed, double seconds);
