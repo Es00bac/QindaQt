@@ -205,7 +205,9 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         visible: root.controllers.available
-        text: qsTr("Share / View / Minus holds dictation by default. Shoulders switch windows, the top face button opens the overview, and Menu / Options / Plus opens the launcher. Each button can be changed below.")
+        text: root.selected.family === "dualsense"
+              ? qsTr("Cross holds dictation, Square holds voice commands, and the touchpad click toggles gyro mouse. L3/R3 switch windows, Triangle maximizes the current window or tile, Circle opens the overview, and PS opens applications. Each button can be changed below.")
+              : qsTr("Share / View / Minus holds dictation by default. Shoulders switch windows, the top face button opens the overview, and Menu / Options / Plus opens the launcher. Each button can be changed below.")
         wrapMode: Text.Wrap
         Accessible.name: text
     }
