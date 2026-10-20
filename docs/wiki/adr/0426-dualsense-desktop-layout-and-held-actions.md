@@ -27,6 +27,9 @@ Old plugins do not understand the new action IDs; install the updated plugin
 before saving them. VoiceButton selects `StartCommand` or `StartDictation`
 against the exact current Voice1 owner, finishes on release and cancels on
 suppression. One owned capture prevents an overlapping button stealing it.
+Idle and Error both admit a fresh hold, as Voice1 specifies; an earlier provider
+error must not disable subsequent controller captures. Recovery never invokes
+Retry or replays the previous utterance.
 
 Gyro toggle belongs to the runtime, which saves the inverted gyro preference
 atomically on the press edge before publishing it and updating matching live

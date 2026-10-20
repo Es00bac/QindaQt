@@ -33,12 +33,13 @@ class VoiceFixture final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Voice1")
     int starts = 0, finishes = 0, commands = 0, cancels = 0;
+    bool error = false;
     quint64 revision = 1;
 public Q_SLOTS:
-    QVariantMap GetSnapshot() { return {{"state", starts > finishes ? 3 : 1}, {"enabled", true}, {"revision", QVariant::fromValue<qulonglong>(revision)}}; }
+    QVariantMap GetSnapshot() { return {{"state", error ? 6 : starts > finishes ? 3 : 1}, {"enabled", true}, {"revision", QVariant::fromValue<qulonglong>(revision)}}; }
     QVariantMap StartDictation(qulonglong, qulonglong expected) {
         if (expected != revision) return {{"status", 1}};
-        ++starts; ++revision; return {{"status", 0}};
+        error = false; ++starts; ++revision; return {{"status", 0}};
     }
     QVariantMap StartCommand(qulonglong id, qulonglong expected) {
         auto result = StartDictation(id, expected);
@@ -58,6 +59,7 @@ public Q_SLOTS:
     int Finishes() const { return finishes; }
     int Commands() const { return commands; }
     int Cancels() const { return cancels; }
+    void PreviousCaptureFailed() { error = true; ++revision; }
 };
 class ControllerBusTest final : public QObject {
     Q_OBJECT
@@ -106,6 +108,24 @@ private Q_SLOTS:
         QTRY_COMPARE_WITH_TIMEOUT(service.call("Commands").arguments().value(0).toInt(), 2, 2000);
         button.cancel();
         QTRY_COMPARE_WITH_TIMEOUT(service.call("Cancels").arguments().value(0).toInt(), 1, 2000);
+        QCOMPARE(failures.count(), 0);
+    }
+    void freshHoldRecoversFromPreviousError_data() {
+        QTest::addColumn<bool>("command");
+        QTest::newRow("dictation") << false;
+        QTest::newRow("commands") << true;
+    }
+    void freshHoldRecoversFromPreviousError() {
+        QFETCH(bool, command);
+        VoiceButton button; QSignalSpy failures(&button, &VoiceButton::failed);
+        QDBusInterface service("org.qindaqt.Voice1", "/org/qindaqt/Voice1", "org.qindaqt.Voice1");
+        const auto starts = service.call("Starts").arguments().value(0).toInt();
+        const auto cancels = service.call("Cancels").arguments().value(0).toInt();
+        QVERIFY(service.call("PreviousCaptureFailed").type() != QDBusMessage::ErrorMessage);
+        button.press("controller/new-hold", command ? VoiceButton::Mode::Command : VoiceButton::Mode::Dictation);
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Starts").arguments().value(0).toInt(), starts + 1, 2000);
+        button.cancel();
+        QTRY_COMPARE_WITH_TIMEOUT(service.call("Cancels").arguments().value(0).toInt(), cancels + 1, 2000);
         QCOMPARE(failures.count(), 0);
     }
     void cleanupTestCase() { fixture.terminate(); fixture.waitForFinished(2000); }

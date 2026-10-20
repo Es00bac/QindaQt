@@ -62,7 +62,11 @@ void VoiceButton::press(const QString &token, Mode mode) {
     m_token = token; m_held = true; m_cancel = false; m_pending = true; m_owner.clear();
     snapshot([this, token, mode](QVariantMap payload) {
         if (token != m_token || !m_held) { m_pending = false; m_token.clear(); return; }
-        if (payload.value("state").toInt() != 1 || !payload.value("enabled").toBool()) {
+        // AGENT-CONTRACT: Voice1 accepts a fresh capture from Idle or Error.
+        // A new hold must recover from an old provider error without invoking
+        // Retry, which would replay the previous utterance (ADR-0426).
+        const auto state = payload.value("state").toInt();
+        if ((state != 1 && state != 6) || !payload.value("enabled").toBool()) {
             m_pending = false; m_token.clear(); Q_EMIT failed("voice-unavailable"); return;
         }
         operation(mode == Mode::Command ? "StartCommand" : "StartDictation", payload.value("revision").toULongLong(), [this, token](bool ok) {

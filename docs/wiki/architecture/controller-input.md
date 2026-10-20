@@ -39,6 +39,8 @@ until mouse-up. Shared controller keys/buttons use reference counts. Suppression
 disconnect, disable and unload release all owned input. Voice commands use
 Voice1 `StartCommand`; dictation uses `StartDictation`. Both finish on release
 and cancel when desktop control is suppressed.
+Fresh holds can start from Voice1 Idle or Error, matching the provider's own
+admission rule. They start a new capture and never retry an earlier utterance.
 
 Existing saved bindings and pointer, scroll, touchpad and sensitivity preferences
 are preserved when the new defaults are introduced. Older saved DualSense rows
