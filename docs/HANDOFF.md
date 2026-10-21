@@ -6,8 +6,13 @@ Nothing is installed yet; package once when both land. Lane specs and evidence:
 
 | Lane | Branch | State |
 | --- | --- | --- |
-| Audio1 heap leak (~310 kB per client stream appear/disappear) | `fix/audio-heap-leak-20261021` | candidate `3a2cbb9b3` (strip EQ port names + refused-rack retry policy); follow-up in progress: same-revision snapshot rejection in AudioClient, retry hardening, SDK closure |
+| Audio1 heap leak (~310 kB per client stream appear/disappear) | `fix/audio-heap-leak-20261021` | candidate (5 commits, merged with main `89ffa5022`): strip EQ port names and once-per-declaration retries for racks, sends, virtual buses and VBAN; meter readings excluded from snapshot identity (AudioClient); graph snapshots after console changes no longer dropped (coordinator); `retry_backoff.h` installed with the AudioClient SDK. 52/52 `qindaqt.audio-*` serial, validate-docs and mkdocs strict pass; not installed |
 | Controller suppressed by passive or background gamepad holders | `fix/controller-focus-owner-20261021` | integrated on main as `c5fcdd62b` (ADR-0428); 15/15 controller CTest groups, mkdocs strict and validate-docs pass on the integrated tree; not installed |
+
+After the audio install the owner's console is audibly different: its
+`strip.virtual.1` rack (equalizer only, low shelf about +15 dB) had never
+loaded, and now does. Warn the owner, or flatten that shelf, before calling the
+install a regression.
 
 Next steps: integrate each branch after its focused and broad tests pass,
 bump `media-plugins/obs-qindaqt` (schema-11 pin, polls Audio1 every 200 ms),
