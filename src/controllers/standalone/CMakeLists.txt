@@ -10,12 +10,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     find_package(QindaQtKWin 6.6.6.1 EXACT REQUIRED CONFIG)
 endif()
 include(CTest)
-add_library(qindaqt_controller_shortcut_lease STATIC ../../services/shortcuts_client/shortcut_lease.cpp
-    ../../services/shortcuts_client/include/qindaqt/services/shortcuts_client/shortcut_lease.h)
-add_library(QindaQt::ShortcutsClient ALIAS qindaqt_controller_shortcut_lease)
-target_include_directories(qindaqt_controller_shortcut_lease PUBLIC ../../services/shortcuts_client/include)
-target_link_libraries(qindaqt_controller_shortcut_lease PUBLIC Qt6::Core Qt6::Gui Qt6::DBus)
-set_target_properties(qindaqt_controller_shortcut_lease PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# Exercise the real client target so plugin-link requirements cannot drift
+# from a purpose-built test substitute.
+include(GNUInstallDirs)
+add_subdirectory(../../services/shortcuts_client shortcuts_client)
 add_subdirectory(../../input_actions input_actions)
 add_subdirectory(.. controllers)
 if(BUILD_TESTING)

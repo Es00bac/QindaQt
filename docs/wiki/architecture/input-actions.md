@@ -34,7 +34,9 @@ The runner borrows a GUI-thread `MacroOutput` that outlives it. Controller polic
 uses the public generic Binding; Settings uses public codecs and an injected
 JSON port. The existing controller KWin plugin composes one shared input sink,
 text emitter, native shortcut lease and public mouse filter. It is also usable
-without a connected controller.
+without a connected controller. The shortcut client is built with position-independent
+code for both executable and compositor-module consumers. The focused controller
+build uses this production target, including its real link settings.
 
 InputActions1 on `/org/qindaqt/InputActions1` exports the following same-user
 session-bus interface:
