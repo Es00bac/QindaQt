@@ -118,9 +118,11 @@ ColumnLayout {
     }
     InputEditorDialog {
         id: remove
+        objectName: "controllerDeleteProfile"
         parent: T.Overlay.overlay
         anchors.centerIn: parent
-        width: Math.min(440, parent ? parent.width - 32 : 440)
+        // Keep wrapping geometry valid before the overlay is sized and during teardown.
+        width: Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
         modal: true
         focus: true
         title: qsTr("Delete button profile?")

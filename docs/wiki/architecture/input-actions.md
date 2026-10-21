@@ -36,7 +36,9 @@ JSON port. The existing controller KWin plugin composes one shared input sink,
 text emitter, native shortcut lease and public mouse filter. It is also usable
 without a connected controller. The shortcut client is built with position-independent
 code for both executable and compositor-module consumers. The focused controller
-build uses this production target, including its real link settings.
+build uses this production target, including its real link settings. QML coverage
+includes a zero-size initial window and opening/closing profile confirmation;
+confirmation dialogs keep a positive wrapping width during window transitions.
 
 InputActions1 on `/org/qindaqt/InputActions1` exports the following same-user
 session-bus interface:

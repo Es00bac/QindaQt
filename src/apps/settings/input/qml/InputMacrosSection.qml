@@ -70,7 +70,9 @@ ColumnLayout {
     }
     InputEditorDialog {
         id:remove
-        width:Math.min(440, parent ? parent.width - 32 : 440)
+        objectName:"inputMacroDelete"
+        // Keep wrapping geometry valid before the overlay is sized and during teardown.
+        width:Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
         parent:T.Overlay.overlay; anchors.centerIn:parent
         modal:true; title:qsTr("Delete macro?"); standardButtons:T.Dialog.Cancel | T.Dialog.Ok
         contentItem:Label { text:qsTr("Controller bindings referencing this macro will stop running it."); wrapMode:Text.Wrap }

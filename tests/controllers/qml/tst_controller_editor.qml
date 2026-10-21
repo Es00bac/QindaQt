@@ -15,6 +15,7 @@ TestCase {
     Component { id: bindingComponent; Input.ControllerBindingEditor { controllerModel: testControllers } }
     Component { id: pageComponent; Input.ControllerPageEditor { controllerModel: testControllers; creating: true } }
     Component { id:pageRouteComponent; Input.InputPage { width:1000; height:900; initialDestination:"controllers"; inputSettings:({controllers:testControllers, macros:testMacros}) } }
+    Component { id:coldRouteComponent; T.ApplicationWindow { width:0; height:0; visible:false; Input.InputPage { anchors.fill:parent; initialDestination:"controllers"; inputSettings:({controllers:testControllers, macros:testMacros}) } } }
     Component { id:macroComponent; Input.InputMacroEditor { macroModel:testMacros } }
     Component { id:stepComponent; Input.MacroStepEditor { macroModel:testMacros } }
     function initTestCase() { failOnWarning(/.*/) }
@@ -107,6 +108,18 @@ TestCase {
         verify(!testMacros.available)
         testBackend.setOnline(true)
         tryVerify(() => testControllers.available && testMacros.available)
+    }
+
+    function test_09_coldWindowStartsAtZeroSizeWithoutDialogWarnings() {
+        editor = createTemporaryObject(coldRouteComponent, null)
+        verify(editor !== null)
+        wait(30)
+        const remove = findChild(editor, "controllerDeleteProfile")
+        verify(remove !== null)
+        verify(remove.width >= 320)
+        editor.width = 1000; editor.height = 900; editor.visible = true
+        wait(50)
+        remove.open(); wait(30); remove.close(); wait(30)
     }
 
 }
