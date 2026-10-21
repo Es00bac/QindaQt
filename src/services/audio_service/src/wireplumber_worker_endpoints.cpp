@@ -4,6 +4,7 @@
 #include "wireplumber_graph_p.h"
 #include "wireplumber_worker_p.h"
 
+#include <QtCore/QDebug>
 #include <QtCore/QSet>
 
 #include <pipewire/pipewire.h>
@@ -69,6 +70,17 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
             m_endpointProxies.erase(proxy);
         }
     }
+    // AGENT-GUARD: a refused virtual-bus loopback is attempted once per
+    // declaration, not on every rebuild (module_refusals_p.h).
+    std::unordered_map<std::string, QByteArray> busLoopbacks;
+    for (const BackendConsoleEndpoint &endpoint : endpoints) {
+        if (endpoint.isBus && !endpoint.physicalBusSink && !endpoint.consoleId.isEmpty()) {
+            busLoopbacks.emplace(
+                ConsoleEndpoints::busSinkNodeName(endpoint.consoleId).toStdString(),
+                ConsoleEndpoints::busModuleArguments(endpoint.consoleId, endpoint.description));
+        }
+    }
+    m_refusedEndpoints.retainDeclared(busLoopbacks);
     for (const BackendConsoleEndpoint &endpoint : endpoints) {
         if (endpoint.consoleId.isEmpty()) {
             continue;
@@ -88,7 +100,7 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
         if (endpoint.isBus && !endpoint.physicalBusSink) {
             const QByteArray arguments = ConsoleEndpoints::busModuleArguments(
                 endpoint.consoleId, endpoint.description);
-            if (arguments.isEmpty()) {
+            if (arguments.isEmpty() || m_refusedEndpoints.refused(key, arguments)) {
                 continue;
             }
             struct pw_impl_module *const module = pw_context_load_module(
@@ -100,6 +112,10 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
                 // missing bus and shutdown destroys a stale pointer.
                 watchModule(ModuleKind::Endpoint, key, module);
                 m_endpointModules.emplace(key, module);
+            } else {
+                m_refusedEndpoints.remember(key, arguments);
+                qWarning().noquote() << QStringLiteral("Audio1: PipeWire refused console bus %1")
+                                            .arg(endpoint.consoleId);
             }
             continue;
         }
@@ -123,12 +139,15 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
         if (proxy != nullptr) {
             m_endpointProxies.emplace(key, proxy);
         }
-        // A refused creation is retried on the next rebuild, like a send.
+        // A refused creation is retried on the next rebuild: only a local
+        // failure returns no proxy, and the daemon's answer arrives later.
     }
 }
 
 void WirePlumberWorker::unloadAllEndpoints()
 {
+    // A replaced core earns every refused bus loopback one fresh attempt.
+    m_refusedEndpoints.clear();
     // A destroy callback removes its own entry; take the map before walking.
     std::unordered_map<std::string, void *> loaded;
     loaded.swap(m_endpointModules);

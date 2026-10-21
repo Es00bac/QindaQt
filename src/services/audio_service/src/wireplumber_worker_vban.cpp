@@ -39,6 +39,17 @@ bool connectedEdge(WpObjectManager *manager, guint32 outputNode, guint32 inputNo
     return found;
 }
 
+// What a failed start is remembered against: the declaration and the node
+// its handle resolved to. A re-enable mints a new activation token, so it is
+// a new declaration and earns one new attempt.
+QByteArray vbanDeclaration(const BackendVbanStream &stream, const QString &target)
+{
+    return QStringLiteral("%1|%2|%3|%4|%5")
+        .arg(stream.outgoing ? QStringLiteral("out") : QStringLiteral("in"), stream.host,
+             QString::number(stream.port), target, QString::number(stream.activationToken))
+        .toUtf8();
+}
+
 } // namespace
 
 void WirePlumberWorker::applyVban(QList<BackendVbanStream> streams)
@@ -78,11 +89,26 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
             ++it;
         }
     }
+    // AGENT-GUARD: a stream that failed to start is attempted once per
+    // declaration, not on every rebuild (module_refusals_p.h). A busy port or
+    // a refused route used to be retried, and logged, on every graph event.
+    std::unordered_map<std::string, QString> targets;
+    std::unordered_map<std::string, QByteArray> declarations;
     for (const BackendVbanStream &stream : streams) {
-        const std::string key = stream.name.toStdString();
-        if (m_vbanRuns.contains(key)) continue;
         const QString target = nodeNameForHandle(stream.target);
         if (target.isEmpty()) continue; // offline target: never fall back
+        targets.emplace(stream.name.toStdString(), target);
+        declarations.emplace(stream.name.toStdString(), vbanDeclaration(stream, target));
+    }
+    m_refusedVban.retainDeclared(declarations);
+    for (const BackendVbanStream &stream : streams) {
+        const std::string key = stream.name.toStdString();
+        const auto declaration = declarations.find(key);
+        if (m_vbanRuns.contains(key) || declaration == declarations.end()
+            || m_refusedVban.refused(key, declaration->second)) {
+            continue;
+        }
+        const QString &target = targets.at(key);
         VbanRun run;
         run.declared = stream;
         bool started = false;
@@ -102,18 +128,18 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
             }
         } else {
             const QByteArray arguments = vbanRouteArguments(stream.name, target);
-            if (arguments.isEmpty()) continue;
             run.receiver = std::make_unique<VbanReceiver>();
-            if (!run.receiver->start(context, stream.name,
-                                     static_cast<quint16>(stream.port), stream.host)) {
+            if (arguments.isEmpty()) {
+                // Unembeddable names: nothing PipeWire could be asked to load.
+            } else if (!run.receiver->start(context, stream.name,
+                                            static_cast<quint16>(stream.port), stream.host)) {
                 qWarning().noquote() << QStringLiteral(
                     "VBAN: incoming stream '%1' failed to start (host %2 port %3)")
                     .arg(stream.name, stream.host, QString::number(stream.port));
-                continue;
-            }
-            struct pw_impl_module *const module = pw_context_load_module(
-                context, "libpipewire-module-loopback", arguments.constData(), nullptr);
-            if (module != nullptr) {
+            } else if (struct pw_impl_module *const module = pw_context_load_module(
+                           context, "libpipewire-module-loopback", arguments.constData(),
+                           nullptr);
+                       module != nullptr) {
                 watchModule(ModuleKind::VbanRoute, key, module);
                 m_vbanRouteModules.emplace(key, LoadedModule{.module = module,
                                                                .arguments = arguments});
@@ -125,7 +151,11 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
                     .arg(stream.name, stream.host, QString::number(stream.port));
             }
         }
-        if (started) m_vbanRuns.emplace(key, std::move(run));
+        if (!started) {
+            m_refusedVban.remember(key, declaration->second);
+            continue;
+        }
+        m_vbanRuns.emplace(key, std::move(run));
     }
     publishVbanRunning();
 }
@@ -173,6 +203,8 @@ void WirePlumberWorker::publishVbanRunning()
 
 void WirePlumberWorker::stopAllVban()
 {
+    // A replaced core earns every failed stream one fresh attempt.
+    m_refusedVban.clear();
     // cleanupCore has stopped all dispatch and destroys current modules in
     // this context before the receiver streams and PipeWire core disappear.
     std::unordered_map<std::string, LoadedModule> routes;

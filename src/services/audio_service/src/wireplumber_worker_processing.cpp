@@ -5,6 +5,7 @@
 #include "wireplumber_processing_p.h"
 #include "wireplumber_worker_p.h"
 
+#include <QtCore/QDebug>
 #include <QtCore/QtGlobal>
 
 #include <pipewire/pipewire.h>
@@ -88,8 +89,10 @@ void WirePlumberWorker::applyProcessingOnWorker(const QList<BackendProcessingCha
             // A refused chain - a missing plugin, most likely - leaves the
             // strip unprocessed rather than silent: its sends keep reading
             // the device. It is tried again when the rack or its source
-            // changes, or with the next core.
+            // changes, or with the next core; logged once per declaration.
             m_refusedProcessing.remember(stripId, arguments);
+            qWarning().noquote() << QStringLiteral("Audio1: PipeWire refused the rack of %1")
+                                        .arg(QString::fromStdString(stripId));
             continue;
         }
         watchModule(ModuleKind::Chain, stripId, module);
@@ -155,6 +158,8 @@ void WirePlumberWorker::applyBusProcessingOnWorker(const QList<BackendBusChain> 
         }
         if (module == nullptr) {
             m_refusedBusProcessing.remember(busId, arguments);
+            qWarning().noquote() << QStringLiteral("Audio1: PipeWire refused the rack of %1")
+                                        .arg(QString::fromStdString(busId));
             continue;
         }
         watchModule(ModuleKind::BusChain, busId, module);

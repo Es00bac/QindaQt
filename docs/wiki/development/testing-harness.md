@@ -2747,7 +2747,7 @@ The focused Audio1 boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.audio-(protocol|client|client-meter-lineage|qt-transport|activation|service|module-refusals|wireplumber-(runtime|reset-lifecycle|rack-churn))$' \
+  -R '^qindaqt\.audio-(protocol|client|client-meter-lineage|qt-transport|activation|service|module-refusals|wireplumber-(runtime|reset-lifecycle|rack-churn|refusal-churn))$' \
   --output-on-failure
 ```
 
@@ -2803,6 +2803,14 @@ refusal to cost nothing per graph event. Daemon output goes to files in the
 private root: QProcess buffering it in-process was itself 16 kB per stream.
 `qindaqt.audio-module-refusals` is the pure retry policy behind it
 ([Audio service](../architecture/audio-service.md#2026-10-21-rack-refusal-heap-growth)).
+
+`qindaqt.audio-wireplumber-refusal-churn` uses the same private rig
+(`support/private_audio_churn`). One row removes the loopback module from the
+backend's `PIPEWIRE_MODULE_DIR`, so the default virtual buses, one send and a
+VBAN route are refused; the other holds the VBAN stream's UDP port so its
+receiver cannot bind. Each refusal must be attempted, and logged, once per
+declaration while 35 clients come and go, and a re-enabled stream exactly
+once more.
 
 This runtime proof does not use physical microphones, speakers, or input and
 does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,

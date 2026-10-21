@@ -13,7 +13,9 @@ namespace QindaQt::Audio
 
 // Remembers the exact module arguments PipeWire refused to load, per key, so
 // the graph worker attempts a refused declaration once instead of on every
-// graph rebuild.
+// graph rebuild. The worker uses one per family: strip and bus racks, legacy
+// sends, virtual-bus loopbacks, and VBAN streams (whose "arguments" are the
+// resolved declaration, since a busy port or refused route fails the start).
 //
 // AGENT-NOTE: a filter-chain refusal is deterministic for the same arguments
 // and installed plugins, and PipeWire 1.6.8 leaks every filter-graph node it

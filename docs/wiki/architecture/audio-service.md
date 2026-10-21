@@ -33,12 +33,24 @@ stream; with the fix, 22–404 B per stream over ten runs, under an 8 kB
 bound. One row proves an equalizer rack now loads; the other forces a
 refusal with an empty `LADSPA_PATH` and proves it is attempted once.
 `qindaqt.audio-module-refusals` pins the retry policy and
-`qindaqt.audio-processing` pins the port names. The upstream filter-graph
-leak itself remains in PipeWire; one refused declaration now costs it once.
-The loopback loaders (legacy sends, virtual-bus endpoints, VBAN routes)
-still retry a refused load on each rebuild; that path was not measured
-here. This private-graph evidence does not identify the live console's
-racks or qualify physical devices.
+`qindaqt.audio-processing` pins the port names. The upstream filter-graph leak
+itself remains in PipeWire; one refused declaration now costs it once. The same
+churn method then measured the loopback paths, with PipeWire's loopback module
+removed from the backend's module path. Refused legacy sends and virtual-bus
+loopbacks grew nothing measurable (under 0.5 kB per stream) and logged nothing,
+but were retried on every rebuild; an incoming VBAN stream whose UDP port was
+busy, or whose route loopback was refused, was retried and logged on every
+graph event, about four warnings per client stream. Sends, virtual-bus
+loopbacks and VBAN streams now keep the same once-per-declaration memory, and
+every refused rack, send or bus loopback is logged once (`Audio1: PipeWire
+refused ...`). A VBAN stream that failed to start is tried again when it is
+re-enabled or retargeted, or with the next core.
+`qindaqt.audio-wireplumber-refusal-churn` proves both: one warning per refused
+declaration over 35 client streams (formerly 107 and 194), and exactly one more
+after a re-enable. This private-graph evidence does not qualify physical
+devices. The live console that showed the leak racks `strip.virtual.1` with
+only the equalizer on, its low shelf at about +15 dB; that rack now loads, so
+after install the boost is heard for the first time.
 
 ## 2026-09-19 endpoint lifetime diagnosis
 

@@ -7,6 +7,8 @@
 
 #include <qindaqt/services/audio_protocol/audio_gain.h>
 
+#include <QtCore/QDebug>
+
 #include <pipewire/pipewire.h>
 // pw_context_load_module / pw_impl_module_destroy live in the impl API, which
 // pipewire.h does not pull in.
@@ -88,16 +90,23 @@ void WirePlumberWorker::applyLegacyRouting(const QList<BackendRoutingEdge> &edge
             ++it;
         }
     }
+    // AGENT-GUARD: a refused send is attempted once per declaration, not on
+    // every rebuild (module_refusals_p.h); a changed gain or endpoint is a
+    // new declaration and earns one new attempt.
+    m_refusedRouting.retainDeclared(wanted);
     for (const auto &[name, arguments] : wanted) {
-        if (m_routingModules.find(name) != m_routingModules.end()) {
+        if (m_routingModules.find(name) != m_routingModules.end()
+            || m_refusedRouting.refused(name, arguments)) {
             continue;
         }
         struct pw_impl_module *const module = pw_context_load_module(
             context, "libpipewire-module-loopback", arguments.constData(), nullptr);
         if (module == nullptr) {
-            // A refused module is reported through the snapshot's diagnostic on
-            // the next publication rather than failing the whole console: the
-            // rest of the user's routing must keep working.
+            // A refused send leaves only its own cell silent: the rest of the
+            // user's routing must keep working. Logged once per declaration.
+            m_refusedRouting.remember(name, arguments);
+            qWarning().noquote() << QStringLiteral("Audio1: PipeWire refused console send %1")
+                                        .arg(QString::fromStdString(name));
             continue;
         }
         watchModule(ModuleKind::Send, name, module);
@@ -160,6 +169,8 @@ void WirePlumberWorker::applySendVolumes()
 
 void WirePlumberWorker::unloadAllRouting()
 {
+    // A replaced core earns every refused send one fresh attempt.
+    m_refusedRouting.clear();
     m_ownedSends.stop(sendRuntime());
     // Take the map first: each destroy fires the module's destroy event, which
     // would otherwise erase from the map being walked.

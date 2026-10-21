@@ -252,10 +252,13 @@ private:
     std::unordered_map<std::string, LoadedModule> m_processingModules;
     QList<BackendBusChain> m_declaredBusProcessing;
     std::unordered_map<std::string, LoadedModule> m_busProcessingModules;
-    // Strip and bus racks PipeWire refused, with the refused arguments; see
-    // module_refusals_p.h. Cleared with the core in unloadAllProcessing().
+    // Declarations PipeWire refused, with the refused arguments; see
+    // module_refusals_p.h. Each is cleared with the core by its unload path.
     ModuleRefusals m_refusedProcessing;
     ModuleRefusals m_refusedBusProcessing;
+    ModuleRefusals m_refusedRouting;
+    ModuleRefusals m_refusedEndpoints;
+    ModuleRefusals m_refusedVban;
     std::vector<void *> m_modulesPendingDestroy;
     GSource *m_moduleDestroySource = nullptr;
     // Bus loopback modules this worker loaded, keyed by the bus sink's node
