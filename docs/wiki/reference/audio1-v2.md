@@ -156,6 +156,15 @@ unique-owner change, WirePlumber daemon replacement, or PipeWire reconnect
 invalidates earlier handles. Revision is monotonic snapshot publication within
 an epoch.
 
+Equal epoch and revision identify one publication, with one exception: meter
+readings (`Strip.level`, `Bus.level`, schema 3 and later). The service folds
+each `Levels` batch into the snapshot `GetSnapshot` serves without advancing
+the revision ([ADR-0174](../adr/0174-meters-are-a-stream-not-a-snapshot.md)),
+so two replies at one revision may differ in those fields. A client compares
+same-revision snapshots with them excluded (`sameRevisionContent()` in
+`audio_snapshot_identity.h`); any other difference is a contradiction and
+fails closed.
+
 An operation result records both initiating and observed lineage. `Succeeded`
 is valid only in the initiating epoch and at an observed revision no earlier
 than initiation. Once a mutation has been dispatched, timeout or authority loss

@@ -78,3 +78,17 @@ target_link_libraries(
 qindaqt_enable_warnings(qindaqt_audio_client_levels_tests)
 add_test(NAME qindaqt.audio-client-levels COMMAND qindaqt_audio_client_levels_tests)
 set_tests_properties(qindaqt.audio-client-levels PROPERTIES TIMEOUT 20 LABELS "service;audio")
+
+# ADR-0174: meter readings are not snapshot identity. A same-revision refetch
+# with moved meters is the same publication, not a lineage contradiction.
+qt_add_executable(
+    qindaqt_audio_client_meter_lineage_tests
+    tst_audio_client_meter_lineage.cpp
+    support/fake_audio_transport.h
+)
+target_link_libraries(
+    qindaqt_audio_client_meter_lineage_tests PRIVATE QindaQt::AudioClient Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_client_meter_lineage_tests)
+add_test(NAME qindaqt.audio-client-meter-lineage COMMAND qindaqt_audio_client_meter_lineage_tests)
+set_tests_properties(qindaqt.audio-client-meter-lineage PROPERTIES TIMEOUT 20 LABELS "service;audio")

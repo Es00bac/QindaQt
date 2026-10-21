@@ -5,6 +5,7 @@
 #include "audio_client_preflight_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_limits.h>
+#include <qindaqt/services/audio_protocol/audio_snapshot_identity.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
 #include <cmath>
@@ -307,7 +308,10 @@ void AudioClient::acceptSnapshotReply(const QString &owner, const quint64 reques
             if (snapshot.revision < m_snapshot->revision) {
                 lineageContradiction = true;
             } else if (snapshot.revision == m_snapshot->revision) {
-                exactDuplicate = snapshot == *m_snapshot;
+                // AGENT-GUARD: meter readings are not revision identity
+                // (ADR-0174): the service folds Levels into its snapshot
+                // without a new revision, and this client rewrites them too.
+                exactDuplicate = sameRevisionContent(snapshot, *m_snapshot);
                 lineageContradiction = !exactDuplicate;
             }
         }

@@ -132,3 +132,33 @@ wrong for every hardware input, so it now follows the strip's kind.
   instead of permanent and passive.
 - Per-strip DSP lands and the meter needs a defined tap point — before the
   fader, after the processors, or both.
+
+## Addendum (2026-10-21): meter readings are not revision identity
+
+Folding readings into the retained snapshot "advances nothing", so the
+service can answer two fetches of one revision with different meter
+readings. The public client compared same-revision snapshots field by field
+and called that a lineage contradiction: during graph churn a second
+`Changed` arrives while a fetch is in flight, the coalesced refetch returns
+the same revision with moved meters, and the client went
+`Unavailable/malformed-snapshot` and backed off until the next revision. The
+client also rewrites the same fields itself from the stream, so its retained
+copy diverged from the service even when no reading moved.
+
+- **Identity.** Equal epoch and revision identify one publication except for
+  `Strip::level` and `Bus::level`. `sameRevisionContent()`
+  (`audio_snapshot_identity.h`, AudioProtocol) is the one definition; any
+  other same-revision difference is still a contradiction and fails closed.
+- **The fold stays.** A client connecting mid-stream still sees live meters
+  in its first `GetSnapshot`; the service does not freeze readings per
+  revision, because the client's own stream updates would diverge from a
+  frozen copy anyway.
+- **Readings on a duplicate.** A same-revision duplicate does not replace the
+  client's retained readings: while a lease is held the stream is the meter's
+  source of truth, and without one nothing draws them.
+
+Every Audio1 consumer reads through `AudioClient` (shell applet, Settings,
+desktop volume and mic-mute keys, the OBS bridge), so each inherits this when
+rebuilt. Focused evidence: `qindaqt.audio-client-meter-lineage` (fails on the
+former client, three rows) and `qindaqt.audio-protocol`
+(`meterReadingsAreNotRevisionIdentity`).

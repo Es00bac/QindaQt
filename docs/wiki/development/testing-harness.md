@@ -2747,7 +2747,7 @@ The focused Audio1 boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|module-refusals|wireplumber-(runtime|reset-lifecycle|rack-churn))$' \
+  -R '^qindaqt\.audio-(protocol|client|client-meter-lineage|qt-transport|activation|service|module-refusals|wireplumber-(runtime|reset-lifecycle|rack-churn))$' \
   --output-on-failure
 ```
 
@@ -2756,7 +2756,9 @@ lineage, sorting and uniqueness, target compatibility, finite normalized
 levels, UTF-8 byte limits, and oversized-array rejection. Fake transport and
 backend tests cover snapshot/model changes, operation validation, stale handles,
 exact owner/epoch/revision binding, invalidation coalescing, owner replacement,
-equal-revision contradiction rejection, queued exactly-once completion for all
+equal-revision contradiction rejection (meter readings excepted, so a coalesced
+same-revision refetch with moved meters stays Ready:
+`qindaqt.audio-client-meter-lineage`), queued exactly-once completion for all
 public result classes, stopped/superseded backend generations, malformed
 backend-outcome normalization, timeouts, uncertain outcomes, and the no-replay
 rule. Private session-bus tests

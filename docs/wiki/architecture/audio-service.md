@@ -282,12 +282,15 @@ signal carries no graph data and only prompts a fetch. The client subscribes to
 the current unique owner rather than the well-known name, rejects late replies,
 coalesces invalidations while a fetch is active, and rejects older epochs,
 regressing revisions, equal-revision content contradictions, and malformed
-snapshots before publication. Public mutation results are always queued until
-after the request ID returns; stop cancels undelivered results except for one
-queued `client-stopped` uncertainty for a still-dispatched mutation, and object
-destruction safely drops that queued delivery. An accepted new epoch immediately
-makes any dispatched mutation uncertain; a delayed old-epoch result cannot
-restore success and is never replayed.
+snapshots before publication. Meter readings are not part of that content: the
+service folds `Levels` into the snapshot it serves without a new revision, so a
+same-revision refetch whose only difference is `Strip.level`/`Bus.level` is a
+duplicate (ADR-0174's 2026-10-21 addendum). Public mutation results are always
+queued until after the request ID returns; stop cancels undelivered results
+except for one queued `client-stopped` uncertainty for a still-dispatched
+mutation, and object destruction safely drops that queued delivery. An accepted
+new epoch immediately makes any dispatched mutation uncertain; a delayed
+old-epoch result cannot restore success and is never replayed.
 
 ## WirePlumber integration
 

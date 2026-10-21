@@ -2,6 +2,7 @@
 
 #include <qindaqt/services/audio_protocol/audio_dbus.h>
 #include <qindaqt/services/audio_protocol/audio_limits.h>
+#include <qindaqt/services/audio_protocol/audio_snapshot_identity.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
 #include <QtCore/QProcess>
@@ -206,6 +207,7 @@ private Q_SLOTS:
     void aCaptureStreamMayReadAnOutputsMonitor();
     void hostileChannelArraysFailClosedOverDBus();
     void latencyOffsetsRoundTripAndStayCanonical();
+    void meterReadingsAreNotRevisionIdentity();
 };
 
 void AudioProtocolTests::fixedSignatures()
@@ -573,6 +575,38 @@ void AudioProtocolTests::hostileChannelArraysFailClosedOverDBus()
     QVERIFY(echoed->streams[0].channelMap.at(0).toUtf8().size()
             <= kMaxChannelNameUtf8Bytes);
     QVERIFY(!validateSnapshot(*echoed).accepted);
+}
+
+// ADR-0174: the service folds the Levels stream into the snapshot it serves
+// without a new revision, so a same-revision snapshot may differ in meter
+// readings and nothing else. Every other field is still identity.
+void AudioProtocolTests::meterReadingsAreNotRevisionIdentity()
+{
+    Snapshot published = validSnapshot();
+    Strip strip;
+    strip.id = QStringLiteral("strip.hw.1");
+    published.console.strips.append(strip);
+    Bus bus;
+    bus.id = QStringLiteral("bus.a1");
+    published.console.buses.append(bus);
+    QVERIFY(sameRevisionContent(published, published));
+
+    Snapshot metered = published;
+    metered.console.strips[0].level = {.peakDb = -12.0, .rmsDb = -20.0, .known = true};
+    metered.console.buses[0].level = {.peakDb = -3.0, .rmsDb = -9.0, .known = true};
+    QVERIFY(metered != published);
+    QVERIFY(sameRevisionContent(metered, published));
+    QVERIFY(sameRevisionContent(published, metered));
+
+    Snapshot regained = metered;
+    regained.console.strips[0].gainDb = -6.0;
+    QVERIFY(!sameRevisionContent(regained, published));
+    Snapshot revolumed = published;
+    revolumed.outputs[0].volume = 0.25;
+    QVERIFY(!sameRevisionContent(revolumed, published));
+    Snapshot rebound = published;
+    rebound.console.buses[0].targetKnown = true;
+    QVERIFY(!sameRevisionContent(rebound, published));
 }
 
 QTEST_GUILESS_MAIN(AudioProtocolTests)

@@ -10,6 +10,7 @@ target_sources(
     PRIVATE
         src/audio_dbus.cpp
         src/audio_gain.cpp
+        src/audio_snapshot_identity.cpp
         src/audio_validation.cpp
         src/audio_validation_vban.cpp
         src/audio_validation_latency.cpp
@@ -21,6 +22,7 @@ target_sources(
             include/qindaqt/services/audio_protocol/audio_dbus.h
             include/qindaqt/services/audio_protocol/audio_gain.h
             include/qindaqt/services/audio_protocol/audio_limits.h
+            include/qindaqt/services/audio_protocol/audio_snapshot_identity.h
             include/qindaqt/services/audio_protocol/audio_types.h
             include/qindaqt/services/audio_protocol/audio_validation.h
 )
