@@ -13,6 +13,9 @@ class ControllersModel final : public QObject {
     Q_PROPERTY(QString selectedId READ selectedId WRITE select NOTIFY viewChanged)
     Q_PROPERTY(QVariantMap selected READ selected NOTIFY viewChanged)
     Q_PROPERTY(QVariantList buttons READ buttons NOTIFY viewChanged)
+    Q_PROPERTY(QString pageSwitcher READ pageSwitcher NOTIFY viewChanged)
+    Q_PROPERTY(QVariantList pages READ pages NOTIFY viewChanged)
+    Q_PROPERTY(QVariantMap currentPage READ currentPage NOTIFY viewChanged)
     Q_PROPERTY(QVariantList actions READ actions CONSTANT)
     Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
@@ -25,6 +28,18 @@ public:
     QVariantMap selected() const;
     QVariantList buttons() const;
     QVariantList actions() const;
+    QString pageSwitcher() const;
+    Q_INVOKABLE bool setPageSwitcher(const QString &button);
+    QVariantList pages() const;
+    QVariantMap currentPage() const;
+    Q_INVOKABLE bool saveBinding(const QString &button, const QVariantMap &binding, const QString &controllerId, const QString &pageId);
+    Q_INVOKABLE QString bindingError(const QVariantMap &binding) const;
+    Q_INVOKABLE QString bindingSummary(const QVariantMap &binding) const;
+    Q_INVOKABLE QVariantMap combination(const QVariantMap &binding) const;
+    Q_INVOKABLE bool addPage(const QString &name, const QString &color, bool copyCurrent = true, bool layer = false);
+    Q_INVOKABLE bool updatePage(const QString &name, const QString &color, bool layer = false);
+    Q_INVOKABLE bool removePage();
+    Q_INVOKABLE QString portableKey(int key) const;
     QString statusText() const;
     QString errorText() const { return m_error; }
     Q_INVOKABLE void refresh();

@@ -19,8 +19,9 @@ QString ControllerEndpoint::GetSnapshot() const { return m_runtime.snapshot(); }
 QString ControllerEndpoint::Apply(const QString &id, const QString &patch, qulonglong revision) { return m_runtime.apply(id, patch, revision); }
 QString ControllerEndpoint::Reset(const QString &id, qulonglong revision) { return m_runtime.resetProfile(id, revision); }
 ControllerPlugin::ControllerPlugin()
-    : m_runtime(m_input, QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("qindaqt/controllers.json")),
-      m_endpoint(m_runtime) {
+    : m_macros(QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("qindaqt/input-macros.json")),
+      m_input(m_macros), m_runtime(m_input, QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath("qindaqt/controllers.json")),
+      m_endpoint(m_runtime), m_macroEndpoint(m_macros, m_input), m_macroTriggers(m_macros, m_input, m_macroEndpoint) {
     auto bus = QDBusConnection::sessionBus();
     if (!bus.registerService(QString::fromLatin1(Service))) return;
     m_published = bus.registerObject(QString::fromLatin1(Object), &m_endpoint,
@@ -29,13 +30,24 @@ ControllerPlugin::ControllerPlugin()
         bus.unregisterService(QString::fromLatin1(Service));
         return;
     }
+    if (bus.registerService(QLatin1String(InputActions::Service))) {
+        m_macrosPublished = bus.registerObject(QLatin1String(InputActions::Object), &m_macroEndpoint, QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals);
+        if (!m_macrosPublished) bus.unregisterService(QLatin1String(InputActions::Service));
+    }
     KWin::input()->addInputDevice(&m_input);
+    if (m_macrosPublished) m_macroTriggers.start();
     m_context.setInterval(250);
     connect(&m_context, &QTimer::timeout, this, &ControllerPlugin::refreshContext);
     connect(&m_input, &ControllerInputDevice::dictationFailed, this, [](const QString &) {
         auto notify = QDBusMessage::createMethodCall("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
         notify.setArguments({"QindaQt", uint(0), "audio-input-microphone", "Controller dictation",
             "Dictation could not complete. Open Settings → Voice to check the microphone and provider.", QStringList{}, QVariantMap{}, 7000});
+        QDBusConnection::sessionBus().asyncCall(notify);
+    });
+    connect(&m_input, &ControllerInputDevice::textFailed, this, [] {
+        auto notify = QDBusMessage::createMethodCall("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        notify.setArguments({"QindaQt", uint(0), "input-keyboard", "Controller text block",
+            "Text could not be inserted. Focus an application text field and try again.", QStringList{}, QVariantMap{}, 7000});
         QDBusConnection::sessionBus().asyncCall(notify);
     });
     QTimer::singleShot(0, this, [this] { refreshContext(); m_runtime.start(); m_context.start(); });
@@ -50,6 +62,7 @@ ControllerPlugin::~ControllerPlugin() {
     KWin::input()->removeInputDevice(&m_input);
     if (m_published) {
         auto bus = QDBusConnection::sessionBus();
+        if (m_macrosPublished) { bus.unregisterObject(QLatin1String(InputActions::Object)); bus.unregisterService(QLatin1String(InputActions::Service)); }
         bus.unregisterObject(QString::fromLatin1(Object)); bus.unregisterService(QString::fromLatin1(Service));
     }
 }
@@ -57,7 +70,7 @@ void ControllerPlugin::refreshContext() {
     QString reason;
     if (!KWin::kwinApp()->session()->isActive()) reason = "inactive-session";
     else if (KWin::waylandServer()->isScreenLocked()) reason = "locked";
-    else if (KWin::workspace()->activeWindow() && KWin::workspace()->activeWindow()->isFullScreen()) reason = "fullscreen";
+    if (!reason.isEmpty()) m_input.reset();
     m_runtime.setContext(reason.isEmpty(), reason);
     reconcileTouchpads();
 }

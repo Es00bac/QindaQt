@@ -18,13 +18,13 @@ ColumnLayout {
     readonly property Item firstFocusTarget: controllers.available ? controllerChoice : retryButton
     signal captureActivityChanged(bool active)
     signal audioSettingsRequested()
-    Component.onCompleted: controllers.refresh()
+    Component.onCompleted: { controllers.refresh(); if (inputSettings.macros) inputSettings.macros.refresh() }
     spacing: Tokens.space["2"]
 
     SectionHeader { Layout.fillWidth: true; title: qsTr("Controllers") }
     Label {
         Layout.fillWidth: true
-        text: qsTr("Use Xbox, PlayStation, Nintendo and other game controllers on the desktop. Steam takes priority while it is running; desktop input also pauses when a game uses a controller or an app is fullscreen.")
+        text: qsTr("Use Xbox, PlayStation, Nintendo and other game controllers on the desktop. Steam takes priority while it is running; desktop input also pauses when another application uses a controller. Fullscreen video keeps desktop control.")
         wrapMode: Text.Wrap
         Accessible.name: text
     }
@@ -201,12 +201,18 @@ ColumnLayout {
         description: qsTr("Connect a DualSense by USB and select its input in Audio settings. Dictation uses the selected default microphone.")
         editor: Button { text: qsTr("Audio settings"); onClicked: root.audioSettingsRequested() }
     }
+    ControllerPagesSection {
+        Layout.fillWidth: true
+        visible: root.controllers.available
+        controllerModel: root.controllers
+        onCaptureActivityChanged: active => root.captureActivityChanged(active)
+    }
     SectionHeader { Layout.fillWidth: true; visible: root.controllers.available; title: qsTr("Button bindings") }
     Label {
         Layout.fillWidth: true
         visible: root.controllers.available
         text: root.selected.family === "dualsense"
-              ? qsTr("Cross holds dictation, Square holds voice commands, and the touchpad click toggles gyro mouse. L3/R3 switch windows, Triangle maximizes the current window or tile, Circle opens the overview, and PS opens applications. Each button can be changed below.")
+              ? qsTr("Cross holds dictation, Square holds voice commands, touching the touchpad enables precision gyro, and clicking it sends a left click. Hold R2 to drag and use the D-pad as arrow keys. L3/R3 switch windows, Triangle maximizes the current window or tile, Circle opens the overview, and PS opens applications. Each button can be changed below.")
               : qsTr("Share / View / Minus holds dictation by default. Shoulders switch windows, the top face button opens the overview, and Menu / Options / Plus opens the launcher. Each button can be changed below.")
         wrapMode: Text.Wrap
         Accessible.name: text
@@ -218,6 +224,7 @@ ColumnLayout {
             Layout.fillWidth: true
             binding: modelData
             controllerModel: root.controllers
+            macroModel: root.inputSettings.macros ?? null
             onCaptureActivityChanged: active => root.captureActivityChanged(active)
         }
     }

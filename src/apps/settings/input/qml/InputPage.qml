@@ -44,6 +44,8 @@ T.Page {
           description: qsTr("Global shortcuts and custom command keys") },
         { id: "touch", title: qsTr("Touch"), icon: "input-touchpad",
           description: qsTr("Touchscreen, hold time, keyboard and edge swipes") },
+        { id: "macros", title: qsTr("Macros"), icon: "input-keyboard",
+          description: qsTr("Reusable key, mouse and text sequences") },
         { id: "controllers", title: qsTr("Controllers"), icon: "input-gaming",
           description: qsTr("Game controller bindings, dictation, mouse, touchpad and gyro") }
     ]
@@ -180,6 +182,8 @@ T.Page {
                                      ? tabletPage
                                      : root.currentDestination === "touch"
                                        ? touchPage
+                                       : root.currentDestination === "macros"
+                                         ? macrosSection
                                        : root.currentDestination === "controllers"
                                          ? controllersPage : pointersPage
                 onLoaded: item.forceActiveFocus(Qt.TabFocusReason)
@@ -234,6 +238,13 @@ T.Page {
         InputControllerSection {
             inputSettings: root.inputSettings
             onAudioSettingsRequested: root.audioSettingsRequested()
+            onCaptureActivityChanged: active => root.shortcutCaptureActivityChanged(active)
+        }
+    }
+    Component {
+        id: macrosSection
+        InputMacrosSection {
+            inputSettings: root.inputSettings
             onCaptureActivityChanged: active => root.shortcutCaptureActivityChanged(active)
         }
     }

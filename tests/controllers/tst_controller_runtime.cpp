@@ -2,6 +2,7 @@
 #include "qindaqt/controllers/controller_runtime.h"
 #include <SDL3/SDL.h>
 #include <QDir>
+#include <QColor>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -29,6 +30,8 @@ class ControllerRuntimeTest final : public QObject {
     Q_OBJECT
     SDL_JoystickID m_id = 0;
     SDL_Joystick *m_joystick = nullptr;
+    QList<QString> m_colors;
+    bool m_ledAccepts = true;
     QJsonObject snapshot(ControllerRuntime &runtime) { return QJsonDocument::fromJson(runtime.snapshot().toUtf8()).object(); }
     QString connectedId(ControllerRuntime &runtime) {
         for (const auto &entry : snapshot(runtime).value("controllers").toArray())
@@ -54,6 +57,12 @@ private Q_SLOTS:
         desc.button_mask = (1u << SDL_GAMEPAD_BUTTON_COUNT) - 1;
         desc.vendor_id = 0x054c; desc.product_id = 0x0ce6; desc.name = "QindaQt virtual DualSense";
         desc.ntouchpads = 1; desc.touchpads = &touch; desc.nsensors = 1; desc.sensors = &sensor;
+        m_colors.clear(); m_ledAccepts = true;
+        desc.userdata = this;
+        desc.SetLED = [](void *data, Uint8 r, Uint8 g, Uint8 b) {
+            auto *self = static_cast<ControllerRuntimeTest *>(data);
+            self->m_colors.append(QColor(r, g, b).name().toUpper()); return self->m_ledAccepts;
+        };
         desc.SetSensorsEnabled = [](void *, bool) { return true; };
         m_id = SDL_AttachVirtualJoystick(&desc); QVERIFY2(m_id != 0, SDL_GetError());
         m_joystick = SDL_OpenJoystick(m_id); QVERIFY(m_joystick);
@@ -95,7 +104,7 @@ private Q_SLOTS:
             button(it.key(), false, runtime);
         }
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 32767)); runtime.tick();
-        QCOMPARE(sink.events.last().first, "left-click-meta-shift");
+        QCOMPARE(sink.events.last().first, "combination");
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 32767)); runtime.tick();
         QCOMPARE(sink.events.last().first, "right-click-meta-shift");
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, -32768));
@@ -113,6 +122,8 @@ private Q_SLOTS:
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime);
         auto revision = snapshot(runtime).value("revision").toString().toULongLong();
+        QVERIFY(QJsonDocument::fromJson(runtime.apply(id, "{\"bindings\":{\"touchpad\":{\"action\":\"toggle-gyro\"}}}", revision).toUtf8()).object().value("ok").toBool());
+        runtime.tick(); revision = snapshot(runtime).value("revision").toString().toULongLong();
         button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
         QCOMPARE(snapshot(runtime).value("revision").toString().toULongLong(), revision + 1);
         QVERIFY(sink.events.isEmpty());
@@ -141,6 +152,8 @@ private Q_SLOTS:
         ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime);
+        const auto revision = snapshot(runtime).value("revision").toString().toULongLong();
+        QVERIFY(QJsonDocument::fromJson(runtime.apply(id, "{\"bindings\":{\"touchpad\":{\"action\":\"toggle-gyro\"}}}", revision).toUtf8()).object().value("ok").toBool()); runtime.tick();
         QVERIFY(QFile::remove(path)); QVERIFY(QDir().mkdir(path));
         button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime);
         QCOMPARE(snapshot(runtime).value("error").toString(), "config-unsaved");
@@ -154,6 +167,62 @@ private Q_SLOTS:
         ProfileStore readback(path); QString reason;
         QVERIFY(readback.load(reason)); QVERIFY(readback.profile(id).gyro);
         QVERIFY(snapshot(runtime).value("error").toString().isEmpty());
+    }
+    void profileSwitchReleasesOldButtonsUpdatesLedAndPersistsOnce() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc")); QString reason;
+        const auto path = dir.filePath("controllers.json");
+        auto profile = defaultProfile(); activePage(profile).bindings["misc1"] = {"next-page"};
+        auto second = activePage(profile); second.id = "work"; second.name = "Work"; second.color = "#A83DFF";
+        second.bindings["south"] = {"text", {}, {}, {}, {}, "Text block"}; profile.pages.append(second);
+        ProfileStore store(path); store.set("default:dualsense", profile); QVERIFY(store.save(reason));
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")}); runtime.start();
+        QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
+        QCOMPARE(m_colors.last(), "#287DFF");
+        button(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, true, runtime); QVERIFY(!sink.held.isEmpty());
+        button(SDL_GAMEPAD_BUTTON_MISC1, true, runtime); QVERIFY(sink.held.isEmpty());
+        QCOMPARE(m_colors.last(), "#A83DFF"); const auto count = m_colors.size();
+        ProfileStore readback(path); QVERIFY(readback.load(reason)); QCOMPARE(readback.profile(id).activePage, "work");
+        runtime.tick(); runtime.tick(); QCOMPARE(m_colors.size(), count);
+        QCOMPARE(connectedReason(runtime), "release-controls");
+        button(SDL_GAMEPAD_BUTTON_MISC1, false, runtime); QCOMPARE(connectedReason(runtime), "release-controls");
+        button(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, false, runtime); QCOMPARE(connectedReason(runtime), "active");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QCOMPARE(sink.events.last().first, "text");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime);
+        button(SDL_GAMEPAD_BUTTON_MISC1, true, runtime); QCOMPARE(m_colors.last(), "#287DFF");
+        QVERIFY(readback.load(reason)); QCOMPARE(readback.profile(id).activePage, "main");
+    }
+    void failedPageSaveKeepsMapAndColorAndLedFailureKeepsBindings() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc")); QString reason;
+        const auto path = dir.filePath("controllers.json");
+        auto profile = defaultProfile(); activePage(profile).bindings["misc1"] = {"next-page"};
+        auto second = activePage(profile); second.id = "work"; second.color = "#24D16B"; profile.pages.append(second);
+        ProfileStore store(path); store.set("default:dualsense", profile); QVERIFY(store.save(reason));
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")}); runtime.start();
+        QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
+        const auto count = m_colors.size(); QVERIFY(QFile::remove(path)); QVERIFY(QDir().mkdir(path));
+        button(SDL_GAMEPAD_BUTTON_MISC1, true, runtime); QCOMPARE(snapshot(runtime).value("error").toString(), "config-unsaved");
+        QCOMPARE(m_colors.size(), count); QVERIFY(QDir().rmdir(path));
+        button(SDL_GAMEPAD_BUTTON_MISC1, false, runtime); m_ledAccepts = false;
+        button(SDL_GAMEPAD_BUTTON_MISC1, true, runtime);
+        ProfileStore readback(path); QVERIFY(readback.load(reason)); QCOMPARE(readback.profile(id).activePage, "work");
+        bool reported = false;
+        for (const auto &entry : snapshot(runtime).value("controllers").toArray())
+            if (entry.toObject().value("id").toString() == id) reported = entry.toObject().value("ledStatus").toString() == "failed";
+        QVERIFY(reported);
+    }
+    void touchContactEnablesGyroWithoutSavingAndClickRemainsLeftMouse() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")}); runtime.start();
+        QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
+        QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, true, .3f, .4f, 1.f)); runtime.tick();
+        const auto before = sink.moves.size(); const float values[3]{0, 1, 0};
+        QVERIFY(SDL_SendJoystickVirtualSensorData(m_joystick, SDL_SENSOR_GYRO, 1, values, 3)); QTest::qWait(20); runtime.tick();
+        QVERIFY(sink.moves.size() > before); QVERIFY(sink.events.isEmpty());
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime); QCOMPARE(sink.events.last().first, "left-click");
+        button(SDL_GAMEPAD_BUTTON_TOUCHPAD, false, runtime);
+        QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, false, .3f, .4f, 0.f)); runtime.tick();
+        const auto stopped = sink.moves.size(); QTest::qWait(20); runtime.tick(); QCOMPARE(sink.moves.size(), stopped);
+        ProfileStore readback(dir.filePath("controllers.json")); QString reason; QVERIFY(readback.load(reason)); QVERIFY(!readback.profile(id).gyro);
     }
     void steamStartupClosesDesktopInput() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));

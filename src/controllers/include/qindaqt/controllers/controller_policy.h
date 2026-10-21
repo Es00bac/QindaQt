@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <qindaqt/input_actions/input_actions.h>
 #include <QJsonObject>
 #include <QMap>
+#include <QList>
 #include <QPointF>
 #include <QString>
 #include <QStringList>
@@ -11,11 +13,20 @@ inline constexpr auto Service = "org.qindaqt.Controllers1";
 inline constexpr auto Object = "/org/qindaqt/Controllers1";
 inline constexpr auto Interface = "org.qindaqt.Controllers1";
 
-struct Binding {
-    QString action = QStringLiteral("none");
-    QString shortcut;
-    friend bool operator==(const Binding &, const Binding &) = default;
+using Binding = InputActions::Binding;
+struct ButtonPage {
+    QString id = QStringLiteral("main");
+    QString name = QStringLiteral("Desktop");
+    QString color = QStringLiteral("#287DFF");
+    bool layer = false;
+    QMap<QString, Binding> bindings;
+    friend bool operator==(const ButtonPage &, const ButtonPage &) = default;
 };
+inline constexpr qsizetype MaxConfigBytes = 128 * 1024;
+inline constexpr qsizetype MaxStoreBytes = 2 * 1024 * 1024;
+inline constexpr qsizetype MaxSnapshotBytes = 4 * 1024 * 1024;
+inline constexpr int MaxPages = 12;
+inline constexpr int MaxTextBytes = InputActions::MaxTextBytes;
 struct Profile {
     bool enabled = true;
     QString pointerStick = QStringLiteral("left");
@@ -24,7 +35,8 @@ struct Profile {
     bool touchpad = true;
     bool gyro = false;
     double gyroSpeed = 650;
-    QMap<QString, Binding> bindings;
+    QString activePage = QStringLiteral("main");
+    QList<ButtonPage> pages{ButtonPage{}};
     friend bool operator==(const Profile &, const Profile &) = default;
 };
 
@@ -32,6 +44,13 @@ struct Profile {
 // bounded and atomic; no action is a command or executable path (ADR-0347).
 QStringList buttonIds();
 QStringList actionIds();
+// Profiles always contain a valid active page. Page changes release owned
+// input before adopting another map; motion preferences belong to Profile.
+const ButtonPage &activePage(const Profile &profile);
+ButtonPage &activePage(Profile &profile);
+using InputActions::bindingJson;
+using InputActions::readBinding;
+QJsonObject pageJson(const ButtonPage &page);
 // DualSense has its own defaults; all other families retain the generic map.
 // Saved per-device overrides remain authoritative across default changes.
 Profile defaultProfile(const QString &family = {});

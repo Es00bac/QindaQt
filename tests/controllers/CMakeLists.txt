@@ -12,9 +12,13 @@ set_tests_properties(qindaqt.controller-input-state PROPERTIES TIMEOUT 15)
 
 add_library(qindaqt_controller_settings_test_support STATIC
     ../../src/apps/settings/input/controllers_model.cpp
+    ../../src/apps/settings/input/controller_pages_model.cpp
+    ../../src/apps/settings/input/input_macros_model.cpp
+    ../../src/apps/settings/input/include/qindaqt/apps/settings_input/input_macros_model.h
     ../../src/apps/settings/input/qt_controller_port.cpp
     ../../src/apps/settings/input/include/qindaqt/apps/settings_input/controllers_model.h
-    ../../src/apps/settings/input/include/qindaqt/apps/settings_input/controller_port.h)
+    ../../src/apps/settings/input/include/qindaqt/apps/settings_input/controller_port.h
+    ../../src/apps/settings/input/include/qindaqt/apps/settings_input/json_input_port.h)
 target_include_directories(qindaqt_controller_settings_test_support PUBLIC ../../src/apps/settings/input/include)
 target_link_libraries(qindaqt_controller_settings_test_support PUBLIC qindaqt_controller_policy Qt6::DBus)
 add_executable(qindaqt_controller_settings_test tst_controller_settings.cpp)
@@ -41,3 +45,32 @@ if(TARGET qindaqt_controller_runtime)
     add_test(NAME qindaqt.controller-runtime COMMAND qindaqt_controller_runtime_test)
     set_tests_properties(qindaqt.controller-runtime PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 60)
 endif()
+
+add_executable(qindaqt_controller_pages_policy_test tst_controller_pages_policy.cpp)
+target_link_libraries(qindaqt_controller_pages_policy_test PRIVATE qindaqt_controller_policy Qt6::Test)
+add_test(NAME qindaqt.controller-pages-policy COMMAND qindaqt_controller_pages_policy_test)
+set_tests_properties(qindaqt.controller-pages-policy PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 15)
+
+add_executable(qindaqt_controller_text_test tst_controller_text.cpp)
+target_include_directories(qindaqt_controller_text_test PRIVATE ../../src/controllers)
+target_link_libraries(qindaqt_controller_text_test PRIVATE qindaqt_controller_policy Qt6::Test)
+add_test(NAME qindaqt.controller-text COMMAND qindaqt_controller_text_test)
+set_tests_properties(qindaqt.controller-text PROPERTIES TIMEOUT 15)
+
+# The focused SDK fixture uses the installed QST facade/theme and the real
+# source QML, without linking the rest of the Settings application.
+find_package(Qt6 6.11 QUIET COMPONENTS QuickTest QuickControls2)
+find_library(QINDAQT_CONTROLLER_TEST_TOKENS qindaqt_tokens_qml PATHS /usr/lib64/qt6/qml/QindaQt/Tokens /usr/lib/qt6/qml/QindaQt/Tokens)
+find_library(QINDAQT_CONTROLLER_TEST_THEMES qindaqt_themes)
+if(TARGET Qt6::QuickTest AND QINDAQT_CONTROLLER_TEST_TOKENS AND QINDAQT_CONTROLLER_TEST_THEMES)
+    add_executable(qindaqt_controller_editor_test controller_qml_setup.cpp)
+    target_link_libraries(qindaqt_controller_editor_test PRIVATE qindaqt_controller_settings_test_support Qt6::QuickTest Qt6::QuickControls2 ${QINDAQT_CONTROLLER_TEST_TOKENS} ${QINDAQT_CONTROLLER_TEST_THEMES})
+    add_test(NAME qindaqt.controller-editor COMMAND qindaqt_controller_editor_test -input ${CMAKE_CURRENT_SOURCE_DIR}/qml)
+    set_tests_properties(qindaqt.controller-editor PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QSG_RHI_BACKEND=software" TIMEOUT 30)
+endif()
+
+add_executable(qindaqt_button_layers_test tst_button_layers.cpp)
+target_include_directories(qindaqt_button_layers_test PRIVATE ../../src/controllers)
+target_link_libraries(qindaqt_button_layers_test PRIVATE qindaqt_controller_policy Qt6::Test)
+add_test(NAME qindaqt.button-layers COMMAND qindaqt_button_layers_test)
+set_tests_properties(qindaqt.button-layers PROPERTIES TIMEOUT 15)

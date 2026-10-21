@@ -520,6 +520,17 @@ runtime use the same schedule. It owns no bus, process or policy state. See
 [ADR-0379](../adr/0379-make-session-liveness-event-driven-and-self-healing.md)
 and [session resilience](session-resilience.md).
 
+## Programmable input actions
+
+`src/input_actions` owns generic binding/macro values, strict codecs, atomic
+macro persistence and a GUI-thread runner over a borrowed `MacroOutput`.
+Controller policy aliases its public Binding. The controller KWin plugin
+composes the InputActions1 endpoint and shared input sink; Settings uses borrowed
+asynchronous JSON ports and never reads those files or platform internals.
+The existing Shortcuts1 client owns the asynchronous native shortcut lease.
+See [Input actions](input-actions.md) and
+[ADR-0427](../adr/0427-share-programmable-input-actions-and-controller-layers.md).
+
 ## Controller desktop input
 
 `src/controllers` owns validated profile values, atomic profile persistence,

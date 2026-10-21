@@ -41,7 +41,7 @@ private Q_SLOTS:
         QVERIFY(model.setBinding("touchpad", "dictate")); QVERIFY(model.busy());
         QCOMPARE(port.lastId, "default:playstation"); QCOMPARE(port.lastRevision, quint64(7));
         QCOMPARE(port.lastPatch.value("bindings").toObject().value("touchpad").toObject().value("action").toString(), "dictate");
-        QCOMPARE(model.selected().value("config").toMap().value("bindings").toMap().value("touchpad").toMap().value("action").toString(), "left-click");
+        QCOMPARE(model.currentPage().value("bindings").toMap().value("touchpad").toMap().value("action").toString(), "left-click");
         Q_EMIT port.completed(true, "ok"); QVERIFY(!model.busy());
     }
     void steamCanStillConfigure() {
@@ -53,6 +53,40 @@ private Q_SLOTS:
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
         Q_EMIT port.unavailable(); QVERIFY(!model.available()); QVERIFY(!model.setBinding("back", "dictate"));
         QVERIFY(model.controllers().isEmpty());
+    }
+    void pageCreationAndCombinationEditingUseConfirmedReadback() {
+        FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
+        const auto before = model.currentPage();
+        QVERIFY(model.addPage("Work", "#A83DFF")); QCOMPARE(model.pages().size(), 1); QVERIFY(model.busy());
+        const auto patch = port.lastPatch; const auto id = patch.value("activePage").toString();
+        QVERIFY(!id.isEmpty()); QCOMPARE(patch.value("pages").toArray().size(), 2);
+        auto data = snapshot(); auto row = data.value("controllers").toArray().first().toObject();
+        auto profile = QindaQt::Controllers::defaultProfile(); QString reason;
+        QVERIFY(QindaQt::Controllers::applyPatch(patch, profile, reason)); row["config"] = QindaQt::Controllers::profileJson(profile);
+        data["controllers"] = QJsonArray{row}; data["revision"] = "8"; Q_EMIT port.snapshotReceived(data); Q_EMIT port.completed(true, "ok");
+        QCOMPARE(model.currentPage().value("name").toString(), "Work"); QCOMPARE(model.currentPage().value("color").toString(), "#A83DFF");
+        const QVariantMap combo{{"action", "combination"}, {"modifiers", QStringList{"Meta"}}, {"keys", QStringList{}}, {"mouseButtons", QStringList{"left"}}};
+        QVERIFY(!model.saveBinding("righttrigger", combo, model.selectedId(), "wrong-page"));
+        QVERIFY(model.saveBinding("righttrigger", combo, model.selectedId(), id));
+        QCOMPARE(port.lastPatch.value("bindings").toObject().value("righttrigger").toObject().value("modifiers").toArray(), QJsonArray{"Meta"});
+        QCOMPARE(model.bindingSummary(combo), "Meta + Left click");
+        QCOMPARE(model.currentPage().value("bindings").toMap(), before.value("bindings").toMap());
+    }
+    void profileSwitcherAndDeletionKeepReferencesValid() {
+        FakePort port; ControllersModel model(port); auto profile = QindaQt::Controllers::defaultProfile();
+        auto page = QindaQt::Controllers::activePage(profile); page.id = "work"; page.name = "Work";
+        profile.pages.append(page); profile.activePage = "work";
+        profile.pages[0].bindings["north"] = {"switch-page", {}, {}, {}, {}, {}, "work"};
+        auto data = snapshot(); auto row = data.value("controllers").toArray().first().toObject(); row["config"] = QindaQt::Controllers::profileJson(profile);
+        data["controllers"] = QJsonArray{row}; Q_EMIT port.snapshotReceived(data);
+        QVERIFY(model.setPageSwitcher("misc1")); QString reason;
+        QVERIFY(QindaQt::Controllers::applyPatch(port.lastPatch, profile, reason));
+        for (const auto &page : profile.pages) QCOMPARE(page.bindings["misc1"].action, "next-page");
+        row["config"] = QindaQt::Controllers::profileJson(profile); data["controllers"] = QJsonArray{row}; data["revision"] = "8";
+        Q_EMIT port.snapshotReceived(data); Q_EMIT port.completed(true, "ok"); QCOMPARE(model.pageSwitcher(), "misc1");
+        QVERIFY(model.removePage()); QVERIFY(QindaQt::Controllers::applyPatch(port.lastPatch, profile, reason));
+        QCOMPARE(profile.pages.size(), 1); QCOMPARE(profile.activePage, "main");
+        QCOMPARE(QindaQt::Controllers::activePage(profile).bindings["north"].action, "none");
     }
     void allFamilyButtonsAndActionsReachable() {
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
@@ -71,7 +105,7 @@ private Q_SLOTS:
         QMap<QString, QVariantMap> buttons;
         for (const auto &entry : model.buttons()) buttons[entry.toMap().value("id").toString()] = entry.toMap();
         QCOMPARE(buttons["south"].value("label").toString(), "Cross (south)");
-        QCOMPARE(buttons["touchpad"].value("action").toString(), "toggle-gyro");
+        QCOMPARE(buttons["touchpad"].value("action").toString(), "left-click");
         QCOMPARE(buttons["west"].value("action").toString(), "voice-command");
         QCOMPARE(buttons["dpup"].value("shortcut").toString(), "Ctrl+K");
         QSet<QString> actions;

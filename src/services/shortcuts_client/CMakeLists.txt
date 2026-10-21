@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 qt_add_library(qindaqt_shortcuts_client STATIC)
 add_library(QindaQt::ShortcutsClient ALIAS qindaqt_shortcuts_client)
-target_sources(qindaqt_shortcuts_client PRIVATE transport.cpp
-    PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/qindaqt/services/shortcuts_client/transport.h)
+target_sources(qindaqt_shortcuts_client PRIVATE transport.cpp shortcut_lease.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/qindaqt/services/shortcuts_client/transport.h include/qindaqt/services/shortcuts_client/shortcut_lease.h)
 target_include_directories(qindaqt_shortcuts_client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_features(qindaqt_shortcuts_client PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_shortcuts_client PRIVATE QT_NO_KEYWORDS)

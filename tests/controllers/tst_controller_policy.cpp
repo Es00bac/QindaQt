@@ -20,13 +20,13 @@ private Q_SLOTS:
     }
     void defaultsAndRoundTrip() {
         const auto p = defaultProfile();
-        QCOMPARE(p.bindings.value("back").action, "dictate");
+        QCOMPARE(activePage(p).bindings.value("back").action, "dictate");
         QVERIFY(!p.gyro);
         auto restored = Profile{}; QString reason;
         QVERIFY(applyPatch(profileJson(p), restored, reason)); QCOMPARE(restored, p);
         QTemporaryDir dir; QVERIFY(dir.isValid());
         ProfileStore store(dir.filePath("config/controllers.json"));
-        auto changed = p; changed.bindings["touchpad"] = {"dictate", {}}; changed.gyro = true;
+        auto changed = p; activePage(changed).bindings["touchpad"] = {"dictate", {}}; changed.gyro = true;
         store.set("pad:test", changed, {{"id", "pad:test"}, {"name", "Test pad"}});
         QVERIFY(store.save(reason));
         ProfileStore readback(dir.filePath("config/controllers.json")); QVERIFY(readback.load(reason));
@@ -43,10 +43,10 @@ private Q_SLOTS:
             {"north", {"maximize", {}}}, {"east", {"overview", {}}},
             {"west", {"voice-command", {}}}, {"south", {"dictate", {}}},
             {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
-            {"touchpad", {"toggle-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
-            {"righttrigger", {"left-click-meta-shift", {}}},
+            {"touchpad", {"left-click", {}}}, {"touchpad-touch", {"hold-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
+            {"righttrigger", {"combination", {}, {"Meta"}, {}, {"left"}, {}, {}, "move"}},
             {"leftshoulder", {"right-click", {}}}, {"lefttrigger", {"right-click-meta-shift", {}}}};
-        for (auto it = expected.begin(); it != expected.end(); ++it) QCOMPARE(p.bindings.value(it.key()), it.value());
+        for (auto it = expected.begin(); it != expected.end(); ++it) QCOMPARE(activePage(p).bindings.value(it.key()), it.value());
         Profile restored; QString reason;
         QVERIFY(applyPatch(profileJson(p), restored, reason)); QCOMPARE(restored, p);
         for (const auto &family : QStringList{"xbox", "playstation", "nintendo", "generic"})
@@ -72,7 +72,7 @@ private Q_SLOTS:
         QVERIFY(!applyPatch({{"bindings", QJsonObject{{"back", QJsonObject{{"action", "shell-command"}}}}}}, p, reason));
         QVERIFY(!applyPatch({{"bindings", QJsonObject{{"back", QJsonObject{{"action", "shortcut"}, {"shortcut", "Ctrl+A, Ctrl+B"}}}}}}, p, reason));
         QVERIFY(applyPatch({{"bindings", QJsonObject{{"back", QJsonObject{{"action", "shortcut"}, {"shortcut", "Insert"}}}}}}, p, reason));
-        QCOMPARE(p.bindings.value("back").shortcut, "Ins");
+        QCOMPARE(activePage(p).bindings.value("back").shortcut, "Ins");
     }
     void motionBoundsAndNeutral() {
         QCOMPARE(stickMotion({0.1, 0}, 0.18, 1000, 0.016), QPointF{});

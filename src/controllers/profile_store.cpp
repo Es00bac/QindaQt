@@ -20,21 +20,23 @@ ProfileStore::ProfileStore(QString path) : m_path(std::move(path)) {
 bool ProfileStore::load(QString &reason) {
     QFile file(m_path);
     if (!file.exists()) return true;
-    if (!file.open(QIODevice::ReadOnly) || file.size() > 256 * 1024) { reason = "config-unreadable"; return false; }
+    if (!file.open(QIODevice::ReadOnly) || file.size() > MaxStoreBytes) { reason = "config-unreadable"; return false; }
     QJsonParseError error;
     const auto doc = QJsonDocument::fromJson(file.readAll(), &error);
     if (error.error != QJsonParseError::NoError || !doc.isObject()
-        || doc.object().value("schemaVersion").toInt() != 1
+        || !QList<int>{1, 2}.contains(doc.object().value("schemaVersion").toInt())
         || !doc.object().value("profiles").isArray()) { reason = "config-invalid"; return false; }
     auto profiles = m_profiles;
     auto descriptions = m_descriptions;
     const auto rows = doc.object().value("profiles").toArray();
     if (rows.size() > 64) { reason = "config-invalid"; return false; }
+    QSet<QString> seen;
     for (const auto &row : rows) {
         if (!row.isObject()) { reason = "config-invalid"; return false; }
         const auto obj = row.toObject();
         const auto id = obj.value("id").toString();
-        if (id.isEmpty() || id.toUtf8().size() > 160 || !obj.value("config").isObject()) { reason = "config-invalid"; return false; }
+        if (id.isEmpty() || seen.contains(id) || id.toUtf8().size() > 160 || !obj.value("config").isObject()) { reason = "config-invalid"; return false; }
+        seen.insert(id);
         auto description = obj.value("description").toObject();
         // AGENT-CONTRACT: older Controllers1 profiles grouped PS5 with PS3/4.
         // Reclassify known DualSense metadata without changing saved bindings
@@ -43,11 +45,16 @@ bool ProfileStore::load(QString &reason) {
             && description.value("name").toString().contains("DualSense", Qt::CaseInsensitive))
             description["family"] = "dualsense";
         Profile p = defaultProfile(description.value("family").toString());
+        if (doc.object().value("schemaVersion").toInt() == 1) {
+            p.pages = {activePage(p)};
+            for (auto &binding : p.pages[0].bindings) binding.holdPage.clear();
+        }
         if (!applyPatch(obj.value("config").toObject(), p, reason)) return false;
         profiles[id] = p;
         if (obj.value("description").isObject() && !id.startsWith("default:"))
             descriptions[id] = description;
     }
+    if (profiles.size() > 64) { reason = "config-invalid"; return false; }
     m_profiles = profiles;
     m_descriptions = descriptions;
     return true;
@@ -60,8 +67,10 @@ bool ProfileStore::save(QString &reason) const {
                                {"description", m_descriptions.value(it.key())}});
     QSaveFile file(m_path);
     file.setDirectWriteFallback(false);
-    const auto data = QJsonDocument(QJsonObject{{"schemaVersion", 1}, {"profiles", rows}}).toJson(QJsonDocument::Compact);
-    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit()) { reason = "config-unsaved"; return false; }
+    const auto data = QJsonDocument(QJsonObject{{"schemaVersion", 2}, {"profiles", rows}}).toJson(QJsonDocument::Compact);
+    if (data.size() > MaxStoreBytes || !file.open(QIODevice::WriteOnly)
+        || !file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner)
+        || file.write(data) != data.size() || !file.commit()) { reason = "config-unsaved"; return false; }
     QFile::setPermissions(m_path, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
     return true;
 }

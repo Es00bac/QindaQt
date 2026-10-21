@@ -21,6 +21,8 @@
 #include <qindaqt/apps/settings_input/touch_settings_model.h>
 #include <qindaqt/apps/settings_input/controller_port.h>
 #include <qindaqt/apps/settings_input/controllers_model.h>
+#include <qindaqt/apps/settings_input/input_macros_model.h>
+#include <qindaqt/input_actions/input_actions.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 
 #include <QtCore/QDir>
@@ -80,7 +82,9 @@ public:
           touchClient(touchTransport, TouchSettingsModel::settingsKeys()),
           touchModel(touchClient),
           controllerPort(bus),
-          controllerModel(controllerPort) {
+          controllerModel(controllerPort),
+          macroPort(bus, nullptr, {QLatin1String(InputActions::Service), QLatin1String(InputActions::Object), QLatin1String(InputActions::Interface)}),
+          macroModel(macroPort) {
         // AGENT-CONTRACT: the ledger client starts here, not lazily: the
         // route must be able to record a choice the moment the user makes
         // one. A Settings1 owner that is not up yet leaves the store
@@ -122,6 +126,8 @@ public:
     TouchSettingsModel touchModel;
     QtControllerPort controllerPort;
     ControllersModel controllerModel;
+    QtJsonInputPort macroPort;
+    InputMacrosModel macroModel;
 };
 
 InputRouteComposition::InputRouteComposition(QObject *parent)
@@ -154,6 +160,7 @@ QObject *InputRouteComposition::tabletDevices() const {
     return &d->tabletModel;
 }
 QObject *InputRouteComposition::touch() const { return &d->touchModel; }
+QObject *InputRouteComposition::macros() const { return &d->macroModel; }
 QObject *InputRouteComposition::controllers() const { return &d->controllerModel; }
 
 } // namespace QindaQt::Apps::SettingsInput

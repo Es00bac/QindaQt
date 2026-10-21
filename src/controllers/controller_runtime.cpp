@@ -2,6 +2,7 @@
 #include "qindaqt/controllers/controller_runtime.h"
 #include "qindaqt/controllers/game_priority.h"
 #include "game_priority_observer_p.h"
+#include "button_layers_p.h"
 #include <SDL3/SDL.h>
 #include <QCryptographicHash>
 #include <QElapsedTimer>
@@ -9,6 +10,7 @@
 #include <QJsonDocument>
 #include <QSocketNotifier>
 #include <QTimer>
+#include <QColor>
 #include <optional>
 #include <map>
 #include <cmath>
@@ -43,12 +45,13 @@ QString buttonId(int index) { return buttonIds().value(index); }
 class ControllerRuntime::Private {
 public:
     struct Device {
-        QString id, family, reason = "initializing";
+        QString id, family, reason = "initializing", ledColor, ledPage, ledStatus = "waiting";
         QJsonObject description;
         QStringList paths;
         SDL_Gamepad *pad = nullptr;
         Profile profile;
         QMap<QString, bool> down;
+        ButtonLayers layers;
         std::optional<QPointF> touch;
         bool armed = false, gyroEnabled = false;
         SDL_JoystickID instance = 0;
@@ -106,10 +109,43 @@ public:
         error.clear();
         bump();
     }
+    bool changePage(Device &device, const Binding &binding) {
+        auto profile = device.profile;
+        QStringList cycle;
+        for (const auto &page : profile.pages) if (!page.layer) cycle.append(page.id);
+        const auto index = cycle.indexOf(profile.activePage);
+        QString target = binding.page;
+        if (binding.action == "next-page") target = cycle[(index + 1) % cycle.size()];
+        if (binding.action == "previous-page") target = cycle[(index < 0 ? cycle.size() : index + cycle.size() - 1) % cycle.size()];
+        if (target == profile.activePage) return false;
+        profile.activePage = target;
+        const auto before = store;
+        store.set(device.id, profile);
+        if (!store.save(error)) { store = before; bump(); return false; }
+        for (auto &[instance, peer] : devices) {
+            Q_UNUSED(instance);
+            if (peer.id == device.id) { release(peer); peer.profile = profile; }
+        }
+        error.clear(); bump(); return true;
+    }
+    void updateLed(Device &device) {
+        const auto &page = device.layers.page(device.profile);
+        if (device.ledPage != page.id) { device.ledPage = page.id; bump(); }
+        const auto requested = page.color;
+        if (device.ledColor == requested) return;
+        device.ledColor = requested;
+        const QColor color(requested);
+        const auto previous = device.ledStatus;
+        if (!device.description.value("hasRGBLed").toBool()) device.ledStatus = "unsupported";
+        else device.ledStatus = SDL_SetGamepadLED(device.pad, color.red(), color.green(), color.blue()) ? "ok" : "failed";
+        if (device.ledStatus != previous) bump();
+    }
     void release(Device &device) {
         sink.reset(device.id + '/' + QString::number(device.instance));
+        device.ledColor.clear();
         device.armed = false;
         device.down.clear();
+        device.layers.clear();
         device.touch.reset();
         if (device.pad && device.gyroEnabled) SDL_SetGamepadSensorEnabled(device.pad, SDL_SENSOR_GYRO, false);
         device.gyroEnabled = false;
@@ -149,7 +185,8 @@ public:
             dev.description = {{"id", dev.id}, {"name", QString::fromUtf8(SDL_GetGamepadName(pad))},
                 {"family", dev.family}, {"template", false},
                 {"hasTouchpad", SDL_GetNumGamepadTouchpads(pad) > 0},
-                {"hasGyro", SDL_GamepadHasSensor(pad, SDL_SENSOR_GYRO)}};
+                {"hasGyro", SDL_GamepadHasSensor(pad, SDL_SENSOR_GYRO)},
+                {"hasRGBLed", SDL_GetBooleanProperty(SDL_GetGamepadProperties(pad), SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false)}};
             QJsonArray buttons;
             for (int b = 0; b < SDL_GAMEPAD_BUTTON_COUNT; ++b) {
                 const auto button = static_cast<SDL_GamepadButton>(b);
@@ -159,6 +196,7 @@ public:
             }
             if (SDL_GamepadHasAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) buttons.append(QJsonObject{{"id", "lefttrigger"}});
             if (SDL_GamepadHasAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) buttons.append(QJsonObject{{"id", "righttrigger"}});
+            if (SDL_GetNumGamepadTouchpads(pad) > 0) buttons.append(QJsonObject{{"id", "touchpad-touch"}});
             dev.description["buttons"] = buttons;
             dev.profile = store.ids().contains(dev.id) ? store.profile(dev.id, dev.family)
                 : store.profile(legacyId, dev.family);
@@ -205,6 +243,7 @@ public:
         const QPointF right(axis(SDL_GAMEPAD_AXIS_RIGHTX), axis(SDL_GAMEPAD_AXIS_RIGHTY));
         bool touching = false; float x = 0, y = 0;
         if (SDL_GetNumGamepadTouchpads(dev.pad) > 0) SDL_GetGamepadTouchpadFinger(dev.pad, 0, 0, &touching, &x, &y, nullptr);
+        buttons["touchpad-touch"] = touching;
         if (!dev.armed) {
             // AGENT-GUARD: a held game button may never become a desktop
             // click, shortcut, or dictation when a game/Steam relinquishes it.
@@ -215,13 +254,20 @@ public:
         }
         if (dev.reason != "active") { dev.reason = "active"; bump(); }
         const QString tokenPrefix = dev.id + '/' + QString::number(instance) + '/';
-        for (auto b = buttons.begin(); b != buttons.end(); ++b) if (dev.down.value(b.key()) != b.value()) {
-            const auto binding = dev.profile.bindings.value(b.key());
-            if (binding.action == "toggle-gyro") {
-                if (b.value()) toggleGyro(dev);
-            } else sink.button(tokenPrefix + b.key(), binding, b.value());
+        const auto edges = dev.layers.sample(dev.profile, buttons);
+        for (const auto &edge : edges) {
+            const auto &binding = edge.binding;
+            if (binding.action == "next-page" || binding.action == "previous-page" || binding.action == "switch-page") {
+                // Page adoption releases the old map and returns before another
+                // simultaneous edge can run under the new map. Neutral rearm
+                // prevents the page-switch button acting again while held.
+                if (edge.down && changePage(dev, binding)) { updateLed(dev); return; }
+            } else if (binding.action == "toggle-gyro") {
+                if (edge.down) toggleGyro(dev);
+            } else if (binding.action != "hold-gyro" && binding.action != "hold-page") sink.button(tokenPrefix + edge.button, binding, edge.down);
         }
         dev.down = buttons;
+        updateLed(dev);
         if (dev.profile.pointerStick != "off") {
             const bool useLeft = dev.profile.pointerStick == "left";
             sink.motion(stickMotion(useLeft ? left : right, dev.profile.deadzone, dev.profile.pointerSpeed, dt));
@@ -232,7 +278,7 @@ public:
             if (dev.touch) sink.motion((point - *dev.touch) * dev.profile.pointerSpeed);
             dev.touch = point;
         } else dev.touch.reset();
-        const bool gyro = dev.profile.gyro && SDL_GamepadHasSensor(dev.pad, SDL_SENSOR_GYRO);
+        const bool gyro = (dev.profile.gyro || dev.layers.heldAction("hold-gyro")) && SDL_GamepadHasSensor(dev.pad, SDL_SENSOR_GYRO);
         if (gyro != dev.gyroEnabled) dev.gyroEnabled = SDL_SetGamepadSensorEnabled(dev.pad, SDL_SENSOR_GYRO, gyro) && gyro;
         if (dev.gyroEnabled) {
             float values[3]{};
@@ -250,7 +296,7 @@ public:
     std::map<SDL_JoystickID, Device> devices;
     GamePriorityState game;
     quint64 revision = 1;
-    bool initialized = false, context = true, priorityReady = false;
+    bool initialized = false, context = true, priorityReady = false, configReady = false;
     QString contextReason, error;
     int fd = -1;
     QList<int> watches;
@@ -261,7 +307,7 @@ ControllerRuntime::ControllerRuntime(InputSink &sink, QString path, QObject *par
     : QObject(parent), d(std::make_unique<Private>(*this, sink, std::move(path), std::move(environment))) {}
 ControllerRuntime::~ControllerRuntime() = default;
 void ControllerRuntime::start() {
-    d->store.load(d->error);
+    d->configReady = d->store.load(d->error);
     refreshPriority();
     d->priority.start();
     d->sample.start();
@@ -277,6 +323,7 @@ void ControllerRuntime::refreshPriority() {
     d->refreshPriority(true);
 }
 void ControllerRuntime::tick() {
+    if (!d->configReady) return;
     if (d->game.steam) { d->sample.setInterval(250); return; }
     if (!d->initialized) {
         if (!d->priorityReady) return;
@@ -301,16 +348,17 @@ QString ControllerRuntime::snapshot() const {
         row["config"] = profileJson(d->store.profile(id));
         row["connected"] = false;
         row["reason"] = d->game.steam ? "steam" : "disconnected";
-        for (const auto &[instance, dev] : d->devices) { Q_UNUSED(instance); if (dev.id == id) { row = dev.description; row["config"] = profileJson(dev.profile); row["connected"] = true; row["reason"] = dev.reason; break; } }
+        for (const auto &[instance, dev] : d->devices) { Q_UNUSED(instance); if (dev.id == id) { row = dev.description; row["config"] = profileJson(dev.profile); row["connected"] = true; row["reason"] = dev.reason; row["ledStatus"] = dev.ledStatus; row["effectivePage"] = dev.layers.page(dev.profile).id; break; } }
         rows.append(row);
     }
-    return json({{"schemaVersion", 1}, {"revision", QString::number(d->revision)},
+    return json({{"schemaVersion", 2}, {"revision", QString::number(d->revision)},
                  {"steam", d->game.steam}, {"error", d->error}, {"controllers", rows}});
 }
 QString ControllerRuntime::apply(const QString &id, const QString &patch, quint64 expected) {
     const auto result = [this](bool ok, const QString &reason) { return json({{"ok", ok}, {"reason", reason}, {"revision", QString::number(d->revision)}}); };
+    if (!d->configReady) return result(false, "backend-not-ready");
     if (expected != d->revision) return result(false, "revision-stale");
-    if (!d->store.ids().contains(id) || patch.toUtf8().size() > 8192) return result(false, "invalid-config");
+    if (!d->store.ids().contains(id) || patch.toUtf8().size() > MaxConfigBytes) return result(false, "invalid-config");
     QJsonParseError parse;
     const auto doc = QJsonDocument::fromJson(patch.toUtf8(), &parse);
     if (parse.error != QJsonParseError::NoError || !doc.isObject()) return result(false, "invalid-config");

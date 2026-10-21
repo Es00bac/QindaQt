@@ -20,7 +20,7 @@ QString label(const QString &id, const QString &family) {
         {"lefttrigger", ps ? "L2" : "Left trigger"}, {"righttrigger", ps ? "R2" : "Right trigger"},
         {"dpup", "D-pad up"}, {"dpdown", "D-pad down"}, {"dpleft", "D-pad left"}, {"dpright", "D-pad right"},
         {"misc1", ps ? "Microphone / extra button" : nintendo ? "Capture" : "Share / extra button"},
-        {"touchpad", "Touchpad click"}, {"rightpaddle1", "Right paddle 1"}, {"leftpaddle1", "Left paddle 1"},
+        {"touchpad", "Touchpad click"}, {"touchpad-touch", "Touchpad contact"}, {"rightpaddle1", "Right paddle 1"}, {"leftpaddle1", "Left paddle 1"},
         {"rightpaddle2", "Right paddle 2"}, {"leftpaddle2", "Left paddle 2"}};
     return labels.value(id, id);
 }
@@ -42,20 +42,21 @@ ControllersModel::ControllersModel(ControllerPort &port, QObject *parent) : QObj
 void ControllersModel::receive(const QJsonObject &snapshot) {
     bool validRevision = false;
     const auto revision = snapshot.value("revision").toString().toULongLong(&validRevision);
-    if (snapshot.value("schemaVersion").toInt() != 1 || !validRevision || revision == 0
+    if (!QList<int>{1, 2}.contains(snapshot.value("schemaVersion").toInt()) || !validRevision || revision == 0
         || !snapshot.value("controllers").isArray() || snapshot.value("controllers").toArray().size() > 64) {
         m_available = false; m_error = tr("The desktop returned invalid controller settings."); Q_EMIT viewChanged(); return;
     }
     auto rows = snapshot.value("controllers").toArray();
     QSet<QString> ids;
-    for (const auto &entry : rows) {
-        const auto row = entry.toObject();
+    for (qsizetype i = 0; i < rows.size(); ++i) {
+        auto row = rows[i].toObject();
         const auto id = row.value("id").toString();
         Controllers::Profile profile = Controllers::defaultProfile(); QString reason;
         if (id.isEmpty() || id.size() > 160 || ids.contains(id) || row.value("name").toString().size() > 256
             || !row.value("config").isObject() || !Controllers::applyPatch(row.value("config").toObject(), profile, reason)) {
             m_available = false; m_error = tr("The desktop returned invalid controller settings."); Q_EMIT viewChanged(); return;
         }
+        row["config"] = Controllers::profileJson(profile); rows[i] = row;
         ids.insert(id);
     }
     const bool wasConnected = selected().value("connected").toBool();
@@ -92,14 +93,16 @@ QVariantList ControllersModel::buttons() const {
     else {
         ids = Controllers::buttonIds();
         for (const auto &id : QStringList{"misc2", "misc3", "misc4", "misc5", "misc6"}) ids.removeAll(id);
-        if (family != "playstation" && family != "dualsense") ids.removeAll("touchpad");
+        if (family != "playstation" && family != "dualsense") { ids.removeAll("touchpad"); ids.removeAll("touchpad-touch"); }
     }
-    const auto bindings = row.value("config").toMap().value("bindings").toMap();
+    const auto bindings = currentPage().value("bindings").toMap();
     QVariantList result;
     for (const auto &id : ids) {
-        const auto binding = bindings.value(id).toMap();
-        result.append(QVariantMap{{"id", id}, {"label", label(id, family)},
-            {"action", binding.value("action", "none")}, {"shortcut", binding.value("shortcut")}});
+        auto binding = bindings.value(id).toMap();
+        binding["action"] = binding.value("action", "none");
+        binding["summary"] = bindingSummary(binding);
+        binding["id"] = id; binding["label"] = label(id, family);
+        result.append(binding);
     }
     return result;
 }
@@ -113,7 +116,9 @@ QVariantList ControllersModel::actions() const {
         {"launcher", tr("Application launcher")}, {"next-window", tr("Next window")}, {"previous-window", tr("Previous window")},
         {"maximize", tr("Maximize / restore window")}, {"close-window", tr("Close window")},
         {"desktop-left", tr("Previous workspace")}, {"desktop-right", tr("Next workspace")},
-        {"show-desktop", tr("Show desktop")}, {"screenshot", tr("Screenshot")}, {"shortcut", tr("Keyboard shortcut…")}};
+        {"show-desktop", tr("Show desktop")}, {"screenshot", tr("Screenshot")}, {"shortcut", tr("Keyboard shortcut")},
+        {"pointer-up", tr("Nudge pointer / drag up")}, {"pointer-down", tr("Nudge pointer / drag down")}, {"pointer-left", tr("Nudge pointer / drag left")}, {"pointer-right", tr("Nudge pointer / drag right")}, {"macro", tr("Run macro")}, {"hold-gyro", tr("Gyro while held / touched")}, {"hold-page", tr("Use profile while held")}, {"combination", tr("Custom keys + mouse")}, {"text", tr("Text block")},
+        {"next-page", tr("Next button profile")}, {"previous-page", tr("Previous button profile")}, {"switch-page", tr("Switch to profile")}};
     QVariantList result;
     for (const auto &id : Controllers::actionIds()) result.append(QVariantMap{{"value", id}, {"label", labels.value(id)}});
     return result;
@@ -137,7 +142,8 @@ void ControllersModel::select(const QString &id) {
 bool ControllersModel::submit(const QJsonObject &patch) {
     if (!m_available || m_busy || m_selected.isEmpty()) return false;
     auto profile = Controllers::defaultProfile(); QString reason;
-    if (!Controllers::applyPatch(patch, profile, reason)) return false;
+    if (!Controllers::applyPatch(QJsonObject::fromVariantMap(selected().value("config").toMap()), profile, reason)
+        || !Controllers::applyPatch(patch, profile, reason)) return false;
     m_busy = true; m_error.clear(); Q_EMIT viewChanged(); m_port.apply(m_selected, patch, m_revision); return true;
 }
 bool ControllersModel::setOption(const QString &key, const QVariant &value) { return submit({{key, QJsonValue::fromVariant(value)}}); }

@@ -29,6 +29,8 @@ target_sources(
         tablet_surface.cpp
         touch_settings_model.cpp
         controllers_model.cpp
+        controller_pages_model.cpp
+        input_macros_model.cpp
         qt_controller_port.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -52,7 +54,9 @@ target_sources(
             include/qindaqt/apps/settings_input/tablet_surface.h
             include/qindaqt/apps/settings_input/touch_settings_model.h
             include/qindaqt/apps/settings_input/controllers_model.h
+            include/qindaqt/apps/settings_input/input_macros_model.h
             include/qindaqt/apps/settings_input/controller_port.h
+            include/qindaqt/apps/settings_input/json_input_port.h
 )
 target_link_libraries(
     qindaqt_settings_input
@@ -112,6 +116,13 @@ qt_add_qml_module(
         qml/InputTouchSection.qml
         qml/InputControllerSection.qml
         qml/ControllerBindingRow.qml
+        qml/ControllerBindingEditor.qml
+        qml/InputCombinationEditor.qml
+        qml/InputMacrosSection.qml
+        qml/InputMacroEditor.qml
+        qml/MacroStepEditor.qml
+        qml/ControllerPagesSection.qml
+        qml/ControllerPageEditor.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletAreaCanvas.qml
         qml/TabletAreaEditor.qml
@@ -162,6 +173,13 @@ install(
         qml/InputTouchSection.qml
         qml/InputControllerSection.qml
         qml/ControllerBindingRow.qml
+        qml/ControllerBindingEditor.qml
+        qml/InputCombinationEditor.qml
+        qml/InputMacrosSection.qml
+        qml/InputMacroEditor.qml
+        qml/MacroStepEditor.qml
+        qml/ControllerPagesSection.qml
+        qml/ControllerPageEditor.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletAreaCanvas.qml
         qml/TabletAreaEditor.qml

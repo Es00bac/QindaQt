@@ -24,9 +24,10 @@ public:
     bool contains(const QString &token) const { return m_held.contains(token); }
     QStringList tokens() const { return m_held.keys(); }
     QList<InputChange> press(const QString &token, QList<quint32> keys, quint32 mouse = 0);
+    QList<InputChange> press(const QString &token, QList<quint32> keys, QList<quint32> mouseButtons);
     QList<InputChange> release(const QString &token);
 private:
-    struct Held { QList<quint32> keys; quint32 mouse; };
+    struct Held { QList<quint32> keys, mouseButtons; };
     QMap<QString, Held> m_held;
     QMap<quint32, int> m_keys, m_buttons;
 };

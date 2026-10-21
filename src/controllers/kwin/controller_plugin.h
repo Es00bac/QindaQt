@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "controller_input_device.h"
+#include "macro_endpoint.h"
+#include "macro_triggers.h"
 #include "qindaqt/controllers/controller_runtime.h"
 #include <plugin.h>
 #include <QPointer>
@@ -29,11 +31,14 @@ public:
 private:
     void refreshContext();
     void reconcileTouchpads();
+    InputActions::MacroStore m_macros;
     ControllerInputDevice m_input;
     ControllerRuntime m_runtime;
     ControllerEndpoint m_endpoint;
+    MacroEndpoint m_macroEndpoint;
+    MacroTriggers m_macroTriggers;
     QTimer m_context;
     QMap<KWin::InputDevice *, bool> m_touchpads;
-    bool m_published = false;
+    bool m_published = false, m_macrosPublished = false;
 };
 } // namespace QindaQt::Controllers

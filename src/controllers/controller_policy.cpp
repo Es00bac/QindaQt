@@ -12,19 +12,12 @@ QStringList buttonIds() {
             "leftstick", "rightstick", "leftshoulder", "rightshoulder",
             "dpup", "dpdown", "dpleft", "dpright", "misc1", "rightpaddle1",
             "leftpaddle1", "rightpaddle2", "leftpaddle2", "touchpad",
-            "misc2", "misc3", "misc4", "misc5", "misc6", "lefttrigger", "righttrigger"};
+            "misc2", "misc3", "misc4", "misc5", "misc6", "lefttrigger", "righttrigger", "touchpad-touch"};
 }
-QStringList actionIds() {
-    return {"none", "dictate", "voice-command", "toggle-gyro", "left-click", "right-click", "middle-click",
-            "left-click-meta-shift", "right-click-meta-shift",
-            "accept", "back", "up", "down", "left", "right", "overview",
-            "launcher", "next-window", "previous-window", "maximize",
-            "close-window", "desktop-left", "desktop-right", "show-desktop",
-            "screenshot", "shortcut"};
-}
+QStringList actionIds() { return InputActions::actionIds(); }
 Profile defaultProfile(const QString &family) {
     Profile p;
-    for (const auto &button : buttonIds()) p.bindings.insert(button, {});
+    for (const auto &button : buttonIds()) activePage(p).bindings.insert(button, {});
     const QMap<QString, QString> defaults{
         {"south", "left-click"}, {"east", "back"}, {"west", "accept"},
         {"north", "overview"}, {"back", "dictate"}, {"guide", "show-desktop"},
@@ -34,7 +27,7 @@ Profile defaultProfile(const QString &family) {
         {"dpleft", "left"}, {"dpright", "right"}, {"misc1", "screenshot"},
         {"touchpad", "left-click"}, {"lefttrigger", "right-click"},
         {"righttrigger", "left-click"}};
-    for (auto it = defaults.begin(); it != defaults.end(); ++it) p.bindings[it.key()].action = it.value();
+    for (auto it = defaults.begin(); it != defaults.end(); ++it) activePage(p).bindings[it.key()].action = it.value();
     if (family == "dualsense") {
         const QMap<QString, Binding> dualSense{
             {"back", {"back", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
@@ -43,72 +36,36 @@ Profile defaultProfile(const QString &family) {
             {"guide", {"launcher", {}}}, {"start", {"back", {}}},
             {"north", {"maximize", {}}}, {"east", {"overview", {}}},
             {"west", {"voice-command", {}}}, {"south", {"dictate", {}}},
-            {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
-            {"touchpad", {"toggle-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
-            {"righttrigger", {"left-click-meta-shift", {}}},
+            {"rightstick", {"next-window", {}}}, {"misc1", {"next-page", {}}},
+            {"touchpad", {"left-click", {}}}, {"touchpad-touch", {"hold-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
+            {"righttrigger", {"combination", {}, {"Meta"}, {}, {"left"}, {}, {}, "move"}},
             {"leftshoulder", {"right-click", {}}},
-            {"lefttrigger", {"right-click-meta-shift", {}}}};
-        for (auto it = dualSense.begin(); it != dualSense.end(); ++it) p.bindings[it.key()] = it.value();
+            {"lefttrigger", {"combination", {}, {"Shift", "Meta"}, {}, {"right"}, {}, {}, "move"}}};
+        for (auto it = dualSense.begin(); it != dualSense.end(); ++it) activePage(p).bindings[it.key()] = it.value();
+        auto navigation = activePage(p); navigation.id = "navigation"; navigation.name = "Navigation"; navigation.color = "#A83DFF";
+        const QMap<QString, QString> arrows{{"dpup", "up"}, {"dpdown", "down"}, {"dpleft", "left"}, {"dpright", "right"}};
+        for (auto it = arrows.begin(); it != arrows.end(); ++it) navigation.bindings[it.key()] = Binding{it.value()};
+        navigation.bindings["north"] = {"accept"}; navigation.bindings["east"] = {"shortcut", "Backspace"};
+        navigation.bindings["start"] = {"shortcut", "Tab"};
+        navigation.bindings["righttrigger"] = {"combination", {}, {"Shift"}, {}, {}};
+        navigation.bindings["lefttrigger"] = {"combination", {}, {"Ctrl"}, {}, {}, {}, {}, "edit"};
+        auto move = activePage(p); move.id = "move"; move.name = "Move / resize"; move.color = "#FF8A24"; move.layer = true;
+        const QMap<QString, QString> nudges{{"dpup", "pointer-up"}, {"dpdown", "pointer-down"}, {"dpleft", "pointer-left"}, {"dpright", "pointer-right"}};
+        for (auto it = nudges.begin(); it != nudges.end(); ++it) move.bindings[it.key()] = Binding{it.value()};
+        auto edit = navigation; edit.id = "edit"; edit.name = "Editing"; edit.color = "#24D16B"; edit.layer = true;
+        const QMap<QString, QString> letters{{"dpup", "A"}, {"dpdown", "X"}, {"dpleft", "C"}, {"dpright", "V"}, {"north", "Z"}, {"east", "Y"}};
+        for (auto it = letters.begin(); it != letters.end(); ++it) edit.bindings[it.key()] = {"combination", {}, {}, {it.value()}, {}};
+        p.pages.append(navigation); p.pages.append(move); p.pages.append(edit);
     }
     return p;
 }
-QJsonObject profileJson(const Profile &p) {
-    QJsonObject bindings;
-    for (auto it = p.bindings.begin(); it != p.bindings.end(); ++it)
-        bindings.insert(it.key(), QJsonObject{{"action", it->action}, {"shortcut", it->shortcut}});
-    return {{"enabled", p.enabled}, {"pointerStick", p.pointerStick},
-            {"pointerSpeed", p.pointerSpeed}, {"deadzone", p.deadzone},
-            {"touchpad", p.touchpad}, {"gyro", p.gyro}, {"gyroSpeed", p.gyroSpeed},
-            {"bindings", bindings}};
+const ButtonPage &activePage(const Profile &p) {
+    for (const auto &page : p.pages) if (page.id == p.activePage) return page;
+    Q_UNREACHABLE();
 }
-bool applyPatch(const QJsonObject &patch, Profile &p, QString &reason) {
-    Profile next = p;
-    const auto fail = [&reason](const QString &s) { reason = s; return false; };
-    if (patch.size() > 8) return fail("invalid-config");
-    for (auto it = patch.begin(); it != patch.end(); ++it) {
-        const auto key = it.key();
-        if (key == "enabled" || key == "touchpad" || key == "gyro") {
-            if (!it->isBool()) return fail("invalid-config");
-            if (key == "enabled") next.enabled = it->toBool();
-            if (key == "touchpad") next.touchpad = it->toBool();
-            if (key == "gyro") next.gyro = it->toBool();
-        } else if (key == "pointerStick") {
-            if (!it->isString() || !QStringList{"left", "right", "off"}.contains(it->toString()))
-                return fail("invalid-config");
-            next.pointerStick = it->toString();
-        } else if (key == "pointerSpeed" || key == "deadzone" || key == "gyroSpeed") {
-            if (!it->isDouble() || !std::isfinite(it->toDouble())) return fail("invalid-config");
-            const double v = it->toDouble();
-            if (key == "pointerSpeed" && v >= 100 && v <= 3000) next.pointerSpeed = v;
-            else if (key == "gyroSpeed" && v >= 50 && v <= 2000) next.gyroSpeed = v;
-            else if (key == "deadzone" && v >= 0.05 && v <= 0.6) next.deadzone = v;
-            else return fail("invalid-config");
-        } else if (key == "bindings") {
-            if (!it->isObject()) return fail("invalid-binding");
-            const auto bindings = it->toObject();
-            if (bindings.size() > buttonIds().size()) return fail("invalid-binding");
-            for (auto b = bindings.begin(); b != bindings.end(); ++b) {
-                if (!buttonIds().contains(b.key()) || !b->isObject()) return fail("invalid-binding");
-                const auto value = b->toObject();
-                if (value.size() > 2 || !value.value("action").isString()
-                    || !actionIds().contains(value.value("action").toString())) return fail("invalid-binding");
-                for (const auto &field : value.keys())
-                    if (field != "action" && field != "shortcut") return fail("invalid-binding");
-                Binding binding{value.value("action").toString(), value.value("shortcut").toString()};
-                if (binding.action == "shortcut") {
-                    const auto seq = QKeySequence::fromString(binding.shortcut, QKeySequence::PortableText);
-                    if (binding.shortcut.toUtf8().size() > 64 || seq.count() != 1
-                        || seq[0].key() == Qt::Key_unknown || seq[0].key() == 0)
-                        return fail("invalid-shortcut");
-                    binding.shortcut = seq.toString(QKeySequence::PortableText);
-                } else binding.shortcut.clear();
-                next.bindings[b.key()] = binding;
-            }
-        } else return fail("invalid-config");
-    }
-    p = next;
-    reason.clear();
-    return true;
+ButtonPage &activePage(Profile &p) {
+    for (auto &page : p.pages) if (page.id == p.activePage) return page;
+    Q_UNREACHABLE();
 }
 QPointF stickMotion(QPointF s, double deadzone, double speed, double dt) {
     if (!std::isfinite(s.x()) || !std::isfinite(s.y()) || !std::isfinite(dt) || dt <= 0) return {};

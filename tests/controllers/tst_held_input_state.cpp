@@ -26,6 +26,14 @@ private Q_SLOTS:
         QCOMPARE(state.release("pad/l2"), (QList<InputChange>{{InputChange::Mouse, BTN_RIGHT, false},
             {InputChange::Key, KEY_LEFTSHIFT, false}, {InputChange::Key, KEY_LEFTMETA, false}}));
     }
+    void arbitraryMultiKeyMultiMouseCombinationReleasesInReverseOrder() {
+        HeldInputState state;
+        const auto changes = state.press("pad/custom", {KEY_LEFTCTRL, KEY_LEFTMETA, KEY_K, KEY_J, KEY_LEFTCTRL}, QList<quint32>{BTN_LEFT, BTN_RIGHT, BTN_LEFT});
+        QCOMPARE(changes, (QList<InputChange>{{InputChange::Key, KEY_LEFTCTRL, true}, {InputChange::Key, KEY_LEFTMETA, true},
+            {InputChange::Key, KEY_K, true}, {InputChange::Key, KEY_J, true}, {InputChange::Mouse, BTN_LEFT, true}, {InputChange::Mouse, BTN_RIGHT, true}}));
+        QCOMPARE(state.release("pad/custom"), (QList<InputChange>{{InputChange::Mouse, BTN_RIGHT, false}, {InputChange::Mouse, BTN_LEFT, false},
+            {InputChange::Key, KEY_J, false}, {InputChange::Key, KEY_K, false}, {InputChange::Key, KEY_LEFTMETA, false}, {InputChange::Key, KEY_LEFTCTRL, false}}));
+    }
     void duplicateClicksAndDisconnectReleaseOnlyOwnedTokens() {
         HeldInputState state;
         state.press("a/r1", {}, BTN_LEFT);
