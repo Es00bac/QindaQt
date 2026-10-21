@@ -9,6 +9,7 @@ import QindaQt.Tokens 1.0
 ColumnLayout {
     id: root
     required property var controllerModel
+    property bool removing: false
     property bool editing: false
     property bool creating: false
     property string draftController: ""
@@ -60,9 +61,10 @@ ColumnLayout {
         Button { emphasized: false; text:qsTr("Use profile"); enabled:!root.controllerModel.busy && !root.page.layer && root.config.activePage !== root.page.id; onClicked:root.controllerModel.setOption("activePage", root.page.id) }
         Button { emphasized: false; text: qsTr("Name and color…"); enabled: !root.controllerModel.busy; onClicked: root.edit(false) }
         Button { emphasized: false;
+            objectName: "controllerDeleteProfileButton"
             text: qsTr("Delete profile…")
             enabled: !root.controllerModel.busy && root.controllerModel.pages.length > 1 && (root.page.layer || root.controllerModel.pages.filter(page => !page.layer).length > 1)
-            onClicked: { root.draftController = root.controllerModel.selectedId; root.draftPage = root.page.id; remove.open() }
+            onClicked: { root.draftController = root.controllerModel.selectedId; root.draftPage = root.page.id; root.removing = true }
         }
     }
     Label {
@@ -116,20 +118,19 @@ ColumnLayout {
             onClosed: { root.captureActivityChanged(false); root.editing = false }
         }
     }
-    InputEditorDialog {
-        id: remove
-        objectName: "controllerDeleteProfile"
-        parent: T.Overlay.overlay
-        anchors.centerIn: parent
-        // Keep wrapping geometry valid before the overlay is sized and during teardown.
-        width: Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
-        modal: true
-        focus: true
-        title: qsTr("Delete button profile?")
-        standardButtons: T.Dialog.Cancel | T.Dialog.Ok
-        contentItem: Label { text: qsTr("This removes the active page and its bindings. Buttons that switch directly to it will be cleared."); wrapMode: Text.Wrap }
-        onOpened: root.captureActivityChanged(true)
-        onClosed: root.captureActivityChanged(false)
-        onAccepted: if (root.draftController === root.controllerModel.selectedId && root.draftPage === root.page.id) root.controllerModel.removePage()
+    Loader {
+        active: root.removing
+        sourceComponent: InputEditorDialog {
+            objectName: "controllerDeleteProfile"
+            parent: T.Overlay.overlay
+            anchors.centerIn: parent
+            width: Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
+            title: qsTr("Delete button profile?")
+            standardButtons: T.Dialog.Cancel | T.Dialog.Ok
+            contentItem: Label { text: qsTr("This removes the selected profile and its bindings. Buttons that refer directly to it will be cleared."); wrapMode: Text.Wrap }
+            Component.onCompleted: { open(); root.captureActivityChanged(true) }
+            onClosed: { root.captureActivityChanged(false); root.removing = false }
+            onAccepted: if (root.draftController === root.controllerModel.selectedId && root.draftPage === root.page.id) root.controllerModel.removePage()
+        }
     }
 }

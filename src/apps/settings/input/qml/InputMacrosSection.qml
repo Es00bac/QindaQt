@@ -50,7 +50,7 @@ ColumnLayout {
                 Label { Layout.fillWidth:true; text:modelData.name; font.weight:Font.DemiBold; textFormat:Text.PlainText }
                 Button { emphasized: false; text:qsTr("Edit…"); enabled:!root.macros.busy; onClicked:root.edit(modelData, true) }
                 Button { emphasized: false; text:qsTr("Test in 3s"); enabled:!root.macros.busy; onClicked:root.macros.run(modelData.id) }
-                Button { emphasized: false; text:qsTr("Delete…"); enabled:!root.macros.busy; onClicked:{ root.deleting = modelData.id; remove.open() } }
+                Button { emphasized: false; objectName:"inputMacroDeleteButton"; text:qsTr("Delete…"); enabled:!root.macros.busy; onClicked:{ root.deleting = modelData.id } }
             }
             Label {
                 Layout.fillWidth:true
@@ -68,14 +68,18 @@ ColumnLayout {
             onClosed:{ root.captureActivityChanged(false); root.editing = false }
         }
     }
-    InputEditorDialog {
-        id:remove
-        objectName:"inputMacroDelete"
-        // Keep wrapping geometry valid before the overlay is sized and during teardown.
-        width:Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
-        parent:T.Overlay.overlay; anchors.centerIn:parent
-        modal:true; title:qsTr("Delete macro?"); standardButtons:T.Dialog.Cancel | T.Dialog.Ok
-        contentItem:Label { text:qsTr("Controller bindings referencing this macro will stop running it."); wrapMode:Text.Wrap }
-        onAccepted:root.macros.remove(root.deleting)
+    Loader {
+        active:root.deleting.length > 0
+        sourceComponent:InputEditorDialog {
+            objectName:"inputMacroDelete"
+            property string targetMacro:""
+            width:Math.max(320, Math.min(440, parent ? parent.width - 32 : 440))
+            parent:T.Overlay.overlay; anchors.centerIn:parent
+            title:qsTr("Delete macro?"); standardButtons:T.Dialog.Cancel | T.Dialog.Ok
+            contentItem:Label { text:qsTr("Controller bindings referencing this macro will stop running it."); wrapMode:Text.Wrap }
+            Component.onCompleted:{ targetMacro = root.deleting; open(); root.captureActivityChanged(true) }
+            onClosed:{ root.captureActivityChanged(false); root.deleting = "" }
+            onAccepted:root.macros.remove(targetMacro)
+        }
     }
 }

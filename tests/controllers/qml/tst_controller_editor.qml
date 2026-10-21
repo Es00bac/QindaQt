@@ -16,6 +16,7 @@ TestCase {
     Component { id: pageComponent; Input.ControllerPageEditor { controllerModel: testControllers; creating: true } }
     Component { id:pageRouteComponent; Input.InputPage { width:1000; height:900; initialDestination:"controllers"; inputSettings:({controllers:testControllers, macros:testMacros}) } }
     Component { id:coldRouteComponent; T.ApplicationWindow { width:0; height:0; visible:false; Input.InputPage { anchors.fill:parent; initialDestination:"controllers"; inputSettings:({controllers:testControllers, macros:testMacros}) } } }
+    Component { id:macroRouteComponent; Input.InputMacrosSection { width:1000; inputSettings:({macros:testMacros}) } }
     Component { id:macroComponent; Input.InputMacroEditor { macroModel:testMacros } }
     Component { id:stepComponent; Input.MacroStepEditor { macroModel:testMacros } }
     function initTestCase() { failOnWarning(/.*/) }
@@ -114,12 +115,26 @@ TestCase {
         editor = createTemporaryObject(coldRouteComponent, null)
         verify(editor !== null)
         wait(30)
-        const remove = findChild(editor, "controllerDeleteProfile")
-        verify(remove !== null)
-        verify(remove.width >= 320)
+        verify(findChild(editor, "controllerDeleteProfile") === null)
         editor.width = 1000; editor.height = 900; editor.visible = true
         wait(50)
-        remove.open(); wait(30); remove.close(); wait(30)
+        findChild(editor, "controllerDeleteProfileButton").clicked()
+        tryVerify(() => findChild(editor, "controllerDeleteProfile") !== null)
+        const remove = findChild(editor, "controllerDeleteProfile")
+        verify(remove.width >= 320)
+        remove.close()
+        tryVerify(() => findChild(editor, "controllerDeleteProfile") === null)
+    }
+
+    function test_10_macroConfirmationIsCreatedAndDisposedOnDemand() {
+        editor = createTemporaryObject(macroRouteComponent, test)
+        verify(editor !== null)
+        verify(findChild(editor, "inputMacroDelete") === null)
+        findChild(editor, "inputMacroDeleteButton").clicked()
+        tryVerify(() => findChild(editor, "inputMacroDelete") !== null)
+        findChild(editor, "inputMacroDelete").close()
+        tryVerify(() => findChild(editor, "inputMacroDelete") === null)
+        compare(testMacros.macros.length, 1)
     }
 
 }
