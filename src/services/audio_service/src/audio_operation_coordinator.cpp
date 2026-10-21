@@ -377,19 +377,19 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     if (m_minimumRestartEpoch != 0 && snapshot.epoch < m_minimumRestartEpoch) {
         return;
     }
+    // AGENT-GUARD: fence backend values against the last accepted BACKEND
+    // revision, never the public one. republishConsole() advances the public
+    // revision for console changes the backend never sees; fencing on it
+    // dropped the graph snapshots after every fader move until the backend's
+    // own counter caught up.
     if (m_hasBackendSnapshot) {
         if (snapshot.epoch < m_snapshot.epoch) {
             return;
         }
-        if (snapshot.epoch == m_snapshot.epoch) {
-            if (snapshot.revision < m_snapshot.revision) {
-                return;
-            }
-            if (snapshot.revision == m_snapshot.revision) {
-                // Equal lineage has one canonical value. An identical callback
-                // is harmless; changed content is contradictory and is dropped.
-                return;
-            }
+        if (snapshot.epoch == m_backendEpoch && snapshot.revision <= m_backendRevision) {
+            // Equal lineage has one canonical value. An identical callback
+            // is harmless; changed content is contradictory and is dropped.
+            return;
         }
     }
 
@@ -434,6 +434,12 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         return;
     }
 
+    const quint64 publicRevision = m_snapshot.revision;
+    const bool samePublicEpoch = m_hasBackendSnapshot && snapshot.epoch == m_snapshot.epoch;
+    if (samePublicEpoch && snapshot.revision <= publicRevision
+        && publicRevision == std::numeric_limits<quint64>::max()) {
+        return;
+    }
     if (m_hasBackendSnapshot && snapshot.epoch != m_snapshot.epoch) {
         makePendingUncertain(snapshot, QStringLiteral("authority-replaced"));
         m_runningVban.clear();
@@ -442,6 +448,12 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         && snapshot.availability != Availability::Degraded)
         m_runningVban.clear();
     m_snapshot = snapshot;
+    m_backendEpoch = snapshot.epoch;
+    m_backendRevision = snapshot.revision;
+    // The public revision continues past this epoch's console republishes.
+    if (samePublicEpoch && m_snapshot.revision <= publicRevision) {
+        m_snapshot.revision = publicRevision + 1;
+    }
     // Follow the graph with the console's endpoints BEFORE folding the console
     // in, so this publication already carries the bindings this snapshot made
     // possible rather than showing them one revision late.

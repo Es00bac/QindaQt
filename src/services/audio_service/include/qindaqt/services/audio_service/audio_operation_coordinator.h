@@ -143,6 +143,10 @@ private:
     quint64 m_nextOperationId = 1;
     quint64 m_backendGeneration = 0;
     quint64 m_minimumRestartEpoch = 0;
+    // The last accepted backend lineage. The public revision runs ahead of it
+    // whenever the console republishes, so the two are fenced apart.
+    quint64 m_backendEpoch = 0;
+    quint64 m_backendRevision = 0;
     bool m_hasBackendSnapshot = false;
     bool m_running = false;
 };

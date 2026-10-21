@@ -26,6 +26,7 @@ private Q_SLOTS:
     void authorityChangeMakesPendingUncertain();
     void malformedBackendFailsClosed();
     void rejectsStoppedSupersededAndRegressedBackendValues();
+    void consoleRevisionsDoNotHideLaterGraphSnapshots();
     void malformedBackendOutcomesBecomeProtocolValidFailures();
     void residentUnitTemplateAllowsVbanNetworking();
 };
@@ -386,6 +387,52 @@ void AudioServiceTests::rejectsStoppedSupersededAndRegressedBackendValues()
     QCOMPARE(completed.count(), 2);
     QCOMPARE(completed[1][1].value<OperationResult>().status,
              OperationStatus::Succeeded);
+}
+
+// A console change is a public revision the backend never sees. The backend's
+// next graph snapshot carries its own next revision, which is at or below the
+// public one after a few fader moves; it used to be dropped as stale, so a new
+// stream, device or volume stayed invisible until the backend caught up.
+void AudioServiceTests::consoleRevisionsDoNotHideLaterGraphSnapshots()
+{
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(&backend);
+    QSignalSpy snapshots(&coordinator, &AudioOperationCoordinator::snapshotChanged);
+    coordinator.start();
+    backend.publish(audioSnapshot(7, 3));
+    QCOMPARE(coordinator.snapshot().revision, quint64(3));
+    for (const double gainDb : {-3.0, -6.0, -9.0}) {
+        OperationRequest fader;
+        fader.kind = OperationKind::SetStripGain;
+        fader.consoleId = QStringLiteral("strip.hw.1");
+        fader.gainDb = gainDb;
+        QCOMPARE(coordinator.submit(fader).immediateResult.status, OperationStatus::Succeeded);
+    }
+    QCOMPARE(coordinator.snapshot().revision, quint64(6));
+
+    Snapshot louder = audioSnapshot(7, 4);
+    louder.outputs[0].volume = 0.9;
+    const qsizetype before = snapshots.count();
+    backend.publish(louder);
+    QCOMPARE(snapshots.count(), before + 1);
+    QCOMPARE(coordinator.snapshot().outputs.at(0).volume, 0.9);
+    QCOMPARE(coordinator.snapshot().revision, quint64(7)); // still strictly increasing
+    QCOMPARE(coordinator.snapshot().console.strips.at(0).gainDb, -9.0);
+
+    // Backend lineage is still fenced: a duplicate, a contradiction and a
+    // regression of the backend's own revision publish nothing.
+    Snapshot contradiction = louder;
+    contradiction.outputs[0].volume = 0.1;
+    backend.publish(louder);
+    backend.publish(contradiction);
+    backend.publish(audioSnapshot(7, 3));
+    QCOMPARE(snapshots.count(), before + 1);
+    QCOMPARE(coordinator.snapshot().outputs.at(0).volume, 0.9);
+
+    // Once the backend's revision is ahead again, it is the public one.
+    backend.publish(audioSnapshot(7, 12));
+    QCOMPARE(coordinator.snapshot().revision, quint64(12));
+    QVERIFY(validateSnapshot(coordinator.snapshot()).accepted);
 }
 
 void AudioServiceTests::malformedBackendOutcomesBecomeProtocolValidFailures()

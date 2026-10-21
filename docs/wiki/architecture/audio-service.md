@@ -285,12 +285,18 @@ regressing revisions, equal-revision content contradictions, and malformed
 snapshots before publication. Meter readings are not part of that content: the
 service folds `Levels` into the snapshot it serves without a new revision, so a
 same-revision refetch whose only difference is `Strip.level`/`Bus.level` is a
-duplicate (ADR-0174's 2026-10-21 addendum). Public mutation results are always
-queued until after the request ID returns; stop cancels undelivered results
-except for one queued `client-stopped` uncertainty for a still-dispatched
-mutation, and object destruction safely drops that queued delivery. An accepted
-new epoch immediately makes any dispatched mutation uncertain; a delayed
-old-epoch result cannot restore success and is never replayed.
+duplicate (ADR-0174's 2026-10-21 addendum). The coordinator owns the public
+revision: a console change publishes as a revision of its own that no backend
+snapshot carries, so backend values are fenced against the last accepted
+backend revision instead, and a graph change after a console change still
+publishes, as the next public revision. Until 2026-10-21 the fence compared the
+backend's revision with the public one and silently dropped the backend's next
+snapshots after every fader move. Public mutation results are always queued
+until after the request ID returns; stop cancels undelivered results except for
+one queued `client-stopped` uncertainty for a still-dispatched mutation, and
+object destruction safely drops that queued delivery. An accepted new epoch
+immediately makes any dispatched mutation uncertain; a delayed old-epoch result
+cannot restore success and is never replayed.
 
 ## WirePlumber integration
 
