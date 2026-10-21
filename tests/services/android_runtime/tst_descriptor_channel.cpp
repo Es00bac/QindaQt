@@ -27,7 +27,7 @@ void fixtureChildSignals() {
     static_cast<void>(::sigaction(SIGTERM,&action,nullptr));
 }
 int executable() { return ::open("/proc/self/exe",O_PATH|O_CLOEXEC); }
-void waitChild() { char byte=0; static_cast<void>(::read(STDIN_FILENO,&byte,0)); ::pause(); }
+void waitChild() { char byte=0; [[maybe_unused]] const auto ignored=::read(STDIN_FILENO,&byte,0); ::pause(); }
 void sendSnapshot(int fd,const RuntimeSnapshot &value,const QByteArray &secret=key()) {
     const auto packet=encodePacket({PacketKind::Snapshot,secret,value});
     static_cast<void>(::send(fd,packet.constData(),static_cast<size_t>(packet.size()),MSG_NOSIGNAL));

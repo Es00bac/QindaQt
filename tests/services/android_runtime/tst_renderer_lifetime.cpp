@@ -44,7 +44,7 @@ void RendererLifetimeTest::execReplacementWithdrawsWhilePidLives() {
     Child child; child.pid=::fork(); QVERIFY(child.pid>=0);
     if (child.pid==0) {
         childSignals(); ::close(commands[1]); char byte=0;
-        static_cast<void>(::read(commands[0],&byte,1));
+        [[maybe_unused]] const auto ignored=::read(commands[0],&byte,1);
         ::execl("/bin/sleep","sleep","2",static_cast<char *>(nullptr)); ::_exit(4);
     }
     ::close(commands[0]); child.control=commands[1];

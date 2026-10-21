@@ -37,7 +37,7 @@ void childLoop(int socket,int control) {
     RuntimeSnapshot value=snapshot(); char command=0;
     while (::read(control,&command,1)==1) {
         if (command=='c') {
-            ::close(socket); static_cast<void>(::write(control,"x",1)); ::pause(); ::_exit(0);
+            ::close(socket); [[maybe_unused]] const auto ignored=::write(control,"x",1); ::pause(); ::_exit(0);
         }
         if (command=='u') { value.state=RuntimeState::Unavailable; ++value.revision; }
         if (command=='r') { value.attachmentId=incarnation; value.revision=1; }
