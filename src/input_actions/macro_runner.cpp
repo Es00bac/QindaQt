@@ -30,7 +30,8 @@ void MacroRunner::advance() {
     if (!m_output.allowed()) { cancel(); return; }
     if (m_wait.remainingTime() > 0) {
         if (!m_adoptFocus && !m_followAfterTap && (!m_target || m_target != m_output.target())) { cancel(); return; }
-        m_timer.start(std::min<qint64>(16, m_wait.remainingTime())); return;
+        // remainingTime() > 0 here, so the bounded value always fits an int interval.
+        m_timer.start(static_cast<int>(std::min<qint64>(16, m_wait.remainingTime()))); return;
     }
     if (m_adoptFocus) { m_target = m_output.target(); m_adoptFocus = false; }
     if ((!m_target || m_target != m_output.target()) && !m_followAfterTap) { cancel(); return; }
