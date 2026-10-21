@@ -43,7 +43,7 @@ inline int startCollector(Child &child) {
         childSignals(); ::close(pair[0]); ::close(control[1]);
         RuntimeSnapshot value=snapshot(); char command=0;
         while (::read(control[0],&command,1)==1) {
-            if (command=='c') { ::close(pair[1]); static_cast<void>(::write(control[0],"x",1)); ::pause(); ::_exit(0); }
+            if (command=='c') { ::close(pair[1]); [[maybe_unused]] const auto ignored=::write(control[0],"x",1); ::pause(); ::_exit(0); }
             if (command=='u') { value.state=RuntimeState::Unavailable; ++value.revision; }
             if (command=='r') { value.attachmentId=incarnation; value.revision=1; }
             const auto packet=encodePacket({PacketKind::Snapshot,key(),value});

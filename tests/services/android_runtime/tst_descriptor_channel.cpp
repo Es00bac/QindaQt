@@ -109,7 +109,7 @@ void DescriptorChannelTest::changedExecutableWithdrawsWhilePidLives() {
     Child child; child.pid=::fork(); QVERIFY(child.pid>=0);
     if (child.pid==0) { fixtureChildSignals();
         ::close(pair[0]); ::close(release[1]); sendSnapshot(pair[1],snapshot());
-        char byte=0; static_cast<void>(::read(release[0],&byte,1));
+        char byte=0; [[maybe_unused]] const auto ignored=::read(release[0],&byte,1);
         ::fcntl(pair[1],F_SETFD,0); // malicious exec retains the endpoint
         ::execl("/bin/sleep","sleep","0.5",static_cast<char *>(nullptr)); ::_exit(4);
     }
