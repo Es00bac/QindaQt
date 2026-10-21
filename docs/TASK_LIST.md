@@ -1,5 +1,3 @@
-## Laptop playback and screensaver frame stalls — 2026-10-17
-
 ## October 20 — Requested DualSense layout installed
 
 Controller source `d4c85a4b5` is integrated on main. DualSense has separate family
@@ -29,6 +27,17 @@ layout until the next desktop delivery adopts it. No Desktop Harmony or animatio
 source was integrated here. No physical button presses or live voice utterances
 were synthesized or recorded. All work and packaging are preserved on qinda;
 no other model or worker was launched.
+
+## Laptop playback and screensaver frame stalls — 2026-10-17
+
+Controller process inspection blocked the compositor for roughly 450 ms once
+per second. Source `b331c826c` moves it to one coalesced worker and preserves
+game priority, current-result fencing and neutral resume. The signed r32 package
+is Portage-installed and its controller plugin is live without restarting the
+compositor or shell. Five controller test groups (28 QtTest cases), complete
+installed-file verification, strict docs and local links pass. The final trace
+has no long stalls; the controller had disconnected by then, so connected-device
+playback confirmation is separate. See [acceptance evidence](wiki/architecture/controller-input.md#october-17-frame-timing-acceptance).
 
 ## Post-reboot service incident — 2026-10-17
 
