@@ -1,3 +1,20 @@
+## October 21: audio leak and controller ownership — RESUME HERE (Claude ⇄ Codex)
+
+Two daily-driving defects reported by the owner are in progress on hub branches.
+Nothing is installed yet; package once when both land. Lane specs and evidence:
+`ops/team/specs/2026-10-21-audio-controller/`.
+
+| Lane | Branch | State |
+| --- | --- | --- |
+| Audio1 heap leak (~310 kB per client stream appear/disappear) | `fix/audio-heap-leak-20261021` | started 2026-10-21, base `814f5e518` |
+| Controller suppressed by passive or background gamepad holders | `fix/controller-focus-owner-20261021` | started 2026-10-21, base `814f5e518` |
+
+Next steps: integrate each branch after its focused and broad tests pass,
+bump `media-plugins/obs-qindaqt` (schema-11 pin, polls Audio1 every 200 ms),
+then build and install once. Still open from the audio finding: ADR-0394's
+deferred `AcquireMeters`/`ReleaseMeters` (meters keep ALSA awake), and repeated
+`qindaqt-settings` SIGABRTs since 2026-10-16 (no symbolized backtrace yet).
+
 ## October 20 — Programmable controllers and shared macros installed
 
 Product source `0c1e29fb3` is integrated on main (ADR-0427). Settings Input now
