@@ -21,6 +21,7 @@ target_sources(
             include/qindaqt/services/audio_client/audio_client.h
             include/qindaqt/services/audio_client/audio_transport.h
             include/qindaqt/services/audio_client/qt_audio_transport.h
+            include/qindaqt/services/audio_client/retry_backoff.h
 )
 target_link_libraries(
     qindaqt_audio_client PUBLIC QindaQt::AudioProtocol Qt6::Core Qt6::DBus
