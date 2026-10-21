@@ -67,10 +67,13 @@ set_tests_properties(qindaqt.controller-text PROPERTIES TIMEOUT 15)
 
 # The focused SDK fixture uses the installed QST facade/theme and the real
 # source QML, without linking the rest of the Settings application.
+# AGENT-GUARD (ADR-0388): installed QindaQt headers are #error stubs inside the
+# full tree, so this fixture builds only in the standalone controllers build
+# (src/controllers/standalone), where it runs; the full tree skips it.
 find_package(Qt6 6.11 QUIET COMPONENTS QuickTest QuickControls2)
 find_library(QINDAQT_CONTROLLER_TEST_TOKENS qindaqt_tokens_qml PATHS /usr/lib64/qt6/qml/QindaQt/Tokens /usr/lib/qt6/qml/QindaQt/Tokens)
 find_library(QINDAQT_CONTROLLER_TEST_THEMES qindaqt_themes)
-if(TARGET Qt6::QuickTest AND QINDAQT_CONTROLLER_TEST_TOKENS AND QINDAQT_CONTROLLER_TEST_THEMES)
+if(NOT TARGET qindaqt_design_tokens AND TARGET Qt6::QuickTest AND QINDAQT_CONTROLLER_TEST_TOKENS AND QINDAQT_CONTROLLER_TEST_THEMES)
     add_executable(qindaqt_controller_editor_test controller_qml_setup.cpp)
     target_link_libraries(qindaqt_controller_editor_test PRIVATE qindaqt_controller_settings_test_support Qt6::QuickTest Qt6::QuickControls2 ${QINDAQT_CONTROLLER_TEST_TOKENS} ${QINDAQT_CONTROLLER_TEST_THEMES})
     add_test(NAME qindaqt.controller-editor COMMAND qindaqt_controller_editor_test -input ${CMAKE_CURRENT_SOURCE_DIR}/qml)
