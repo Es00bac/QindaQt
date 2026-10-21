@@ -7,6 +7,8 @@
 - Amended by: [ADR-0397](0397-observe-controller-consumers-off-the-compositor-thread.md) moves process observation to one owned worker
 - Amended by: [ADR-0426](0426-dualsense-desktop-layout-and-held-actions.md) adds DualSense defaults and held actions
 
+- Amended by: [ADR-0427](0427-share-programmable-input-actions-and-controller-layers.md), programmable input actions/layers, contact gyro and fullscreen media
+
 ## Context
 
 Controller desktop input must support Xbox, PlayStation, Nintendo and other

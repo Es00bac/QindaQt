@@ -8,12 +8,13 @@
 namespace QindaQt::Apps::SettingsInput {
 InputMacrosModel::InputMacrosModel(JsonInputPort &port, QObject *parent) : QObject(parent), m_port(port) {
     connect(&port, &JsonInputPort::snapshotReceived, this, &InputMacrosModel::receive);
-    connect(&port, &JsonInputPort::unavailable, this, [this] { m_available = false; m_busy = false; m_macros.clear(); m_revision = 0; m_running.clear(); m_error = tr("Input macros cannot reach the desktop yet."); Q_EMIT viewChanged(); });
+    connect(&port, &JsonInputPort::unavailable, this, [this] { m_available = false; m_busy = false; m_macros.clear(); m_revision = 0; m_running.clear(); m_error = tr("Input macros cannot reach the desktop yet."); Q_EMIT viewChanged(); Q_EMIT editCompleted(false); });
     connect(&port, &JsonInputPort::completed, this, [this](bool ok, const QString &reason) {
         m_busy = false;
         m_error = ok ? QString{} : reason == "revision-stale" ? tr("The macro library changed. Try the edit again.")
+            : reason == "mouse-trigger-conflict" ? tr("Another macro uses this mouse trigger.")
             : reason == "macros-unsaved" ? tr("The macro could not be saved.") : tr("The macro request could not be completed.");
-        Q_EMIT viewChanged();
+        Q_EMIT viewChanged(); Q_EMIT editCompleted(ok);
     });
 }
 void InputMacrosModel::receive(const QJsonObject &snapshot) {
@@ -31,6 +32,7 @@ void InputMacrosModel::receive(const QJsonObject &snapshot) {
         value["shortcutStatus"] = row.value("shortcutStatus").toString();
         value["actualShortcuts"] = row.value("actualShortcuts").toArray().toVariantList(); rows.append(value);
     }
+    if (!m_available && snapshot.value("ready").toBool()) m_error.clear();
     m_macros = rows; m_revision = revision; m_running = snapshot.value("running").toString();
     m_available = snapshot.value("ready").toBool();
     if (!m_available) m_error = tr("The saved macro library could not be loaded. Existing files have been preserved.");
@@ -44,10 +46,10 @@ QString InputMacrosModel::fingerprint(const QString &id) const {
     }
     return {};
 }
-bool InputMacrosModel::save(const QVariantMap &value, const QString &expected) {
+bool InputMacrosModel::save(const QVariantMap &value, const QString &expected, bool assignShortcut) {
     const auto id = value.value("id").toString();
     if (!m_available || m_busy || fingerprint(id) != expected || !macroError(value).isEmpty()) return false;
-    m_busy = true; m_error.clear(); Q_EMIT viewChanged(); m_port.apply(id, QJsonObject::fromVariantMap(value), m_revision); return true;
+    m_busy = true; m_error.clear(); Q_EMIT viewChanged(); m_port.apply(id, {{"config", QJsonObject::fromVariantMap(value)}, {"assignShortcut", assignShortcut}}, m_revision); return true;
 }
 bool InputMacrosModel::remove(const QString &id) {
     if (!m_available || m_busy || fingerprint(id).isEmpty()) return false;
@@ -60,7 +62,12 @@ bool InputMacrosModel::run(const QString &id) {
 void InputMacrosModel::cancel() { m_port.cancelRun(); }
 QString InputMacrosModel::macroError(const QVariantMap &value) const {
     InputActions::Macro macro; QString reason;
-    return InputActions::readMacro(QJsonObject::fromVariantMap(value), macro, reason) ? QString{} : tr("Use 1–64 valid steps, pair every hold with a release, and keep delays below one minute in total. Text blocks allow 4,096 UTF-8 bytes each.");
+    if (!InputActions::readMacro(QJsonObject::fromVariantMap(value), macro, reason)) return tr("Use 1–64 valid steps, pair every hold with a release, and keep delays below one minute in total. Text blocks allow 4,096 UTF-8 bytes each.");
+    if (!macro.mouseButton.isEmpty()) for (const auto &entry : m_macros) {
+        InputActions::Macro existing; auto json = QJsonObject::fromVariantMap(entry.toMap()); json.remove("shortcutStatus"); json.remove("actualShortcuts");
+        if (InputActions::readMacro(json, existing, reason) && existing.id != macro.id && existing.mouseButton == macro.mouseButton && existing.mouseModifiers == macro.mouseModifiers) return tr("Another macro uses this mouse trigger.");
+    }
+    return {};
 }
 QString InputMacrosModel::stepError(const QVariantMap &value) const {
     InputActions::MacroStep step; QString reason;

@@ -74,3 +74,20 @@ target_include_directories(qindaqt_button_layers_test PRIVATE ../../src/controll
 target_link_libraries(qindaqt_button_layers_test PRIVATE qindaqt_controller_policy Qt6::Test)
 add_test(NAME qindaqt.button-layers COMMAND qindaqt_button_layers_test)
 set_tests_properties(qindaqt.button-layers PROPERTIES TIMEOUT 15)
+
+# Keep the new Macros destination/search metadata aligned with the real route.
+get_filename_component(QINDAQT_CONTROLLER_CHECK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+set(QINDAQT_CONTROLLER_NAVIGATION "${QINDAQT_CONTROLLER_CHECK_ROOT}/src/apps/settings_center")
+add_executable(qindaqt_controller_route_search_test
+    ../apps/settings_center/tst_settings_route_search.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_route.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_route_registry.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_route_search_metadata.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_navigation_controller.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_launch_arguments.cpp
+    ${QINDAQT_CONTROLLER_NAVIGATION}/settings_navigation_controller.h)
+target_include_directories(qindaqt_controller_route_search_test PRIVATE ${QINDAQT_CONTROLLER_CHECK_ROOT} ${QINDAQT_CONTROLLER_NAVIGATION})
+target_link_libraries(qindaqt_controller_route_search_test PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(qindaqt_controller_route_search_test PRIVATE QINDAQT_SOURCE_DIR="${QINDAQT_CONTROLLER_CHECK_ROOT}")
+add_test(NAME qindaqt.controller-route-search COMMAND qindaqt_controller_route_search_test)
+set_tests_properties(qindaqt.controller-route-search PROPERTIES TIMEOUT 15)

@@ -15,7 +15,8 @@ layout. Other controller families retain the defaults in the next section.
 
 | Control | Default |
 | --- | --- |
-| Create / Options | Escape |
+| Right / left stick | Pointer / scrolling |
+| Create / Options | Cycle Desktop / Navigation pages / Escape |
 | D-pad up / left / right / down | Ctrl+K / Ctrl+C / Ctrl+J / Enter |
 | L3 / R3 | Previous / next window |
 | PS | Open application launcher |
@@ -23,30 +24,66 @@ layout. Other controller families retain the defaults in the next section.
 | Circle | Window overview |
 | Square | Hold for voice commands; release to finish |
 | Cross | Hold for voice dictation; release to insert |
-| Mute | No desktop action |
-| Touchpad click | Toggle gyro mouse |
+| Mute | Unassigned; retains microphone mute |
+| Touchpad click / contact | Left click / gyro while touched |
 | R1 / L1 | Left / right mouse button |
-| R2 / L2 | Left / right mouse button held with Meta+Shift |
+| R2 / L2 | Meta + left click / Meta+Shift + right click; hold the movement layer |
 
-The gyro toggle changes the saved `gyro` preference once per press, publishes a
-new revision, and works while gyro is off. Holding or releasing the button does
-not toggle again. A failed save leaves the preference unchanged. Suppressed
-input never toggles gyro; resuming still requires neutral controls. Controllers
-without a gyro ignore this action. Gyro remains off in fresh defaults.
+Desktop is the blue main page. Holding R2 keeps Meta and left click down and
+selects the orange Movement layer. Its D-pad nudges the pointer/drag by ten
+logical pixels, repeating after 250 ms and then every 60 ms through the existing
+window/container pointer route. L2 holds Meta+Shift and right click with the same
+layer. Releasing a modifier restores the base page without changing its saved
+selection. Shared keys/clicks use reference counts, so overlapping holds cannot
+release one another early.
 
-Mouse-chord actions press Meta and Shift before mouse-down and keep them held
-until mouse-up. Shared controller keys/buttons use reference counts. Suppression,
-disconnect, disable and unload release all owned input. Voice commands use
-Voice1 `StartCommand`; dictation uses `StartDictation`. Both finish on release
-and cancel when desktop control is suppressed.
-Fresh holds can start from Voice1 Idle or Error, matching the provider's own
-admission rule. They start a new capture and never retry an earlier utterance.
+Create cycles only the two ordinary pages. Mute remains unassigned because the
+[Linux driver](https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable/+/master/drivers/hid/hid-playstation.c)
+also toggles the hardware microphone. Navigation is purple: D-pad arrows,
+Triangle Enter, Circle Tab, L3 Backspace, Options Escape, R2 Shift and L2 Ctrl with the green
+Editing layer. That layer maps D-pad up/down/left/right to A/X/C/V and Triangle /
+Circle to Z/Y: with L2 held these are select all, cut, copy, paste, undo and redo.
+Holding R2 too adds Shift, including Ctrl+Shift+C/V for terminals. Base layer
+activators and modifier-only holds precede simultaneous letter presses. Held
+modifier/gyro inputs survive layer transitions; other old-map holds release and
+must be physically released before acquiring a new meaning.
 
-Existing saved bindings and pointer, scroll, touchpad and sensitivity preferences
-are preserved when the new defaults are introduced. Older saved DualSense rows
-are reclassified from `playstation` without changing their stable IDs or config.
-Reset uses the device's factory family defaults. Applying the requested button
-layout to existing devices is an explicit Controllers1 binding patch.
+Touchpad contact is independent of its physical click. Any finger enables
+`hold-gyro`; lifting the last contact ends this temporary sensor enable without
+saving or toggling the persistent gyro preference. Touchpad motion, gyro and the
+pointer stick combine. A finger handoff reanchors touchpad motion to prevent a
+cursor jump. Gyro sensitivity remains editable with always-on gyro disabled.
+`toggle-gyro` remains available as a configurable action: press saves once,
+hold/release never repeat it, and failed saves preserve the preference.
+
+Settings separates the page being edited from the active profile. Editing a
+layer does not activate it. Use profile activates an ordinary page; hardware
+holds select temporary layers. Each page has a name, RGB color and its own map;
+temporary layers are skipped when cycling. Cycle profiles assigns one chosen
+button on every page. Color writes follow the effective page while desktop
+control is active; unsupported/failed LEDs are reported without disabling valid
+bindings. Suppression never repeatedly writes a game's LED.
+
+Every button and contact can use a built-in action, arbitrary key/mouse
+combination, Unicode text, a saved macro, page change or temporary layer. The
+editor supports explicit modifiers, modifier-only holds, up to eight named or
+recorded keys (including Esc/Tab) and five mouse buttons. Text runs once per
+press, preserves line breaks and does not replace the clipboard. The shared
+[macro library](input-actions.md) supports the same inputs, ordered holds,
+movement, waits and reusable keyboard/mouse triggers.
+
+Voice commands use Voice1 `StartCommand`; dictation uses `StartDictation`. Both
+finish on release and cancel when desktop control is suppressed. Fresh holds
+start from Idle or Error and never retry an old utterance. Suppression,
+disconnect, disable, page change and unload release owned input and cancel text
+and macros from that controller. Persistent page changes require neutral
+buttons/sticks/contact before resuming; held layers do not pause pointer/gyro.
+
+Version-1 saved maps migrate into a single Desktop page with device IDs,
+bindings and motion preferences intact. Factory defaults apply to new controllers
+and Reset; existing devices receive the owner's new preset through an explicit
+Controllers1 patch after installing the new plugin. Other families keep their
+existing defaults.
 
 ## Other controller defaults
 
@@ -82,8 +119,9 @@ mouse and scrolling while keeping buttons, touchpad and gyro available.
 Steam always takes priority while running. The desktop plugin releases its SDL
 handles until Steam exits. A game or other same-user process holding a related
 input/js/hidraw node suppresses that controller's desktop output, including when
-the game opened it before the desktop discovered it. Fullscreen apps, locked
-screens and inactive sessions also suppress output. Current buttons and keys are
+the game opened it before the desktop discovered it. Locked screens and inactive sessions also suppress output. Fullscreen status
+alone does not suppress input, so browser video and other fullscreen desktop
+applications retain controller control. Current buttons and keys are
 released, and controller-owned dictation is canceled. After suppression, controls
 must be released and sticks centered before desktop actions resume.
 
@@ -113,21 +151,26 @@ owner-only permissions. It stores no credentials and invokes no shell commands.
 
 | Method | Contract |
 | --- | --- |
-| `GetSnapshot() -> s` | Version-1 JSON: schemaVersion, revision (decimal string), steam, error, controllers |
-| `Apply(s id, s patch, t expectedRevision) -> s` | Result JSON: ok, reason, revision; ≤8 KiB atomic patch; exact revision |
+| `GetSnapshot() -> s` | Version-2 JSON: schemaVersion, ready, revision (decimal string), steam, error, controllers |
+| `Apply(s id, s patch, t expectedRevision) -> s` | Result JSON: ok, reason, revision; ≤128 KiB atomic patch; exact revision |
 | `Reset(s id, t expectedRevision) -> s` | Save validated defaults through the same mutation boundary |
 | `Changed(t revision)` | Rediscover authoritative snapshot |
 
-Snapshots are at most 256 KiB with at most 64 profiles and 32 connected devices.
+Snapshots are at most 4 MiB with at most 64 profiles and 32 connected devices.
 Fields include id/name/family, connection/capability truth, current suppression
-reason and config. Config has enabled, pointerStick, pointerSpeed, deadzone,
-touchpad, gyro, gyroSpeed and a bounded button-to-action/shortcut map. Unknown
-keys, out-of-range numbers, invalid buttons/actions and multi-chord shortcuts
-are rejected without changing any setting. Settings discards replies from an old
+reason, RGB capability/LED status, effective page and config. Config has enabled,
+pointerStick, pointerSpeed, deadzone, touchpad, gyro, gyroSpeed, activePage and
+1–12 pages (id/name/color/layer/bindings). Each controller config is ≤128 KiB;
+the atomic profile file is ≤2 MiB and schemaVersion 2. Version-1 files remain
+readable; legacy bindings patches address the active page. Unknown fields,
+invalid page references, duplicates, invalid actions/keys and out-of-range
+values reject the whole edit. One ordinary page must remain. Partial or failed
+loads cannot overwrite the existing file on discovery. Settings discards replies from an old
 service generation and clears edit authority on owner loss.
 Edits remain busy until a fresh post-reply snapshot arrives. A change signal
 received during a snapshot queues another read, so suppression/reconnect changes
-cannot strand the next edit on an old revision. Interactive controls rebind to
+cannot strand the next edit on an old revision. Binding/page editors retain drafts on refusal and close only after confirming
+readback. Interactive controls rebind to
 confirmed settings after a gesture and when controller selection changes.
 
 Runtime state, endpoints, SDL handles, delivery and Settings models stay on their
@@ -147,6 +190,9 @@ owner replacement. [ADR-0347](../adr/0347-controller-desktop-integration.md)
 records the dependency and priority decision;
 [ADR-0426](../adr/0426-dualsense-desktop-layout-and-held-actions.md) records the
 DualSense family, gyro persistence and held action contract.
+[ADR-0427](../adr/0427-share-programmable-input-actions-and-controller-layers.md)
+supersedes its fixed chord/fullscreen rules with shared combinations, pages,
+contact gyro, held layers and reusable input macros.
 Qt method-return messages do not supply the service owner through `service()`.
 Controller dictation resolves the activated Voice1 name through the bus and reads
 that unique owner before starting the capture.
@@ -171,8 +217,12 @@ installed QindaQt KWin SDK. It does not compile the desktop or KWin.
 - `qindaqt.controller-bus`: private out-of-process provider, change-during-read
   convergence, mutation completion after readback, and dictation/command start, release and cancellation.
 
-Physical controller and USB microphone qualification is recorded separately;
-passing virtual fixtures does not claim that hardware was connected.
+The expanded checks add page migration/round trips, hostile combinations and
+references, any-finger contact gyro, finger handoff, layer/chord ordering,
+virtual RGB callbacks, macro validation/playback/failure cleanup, native shortcut
+lease ownership and real QML profile/combination/text/macro journeys. Protocol
+and integration verification do not require hardware ownership. Physical audio
+quality is a separate observation; virtual tests do not claim a live utterance.
 
 See [Input settings](../apps/input-settings.md) and
 [voice input](voice-input.md).

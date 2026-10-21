@@ -35,8 +35,9 @@ private Q_SLOTS:
     }
     void dualSenseDefaultsMatchRequestedLayout() {
         const auto p = defaultProfile("dualsense");
+        QCOMPARE(p.pointerStick, "right");
         const QMap<QString, Binding> expected{
-            {"back", {"back", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
+            {"back", {"next-page", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
             {"dpleft", {"shortcut", "Ctrl+C"}}, {"dpright", {"shortcut", "Ctrl+J"}},
             {"dpdown", {"accept", {}}}, {"leftstick", {"previous-window", {}}},
             {"guide", {"launcher", {}}}, {"start", {"back", {}}},
@@ -45,7 +46,7 @@ private Q_SLOTS:
             {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
             {"touchpad", {"left-click", {}}}, {"touchpad-touch", {"hold-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
             {"righttrigger", {"combination", {}, {"Meta"}, {}, {"left"}, {}, {}, "move"}},
-            {"leftshoulder", {"right-click", {}}}, {"lefttrigger", {"right-click-meta-shift", {}}}};
+            {"leftshoulder", {"right-click", {}}}, {"lefttrigger", {"combination", {}, {"Shift", "Meta"}, {}, {"right"}, {}, {}, "move"}}};
         for (auto it = expected.begin(); it != expected.end(); ++it) QCOMPARE(activePage(p).bindings.value(it.key()), it.value());
         Profile restored; QString reason;
         QVERIFY(applyPatch(profileJson(p), restored, reason)); QCOMPARE(restored, p);

@@ -14,31 +14,48 @@
 #include <wayland/textinput_v2.h>
 #include <wayland/textinput_v3.h>
 #include <QScopeGuard>
+#include <QGuiApplication>
+#include <QCoreApplication>
+#include <QInputMethodEvent>
+#include <QInputMethodQueryEvent>
 #include <xkbcommon/xkbcommon.h>
 
 namespace QindaQt::Controllers {
-QObject *ControllerTextOutput::target() const { return KWin::workspace()->activeWindow(); }
+QObject *ControllerTextOutput::target() const {
+    auto *window = KWin::workspace()->activeWindow();
+    return window && window->isInternal() ? QGuiApplication::focusObject() : static_cast<QObject *>(window);
+}
 bool ControllerTextOutput::allowed() const {
     const auto window = KWin::workspace()->activeWindow();
-    return ControllerInputDevice::contextAllowed() && window && !window->isInternal() && !window->isDeleted()
-        && KWin::waylandServer()->seat()->keyboard()->focusedSurface();
+    if (!ControllerInputDevice::contextAllowed() || !window || window->isDeleted()) return false;
+    if (window->isInternal()) {
+        auto *focus = QGuiApplication::focusObject(); if (!focus) return false;
+        QInputMethodQueryEvent query(Qt::ImEnabled); QCoreApplication::sendEvent(focus, &query);
+        return query.value(Qt::ImEnabled).toBool();
+    }
+    return KWin::waylandServer()->seat()->keyboard()->focusedSurface();
 }
 int ControllerTextOutput::chunkCodepoints() const {
+    if (auto *window = KWin::workspace()->activeWindow(); window && window->isInternal()) return 128;
     auto *seat = KWin::waylandServer()->seat();
-    return seat->textInputV1()->isEnabled() || seat->textInputV2()->isEnabled() || seat->textInputV3()->isEnabled() ? 128 : 1;
+    return (seat->textInputV1() && seat->textInputV1()->isEnabled()) || (seat->textInputV2() && seat->textInputV2()->isEnabled()) || (seat->textInputV3() && seat->textInputV3()->isEnabled()) ? 128 : 1;
 }
 bool ControllerTextOutput::insert(const QString &text) {
     if (!allowed()) return false;
+    if (auto *window = KWin::workspace()->activeWindow(); window && window->isInternal()) {
+        QInputMethodEvent event; event.setCommitString(text);
+        return QCoreApplication::sendEvent(QGuiApplication::focusObject(), &event);
+    }
     auto *seat = KWin::waylandServer()->seat();
     // Mirror KWin InputMethod's public text-input path. <=128 codepoints keeps
     // each commit well below Wayland's message size, including astral Unicode.
-    if (auto *t = seat->textInputV1(); t->isEnabled()) {
+    if (auto *t = seat->textInputV1(); t && t->isEnabled()) {
         t->commitString(text); t->setPreEditCursor(0); t->preEdit({}, {}); return true;
     }
-    if (auto *t = seat->textInputV2(); t->isEnabled()) {
+    if (auto *t = seat->textInputV2(); t && t->isEnabled()) {
         t->commitString(text); t->setPreEditCursor(0); t->preEdit({}, {}); return true;
     }
-    if (auto *t = seat->textInputV3(); t->isEnabled()) {
+    if (auto *t = seat->textInputV3(); t && t->isEnabled()) {
         t->sendPreEditString({}, 0, 0); t->commitString(text); t->done(); return true;
     }
     const auto points = text.toUcs4();

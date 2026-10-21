@@ -79,7 +79,7 @@ bool readMacro(const QJsonObject &o, Macro &result, QString &reason) {
         m.steps.append(step);
     }
     // Every hold has an explicit release; cancel still releases all owned input.
-    if (!held.isEmpty() || duration > 60000 || QJsonDocument(o).toJson(QJsonDocument::Compact).size() > 128 * 1024) return fail();
+    if (!held.isEmpty() || duration > 60000 || QJsonDocument(o).toJson(QJsonDocument::Compact).size() > MaxMacroBytes) return fail();
     result = std::move(m); reason.clear(); return true;
 }
 } // namespace QindaQt::InputActions

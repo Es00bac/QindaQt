@@ -17,7 +17,7 @@ private:
     ControllerInputDevice &m_input;
     MacroEndpoint &m_endpoint;
     Services::Shortcuts::ShortcutLease m_shortcuts;
-    QSet<quint32> m_consumed;
+    QMap<KWin::InputDevice *, QSet<quint32>> m_consumed;
     QList<QPair<quint64, quint64>> m_intervals;
 };
 } // namespace QindaQt::Controllers

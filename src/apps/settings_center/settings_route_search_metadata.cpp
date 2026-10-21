@@ -56,10 +56,14 @@ QList<SettingsRouteDestination> inputDestinations() {
        .keywords = keywordList(QT_TRANSLATE_NOOP(
            "SettingsSearch", "touchscreen, touch screen, swipe, gestures, "
                              "edge swipe, hold time"))},
+      {.id = QStringLiteral("macros"),
+       .title = QCoreApplication::translate(SearchContext, "Macros"),
+       .keywords = keywordList(QT_TRANSLATE_NOOP(
+           "SettingsSearch", "macros, input automation, text blocks, key sequences, mouse triggers, record actions"))},
       {.id = QStringLiteral("controllers"),
        .title = QCoreApplication::translate(SearchContext, "Controllers"),
        .keywords = keywordList(QT_TRANSLATE_NOOP(
-           "SettingsSearch", "controller, gamepad, xbox, playstation, dualsense, nintendo, gyro, dictation button"))},
+           "SettingsSearch", "controller, gamepad, xbox, playstation, dualsense, nintendo, gyro, dictation button, profiles, layers, LED"))},
   };
 }
 

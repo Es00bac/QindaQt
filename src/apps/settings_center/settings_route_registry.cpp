@@ -251,7 +251,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
       .component = SettingsRouteComponent::Input,
       .title = QCoreApplication::translate("SettingsCenter", "Input"),
       .description = QCoreApplication::translate(
-          "SettingsCenter", "Mouse, touchpad, keyboard, and shortcuts"),
+          "SettingsCenter", "Mouse, touchpad, keyboard, controllers, and macros"),
       .iconName = QStringLiteral("preferences-desktop-peripherals"),
       .category = QCoreApplication::translate("SettingsCenter", "Hardware"),
       .available = true,

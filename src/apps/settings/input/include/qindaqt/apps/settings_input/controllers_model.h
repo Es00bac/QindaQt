@@ -14,6 +14,7 @@ class ControllersModel final : public QObject {
     Q_PROPERTY(QVariantMap selected READ selected NOTIFY viewChanged)
     Q_PROPERTY(QVariantList buttons READ buttons NOTIFY viewChanged)
     Q_PROPERTY(QString pageSwitcher READ pageSwitcher NOTIFY viewChanged)
+    Q_PROPERTY(QString editPageId READ editPageId WRITE selectPage NOTIFY viewChanged)
     Q_PROPERTY(QVariantList pages READ pages NOTIFY viewChanged)
     Q_PROPERTY(QVariantMap currentPage READ currentPage NOTIFY viewChanged)
     Q_PROPERTY(QVariantList actions READ actions CONSTANT)
@@ -30,9 +31,11 @@ public:
     QVariantList actions() const;
     QString pageSwitcher() const;
     Q_INVOKABLE bool setPageSwitcher(const QString &button);
+    QString editPageId() const;
+    Q_INVOKABLE void selectPage(const QString &id);
     QVariantList pages() const;
     QVariantMap currentPage() const;
-    Q_INVOKABLE bool saveBinding(const QString &button, const QVariantMap &binding, const QString &controllerId, const QString &pageId);
+    Q_INVOKABLE bool saveBinding(const QString &button, const QVariantMap &binding, const QString &controllerId, const QString &pageId, const QVariantMap &expected = {});
     Q_INVOKABLE QString bindingError(const QVariantMap &binding) const;
     Q_INVOKABLE QString bindingSummary(const QVariantMap &binding) const;
     Q_INVOKABLE QVariantMap combination(const QVariantMap &binding) const;
@@ -52,12 +55,14 @@ public:
     Q_INVOKABLE int sequenceKey(const QString &text) const;
 Q_SIGNALS:
     void viewChanged();
+    void editCompleted(bool ok);
 private:
     bool submit(const QJsonObject &patch);
+    bool submitBinding(const QString &button, const QJsonObject &binding);
     void receive(const QJsonObject &snapshot);
     ControllerPort &m_port;
     QJsonArray m_rows;
-    QString m_selected, m_error;
+    QString m_selected, m_error, m_editPage, m_pendingEditPage;
     quint64 m_revision = 0;
     bool m_available = false, m_busy = false, m_steam = false, m_autoSelect = true;
 };

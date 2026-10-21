@@ -53,11 +53,12 @@ public:
         QMap<QString, bool> down;
         ButtonLayers layers;
         std::optional<QPointF> touch;
+        int touchContact = -1;
         bool armed = false, gyroEnabled = false;
         SDL_JoystickID instance = 0;
     };
     Private(ControllerRuntime &owner, InputSink &sink, QString path, RuntimeEnvironment env)
-        : q(owner), sink(sink), store(std::move(path)), observer(std::move(env.procRoot)) {
+        : q(owner), sink(sink), store(std::move(path)), observer(std::move(env.procRoot)), virtualOnly(env.virtualDevicesOnly) {
         QObject::connect(&observer, &GamePriorityObserver::invalidated, &q, [this] {
             priorityReady = false;
             for (auto &[id, device] : devices) { Q_UNUSED(id); release(device); }
@@ -146,7 +147,7 @@ public:
         device.armed = false;
         device.down.clear();
         device.layers.clear();
-        device.touch.reset();
+        device.touch.reset(); device.touchContact = -1;
         if (device.pad && device.gyroEnabled) SDL_SetGamepadSensorEnabled(device.pad, SDL_SENSOR_GYRO, false);
         device.gyroEnabled = false;
     }
@@ -164,6 +165,7 @@ public:
         auto *ids = SDL_GetGamepads(&count);
         QSet<SDL_JoystickID> present;
         for (int i = 0; ids && i < std::min(count, 32); ++i) {
+            if (virtualOnly && !SDL_IsJoystickVirtual(ids[i])) continue;
             present.insert(ids[i]);
             if (devices.contains(ids[i])) continue;
             auto *pad = SDL_OpenGamepad(ids[i]);
@@ -241,8 +243,15 @@ public:
         const auto axis = [&dev](SDL_GamepadAxis a) { return double(SDL_GetGamepadAxis(dev.pad, a)) / 32768.0; };
         const QPointF left(axis(SDL_GAMEPAD_AXIS_LEFTX), axis(SDL_GAMEPAD_AXIS_LEFTY));
         const QPointF right(axis(SDL_GAMEPAD_AXIS_RIGHTX), axis(SDL_GAMEPAD_AXIS_RIGHTY));
-        bool touching = false; float x = 0, y = 0;
-        if (SDL_GetNumGamepadTouchpads(dev.pad) > 0) SDL_GetGamepadTouchpadFinger(dev.pad, 0, 0, &touching, &x, &y, nullptr);
+        bool touching = false; float x = 0, y = 0; int contact = -1;
+        for (int pad = 0; pad < std::min(SDL_GetNumGamepadTouchpads(dev.pad), 4) && !touching; ++pad) {
+            for (int finger = 0; finger < std::min(SDL_GetNumGamepadTouchpadFingers(dev.pad, pad), 8); ++finger) {
+                bool down = false; float px = 0, py = 0;
+                if (SDL_GetGamepadTouchpadFinger(dev.pad, pad, finger, &down, &px, &py, nullptr) && down) {
+                    touching = true; x = px; y = py; contact = pad * 8 + finger; break;
+                }
+            }
+        }
         buttons["touchpad-touch"] = touching;
         if (!dev.armed) {
             // AGENT-GUARD: a held game button may never become a desktop
@@ -275,9 +284,11 @@ public:
         }
         if (dev.profile.touchpad && touching) {
             const QPointF point(x, y);
-            if (dev.touch) sink.motion((point - *dev.touch) * dev.profile.pointerSpeed);
-            dev.touch = point;
-        } else dev.touch.reset();
+            // A second finger keeps contact/gyro alive without turning its
+            // different coordinates into a sudden pointer or window jump.
+            if (dev.touch && dev.touchContact == contact) sink.motion((point - *dev.touch) * dev.profile.pointerSpeed);
+            dev.touch = point; dev.touchContact = contact;
+        } else { dev.touch.reset(); dev.touchContact = -1; }
         const bool gyro = (dev.profile.gyro || dev.layers.heldAction("hold-gyro")) && SDL_GamepadHasSensor(dev.pad, SDL_SENSOR_GYRO);
         if (gyro != dev.gyroEnabled) dev.gyroEnabled = SDL_SetGamepadSensorEnabled(dev.pad, SDL_SENSOR_GYRO, gyro) && gyro;
         if (dev.gyroEnabled) {
@@ -296,7 +307,7 @@ public:
     std::map<SDL_JoystickID, Device> devices;
     GamePriorityState game;
     quint64 revision = 1;
-    bool initialized = false, context = true, priorityReady = false, configReady = false;
+    bool initialized = false, context = true, priorityReady = false, configReady = false, virtualOnly = false;
     QString contextReason, error;
     int fd = -1;
     QList<int> watches;
@@ -308,6 +319,7 @@ ControllerRuntime::ControllerRuntime(InputSink &sink, QString path, QObject *par
 ControllerRuntime::~ControllerRuntime() = default;
 void ControllerRuntime::start() {
     d->configReady = d->store.load(d->error);
+    d->bump();
     refreshPriority();
     d->priority.start();
     d->sample.start();
@@ -351,7 +363,7 @@ QString ControllerRuntime::snapshot() const {
         for (const auto &[instance, dev] : d->devices) { Q_UNUSED(instance); if (dev.id == id) { row = dev.description; row["config"] = profileJson(dev.profile); row["connected"] = true; row["reason"] = dev.reason; row["ledStatus"] = dev.ledStatus; row["effectivePage"] = dev.layers.page(dev.profile).id; break; } }
         rows.append(row);
     }
-    return json({{"schemaVersion", 2}, {"revision", QString::number(d->revision)},
+    return json({{"schemaVersion", 2}, {"ready", d->configReady}, {"revision", QString::number(d->revision)},
                  {"steam", d->game.steam}, {"error", d->error}, {"controllers", rows}});
 }
 QString ControllerRuntime::apply(const QString &id, const QString &patch, quint64 expected) {

@@ -8,6 +8,7 @@ class MacroEndpoint final : public QObject {
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.InputActions1")
 public:
     MacroEndpoint(InputActions::MacroStore &store, ControllerInputDevice &input);
+    bool ready() const { return m_ready; }
     void shortcutStatus(const QString &id, const QString &reason, const QStringList &actual);
 public Q_SLOTS:
     QString GetSnapshot() const;

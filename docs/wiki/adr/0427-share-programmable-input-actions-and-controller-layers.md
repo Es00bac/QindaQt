@@ -24,11 +24,12 @@ No shell execution, second virtual input device or new daemon is introduced.
 
 Controllers1 snapshot/config version 2 stores 1–12 named pages with unique IDs,
 RGB colors, bindings, a temporary-layer flag and one persisted active page.
-Motion preferences remain at controller scope. Version-1 flat maps migrate into
+Motion preferences remain at controller scope; the DualSense preset uses the
+right stick for pointing and left stick for scrolling. Version-1 flat maps migrate into
 one Desktop page without changing their values. Existing binding patches edit
 the current page. Page replacement, references and global save budgets validate
 atomically. Persistent page changes release owned input and require neutral
-controls; held layers preserve their activating chord, release other old-map
+controls; held layers preserve their activating chord and modifier-only holds, release other old-map
 holds and require those buttons to be released before changing their meaning.
 Temporary layers are skipped by profile cycling. LED writes follow the effective
 page only while desktop control owns the pad; failure is reported independently
@@ -52,16 +53,23 @@ steps may adopt their resulting focus. Text delivery uses enabled Wayland
 text-input, falling back to KWin's public keysym/keymap path in bounded batches;
 it neither changes the clipboard nor replays text after cancellation.
 
-The existing Shortcuts1 client gains a nonblocking transient lease. Register
-preserves native assignments; explicit trigger edits use SetShortcuts, and
-native readback supplies conflict and actual-key truth. Captured unique owners
+The existing Shortcuts1 client gains a nonblocking persistent lease. It reads
+native assignments before Register (which itself overwrites keys), preserving
+all existing alternatives; explicit trigger edits use SetShortcuts, and
+native readback supplies conflict and actual-key truth. The explicit assignment
+intent is separate from ordinary macro edits, which must not replace native key
+alternatives. Deleted macros unregister; teardown deactivates through the
+existing same-owner compatibility `setInactive` method, since native v1 lacks a
+release-only method. This narrowly retained public bridge preserves assignments
+without adding a legacy daemon or changing the installed compositor ABI. Captured unique owners
 and generations fence replies. Mouse triggers use the public KWin input filter
 and ignore generated controller-device events. Monotonic playback intervals
 reject native shortcut signals caused by playback, including delayed signals.
 Physical Escape cancels macros. Steam and actual device consumers retain
 controller priority; fullscreen status alone no longer removes desktop control.
 
-Settings uses borrowed asynchronous JSON ports, authoritative readback and a
+Settings separates page editing from activation and uses borrowed exact-owner
+asynchronous JSON ports, authoritative readback and a
 shared combination editor and macro step builder. It never opens controller or
 macro files, SDL or compositor-private objects. Recording captures taps only in
 an explicit editor pad, not global desktop input.

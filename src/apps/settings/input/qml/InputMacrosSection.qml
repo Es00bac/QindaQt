@@ -21,21 +21,24 @@ ColumnLayout {
     function edit(value, existing) {
         root.draft = JSON.parse(JSON.stringify(value))
         delete root.draft.shortcutStatus; delete root.draft.actualShortcuts
-        if (existing && ["ready","unassigned"].includes(value.shortcutStatus)) root.draft.shortcut = value.actualShortcuts?.[0] ?? ""
+        if (existing && ["ready","unassigned"].includes(value.shortcutStatus)) {
+            const actual = value.actualShortcuts?.[0] ?? ""
+            if (actual.length === 0 || macros.portableKey(macros.sequenceKey(actual)) === actual) root.draft.shortcut = actual
+        }
         root.expected = existing ? macros.fingerprint(value.id) : ""
         root.editing = true
     }
     SectionHeader { Layout.fillWidth:true; title:qsTr("Input macros") }
     Label { Layout.fillWidth:true; text:qsTr("Create reusable sequences of keys, clicks, text, movement and delays. Run the same macro from controller buttons, a keyboard shortcut or a mouse combination."); wrapMode:Text.Wrap }
     DegradedNotice { Layout.fillWidth:true; visible:!root.macros.available; reason:root.macros.errorText }
-    Button { id:retryButton; visible:!root.macros.available; text:qsTr("Refresh macros"); onClicked:root.macros.refresh() }
+    Button { emphasized: false; id:retryButton; visible:!root.macros.available; text:qsTr("Refresh macros"); onClicked:root.macros.refresh() }
     Label { Layout.fillWidth:true; text:root.macros.errorText; visible:text.length > 0 && root.macros.available; wrapMode:Text.Wrap; Accessible.role:Accessible.AlertMessage }
     RowLayout {
         Layout.fillWidth:true; visible:root.macros.available
-        Button { id:createButton; objectName:"inputMacroNew"; text:qsTr("New macro…"); enabled:!root.macros.busy && root.macros.macros.length < 64; onClicked:root.edit(root.macros.create(), false) }
-        Button { text:qsTr("Copy / paste preset"); enabled:!root.macros.busy; onClicked:root.edit(root.macros.create("copy-paste"), false) }
-        Button { text:qsTr("Window drag preset"); enabled:!root.macros.busy; onClicked:root.edit(root.macros.create("drag"), false) }
-        Button { text:qsTr("Stop playback"); visible:root.macros.running.length > 0; onClicked:root.macros.cancel() }
+        Button { emphasized: false; id:createButton; objectName:"inputMacroNew"; text:qsTr("New macro…"); enabled:!root.macros.busy && root.macros.macros.length < 64; onClicked:root.edit(root.macros.create(), false) }
+        Button { emphasized: false; text:qsTr("Copy / paste preset"); enabled:!root.macros.busy; onClicked:root.edit(root.macros.create("copy-paste"), false) }
+        Button { emphasized: false; text:qsTr("Window drag preset"); enabled:!root.macros.busy; onClicked:root.edit(root.macros.create("drag"), false) }
+        Button { emphasized: false; text:qsTr("Stop playback"); visible:root.macros.running.length > 0; onClicked:root.macros.cancel() }
     }
     Repeater {
         model:root.macros.macros
@@ -45,9 +48,9 @@ ColumnLayout {
             RowLayout {
                 Layout.fillWidth:true
                 Label { Layout.fillWidth:true; text:modelData.name; font.weight:Font.DemiBold; textFormat:Text.PlainText }
-                Button { text:qsTr("Edit…"); enabled:!root.macros.busy; onClicked:root.edit(modelData, true) }
-                Button { text:qsTr("Test in 3s"); enabled:!root.macros.busy; onClicked:root.macros.run(modelData.id) }
-                Button { text:qsTr("Delete…"); enabled:!root.macros.busy; onClicked:{ root.deleting = modelData.id; remove.open() } }
+                Button { emphasized: false; text:qsTr("Edit…"); enabled:!root.macros.busy; onClicked:root.edit(modelData, true) }
+                Button { emphasized: false; text:qsTr("Test in 3s"); enabled:!root.macros.busy; onClicked:root.macros.run(modelData.id) }
+                Button { emphasized: false; text:qsTr("Delete…"); enabled:!root.macros.busy; onClicked:{ root.deleting = modelData.id; remove.open() } }
             }
             Label {
                 Layout.fillWidth:true
@@ -65,8 +68,9 @@ ColumnLayout {
             onClosed:{ root.captureActivityChanged(false); root.editing = false }
         }
     }
-    T.Dialog {
+    InputEditorDialog {
         id:remove
+        width:Math.min(440, parent ? parent.width - 32 : 440)
         parent:T.Overlay.overlay; anchors.centerIn:parent
         modal:true; title:qsTr("Delete macro?"); standardButtons:T.Dialog.Cancel | T.Dialog.Ok
         contentItem:Label { text:qsTr("Controller bindings referencing this macro will stop running it."); wrapMode:Text.Wrap }

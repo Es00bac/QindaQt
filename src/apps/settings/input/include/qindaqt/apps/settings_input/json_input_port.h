@@ -35,9 +35,11 @@ public:
 private Q_SLOTS:
     void changed(qulonglong revision);
 private:
+    void resolveOwner();
     void mutate(const QString &method, const QVariantList &arguments);
     QDBusConnection m_bus;
     JsonInputEndpoint m_endpoint;
+    QString m_owner;
     quint64 m_generation = 1;
     bool m_refreshing = false, m_refreshAgain = false;
     std::optional<QPair<bool, QString>> m_completion;

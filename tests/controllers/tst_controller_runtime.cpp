@@ -49,7 +49,7 @@ class ControllerRuntimeTest final : public QObject {
 private Q_SLOTS:
     void initTestCase() { QVERIFY2(SDL_InitSubSystem(SDL_INIT_GAMEPAD), SDL_GetError()); }
     void init() {
-        SDL_VirtualJoystickTouchpadDesc touch{}; touch.nfingers = 1;
+        SDL_VirtualJoystickTouchpadDesc touch{}; touch.nfingers = 2;
         SDL_VirtualJoystickSensorDesc sensor{}; sensor.type = SDL_SENSOR_GYRO; sensor.rate = 60;
         SDL_VirtualJoystickDesc desc; SDL_INIT_INTERFACE(&desc);
         desc.type = SDL_JOYSTICK_TYPE_GAMEPAD; desc.naxes = SDL_GAMEPAD_AXIS_COUNT;
@@ -72,9 +72,18 @@ private Q_SLOTS:
     }
     void cleanup() { SDL_CloseJoystick(m_joystick); m_joystick = nullptr; SDL_DetachVirtualJoystick(m_id); }
     void cleanupTestCase() { SDL_QuitSubSystem(SDL_INIT_GAMEPAD); }
+    void startupAndMalformedProfilesNeverReplaceTheSavedFile() {
+        QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc")); const auto path = dir.filePath("controllers.json");
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly)); file.write("{broken"); file.close();
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc"), true});
+        QVERIFY(!snapshot(runtime).value("ready").toBool());
+        QVERIFY(!QJsonDocument::fromJson(runtime.apply("default:dualsense", "{}", 1).toUtf8()).object().value("ok").toBool());
+        runtime.start(); runtime.tick(); QVERIFY(!snapshot(runtime).value("ready").toBool()); QVERIFY(connectedId(runtime).isEmpty());
+        QVERIFY(file.open(QIODevice::ReadOnly)); QCOMPARE(file.readAll(), QByteArray("{broken"));
+    }
     void dictationAndHeldButtonSuppression() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
         QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.events.last().first, "dictate");
@@ -87,17 +96,17 @@ private Q_SLOTS:
     }
     void dualSenseButtonsTriggersAndReset() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime); QVERIFY(!id.isEmpty());
         const QMap<SDL_GamepadButton, QString> actions{
-            {SDL_GAMEPAD_BUTTON_BACK, "back"}, {SDL_GAMEPAD_BUTTON_START, "back"},
+            {SDL_GAMEPAD_BUTTON_START, "back"},
             {SDL_GAMEPAD_BUTTON_GUIDE, "launcher"}, {SDL_GAMEPAD_BUTTON_DPAD_UP, "shortcut"},
             {SDL_GAMEPAD_BUTTON_DPAD_LEFT, "shortcut"}, {SDL_GAMEPAD_BUTTON_DPAD_RIGHT, "shortcut"},
             {SDL_GAMEPAD_BUTTON_DPAD_DOWN, "accept"}, {SDL_GAMEPAD_BUTTON_LEFT_STICK, "previous-window"},
             {SDL_GAMEPAD_BUTTON_RIGHT_STICK, "next-window"}, {SDL_GAMEPAD_BUTTON_NORTH, "maximize"},
             {SDL_GAMEPAD_BUTTON_EAST, "overview"}, {SDL_GAMEPAD_BUTTON_WEST, "voice-command"},
-            {SDL_GAMEPAD_BUTTON_SOUTH, "dictate"}, {SDL_GAMEPAD_BUTTON_MISC1, "none"},
+            {SDL_GAMEPAD_BUTTON_SOUTH, "dictate"},
             {SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, "right-click"}, {SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, "left-click"}};
         for (auto it = actions.begin(); it != actions.end(); ++it) {
             button(it.key(), true, runtime); QCOMPARE(sink.events.last().first, it.value());
@@ -106,7 +115,7 @@ private Q_SLOTS:
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 32767)); runtime.tick();
         QCOMPARE(sink.events.last().first, "combination");
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 32767)); runtime.tick();
-        QCOMPARE(sink.events.last().first, "right-click-meta-shift");
+        QCOMPARE(sink.events.last().first, "combination");
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, -32768));
         QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, -32768)); runtime.tick();
         auto revision = snapshot(runtime).value("revision").toString().toULongLong();
@@ -118,7 +127,7 @@ private Q_SLOTS:
     }
     void touchpadTogglesGyroOncePerPressAndPersists() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime);
         auto revision = snapshot(runtime).value("revision").toString().toULongLong();
@@ -149,7 +158,7 @@ private Q_SLOTS:
     void failedGyroSaveKeepsConfirmedPreference() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
         const auto path = dir.filePath("controllers.json");
-        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime);
         const auto revision = snapshot(runtime).value("revision").toString().toULongLong();
@@ -175,7 +184,7 @@ private Q_SLOTS:
         auto second = activePage(profile); second.id = "work"; second.name = "Work"; second.color = "#A83DFF";
         second.bindings["south"] = {"text", {}, {}, {}, {}, "Text block"}; profile.pages.append(second);
         ProfileStore store(path); store.set("default:dualsense", profile); QVERIFY(store.save(reason));
-        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")}); runtime.start();
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc"), true}); runtime.start();
         QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
         QCOMPARE(m_colors.last(), "#287DFF");
         button(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, true, runtime); QVERIFY(!sink.held.isEmpty());
@@ -197,7 +206,7 @@ private Q_SLOTS:
         auto profile = defaultProfile(); activePage(profile).bindings["misc1"] = {"next-page"};
         auto second = activePage(profile); second.id = "work"; second.color = "#24D16B"; profile.pages.append(second);
         ProfileStore store(path); store.set("default:dualsense", profile); QVERIFY(store.save(reason));
-        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc")}); runtime.start();
+        ControllerRuntime runtime(sink, path, nullptr, {dir.filePath("proc"), true}); runtime.start();
         QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
         const auto count = m_colors.size(); QVERIFY(QFile::remove(path)); QVERIFY(QDir().mkdir(path));
         button(SDL_GAMEPAD_BUTTON_MISC1, true, runtime); QCOMPARE(snapshot(runtime).value("error").toString(), "config-unsaved");
@@ -212,7 +221,7 @@ private Q_SLOTS:
     }
     void touchContactEnablesGyroWithoutSavingAndClickRemainsLeftMouse() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")}); runtime.start();
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true}); runtime.start();
         QTRY_COMPARE(connectedReason(runtime), "active"); const auto id = connectedId(runtime);
         QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, true, .3f, .4f, 1.f)); runtime.tick();
         const auto before = sink.moves.size(); const float values[3]{0, 1, 0};
@@ -220,13 +229,18 @@ private Q_SLOTS:
         QVERIFY(sink.moves.size() > before); QVERIFY(sink.events.isEmpty());
         button(SDL_GAMEPAD_BUTTON_TOUCHPAD, true, runtime); QCOMPARE(sink.events.last().first, "left-click");
         button(SDL_GAMEPAD_BUTTON_TOUCHPAD, false, runtime);
+        const auto transfer = sink.moves.size();
+        QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 1, true, .8f, .8f, 1.f));
         QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, false, .3f, .4f, 0.f)); runtime.tick();
+        for (qsizetype i = transfer; i < sink.moves.size(); ++i) QVERIFY(sink.moves[i].manhattanLength() < 100);
+        const auto continued = sink.moves.size(); QTest::qWait(20); runtime.tick(); QVERIFY(sink.moves.size() > continued);
+        QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 1, false, .8f, .8f, 0.f)); runtime.tick();
         const auto stopped = sink.moves.size(); QTest::qWait(20); runtime.tick(); QCOMPARE(sink.moves.size(), stopped);
         ProfileStore readback(dir.filePath("controllers.json")); QString reason; QVERIFY(readback.load(reason)); QVERIFY(!readback.profile(id).gyro);
     }
     void steamStartupClosesDesktopInput() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(!sink.held.isEmpty());
         QDir().mkpath(dir.filePath("proc/42/fd")); QFile comm(dir.filePath("proc/42/comm"));
@@ -243,12 +257,12 @@ private Q_SLOTS:
     }
     void stickTouchpadAndGyro() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));
-        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc")});
+        ControllerRuntime runtime(sink, dir.filePath("controllers.json"), nullptr, {dir.filePath("proc"), true});
         runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
         const auto id = connectedId(runtime); QVERIFY(!id.isEmpty());
-        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFTX, 22000));
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHTX, 22000));
         QTest::qWait(20); runtime.tick(); QVERIFY(!sink.moves.isEmpty());
-        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_LEFTX, 0)); runtime.tick();
+        QVERIFY(SDL_SetJoystickVirtualAxis(m_joystick, SDL_GAMEPAD_AXIS_RIGHTX, 0)); runtime.tick();
         QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, true, 0.2f, 0.2f, 1)); runtime.tick();
         const auto count = sink.moves.size();
         QVERIFY(SDL_SetJoystickVirtualTouchpad(m_joystick, 0, 0, true, 0.3f, 0.2f, 1)); runtime.tick();

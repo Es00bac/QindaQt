@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/services/shortcuts_client/shortcut_lease.h"
 #include <QDBusArgument>
 #include <QDBusMessage>
@@ -15,11 +15,14 @@ ShortcutLease::ShortcutLease(QDBusConnection bus, QString component, QObject *pa
     resolveOwner();
 }
 ShortcutLease::~ShortcutLease() {
-    if (m_owner.isEmpty()) return;
-    for (const auto &action : m_registered) {
-        auto call = QDBusMessage::createMethodCall(m_owner, QLatin1String(Path), QLatin1String(Service), "Unregister");
-        call.setArguments({m_component, action}); m_bus.asyncCall(call, 1000);
-    }
+    if (!m_owner.isEmpty()) for (const auto &action : m_registered) deactivate(action);
+}
+void ShortcutLease::deactivate(const QString &action) {
+    // Native v1 has no release-only method. Its public compatibility
+    // endpoint shares this captured unique owner; setInactive preserves
+    // saved assignments for the next plugin lifetime.
+    auto call = QDBusMessage::createMethodCall(m_owner, "/kglobalaccel", "org.kde.KGlobalAccel", "setInactive");
+    call.setArguments({QStringList{m_component, action, m_component, action}}); m_bus.asyncCall(call, 1000);
 }
 void ShortcutLease::resolveOwner() {
     const auto generation = m_generation;
@@ -33,14 +36,15 @@ void ShortcutLease::resolveOwner() {
 }
 void ShortcutLease::attach(const QString &owner) {
     if (!m_owner.isEmpty()) m_bus.disconnect(m_owner, QLatin1String(Path), QLatin1String(Service), {}, this, nullptr);
-    ++m_generation; m_owner = owner; m_busy = false; m_observing = false; m_observeAgain = false; m_registered.clear(); m_ready.clear();
+    ++m_generation; m_owner = owner; m_busy = false; m_observing = false; m_observeAgain = false; m_registered.clear(); m_ready.clear(); m_errors.clear();
     if (owner.isEmpty()) { for (const auto &binding : m_desired) Q_EMIT status(binding.action, "unavailable", {}); return; }
     m_bus.connect(owner, QLatin1String(Path), QLatin1String(Service), "Activated", this, SLOT(activatedOnBus(QString,QString,quint64)));
     m_bus.connect(owner, QLatin1String(Path), QLatin1String(Service), "BindingsChanged", this, SLOT(bindingsChanged()));
-    reconcile();
+    if (m_configured) reconcile();
 }
 void ShortcutLease::replace(QList<Binding> desired, QSet<QString> assign) {
     if (desired.size() > 64) return;
+    m_configured = true;
     ++m_generation; m_desired = std::move(desired); m_assign.unite(assign); m_ready.clear(); m_errors.clear();
     m_busy = false; m_observing = false;
     if (m_owner.isEmpty()) resolveOwner();
@@ -57,18 +61,33 @@ void ShortcutLease::request(const QString &method, const QVariantList &args, std
 }
 void ShortcutLease::reconcile() {
     if (m_owner.isEmpty()) { for (const auto &binding : m_desired) Q_EMIT status(binding.action, "unavailable", {}); return; }
-    QSet<QString> wanted; for (const auto &binding : m_desired) wanted.insert(binding.action);
-    m_remove = (m_registered - wanted).values(); m_queue = m_desired; m_busy = true; next();
+    m_busy = true;
+    request("ListBindings", {}, [this](const auto &reply) {
+        if (reply.type() != QDBusMessage::ReplyMessage || reply.signature() != "a{sv}" || reply.arguments().isEmpty()) {
+            m_busy = false; for (const auto &b : m_desired) Q_EMIT status(b.action, "unavailable", {}); return;
+        }
+        const auto rows = qdbus_cast<QVariantMap>(reply.arguments().first());
+        if (rows.size() > 4096) { m_busy = false; return; }
+        m_existing.clear();
+        for (auto it = rows.begin(); it != rows.end(); ++it) {
+            const auto row = qdbus_cast<QVariantMap>(it.value());
+            if (row.value("component").toString() != m_component) continue;
+            const auto id = row.value("action").toString();
+            m_existing[id] = qdbus_cast<QStringList>(row.value("keys")); m_registered.insert(id);
+        }
+        QSet<QString> wanted; for (const auto &binding : m_desired) wanted.insert(binding.action);
+        m_remove = (m_registered - wanted).values(); m_queue = m_desired; next();
+    });
 }
 void ShortcutLease::next() {
     if (!m_remove.isEmpty()) {
         const auto id = m_remove.takeFirst();
-        request("Unregister", {m_component, id}, [this, id](const auto &) { m_registered.remove(id); next(); }); return;
+        request("Unregister", {m_component, id}, [this, id](const auto &reply) { if (!accepted(reply)) deactivate(id); m_registered.remove(id); next(); }); return;
     }
     if (m_queue.isEmpty()) { m_busy = false; observe(); return; }
     const auto binding = m_queue.takeFirst();
     m_registered.insert(binding.action); // Unload must unregister in-flight claims too.
-    request("Register", {m_component, binding.action, binding.description, texts(binding.keys), false, true}, [this, binding](const auto &reply) {
+    request("Register", {m_component, binding.action, binding.description, m_existing.contains(binding.action) ? m_existing.value(binding.action) : texts(binding.keys), false, false}, [this, binding](const auto &reply) {
         if (!accepted(reply)) { m_errors[binding.action] = "conflict"; next(); return; }
         m_registered.insert(binding.action);
         if (!m_assign.remove(binding.action)) { next(); return; }

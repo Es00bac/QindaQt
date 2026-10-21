@@ -2,6 +2,7 @@
 #include "button_layers_p.h"
 namespace QindaQt::Controllers {
 namespace {
+bool modifierOnly(const Binding &b) { return b.action == "combination" && !b.modifiers.isEmpty() && b.keys.isEmpty() && b.mouseButtons.isEmpty(); }
 QString layer(const Binding &binding) { return binding.action == "hold-page" ? binding.page : binding.holdPage; }
 }
 const ButtonPage &ButtonLayers::page(const Profile &profile) const {
@@ -32,15 +33,22 @@ QList<ButtonEdge> ButtonLayers::sample(const Profile &profile, const QMap<QStrin
     }
     if (oldLayer != page(profile).id) {
         for (const auto &button : m_held.keys()) {
-            if (m_modifiers.contains(button) || m_held.value(button).action == "hold-gyro") continue;
+            if (m_modifiers.contains(button) || m_held.value(button).action == "hold-gyro" || modifierOnly(m_held.value(button))) continue;
             // AGENT-GUARD: a pre-held D-pad/button must be released before it
             // can issue a different layer's action. Modifier/gyro contact holds
             // stay alive; unrelated owned keys and clicks release immediately.
             edges.append({button, m_held.take(button), false}); m_quarantined.insert(button);
         }
     }
+    QSet<QString> prepressed;
     for (const auto &button : buttonIds()) if (physical.value(button) && !m_physical.contains(button)
         && !m_modifiers.contains(button) && !m_quarantined.contains(button)) {
+        const auto binding = page(profile).bindings.value(button);
+        if (!modifierOnly(binding)) continue;
+        m_held[button] = binding; prepressed.insert(button); edges.append({button, binding, true});
+    }
+    for (const auto &button : buttonIds()) if (physical.value(button) && !m_physical.contains(button)
+        && !m_modifiers.contains(button) && !m_quarantined.contains(button) && !prepressed.contains(button)) {
         const auto binding = page(profile).bindings.value(button);
         m_held[button] = binding; edges.append({button, binding, true});
     }

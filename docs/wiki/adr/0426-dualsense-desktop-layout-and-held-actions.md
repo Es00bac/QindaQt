@@ -5,6 +5,8 @@
 - Owners: Controller platform and Settings Input
 - Amends: [ADR-0347](0347-controller-desktop-integration.md), family defaults and action vocabulary
 
+- Amended by: [ADR-0427](0427-share-programmable-input-actions-and-controller-layers.md), programmable input actions/layers, contact gyro and fullscreen media
+
 ## Context
 
 The owner supplied an exact DualSense layout. The existing action vocabulary

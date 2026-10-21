@@ -6,13 +6,15 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-T.Dialog {
+InputEditorDialog {
     id: root
     required property var macroModel
     required property var initialMacro
     required property string expected
     property var steps: JSON.parse(JSON.stringify(initialMacro.steps ?? []))
+    property bool awaitingSave:false
     property string failure:""
+    property bool shortcutEdited:false
     property bool authorityLost:false
     property bool stepEditing:false
     property int stepIndex:-1
@@ -47,7 +49,16 @@ T.Dialog {
     modal:true; focus:true
     title:qsTr("Macro editor")
     closePolicy: recorder.recording ? T.Popup.NoAutoClose : T.Popup.CloseOnEscape
-    Connections { target:root.macroModel; function onViewChanged() { if (!root.macroModel.available) root.authorityLost = true } }
+    Connections {
+        target:root.macroModel
+        function onViewChanged() { if (!root.macroModel.available) root.authorityLost = true }
+        function onEditCompleted(ok) {
+            if (!root.awaitingSave) return
+            root.awaitingSave = false
+            if (ok) { root.saved(root.initialMacro.id); root.close() }
+            else root.failure = root.macroModel.errorText || qsTr("The macro was not saved. Your draft is still here.")
+        }
+    }
     contentItem:T.ScrollView {
         clip:true; contentWidth:availableWidth
         implicitHeight:body.implicitHeight
@@ -66,8 +77,8 @@ T.Dialog {
                     sequence:root.macroModel.sequenceKey(root.initialMacro.shortcut ?? "")
                     formatter:key => root.macroModel.sequenceText(key)
                     Accessible.name:qsTr("Macro keyboard shortcut")
-                    onCaptured:key => sequence = key
-                    onCleared:sequence = 0
+                    onCaptured:key => { sequence = key; root.shortcutEdited = true }
+                    onCleared:{ sequence = 0; root.shortcutEdited = true }
                 }
             }
             FormRow {
@@ -103,17 +114,17 @@ T.Dialog {
                     required property int index
                     Layout.fillWidth:true
                     Label { text:String(index + 1); muted:true }
-                    Button { Layout.fillWidth:true; text:root.macroModel.stepSummary(modelData); onClicked:root.editStep(index); Accessible.name:qsTr("Edit step %1: %2").arg(index + 1).arg(text) }
-                    Button { text:"↑"; enabled:index > 0; Accessible.name:qsTr("Move step up"); onClicked:root.moveStep(index,-1) }
-                    Button { text:"↓"; enabled:index + 1 < root.steps.length; Accessible.name:qsTr("Move step down"); onClicked:root.moveStep(index,1) }
-                    Button { text:qsTr("Copy"); enabled:root.steps.length < 64; onClicked:{ const next = root.steps.slice(); next.splice(index + 1, 0, JSON.parse(JSON.stringify(modelData))); root.steps = next } }
-                    Button { text:"×"; Accessible.name:qsTr("Delete step %1").arg(index + 1); onClicked:root.steps = root.steps.filter((step,position) => position !== index) }
+                    Button { emphasized: false; Layout.fillWidth:true; text:root.macroModel.stepSummary(modelData); onClicked:root.editStep(index); Accessible.name:qsTr("Edit step %1: %2").arg(index + 1).arg(text) }
+                    Button { emphasized: false; text:"↑"; enabled:index > 0; Accessible.name:qsTr("Move step up"); onClicked:root.moveStep(index,-1) }
+                    Button { emphasized: false; text:"↓"; enabled:index + 1 < root.steps.length; Accessible.name:qsTr("Move step down"); onClicked:root.moveStep(index,1) }
+                    Button { emphasized: false; text:qsTr("Copy"); enabled:root.steps.length < 64; onClicked:{ const next = root.steps.slice(); next.splice(index + 1, 0, JSON.parse(JSON.stringify(modelData))); root.steps = next } }
+                    Button { emphasized: false; text:"×"; Accessible.name:qsTr("Delete step %1").arg(index + 1); onClicked:root.steps = root.steps.filter((step,position) => position !== index) }
                 }
             }
             RowLayout {
                 Layout.fillWidth:true
-                Button { objectName:"inputMacroAddStep"; text:qsTr("Add step…"); enabled:root.steps.length < 64; onClicked:root.editStep(-1) }
-                Button { text:qsTr("Add wait"); enabled:root.steps.length < 64; onClicked:root.steps = root.steps.concat([{kind:"wait", milliseconds:150}]) }
+                Button { emphasized: false; objectName:"inputMacroAddStep"; text:qsTr("Add step…"); enabled:root.steps.length < 64; onClicked:root.editStep(-1) }
+                Button { emphasized: false; text:qsTr("Add wait"); enabled:root.steps.length < 64; onClicked:root.steps = root.steps.concat([{kind:"wait", milliseconds:150}]) }
             }
             Rectangle {
                 id:recorder
@@ -156,24 +167,14 @@ T.Dialog {
                     if (root.macroModel.bindingError(binding).length === 0) root.addRecorded(binding)
                 }
             }
-            Button { visible:recorder.recording; text:qsTr("Stop recording"); onClicked:recorder.recording = false }
+            Button { emphasized: false; visible:recorder.recording; text:qsTr("Stop recording"); onClicked:recorder.recording = false }
             Label {
                 Layout.fillWidth:true
                 text:qsTr("Use hold/release steps for drags or overlapping chords. Playback follows the current window; unrelated focus changes cancel it. Physical Escape cancels playback. Save, then Test gives you three seconds to focus the target app.")
                 wrapMode:Text.Wrap; muted:true
             }
             Label { objectName:"inputMacroValidation"; Layout.fillWidth:true; text:root.stale ? qsTr("The saved macro changed or the desktop reconnected. Reopen this editor.") : root.failure.length > 0 ? root.failure : root.macroModel.macroError(root.value); visible:text.length > 0; wrapMode:Text.Wrap; Accessible.role:Accessible.AlertMessage }
-            RowLayout {
-                Layout.fillWidth:true
-                Item { Layout.fillWidth:true }
-                Button { text:qsTr("Cancel"); onClicked:root.close() }
-                Button {
-                    objectName:"inputMacroSave"
-                    text:qsTr("Save macro"); emphasized:true
-                    enabled:!root.stale && root.macroModel.available && !root.macroModel.busy && root.macroModel.macroError(root.value).length === 0
-                    onClicked:{ if (root.macroModel.save(root.value, root.expected)) { root.saved(root.initialMacro.id); root.close() } else root.failure = qsTr("The macro could not be saved. Check the steps or reopen the editor.") }
-                }
-            }
+
         }
     }
     Loader {
@@ -184,6 +185,17 @@ T.Dialog {
             Component.onCompleted:open()
             onSaved:step => root.updateStep(step)
             onClosed:root.stepEditing = false
+        }
+    }
+    footer: InputEditorFooter {
+        Layout.fillWidth:true
+        Item { Layout.fillWidth:true }
+        Button { emphasized: false; text:qsTr("Cancel"); onClicked:root.close() }
+        Button {
+            objectName:"inputMacroSave"
+            text:qsTr("Save macro"); emphasized:true
+            enabled:!root.stale && root.macroModel.available && !root.macroModel.busy && root.macroModel.macroError(root.value).length === 0
+            onClicked:{ root.awaitingSave = true; if (!root.macroModel.save(root.value, root.expected, root.shortcutEdited)) { root.awaitingSave = false; root.failure = qsTr("The macro could not be saved. Check the steps or reopen the editor.") } }
         }
     }
 }

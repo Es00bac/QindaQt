@@ -12,7 +12,7 @@ public:
     virtual ~MacroOutput() = default;
     virtual QObject *target() const = 0;
     virtual bool allowed() const = 0;
-    virtual void button(const QString &token, const Binding &binding, bool down) = 0;
+    virtual bool invoke(const QString &token, const Binding &binding, bool down) = 0;
     virtual void motion(QPointF delta) = 0;
     virtual void scroll(QPointF delta) = 0;
     virtual void reset(const QString &prefix) = 0;
@@ -24,6 +24,7 @@ class MacroRunner final : public QObject {
     Q_OBJECT
 public:
     explicit MacroRunner(MacroOutput &output, QObject *parent = nullptr);
+    ~MacroRunner() override;
     bool start(const QString &trigger, const Macro &macro, int delay = 0);
     void cancel(const QString &triggerPrefix = {});
     bool running() const { return !m_owner.isEmpty(); }

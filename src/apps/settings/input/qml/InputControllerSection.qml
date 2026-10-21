@@ -84,6 +84,12 @@ ColumnLayout {
             }
         }
     }
+    ControllerPagesSection {
+        Layout.fillWidth: true
+        visible: root.controllers.available
+        controllerModel: root.controllers
+        onCaptureActivityChanged: active => root.captureActivityChanged(active)
+    }
     SectionHeader { Layout.fillWidth: true; visible: root.controllers.available; title: qsTr("Mouse control") }
     FormRow {
         Layout.fillWidth: true
@@ -162,8 +168,8 @@ ColumnLayout {
     FormRow {
         Layout.fillWidth: true
         visible: root.controllers.available && root.hasGyro
-        label: qsTr("Gyro mouse")
-        description: qsTr("Tilt the controller to move the pointer; off by default")
+        label: qsTr("Always-on gyro")
+        description: qsTr("Touch/contact bindings can also enable gyro temporarily")
         editor: Switch {
             objectName: "controllerGyro"
             checked: root.config.gyro ?? false
@@ -176,7 +182,7 @@ ColumnLayout {
     }
     FormRow {
         Layout.fillWidth: true
-        visible: root.controllers.available && root.hasGyro && (root.config.gyro ?? false)
+        visible: root.controllers.available && root.hasGyro
         label: qsTr("Gyro sensitivity")
         editor: Slider {
             objectName: "controllerGyroSpeed"
@@ -201,24 +207,27 @@ ColumnLayout {
         description: qsTr("Connect a DualSense by USB and select its input in Audio settings. Dictation uses the selected default microphone.")
         editor: Button { text: qsTr("Audio settings"); onClicked: root.audioSettingsRequested() }
     }
-    ControllerPagesSection {
-        Layout.fillWidth: true
-        visible: root.controllers.available
-        controllerModel: root.controllers
-        onCaptureActivityChanged: active => root.captureActivityChanged(active)
-    }
+
     SectionHeader { Layout.fillWidth: true; visible: root.controllers.available; title: qsTr("Button bindings") }
     Label {
         Layout.fillWidth: true
         visible: root.controllers.available
         text: root.selected.family === "dualsense"
-              ? qsTr("Cross holds dictation, Square holds voice commands, touching the touchpad enables precision gyro, and clicking it sends a left click. Hold R2 to drag and use the D-pad as arrow keys. L3/R3 switch windows, Triangle maximizes the current window or tile, Circle opens the overview, and PS opens applications. Each button can be changed below.")
+              ? qsTr("Cross holds dictation, Square holds voice commands, touching the touchpad enables precision gyro, and clicking it sends a left click. Hold R2 to drag and nudge with the D-pad. Mute switches Desktop and Navigation pages; Navigation uses arrows and Shift selection, plus a Ctrl editing layer. L3/R3 switch windows, Triangle maximizes the current window or tile, Circle opens the overview, and PS opens applications. Each button can be changed below.")
               : qsTr("Share / View / Minus holds dictation by default. Shoulders switch windows, the top face button opens the overview, and Menu / Options / Plus opens the launcher. Each button can be changed below.")
         wrapMode: Text.Wrap
         Accessible.name: text
     }
+    TextField {
+        id: bindingSearch
+        objectName:"controllerBindingSearch"
+        Layout.fillWidth:true
+        visible:root.controllers.available
+        placeholderText:qsTr("Find a button or binding…")
+        accessibleName:qsTr("Find controller bindings")
+    }
     Repeater {
-        model: root.controllers.available ? root.controllers.buttons : []
+        model: root.controllers.available ? root.controllers.buttons.filter(button => (button.label + " " + button.summary).toLowerCase().includes(bindingSearch.text.toLowerCase())) : []
         delegate: ControllerBindingRow {
             required property var modelData
             Layout.fillWidth: true

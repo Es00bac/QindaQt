@@ -87,7 +87,7 @@ ColumnLayout {
         spacing: Tokens.space["2"]
         Repeater {
             model: root.keys
-            delegate: Button {
+            delegate: Button { emphasized: false;
                 required property string modelData
                 text: modelData + " ×"
                 Accessible.name: qsTr("Remove key %1").arg(modelData)
@@ -97,7 +97,7 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        Button {
+        Button { emphasized: false;
             id: record
             objectName: "controllerRecordKey"
             property bool capturing: false
@@ -114,7 +114,7 @@ ColumnLayout {
                 capturing = false
             }
         }
-        Button { visible: record.capturing; text: qsTr("Cancel recording"); onClicked: record.capturing = false }
+        Button { emphasized: false; visible: record.capturing; text: qsTr("Cancel recording"); onClicked: record.capturing = false }
     }
     RowLayout {
         Layout.fillWidth: true
@@ -126,7 +126,7 @@ ColumnLayout {
             accessibleName: qsTr("Key name")
             onAccepted: addNamed.clicked()
         }
-        Button {
+        Button { emphasized: false;
             id: addNamed
             text: qsTr("Add key")
             onClicked: {
@@ -138,7 +138,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: root.keyError.length > 0 ? root.keyError : qsTr("Modifiers alone, mouse clicks, and keys can be combined freely. Everything stays held until you release the controller button. Esc and Tab can also be recorded.")
+        text: root.keyError.length > 0 ? root.keyError : root.showLayer ? qsTr("Modifiers, keys and mouse buttons stay held until you release the controller button. Esc and Tab can also be recorded.") : qsTr("Modifiers, keys and mouse buttons can be combined freely. A tap releases automatically; a hold needs a matching release step.")
         wrapMode: Text.Wrap
         muted: true
     }

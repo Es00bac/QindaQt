@@ -42,7 +42,7 @@ session-bus interface:
 | Member | Contract |
 | --- | --- |
 | `GetSnapshot() -> s` | Version-1 JSON, decimal revision, ready/error/running and macro rows with config and native shortcut status/readback |
-| `Apply(s id, s config, t revision) -> s` | Atomic full named macro replacement; exact revision and ≤128 KiB |
+| `Apply(s id, s config, t revision) -> s` | Atomic full named macro replacement; exact revision and ≤128 KiB request wrapping config (≤120 KiB) and explicit assignShortcut intent |
 | `Reset(s id, t revision) -> s` | Delete the named macro; exact revision |
 | `Run(s id, t revision) -> s` | Test a saved macro after three seconds; exact revision |
 | `Cancel()` | Cancel the currently owned run and release its input |
@@ -55,11 +55,14 @@ Macros are referenced by stable ID; deleting one leaves its controller reference
 inactive until reassigned. Text contents are never diagnostics.
 
 Keyboard triggers register through the existing native Shortcuts1 authority.
-The asynchronous public `ShortcutLease` preserves native saved assignments on
-startup and uses SetShortcuts only for an explicit trigger edit. Readback shows
-actual assignments and conflict/unavailable status. The lease unregisters owned
-transient actions on teardown and fences old-owner replies. Mouse triggers match
-one button and optional modifiers. Playback cannot recursively activate keyboard
+The asynchronous public `ShortcutLease` reads native saved assignments before
+reclaiming them on startup and uses SetShortcuts only for an explicit trigger edit. Readback shows
+actual assignments and conflict/unavailable status. The lease deactivates owned persistent actions on teardown, preserving native
+assignments, and unregisters only deleted macros. Native v1 has no release-only
+method, so this one release uses the existing same-owner `/kglobalaccel`
+`setInactive` wire; registration, mutation, readback and dispatch use Shortcuts1.
+All replies are fenced by captured unique owner and generation. Mouse triggers match
+one button and optional modifiers and pause in Settings to keep its editor usable. Playback cannot recursively activate keyboard
 or mouse macro triggers through its own generated events.
 
 See [Input settings](../apps/input-settings.md), [Controller input](controller-input.md)

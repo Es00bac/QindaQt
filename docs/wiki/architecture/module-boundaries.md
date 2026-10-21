@@ -527,13 +527,14 @@ macro persistence and a GUI-thread runner over a borrowed `MacroOutput`.
 Controller policy aliases its public Binding. The controller KWin plugin
 composes the InputActions1 endpoint and shared input sink; Settings uses borrowed
 asynchronous JSON ports and never reads those files or platform internals.
-The existing Shortcuts1 client owns the asynchronous native shortcut lease.
+The existing Shortcuts1 client owns the asynchronous native shortcut lease, with native readback and the existing compatibility
+release-only operation for safe teardown.
 See [Input actions](input-actions.md) and
 [ADR-0427](../adr/0427-share-programmable-input-actions-and-controller-layers.md).
 
 ## Controller desktop input
 
-`src/controllers` owns validated profile values, atomic profile persistence,
+`src/controllers` owns validated controller-page profile values, atomic profile persistence,
 Linux game-consumer observation, SDL3 sampling and its independent KWin plugin.
 Its policy target exposes only value types and validation to Settings. The
 runtime borrows an input sink; the compositor sink owns key/button reference

@@ -58,7 +58,8 @@ private Q_SLOTS:
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
         const auto before = model.currentPage();
         QVERIFY(model.addPage("Work", "#A83DFF")); QCOMPARE(model.pages().size(), 1); QVERIFY(model.busy());
-        const auto patch = port.lastPatch; const auto id = patch.value("activePage").toString();
+        const auto patch = port.lastPatch; const auto id = patch.value("pages").toArray().last().toObject().value("id").toString();
+        QVERIFY(!patch.contains("activePage"));
         QVERIFY(!id.isEmpty()); QCOMPARE(patch.value("pages").toArray().size(), 2);
         auto data = snapshot(); auto row = data.value("controllers").toArray().first().toObject();
         auto profile = QindaQt::Controllers::defaultProfile(); QString reason;
@@ -68,7 +69,8 @@ private Q_SLOTS:
         const QVariantMap combo{{"action", "combination"}, {"modifiers", QStringList{"Meta"}}, {"keys", QStringList{}}, {"mouseButtons", QStringList{"left"}}};
         QVERIFY(!model.saveBinding("righttrigger", combo, model.selectedId(), "wrong-page"));
         QVERIFY(model.saveBinding("righttrigger", combo, model.selectedId(), id));
-        QCOMPARE(port.lastPatch.value("bindings").toObject().value("righttrigger").toObject().value("modifiers").toArray(), QJsonArray{"Meta"});
+        QCOMPARE(port.lastPatch.value("pages").toArray().last().toObject().value("bindings").toObject().value("righttrigger").toObject().value("modifiers").toArray(), QJsonArray{"Meta"});
+        QVERIFY(!port.lastPatch.contains("activePage"));
         QCOMPARE(model.bindingSummary(combo), "Meta + Left click");
         QCOMPARE(model.currentPage().value("bindings").toMap(), before.value("bindings").toMap());
     }
@@ -87,6 +89,16 @@ private Q_SLOTS:
         QVERIFY(model.removePage()); QVERIFY(QindaQt::Controllers::applyPatch(port.lastPatch, profile, reason));
         QCOMPARE(profile.pages.size(), 1); QCOMPARE(profile.activePage, "main");
         QCOMPARE(QindaQt::Controllers::activePage(profile).bindings["north"].action, "none");
+    }
+    void editingALayerDoesNotActivateItAndBindingPatchesAddressThatLayer() {
+        FakePort port; ControllersModel model(port); auto data = snapshot(); auto row = data.value("controllers").toArray().first().toObject();
+        row["config"] = QindaQt::Controllers::profileJson(QindaQt::Controllers::defaultProfile("dualsense")); data["controllers"] = QJsonArray{row}; Q_EMIT port.snapshotReceived(data);
+        model.selectPage("move"); QCOMPARE(model.currentPage().value("id").toString(), "move");
+        QCOMPARE(model.selected().value("config").toMap().value("activePage").toString(), "main"); QVERIFY(port.lastPatch.isEmpty());
+        QVERIFY(model.setBinding("north", "accept")); QVERIFY(port.lastPatch.contains("pages")); QVERIFY(!port.lastPatch.contains("activePage"));
+        auto profile = QindaQt::Controllers::defaultProfile("dualsense"); QString reason; QVERIFY(QindaQt::Controllers::applyPatch(port.lastPatch, profile, reason));
+        QCOMPARE(profile.activePage, "main"); QCOMPARE(profile.pages[2].bindings["north"].action, "accept");
+        QCOMPARE(profile.pages[0].bindings["north"].action, "maximize");
     }
     void allFamilyButtonsAndActionsReachable() {
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());

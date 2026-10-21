@@ -5,6 +5,7 @@ namespace QindaQt::InputActions {
 MacroRunner::MacroRunner(MacroOutput &output, QObject *parent) : QObject(parent), m_output(output) {
     m_timer.setSingleShot(true); connect(&m_timer, &QTimer::timeout, this, &MacroRunner::advance);
 }
+MacroRunner::~MacroRunner() { cancel(); }
 bool MacroRunner::start(const QString &trigger, const Macro &macro, int delay) {
     Macro valid; QString reason;
     if (!readMacro(macroJson(macro), valid, reason) || !m_output.allowed() || (!m_output.target() && delay == 0)) return false;
@@ -34,7 +35,7 @@ void MacroRunner::advance() {
     if (m_adoptFocus) { m_target = m_output.target(); m_adoptFocus = false; }
     if ((!m_target || m_target != m_output.target()) && !m_followAfterTap) { cancel(); return; }
     if (!m_tap.isEmpty()) {
-        m_output.button(m_tap, {}, false); m_tap.clear();
+        m_output.invoke(m_tap, {}, false); m_tap.clear();
         if (m_followAfterTap) { m_followAfterTap = false; m_adoptFocus = true; schedule(0); return; }
     }
     if (!m_text.isEmpty()) {
@@ -47,17 +48,18 @@ void MacroRunner::advance() {
     const auto &step = m_macro.steps[m_index++];
     const auto slot = m_owner + "/hold-" + QString::number(step.slot);
     if (step.kind == "wait") { schedule(step.milliseconds); return; }
-    if (step.kind == "press") m_output.button(slot, step.binding, true);
-    if (step.kind == "release") m_output.button(slot, {}, false);
+    if (step.kind == "press" && !m_output.invoke(slot, step.binding, true)) { cancel(); Q_EMIT failed("input-unavailable"); return; }
+    if (step.kind == "release") m_output.invoke(slot, {}, false);
     if (step.kind == "move") m_output.motion({step.x, step.y});
     if (step.kind == "scroll") m_output.scroll({step.x, step.y});
     if (step.kind == "text") {
         m_text = m_owner + "/text-" + QString::number(m_index);
-        m_output.button(m_text, step.binding, true); m_output.button(m_text, {}, false);
+        if (!m_output.invoke(m_text, step.binding, true)) { cancel(); Q_EMIT failed("text-failed"); return; }
+        m_output.invoke(m_text, {}, false);
     }
     if (step.kind == "tap") {
         m_tap = m_owner + "/tap-" + QString::number(m_index);
-        m_output.button(m_tap, step.binding, true);
+        if (!m_output.invoke(m_tap, step.binding, true)) { cancel(); Q_EMIT failed("input-unavailable"); return; }
         // Window-navigation actions intentionally change target. Adopt their
         // result on the next event turn; all other focus changes cancel.
         m_followAfterTap = QStringList{"next-window", "previous-window", "launcher", "overview", "show-desktop", "close-window"}.contains(step.binding.action);

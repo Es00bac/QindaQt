@@ -28,15 +28,16 @@ QString label(const QString &id, const QString &family) {
 ControllersModel::ControllersModel(ControllerPort &port, QObject *parent) : QObject(parent), m_port(port) {
     connect(&port, &ControllerPort::snapshotReceived, this, &ControllersModel::receive);
     connect(&port, &ControllerPort::unavailable, this, [this] {
-        m_available = false; m_busy = false; m_rows = {}; m_revision = 0;
-        m_error = tr("Controller settings cannot reach the desktop yet."); Q_EMIT viewChanged();
+        m_available = false; m_busy = false; m_rows = {}; m_revision = 0; m_editPage.clear(); m_pendingEditPage.clear();
+        m_error = tr("Controller settings cannot reach the desktop yet."); Q_EMIT viewChanged(); Q_EMIT editCompleted(false);
     });
     connect(&port, &ControllerPort::completed, this, [this](bool ok, const QString &reason) {
         m_busy = false;
+        if (!ok) m_pendingEditPage.clear();
         m_error = ok ? QString{} : reason == "revision-stale" ? tr("The controller changed. Try the edit again.")
             : reason == "config-unsaved" ? tr("The controller settings could not be saved.")
             : tr("The controller change could not be applied.");
-        Q_EMIT viewChanged();
+        Q_EMIT viewChanged(); Q_EMIT editCompleted(ok);
     });
 }
 void ControllersModel::receive(const QJsonObject &snapshot) {
@@ -45,6 +46,9 @@ void ControllersModel::receive(const QJsonObject &snapshot) {
     if (!QList<int>{1, 2}.contains(snapshot.value("schemaVersion").toInt()) || !validRevision || revision == 0
         || !snapshot.value("controllers").isArray() || snapshot.value("controllers").toArray().size() > 64) {
         m_available = false; m_error = tr("The desktop returned invalid controller settings."); Q_EMIT viewChanged(); return;
+    }
+    if (snapshot.value("schemaVersion").toInt() == 2 && !snapshot.value("ready").toBool()) {
+        m_available = false; m_error = tr("The saved controller settings are not ready. Existing files have been preserved."); Q_EMIT viewChanged(); return;
     }
     auto rows = snapshot.value("controllers").toArray();
     QSet<QString> ids;
@@ -72,9 +76,12 @@ void ControllersModel::receive(const QJsonObject &snapshot) {
         rows[i] = row;
     }
     if (wasConnected && !selectedConnected) m_autoSelect = true;
+    const auto previousSelection = m_selected;
     if (m_autoSelect && !connectedId.isEmpty()) m_selected = connectedId;
     m_rows = rows; m_revision = revision; m_available = true; m_steam = snapshot.value("steam").toBool();
     if (!ids.contains(m_selected)) m_selected = rows.isEmpty() ? QString{} : rows[0].toObject().value("id").toString();
+    if (previousSelection != m_selected) m_editPage.clear();
+    for (const auto &page : pages()) if (page.toMap().value("id").toString() == m_pendingEditPage) { m_editPage = m_pendingEditPage; m_pendingEditPage.clear(); break; }
     if (!m_busy) m_error.clear();
     if (!snapshot.value("error").toString().isEmpty()) m_error = tr("The controller backend needs attention.");
     Q_EMIT viewChanged();
@@ -130,14 +137,14 @@ QString ControllersModel::statusText() const {
     if (row.value("template").toBool()) return tr("Defaults apply when a new controller of this family connects.");
     if (reason == "game") return tr("A game or another app is using this controller. Desktop input is paused.");
     if (reason == "fullscreen") return tr("Desktop controller input is paused while an app is fullscreen.");
-    if (reason == "release-controls") return tr("Release the buttons and center the sticks to resume desktop control.");
+    if (reason == "release-controls") return tr("Release the buttons, lift your thumb from the touchpad, and center the sticks to resume desktop control.");
     if (reason == "disabled") return tr("Desktop control is disabled for this controller.");
     if (reason == "active") return tr("Ready for desktop control. Hold the assigned dictation button to speak.");
     return row.value("connected").toBool() ? tr("Desktop input is paused.") : tr("Connect this controller to use its bindings.");
 }
 void ControllersModel::refresh() { m_port.refresh(); }
 void ControllersModel::select(const QString &id) {
-    for (const auto &row : m_rows) if (row.toObject().value("id").toString() == id) { m_selected = id; m_autoSelect = false; Q_EMIT viewChanged(); return; }
+    for (const auto &row : m_rows) if (row.toObject().value("id").toString() == id) { m_selected = id; m_editPage.clear(); m_autoSelect = false; Q_EMIT viewChanged(); return; }
 }
 bool ControllersModel::submit(const QJsonObject &patch) {
     if (!m_available || m_busy || m_selected.isEmpty()) return false;
@@ -148,10 +155,10 @@ bool ControllersModel::submit(const QJsonObject &patch) {
 }
 bool ControllersModel::setOption(const QString &key, const QVariant &value) { return submit({{key, QJsonValue::fromVariant(value)}}); }
 bool ControllersModel::setBinding(const QString &button, const QString &action) {
-    return submit({{"bindings", QJsonObject{{button, QJsonObject{{"action", action}}}}}});
+    return submitBinding(button, {{"action", action}});
 }
 bool ControllersModel::setShortcut(const QString &button, int key) {
-    return submit({{"bindings", QJsonObject{{button, QJsonObject{{"action", "shortcut"}, {"shortcut", QKeySequence(key).toString(QKeySequence::PortableText)}}}}}});
+    return submitBinding(button, {{"action", "shortcut"}, {"shortcut", QKeySequence(key).toString(QKeySequence::PortableText)}});
 }
 void ControllersModel::reset() { if (!m_available || m_busy) return; m_busy = true; Q_EMIT viewChanged(); m_port.reset(m_selected, m_revision); }
 QString ControllersModel::sequenceText(int key) const { return QKeySequence(key).toString(QKeySequence::NativeText); }

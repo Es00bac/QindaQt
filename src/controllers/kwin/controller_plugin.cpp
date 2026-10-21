@@ -44,6 +44,19 @@ ControllerPlugin::ControllerPlugin()
             "Dictation could not complete. Open Settings → Voice to check the microphone and provider.", QStringList{}, QVariantMap{}, 7000});
         QDBusConnection::sessionBus().asyncCall(notify);
     });
+    connect(&m_input, &ControllerInputDevice::macroFailed, this, [](const QString &reason) {
+        auto notify = QDBusMessage::createMethodCall("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        notify.setArguments({"QindaQt", uint(0), "input-keyboard", "Input macro stopped",
+            reason == "macro-unavailable" ? "The saved macro is unavailable. Open Settings → Input → Macros to assign or edit it."
+                : "The macro stopped because one of its steps could not complete.", QStringList{}, QVariantMap{}, 7000});
+        QDBusConnection::sessionBus().asyncCall(notify);
+    });
+    connect(&m_input, &ControllerInputDevice::inputFailed, this, [] {
+        auto notify = QDBusMessage::createMethodCall("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
+        notify.setArguments({"QindaQt", uint(0), "input-keyboard", "Input combination unavailable",
+            "This key combination cannot be sent with the current keyboard layout.", QStringList{}, QVariantMap{}, 7000});
+        QDBusConnection::sessionBus().asyncCall(notify);
+    });
     connect(&m_input, &ControllerInputDevice::textFailed, this, [] {
         auto notify = QDBusMessage::createMethodCall("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "Notify");
         notify.setArguments({"QindaQt", uint(0), "input-keyboard", "Controller text block",

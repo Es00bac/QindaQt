@@ -14,8 +14,8 @@ QtJsonInputPort::QtJsonInputPort(QDBusConnection bus, QObject *parent, JsonInput
     auto *watch = new QDBusServiceWatcher(m_endpoint.service, m_bus,
                                         QDBusServiceWatcher::WatchForOwnerChange, this);
     connect(watch, &QDBusServiceWatcher::serviceOwnerChanged, this,
-        [this](const QString &, const QString &, const QString &) {
-            ++m_generation; m_refreshing = false; m_refreshAgain = false; m_completion.reset();
+        [this](const QString &, const QString &, const QString &owner) {
+            ++m_generation; m_owner = owner; m_refreshing = false; m_refreshAgain = false; m_completion.reset();
             Q_EMIT unavailable(); refresh();
         });
     m_bus.connect(m_endpoint.service, m_endpoint.object,
@@ -24,9 +24,10 @@ QtJsonInputPort::QtJsonInputPort(QDBusConnection bus, QObject *parent, JsonInput
 void QtJsonInputPort::changed(qulonglong revision) { Q_UNUSED(revision); refresh(); }
 void QtJsonInputPort::refresh() {
     if (m_refreshing) { m_refreshAgain = true; return; }
+    if (m_owner.isEmpty()) { resolveOwner(); return; }
     m_refreshing = true;
     const auto generation = m_generation;
-    auto call = QDBusMessage::createMethodCall(m_endpoint.service, m_endpoint.object,
+    auto call = QDBusMessage::createMethodCall(m_owner, m_endpoint.object,
                                              m_endpoint.interface, "GetSnapshot");
     auto *watch = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 2000), this);
     connect(watch, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *w) {
@@ -49,6 +50,19 @@ void QtJsonInputPort::refresh() {
         }
     });
 }
+void QtJsonInputPort::resolveOwner() {
+    m_refreshing = true; const auto generation = m_generation;
+    auto call = QDBusMessage::createMethodCall("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "GetNameOwner");
+    call.setArguments({m_endpoint.service});
+    auto *watch = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 2000), this);
+    connect(watch, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *w) {
+        const QDBusPendingReply<QString> reply = *w; w->deleteLater();
+        if (generation != m_generation) return;
+        m_refreshing = false;
+        if (reply.isError() || !reply.value().startsWith(':')) { m_completion.reset(); Q_EMIT unavailable(); return; }
+        m_owner = reply.value(); refresh();
+    });
+}
 void QtJsonInputPort::apply(const QString &id, const QJsonObject &patch, quint64 revision) {
     mutate("Apply", {id, QString::fromUtf8(QJsonDocument(patch).toJson(QJsonDocument::Compact)), QVariant::fromValue<qulonglong>(revision)});
 }
@@ -57,12 +71,14 @@ void QtJsonInputPort::reset(const QString &id, quint64 revision) {
 }
 void QtJsonInputPort::run(const QString &id, quint64 revision) { mutate("Run", {id, QVariant::fromValue<qulonglong>(revision)}); }
 void QtJsonInputPort::cancelRun() {
-    auto call = QDBusMessage::createMethodCall(m_endpoint.service, m_endpoint.object, m_endpoint.interface, "Cancel");
+    if (m_owner.isEmpty()) return;
+    auto call = QDBusMessage::createMethodCall(m_owner, m_endpoint.object, m_endpoint.interface, "Cancel");
     m_bus.asyncCall(call, 2000);
 }
 void QtJsonInputPort::mutate(const QString &method, const QVariantList &arguments) {
+    if (m_owner.isEmpty()) { Q_EMIT completed(false, "unavailable"); return; }
     const auto generation = m_generation;
-    auto call = QDBusMessage::createMethodCall(m_endpoint.service, m_endpoint.object,
+    auto call = QDBusMessage::createMethodCall(m_owner, m_endpoint.object,
                                              m_endpoint.interface, method);
     call.setArguments(arguments);
     auto *watch = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 3000), this);

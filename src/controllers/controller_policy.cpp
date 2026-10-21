@@ -29,14 +29,17 @@ Profile defaultProfile(const QString &family) {
         {"righttrigger", "left-click"}};
     for (auto it = defaults.begin(); it != defaults.end(); ++it) activePage(p).bindings[it.key()].action = it.value();
     if (family == "dualsense") {
+        p.pointerStick = "right";
+        // AGENT-NOTE: Create cycles pages; Mute also toggles the microphone in
+        // hid-playstation, so it must remain free for controller-only dictation.
         const QMap<QString, Binding> dualSense{
-            {"back", {"back", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
+            {"back", {"next-page", {}}}, {"dpup", {"shortcut", "Ctrl+K"}},
             {"dpleft", {"shortcut", "Ctrl+C"}}, {"dpright", {"shortcut", "Ctrl+J"}},
             {"dpdown", {"accept", {}}}, {"leftstick", {"previous-window", {}}},
             {"guide", {"launcher", {}}}, {"start", {"back", {}}},
             {"north", {"maximize", {}}}, {"east", {"overview", {}}},
             {"west", {"voice-command", {}}}, {"south", {"dictate", {}}},
-            {"rightstick", {"next-window", {}}}, {"misc1", {"next-page", {}}},
+            {"rightstick", {"next-window", {}}}, {"misc1", {"none", {}}},
             {"touchpad", {"left-click", {}}}, {"touchpad-touch", {"hold-gyro", {}}}, {"rightshoulder", {"left-click", {}}},
             {"righttrigger", {"combination", {}, {"Meta"}, {}, {"left"}, {}, {}, "move"}},
             {"leftshoulder", {"right-click", {}}},
@@ -45,11 +48,11 @@ Profile defaultProfile(const QString &family) {
         auto navigation = activePage(p); navigation.id = "navigation"; navigation.name = "Navigation"; navigation.color = "#A83DFF";
         const QMap<QString, QString> arrows{{"dpup", "up"}, {"dpdown", "down"}, {"dpleft", "left"}, {"dpright", "right"}};
         for (auto it = arrows.begin(); it != arrows.end(); ++it) navigation.bindings[it.key()] = Binding{it.value()};
-        navigation.bindings["north"] = {"accept"}; navigation.bindings["east"] = {"shortcut", "Backspace"};
-        navigation.bindings["start"] = {"shortcut", "Tab"};
+        navigation.bindings["north"] = {"accept"}; navigation.bindings["east"] = {"shortcut", "Tab"};
+        navigation.bindings["leftstick"] = {"shortcut", "Backspace"};
         navigation.bindings["righttrigger"] = {"combination", {}, {"Shift"}, {}, {}};
         navigation.bindings["lefttrigger"] = {"combination", {}, {"Ctrl"}, {}, {}, {}, {}, "edit"};
-        auto move = activePage(p); move.id = "move"; move.name = "Move / resize"; move.color = "#FF8A24"; move.layer = true;
+        auto move = activePage(p); move.id = "move"; move.name = "Movement"; move.color = "#FF8A24"; move.layer = true;
         const QMap<QString, QString> nudges{{"dpup", "pointer-up"}, {"dpdown", "pointer-down"}, {"dpleft", "pointer-left"}, {"dpright", "pointer-right"}};
         for (auto it = nudges.begin(); it != nudges.end(); ++it) move.bindings[it.key()] = Binding{it.value()};
         auto edit = navigation; edit.id = "edit"; edit.name = "Editing"; edit.color = "#24D16B"; edit.layer = true;

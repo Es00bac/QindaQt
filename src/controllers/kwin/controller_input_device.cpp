@@ -40,8 +40,7 @@ ControllerInputDevice::ControllerInputDevice(InputActions::MacroStore &macros) :
 ControllerInputDevice::~ControllerInputDevice() { reset(); }
 bool ControllerInputDevice::contextAllowed() {
     return KWin::kwinApp() && KWin::kwinApp()->session() && KWin::kwinApp()->session()->isActive()
-        && KWin::waylandServer() && !KWin::waylandServer()->isScreenLocked()
-        ;
+        && KWin::waylandServer() && !KWin::waylandServer()->isScreenLocked();
 }
 QObject *ControllerInputDevice::target() const { return KWin::workspace()->activeWindow(); }
 bool ControllerInputDevice::allowed() const { return m_enabled && contextAllowed(); }
@@ -68,15 +67,19 @@ QList<quint32> ControllerInputDevice::sequenceKeys(const QString &text) const {
     for (const auto sym : syms) {
         const auto code = KWin::input()->keyboard()->xkb()->keycodeFromKeysym(sym);
         if (!code) continue;
-        if (code->level == 1 && !keys.contains(KEY_LEFTSHIFT)) keys.append(KEY_LEFTSHIFT);
+        if (code->level > 3) return {};
+        if ((code->level & 1) && !keys.contains(KEY_LEFTSHIFT)) keys.append(KEY_LEFTSHIFT);
+        if ((code->level & 2) && !keys.contains(KEY_RIGHTALT)) keys.append(KEY_RIGHTALT);
         keys.append(code->keyCode);
         return keys;
     }
     return {};
 }
-void ControllerInputDevice::button(const QString &token, const Binding &binding, bool down) {
-    if (!down) { release(token, false); return; }
-    if (!m_enabled || !contextAllowed() || m_held.contains(token) || binding.action == "none") return;
+void ControllerInputDevice::button(const QString &token, const Binding &binding, bool down) { invoke(token, binding, down); }
+bool ControllerInputDevice::invoke(const QString &token, const Binding &binding, bool down) {
+    if (!down) { release(token, false); return true; }
+    if (!m_enabled || !contextAllowed()) return false;
+    if (m_held.contains(token) || binding.action == "none") return true;
     if (binding.action == "back" && !token.startsWith("macro/")) m_runner.cancel();
     KWin::input()->simulateUserActivity();
     QList<quint32> keys;
@@ -87,9 +90,9 @@ void ControllerInputDevice::button(const QString &token, const Binding &binding,
         if (!delta.isNull()) { motion(delta); m_nudges[token] = {delta, now().count() / 1000 + 250}; m_nudgeTimer.start(); }
     }
     else if (binding.action == "macro") {
-        if (!runMacro(token, binding.macro)) Q_EMIT macroFailed("macro-unavailable");
+        if (!runMacro(token, binding.macro)) { Q_EMIT macroFailed("macro-unavailable"); return false; }
     }
-    else if (binding.action == "text") m_text.start(token, binding.text);
+    else if (binding.action == "text") { m_text.start(token, binding.text); if (!m_text.pending(token)) return false; }
     else if (binding.action == "combination") {
         const QMap<QString, quint32> mods{{"Ctrl", KEY_LEFTCTRL}, {"Alt", KEY_LEFTALT}, {"Shift", KEY_LEFTSHIFT}, {"Meta", KEY_LEFTMETA}};
         const QMap<QString, quint32> buttons{{"left", BTN_LEFT}, {"right", BTN_RIGHT}, {"middle", BTN_MIDDLE}, {"back", BTN_SIDE}, {"forward", BTN_EXTRA}};
@@ -97,7 +100,7 @@ void ControllerInputDevice::button(const QString &token, const Binding &binding,
         for (const auto &key : binding.keys) {
             const auto codes = sequenceKeys(key);
             // Resolve every key before emitting any part of a combination.
-            if (codes.isEmpty()) return;
+            if (codes.isEmpty()) { Q_EMIT inputFailed(); return false; }
             for (const auto code : codes) if (!keys.contains(code)) keys.append(code);
         }
         for (const auto &button : binding.mouseButtons) mouse.append(buttons.value(button));
@@ -107,13 +110,14 @@ void ControllerInputDevice::button(const QString &token, const Binding &binding,
     else if (binding.action == "left-click" || binding.action == "left-click-meta-shift") mouse = {BTN_LEFT};
     else if (binding.action == "right-click" || binding.action == "right-click-meta-shift") mouse = {BTN_RIGHT};
     else if (binding.action == "middle-click") mouse = {BTN_MIDDLE};
-    else if (binding.action == "maximize") { KWin::workspace()->slotWindowMaximize(); return; }
-    else if (binding.action == "close-window") { KWin::workspace()->slotWindowClose(); return; }
-    else if (binding.action == "show-desktop") { KWin::workspace()->slotToggleShowDesktop(); return; }
+    else if (binding.action == "maximize") { KWin::workspace()->slotWindowMaximize(); return true; }
+    else if (binding.action == "close-window") { KWin::workspace()->slotWindowClose(); return true; }
+    else if (binding.action == "show-desktop") { KWin::workspace()->slotToggleShowDesktop(); return true; }
     else keys = sequenceKeys(binding.action == "shortcut" ? binding.shortcut : shortcutFor(binding.action));
     if (binding.action == "left-click-meta-shift" || binding.action == "right-click-meta-shift")
         keys = {KEY_LEFTMETA, KEY_LEFTSHIFT};
-    deliver(m_held.press(token, keys, mouse));
+    if (binding.action == "shortcut" && keys.isEmpty()) { Q_EMIT inputFailed(); return false; }
+    deliver(m_held.press(token, keys, mouse)); return true;
 }
 void ControllerInputDevice::release(const QString &token, bool cancel) {
     if (!m_held.contains(token)) return;

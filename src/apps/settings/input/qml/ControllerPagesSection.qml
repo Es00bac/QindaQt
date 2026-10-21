@@ -15,6 +15,7 @@ ColumnLayout {
     property string draftPage: ""
     property string draftName: ""
     property string draftColor: ""
+    readonly property var config:controllerModel.selected.config ?? ({})
     readonly property var page: controllerModel.currentPage
     signal captureActivityChanged(bool active)
     spacing: Tokens.space["2"]
@@ -30,12 +31,12 @@ ColumnLayout {
     SectionHeader { Layout.fillWidth: true; title: qsTr("Button profiles") }
     Label {
         Layout.fillWidth: true
-        text: qsTr("Each profile is a page of button bindings with its own LED color. Mouse and gyro preferences stay shared. Choose a page here to activate and edit it.")
+        text: qsTr("Each profile is a page of button bindings with its own LED color. Mouse and gyro preferences stay shared. Choose a page to edit; Use profile activates it. Temporary layers are selected by their held button.")
         wrapMode: Text.Wrap
     }
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Active profile")
+        label: qsTr("Edit profile")
         editor: RowLayout {
             Rectangle { width: 20; height: 20; radius: 10; color: root.page.color ?? "transparent"; border.width: 1; border.color: Tokens.outline.strong }
             ComboBox {
@@ -47,7 +48,7 @@ ColumnLayout {
                 enabled: root.controllerModel.available && !root.controllerModel.busy
                 Accessible.name: qsTr("Active button profile")
                 onActivated: index => {
-                    root.controllerModel.setOption("activePage", root.controllerModel.pages[index].id)
+                    root.controllerModel.selectPage(root.controllerModel.pages[index].id)
                     currentIndex = Qt.binding(() => Math.max(0, root.controllerModel.pages.findIndex(page => page.id === root.page.id)))
                 }
             }
@@ -55,13 +56,19 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        Button { objectName: "controllerNewProfile"; text: qsTr("New profile"); enabled: !root.controllerModel.busy && root.controllerModel.pages.length < 12; onClicked: root.edit(true) }
-        Button { text: qsTr("Name and color…"); enabled: !root.controllerModel.busy; onClicked: root.edit(false) }
-        Button {
+        Button { emphasized: false; objectName: "controllerNewProfile"; text: qsTr("New profile"); enabled: !root.controllerModel.busy && root.controllerModel.pages.length < 12; onClicked: root.edit(true) }
+        Button { emphasized: false; text:qsTr("Use profile"); enabled:!root.controllerModel.busy && !root.page.layer && root.config.activePage !== root.page.id; onClicked:root.controllerModel.setOption("activePage", root.page.id) }
+        Button { emphasized: false; text: qsTr("Name and color…"); enabled: !root.controllerModel.busy; onClicked: root.edit(false) }
+        Button { emphasized: false;
             text: qsTr("Delete profile…")
-            enabled: !root.controllerModel.busy && root.controllerModel.pages.length > 1
+            enabled: !root.controllerModel.busy && root.controllerModel.pages.length > 1 && (root.page.layer || root.controllerModel.pages.filter(page => !page.layer).length > 1)
             onClicked: { root.draftController = root.controllerModel.selectedId; root.draftPage = root.page.id; remove.open() }
         }
+    }
+    Label {
+        Layout.fillWidth:true
+        text:qsTr("Active: %1").arg(root.controllerModel.pages.find(page => page.id === root.config.activePage)?.name ?? "")
+        wrapMode:Text.Wrap
     }
     FormRow {
         Layout.fillWidth: true
@@ -89,6 +96,12 @@ ColumnLayout {
         wrapMode: Text.Wrap
         muted: true
     }
+    Label {
+        Layout.fillWidth:true
+        visible:root.controllerModel.selected.effectivePage !== undefined && root.controllerModel.selected.effectivePage !== root.config.activePage
+        text:qsTr("Held layer: %1").arg(root.controllerModel.pages.find(page => page.id === root.controllerModel.selected.effectivePage)?.name ?? "")
+        wrapMode:Text.Wrap
+    }
     Loader {
         active: root.editing
         sourceComponent: ControllerPageEditor {
@@ -103,7 +116,7 @@ ColumnLayout {
             onClosed: { root.captureActivityChanged(false); root.editing = false }
         }
     }
-    T.Dialog {
+    InputEditorDialog {
         id: remove
         parent: T.Overlay.overlay
         anchors.centerIn: parent

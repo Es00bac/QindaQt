@@ -27,6 +27,7 @@ public:
     bool isTabletModeSwitch() const override { return false; }
     bool isLidSwitch() const override { return false; }
     void button(const QString &token, const Binding &binding, bool down) override;
+    bool invoke(const QString &token, const Binding &binding, bool down) override;
     void motion(QPointF delta) override;
     void scroll(QPointF delta) override;
     void reset(const QString &id = {}) override;
@@ -38,6 +39,7 @@ public:
     void cancelMacro() { m_runner.cancel(); }
     QString runningMacro() const { return m_runner.macroId(); }
 Q_SIGNALS:
+    void inputFailed();
     void macroChanged();
     void macroFailed(const QString &reason);
     void textFailed();

@@ -11,6 +11,7 @@ inline constexpr auto Interface = "org.qindaqt.InputActions1";
 inline constexpr int MaxTextBytes = 4096;
 inline constexpr int MaxMacros = 64;
 inline constexpr int MaxSteps = 64;
+inline constexpr qsizetype MaxMacroBytes = 120 * 1024;
 inline constexpr qsizetype MaxLibraryBytes = 1024 * 1024;
 struct Binding {
     QString action = QStringLiteral("none");

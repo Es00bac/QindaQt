@@ -17,6 +17,7 @@ bool MacroStore::load(QString &reason) {
     for (const auto &value : doc.object().value("macros").toArray()) {
         Macro macro;
         if (!value.isObject() || !readMacro(value.toObject(), macro, reason) || macros.contains(macro.id)) { reason = "macros-invalid"; return false; }
+        for (const auto &existing : macros) if (!macro.mouseButton.isEmpty() && existing.mouseButton == macro.mouseButton && existing.mouseModifiers == macro.mouseModifiers) { reason = "macros-invalid"; return false; }
         macros[macro.id] = macro;
     }
     m_macros = std::move(macros); reason.clear(); return true;
@@ -32,6 +33,8 @@ bool MacroStore::save(const QMap<QString, Macro> &macros, QString &reason) const
 }
 bool MacroStore::set(const Macro &macro, QString &reason) {
     Macro valid; if (!readMacro(macroJson(macro), valid, reason)) return false;
+    for (const auto &existing : m_macros) if (existing.id != valid.id && !valid.mouseButton.isEmpty()
+        && existing.mouseButton == valid.mouseButton && existing.mouseModifiers == valid.mouseModifiers) { reason = "mouse-trigger-conflict"; return false; }
     auto macros = m_macros; macros[valid.id] = valid;
     if (!save(macros, reason)) return false;
     m_macros = std::move(macros); return true;

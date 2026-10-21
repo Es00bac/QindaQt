@@ -16,9 +16,9 @@ FormRow {
     label: binding.label
     description: binding.action === "dictate" ? qsTr("Hold while speaking; release to insert the text")
                : binding.action === "voice-command" ? qsTr("Hold while speaking; release to run the command") : ""
-    editor: Button {
+    editor: Button { emphasized: false;
         objectName: "controllerBinding_" + root.binding.id
-        text: root.binding.summary ?? qsTr("Choose a binding")
+        text: root.binding.action === "macro" ? qsTr("Run %1").arg(root.macroModel?.macros.find(macro => macro.id === root.binding.macro)?.name ?? qsTr("unavailable macro")) : root.binding.summary ?? qsTr("Choose a binding")
         width: 320
         enabled: root.controllerModel.available && !root.controllerModel.busy
         Accessible.name: root.binding.label + ": " + text

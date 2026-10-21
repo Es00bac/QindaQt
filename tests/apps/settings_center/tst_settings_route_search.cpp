@@ -111,7 +111,7 @@ void SettingsRouteSearchTest::onlyInputDeclaresDestinations() {
   const SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   for (const SettingsRoute &route : registry.routes()) {
     if (route.component == SettingsRouteComponent::Input) {
-      QCOMPARE(route.destinations.size(), 6);
+      QCOMPARE(route.destinations.size(), 7);
     } else {
       QVERIFY2(route.destinations.isEmpty(), qPrintable(route.id));
     }
@@ -126,7 +126,7 @@ void SettingsRouteSearchTest::onlyInputDeclaresDestinations() {
   }
   QCOMPARE(ids, (QStringList{QStringLiteral("pointers"), QStringLiteral("tablet"),
                              QStringLiteral("keyboard"), QStringLiteral("shortcuts"),
-                             QStringLiteral("touch"), QStringLiteral("controllers")}));
+                             QStringLiteral("touch"), QStringLiteral("macros"), QStringLiteral("controllers")}));
 }
 
 void SettingsRouteSearchTest::inputDestinationsMatchTheInputPage() {
@@ -146,7 +146,7 @@ void SettingsRouteSearchTest::inputDestinationsMatchTheInputPage() {
     const auto found = match.next();
     pageDestinations.append({found.captured(1), found.captured(2)});
   }
-  QCOMPARE(pageDestinations.size(), 6);
+  QCOMPARE(pageDestinations.size(), 7);
 
   const auto input =
       SettingsRouteRegistry::createDefault().route(QStringLiteral("input"));
@@ -213,13 +213,16 @@ void SettingsRouteSearchTest::controllerProjectsKeywordsAndDestinations() {
   QCOMPARE(input.value(QStringLiteral("id")).toString(), QStringLiteral("input"));
   const QVariantList destinations =
       input.value(QStringLiteral("destinations")).toList();
-  QCOMPARE(destinations.size(), 6);
+  QCOMPARE(destinations.size(), 7);
   const QVariantMap shortcuts = destinations.at(3).toMap();
   QCOMPARE(shortcuts.value(QStringLiteral("id")).toString(),
            QStringLiteral("shortcuts"));
   QCOMPARE(shortcuts.value(QStringLiteral("title")).toString(),
            QStringLiteral("Shortcuts"));
   QVERIFY(!shortcuts.value(QStringLiteral("keywords")).toStringList().isEmpty());
+  const auto macros = destinations.at(5).toMap();
+  QCOMPARE(macros.value(QStringLiteral("id")).toString(), QStringLiteral("macros"));
+  QVERIFY(macros.value(QStringLiteral("keywords")).toStringList().contains(QStringLiteral("macros")));
 }
 
 void SettingsRouteSearchTest::repeatedDestinationIsRedeliveredToTheOpenPage() {

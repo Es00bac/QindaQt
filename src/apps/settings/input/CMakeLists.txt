@@ -118,6 +118,8 @@ qt_add_qml_module(
         qml/ControllerBindingRow.qml
         qml/ControllerBindingEditor.qml
         qml/InputCombinationEditor.qml
+        qml/InputEditorDialog.qml
+        qml/InputEditorFooter.qml
         qml/InputMacrosSection.qml
         qml/InputMacroEditor.qml
         qml/MacroStepEditor.qml
@@ -175,6 +177,8 @@ install(
         qml/ControllerBindingRow.qml
         qml/ControllerBindingEditor.qml
         qml/InputCombinationEditor.qml
+        qml/InputEditorDialog.qml
+        qml/InputEditorFooter.qml
         qml/InputMacrosSection.qml
         qml/InputMacroEditor.qml
         qml/MacroStepEditor.qml

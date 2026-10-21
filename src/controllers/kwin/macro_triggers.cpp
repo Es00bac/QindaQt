@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "macro_triggers.h"
 #include <input_event.h>
+#include <workspace.h>
+#include <window.h>
+#include <core/session.h>
+#include <main.h>
+#include <wayland_server.h>
 #include <QKeySequence>
 namespace QindaQt::Controllers {
 namespace {
@@ -17,6 +22,9 @@ Qt::KeyboardModifiers modifiers(const QStringList &names) {
 MacroTriggers::MacroTriggers(InputActions::MacroStore &store, ControllerInputDevice &input, MacroEndpoint &endpoint)
     : KWin::InputEventFilter(KWin::InputFilterOrder::GlobalShortcut), m_store(store), m_input(input), m_endpoint(endpoint),
       m_shortcuts(QDBusConnection::sessionBus(), "qindaqt-input-macros") {
+    connect(KWin::input(), &KWin::InputRedirection::deviceRemoved, this, [this](KWin::InputDevice *device) { m_consumed.remove(device); });
+    connect(KWin::waylandServer(), &KWin::WaylandServer::lockStateChanged, this, [this] { m_consumed.clear(); if (!ControllerInputDevice::contextAllowed()) m_input.cancelMacro(); });
+    connect(KWin::kwinApp()->session(), &KWin::Session::activeChanged, this, [this] { m_consumed.clear(); if (!ControllerInputDevice::contextAllowed()) m_input.cancelMacro(); });
     connect(&endpoint, &MacroEndpoint::libraryChanged, this, &MacroTriggers::refresh);
     connect(&m_shortcuts, &Services::Shortcuts::ShortcutLease::status, &endpoint, &MacroEndpoint::shortcutStatus);
     connect(&input, &ControllerInputDevice::macroChanged, this, [this] {
@@ -33,7 +41,7 @@ MacroTriggers::MacroTriggers(InputActions::MacroStore &store, ControllerInputDev
         m_input.runMacro("keyboard/" + id, id);
     });
 }
-void MacroTriggers::start() { KWin::input()->installInputEventFilter(this); refresh(); }
+void MacroTriggers::start() { if (!m_endpoint.ready()) return; KWin::input()->installInputEventFilter(this); refresh(); }
 void MacroTriggers::refresh(const QString &editedShortcut) {
     QList<Services::Shortcuts::Binding> desired;
     for (const auto &macro : m_store.values()) {
@@ -45,12 +53,18 @@ void MacroTriggers::refresh(const QString &editedShortcut) {
 }
 bool MacroTriggers::pointerButton(KWin::PointerButtonEvent *event) {
     if (event->device == &m_input) return false;
-    if (event->state == KWin::PointerButtonState::Released) return m_consumed.remove(event->nativeButton);
+    if (event->state == KWin::PointerButtonState::Released) {
+        auto it = m_consumed.find(event->device); if (it == m_consumed.end()) return false;
+        const bool consumed = it->remove(event->nativeButton); if (it->isEmpty()) m_consumed.erase(it); return consumed;
+    }
     if (!ControllerInputDevice::contextAllowed() || !m_input.runningMacro().isEmpty()) return false;
+    // Preserve access to the editor even when a user binds an unmodified
+    // primary mouse button. Controller bindings and explicit Test still work.
+    if (auto *window = KWin::workspace()->activeWindow(); window && window->desktopFileName() == "org.qindaqt.Settings") return false;
     const QMap<QString, Qt::MouseButton> buttons{{"left", Qt::LeftButton}, {"right", Qt::RightButton}, {"middle", Qt::MiddleButton}, {"back", Qt::BackButton}, {"forward", Qt::ForwardButton}};
     for (const auto &macro : m_store.values()) {
         if (macro.mouseButton.isEmpty() || buttons.value(macro.mouseButton) != event->button || modifiers(macro.mouseModifiers) != event->modifiersRelevantForShortcuts) continue;
-        if (m_input.runMacro("mouse/" + macro.id, macro.id)) { m_consumed.insert(event->nativeButton); return true; }
+        if (m_input.runMacro("mouse/" + macro.id, macro.id)) { m_consumed[event->device].insert(event->nativeButton); return true; }
     }
     return false;
 }

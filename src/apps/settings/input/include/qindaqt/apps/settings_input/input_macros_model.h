@@ -22,7 +22,7 @@ public:
     QString errorText() const { return m_error; }
     QString running() const { return m_running; }
     Q_INVOKABLE void refresh();
-    Q_INVOKABLE bool save(const QVariantMap &macro, const QString &expected);
+    Q_INVOKABLE bool save(const QVariantMap &macro, const QString &expected, bool assignShortcut = false);
     Q_INVOKABLE bool remove(const QString &id);
     Q_INVOKABLE bool run(const QString &id);
     Q_INVOKABLE void cancel();
@@ -38,6 +38,7 @@ public:
     Q_INVOKABLE QString sequenceText(int key) const;
 Q_SIGNALS:
     void viewChanged();
+    void editCompleted(bool ok);
 private:
     void receive(const QJsonObject &snapshot);
     JsonInputPort &m_port;

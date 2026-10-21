@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-T.Dialog {
+InputEditorDialog {
     id: root
     required property var macroModel
     required property var initialStep
@@ -97,12 +97,13 @@ T.Dialog {
                 background:Rectangle { color:Tokens.bg.raised; border.color:Tokens.outline.strong; border.width:1; radius:Tokens.radius.s }
             }
             Label { Layout.fillWidth:true; text:root.macroModel.stepError(root.value); visible:text.length > 0; wrapMode:Text.Wrap; Accessible.role:Accessible.AlertMessage }
-            RowLayout {
-                Layout.fillWidth:true
-                Item { Layout.fillWidth:true }
-                Button { text:qsTr("Cancel"); onClicked:root.close() }
-                Button { objectName:"macroStepSave"; text:qsTr("Use step"); emphasized:true; enabled:root.macroModel.stepError(root.value).length === 0; onClicked:{ root.saved(root.value); root.close() } }
-            }
+
         }
+    }
+    footer: InputEditorFooter {
+        Layout.fillWidth:true
+        Item { Layout.fillWidth:true }
+        Button { emphasized: false; text:qsTr("Cancel"); onClicked:root.close() }
+        Button { objectName:"macroStepSave"; text:qsTr("Use step"); emphasized:true; enabled:root.macroModel.stepError(root.value).length === 0; onClicked:{ root.saved(root.value); root.close() } }
     }
 }

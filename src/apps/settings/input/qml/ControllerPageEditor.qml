@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-T.Dialog {
+InputEditorDialog {
     id: root
     required property var controllerModel
     required property bool creating
@@ -16,6 +16,7 @@ T.Dialog {
     required property string initialColor
     property bool initialLayer:false
     property string colorDraft: initialColor
+    property bool awaitingSave:false
     property string failure: ""
     readonly property bool validColor: /^#[0-9a-fA-F]{6}$/.test(colorDraft)
     readonly property color preview: validColor ? colorDraft : "transparent"
@@ -27,6 +28,14 @@ T.Dialog {
     focus: true
     title: creating ? qsTr("New button profile") : qsTr("Edit button profile")
     onOpened: name.forceActiveFocus()
+    Connections {
+        target:root.controllerModel
+        function onEditCompleted(ok) {
+            if (!root.awaitingSave) return
+            root.awaitingSave = false
+            if (ok) root.close(); else root.failure = root.controllerModel.errorText || qsTr("The profile was not saved. Your draft is still here.")
+        }
+    }
     contentItem: ColumnLayout {
         spacing: Tokens.space["3"]
         TextField {
@@ -59,7 +68,7 @@ T.Dialog {
             // These are editable controller RGB values, not interface tokens.
             Repeater {
                 model: [{name:qsTr("Blue"), color:"#287DFF"}, {name:qsTr("Purple"), color:"#A83DFF"}, {name:qsTr("Green"), color:"#24D16B"}, {name:qsTr("Orange"), color:"#FF8A24"}, {name:qsTr("Red"), color:"#FF304D"}, {name:qsTr("Off"), color:"#000000"}]
-                delegate: Button {
+                delegate: Button { emphasized: false;
                     required property var modelData
                     text: modelData.name
                     onClicked: { root.colorDraft = modelData.color; color.text = Qt.binding(() => root.colorDraft) }
@@ -84,16 +93,16 @@ T.Dialog {
         RowLayout {
             Layout.fillWidth: true
             Item { Layout.fillWidth: true }
-            Button { text: qsTr("Cancel"); onClicked: root.close() }
+            Button { emphasized: false; text: qsTr("Cancel"); onClicked: root.close() }
             Button {
                 objectName: "controllerProfileSave"
                 text: root.creating ? qsTr("Create profile") : qsTr("Save profile")
                 emphasized: true
                 enabled: !root.stale && !root.controllerModel.busy && name.text.trim().length > 0 && root.validColor
                 onClicked: {
+                    root.awaitingSave = true
                     const ok = root.creating ? root.controllerModel.addPage(name.text, root.colorDraft, copy.checked, layer.checked) : root.controllerModel.updatePage(name.text, root.colorDraft, layer.checked)
-                    if (ok) root.close()
-                    else root.failure = qsTr("The profile could not be saved. Check its name and color.")
+                    if (!ok) { root.awaitingSave = false; root.failure = qsTr("The profile could not be saved. Check its name and color.") }
                 }
             }
         }

@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-T.Dialog {
+InputEditorDialog {
     id: root
     required property var binding
     required property var controllerModel
@@ -17,6 +17,7 @@ T.Dialog {
     property var macroDraft:({})
     property string macroId:binding.macro ?? ""
     property string action: binding.action === "shortcut" ? "combination" : binding.action
+    property bool awaitingSave:false
     property string failure: ""
     readonly property bool stale: controllerId !== controllerModel.selectedId || pageId !== (controllerModel.currentPage.id ?? "") || !controllerModel.available
     readonly property var editableActions: controllerModel.actions.filter(item => item.value !== "shortcut")
@@ -24,7 +25,7 @@ T.Dialog {
         : action === "macro" ? ({action:"macro", macro:macroId})
         : action === "text" ? ({action: action, text: textBlock.text})
         : (action === "switch-page" || action === "hold-page") ? ({action: action, page: target.currentValue ?? ""}) : ({action: action})
-    readonly property string validation: controllerModel.bindingError(value)
+    readonly property string validation: action === "macro" && (!macroModel || !macroModel.available || !macroModel.macros.some(macro => macro.id === macroId)) ? qsTr("Choose a saved macro or create one.") : controllerModel.bindingError(value)
     parent: T.Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(680, parent ? parent.width - 32 : 680)
@@ -34,6 +35,14 @@ T.Dialog {
     title: qsTr("Bind %1").arg(binding.label)
     closePolicy: T.Popup.CloseOnEscape
     onOpened: actionChoice.forceActiveFocus()
+    Connections {
+        target:root.controllerModel
+        function onEditCompleted(ok) {
+            if (!root.awaitingSave) return
+            root.awaitingSave = false
+            if (ok) root.close(); else root.failure = root.controllerModel.errorText || qsTr("The binding was not saved. Your draft is still here.")
+        }
+    }
     contentItem: T.ScrollView {
         clip: true
         implicitHeight: body.implicitHeight
@@ -98,7 +107,7 @@ T.Dialog {
                 Accessible.name:qsTr("Macro to run")
                 onActivated:index => root.macroId = root.macroModel.macros[index].id
             }
-            Button {
+            Button { emphasized: false;
                 visible:root.action === "macro"
                 text:qsTr("Create a macro…")
                 enabled:root.macroModel !== null && root.macroModel.available && !root.macroModel.busy
@@ -121,21 +130,7 @@ T.Dialog {
                 wrapMode: Text.Wrap
                 Accessible.role: Accessible.AlertMessage
             }
-            RowLayout {
-                Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
-                Button { text: qsTr("Cancel"); onClicked: root.close() }
-                Button {
-                    objectName: "controllerBindingSave"
-                    text: qsTr("Save binding")
-                    emphasized: true
-                    enabled: !root.stale && !root.controllerModel.busy && root.validation.length === 0
-                    onClicked: {
-                        if (root.controllerModel.saveBinding(root.binding.id, root.value, root.controllerId, root.pageId)) root.close()
-                        else root.failure = qsTr("This binding could not be saved. Check the controller and profile, then try again.")
-                    }
-                }
-            }
+
         }
     }
     Loader {
@@ -145,6 +140,24 @@ T.Dialog {
             Component.onCompleted:open()
             onSaved:id => root.macroId = id
             onClosed:root.macroEditing = false
+        }
+    }
+    footer: InputEditorFooter {
+        Layout.fillWidth: true
+        Item { Layout.fillWidth: true }
+        Button { emphasized: false; text: qsTr("Cancel"); onClicked: root.close() }
+        Button {
+            objectName: "controllerBindingSave"
+            text: qsTr("Save binding")
+            emphasized: true
+            enabled: !root.stale && !root.controllerModel.busy && root.validation.length === 0
+            onClicked: {
+                root.awaitingSave = true
+                if (!root.controllerModel.saveBinding(root.binding.id, root.value, root.controllerId, root.pageId, root.binding)) {
+                    root.awaitingSave = false
+                    root.failure = qsTr("This binding could not be saved. Check the controller and profile, then try again.")
+                }
+            }
         }
     }
 }

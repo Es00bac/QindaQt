@@ -19,7 +19,8 @@ priority under [ADR-0347](../adr/0347-controller-desktop-integration.md).
 
 | Tab | What it changes | Authority |
 | --- | --- | --- |
-| Controllers | Xbox, PlayStation, Nintendo and other controller desktop actions, keyboard chords, dictation button, stick speed/dead zone, touchpad mouse and gyro | Public Controllers1 compositor plugin; atomic user profile store |
+| Controllers | Named LED pages and held layers; key/mouse combinations, text and macro bindings; contact gyro, dictation and window control; motion preferences | Public Controllers1 compositor plugin; atomic user profile store |
+| Macros | Reusable step sequences, text, holds/releases, waits, pointer motion/scroll and keyboard/mouse triggers | Public InputActions1 compositor endpoint and native Shortcuts1 assignments |
 | Mouse & touchpad | Pointer speed, acceleration profile, natural scrolling, left-handed, scroll speed, middle-click emulation; touchpads add tap to click, tap and drag, disable while typing, and scroll method | KWin device properties over D-Bus |
 | Pen & tablet | Which screen the pen draws on; for a desk tablet its rotation (kept upright on a rotated screen), left-handed, and the part of the tablet mapped onto a part of the screen; for a pen display the screen it turns with and its calibration; pen mode, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus; the intent is remembered in Settings1 `input.tabletMappings` |
 | Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `qindaqt/kwininputrc [Keyboard]` and `qindaqt/kwinxkbrc [Layout]` |
@@ -292,3 +293,26 @@ authority supplies `_launch` activation. Compatibility four-chord codecs remain
 for old clients. The compositor option and portal routing stay held until
 focused private-bus and nested live qualification; source is not installed
 release acceptance. See [ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md).
+
+## Controller pages and reusable macros
+
+Controllers offers a searchable binding list and an explicit combination editor
+with modifier checkboxes, named/recorded keys, mouse buttons and optional held
+layers. Page editing is independent of activation, with editable name/RGB color
+and ordinary/temporary type. The cycle-button picker applies one assignment to
+every page. DualSense ships Desktop/Navigation pages plus movement and editing
+layers; contact enables gyro and the click remains a left click. Fullscreen
+video keeps desktop control. Steam and actual device consumers still have
+priority. See [Controller input](../architecture/controller-input.md).
+
+Macros has a visual step builder with ordering, duplication, holds/releases,
+text, delays, motion, scrolling, a recording pad and copy/paste/window-drag
+presets. Controller bindings can create/select the same library entries. Keyboard
+triggers reuse native Shortcuts1; mouse triggers use the compositor input filter
+and pause inside Settings so an unmodified mouse trigger cannot block editing.
+Test gives three seconds to focus a target; physical Escape cancels playback.
+Editors keep refused drafts and close after confirming authoritative readback.
+Both destinations use exact-owner asynchronous JSON ports; models/QML never
+read controller/macro files or SDL. See
+[Input actions](../architecture/input-actions.md) and
+[ADR-0427](../adr/0427-share-programmable-input-actions-and-controller-layers.md).

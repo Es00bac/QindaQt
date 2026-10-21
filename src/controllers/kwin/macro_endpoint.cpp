@@ -23,8 +23,11 @@ QString MacroEndpoint::Apply(const QString &id, const QString &config, qulonglon
     if (config.toUtf8().size() > 128 * 1024) return result(false, "invalid-macro");
     QJsonParseError error; const auto doc = QJsonDocument::fromJson(config.toUtf8(), &error);
     InputActions::Macro macro; QString reason;
-    if (error.error != QJsonParseError::NoError || !doc.isObject() || !InputActions::readMacro(doc.object(), macro, reason) || macro.id != id) return result(false, "invalid-macro");
-    const bool shortcutChanged = !m_store.contains(id) || m_store.value(id).shortcut != macro.shortcut;
+    const auto request = doc.object();
+    if (error.error != QJsonParseError::NoError || !doc.isObject() || request.keys() != QStringList{"assignShortcut", "config"}
+        || !request.value("assignShortcut").isBool() || !request.value("config").isObject()
+        || !InputActions::readMacro(request.value("config").toObject(), macro, reason) || macro.id != id) return result(false, "invalid-macro");
+    const bool shortcutChanged = !m_store.contains(id) || request.value("assignShortcut").toBool();
     if (!m_store.set(macro, reason)) return result(false, reason);
     if (m_input.runningMacro() == id) m_input.cancelMacro();
     m_error.clear(); bump(); Q_EMIT libraryChanged(shortcutChanged ? id : QString{}); return result(true, "ok");
