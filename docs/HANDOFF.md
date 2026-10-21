@@ -1,24 +1,37 @@
 ## October 21: audio leak and controller ownership — RESUME HERE (Claude ⇄ Codex)
 
-Two daily-driving defects reported by the owner are in progress on hub branches.
-Nothing is installed yet; package once when both land. Lane specs and evidence:
-`ops/team/specs/2026-10-21-audio-controller/`.
+Both owner-reported daily-driving defects are fixed and integrated on hub main
+`23e67e41b`. Nothing is built as a package or installed yet: per the
+package-once rule, wait until the owner is ready to log out. Lane specs and
+evidence: `ops/team/specs/2026-10-21-audio-controller/`.
 
-| Lane | Branch | State |
+| Lane | Integrated commits | Outcome |
 | --- | --- | --- |
-| Audio1 heap leak (~310 kB per client stream appear/disappear) | `fix/audio-heap-leak-20261021` | candidate (5 commits, merged with main `89ffa5022`): strip EQ port names and once-per-declaration retries for racks, sends, virtual buses and VBAN; meter readings excluded from snapshot identity (AudioClient); graph snapshots after console changes no longer dropped (coordinator); `retry_backoff.h` installed with the AudioClient SDK. 52/52 `qindaqt.audio-*` serial, validate-docs and mkdocs strict pass; not installed |
-| Controller suppressed by passive or background gamepad holders | `fix/controller-focus-owner-20261021` | integrated on main as `c5fcdd62b` (ADR-0428); 15/15 controller CTest groups, mkdocs strict and validate-docs pass on the integrated tree; not installed |
+| Audio1 / panel applet | `cfecac73d`..`fa3b8a203` | Strip EQ racks now load (port names). Refused racks, sends, virtual buses and VBAN are tried once per declaration, which stops the ~310 kB-per-stream heap leak and the warning spam. Meter readings are no longer part of same-revision snapshot identity (AudioClient). Graph snapshots after console changes are no longer dropped (coordinator). `retry_backoff.h` is installed with the SDK. |
+| Controller desktop input | `c5fcdd62b` (ADR-0428) | Only a non-web-engine holder that belongs to the focused application pauses a pad. Background apps and browser/QtWebEngine/Electron gamepad probes no longer disable it. |
+| Default strict build repair | `d79ac9f25`, `ada426813`, `9f912b2e8`, `d88da83f8`, `23e67e41b` | Main had not built with `QINDAQT_ENABLE_STRICT_WARNINGS=ON` on GCC 15 since `be21286bd`/`8ae1a235f`. Fixes cover the macro timer cast, `Binding` default member initializers, Android fixture results, and the controller editor fixture (standalone-only, per ADR-0388). |
 
-After the audio install the owner's console is audibly different: its
-`strip.virtual.1` rack (equalizer only, low shelf about +15 dB) had never
-loaded, and now does. Warn the owner, or flatten that shelf, before calling the
-install a regression.
+Gates on the integrated tree (qinda): full RelWithDebInfo build exit 0 with
+no failures; 77/77 affected tests serial (`qindaqt.(audio|settings-audio|obs|controller|…)`,
+`QT_QPA_PLATFORM=offscreen`); standalone controllers 15/15; mkdocs strict and
+validate-docs pass. Known flake: under `ctest -j4/-j8` one applet QML row
+fails per run (a different row each time); each passes alone.
 
-Next steps: integrate each branch after its focused and broad tests pass,
-bump `media-plugins/obs-qindaqt` (schema-11 pin, polls Audio1 every 200 ms),
-then build and install once. Still open from the audio finding: ADR-0394's
-deferred `AcquireMeters`/`ReleaseMeters` (meters keep ALSA awake), and repeated
-`qindaqt-settings` SIGABRTs since 2026-10-16 (no symbolized backtrace yet).
+Install notes for the owner and the package pass:
+- The owner's `strip.virtual.1` equalizer (low shelf about +15 dB) has never
+  loaded and will be audible after install. Warn the owner first.
+- `media-plugins/obs-qindaqt` r2 pins `4f2eec0f2` (Audio1 schema 11) and polls
+  `GetSnapshot` every 200 ms forever. Its GitHub archive source cannot reach
+  hub-only commits; a new revision needs a fetch-restricted `git archive` of
+  the desktop commit (same shape as qindaqt-desktop). Never push origin.
+- New code takes effect only after re-login: the compositor plugin and shell,
+  plus the Audio1 restart that `qindaqt-session` performs at login (ADR-0256).
+
+Still open: ADR-0394's deferred `AcquireMeters`/`ReleaseMeters` (11 meter
+streams keep ALSA awake, ~4% CPU); recreating a virtual strip sink that
+PipeWire destroys without a reconnect; repeated `qindaqt-settings` SIGABRTs
+since 2026-10-16 (no symbolized backtrace yet); PipeWire 1.6.8 filter-graph
+leak on failed graph load (report upstream).
 
 ## October 20 — Programmable controllers and shared macros installed
 
