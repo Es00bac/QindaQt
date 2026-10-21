@@ -16,7 +16,8 @@ layout. Other controller families retain the defaults in the next section.
 | Control | Default |
 | --- | --- |
 | Right / left stick | Pointer / scrolling |
-| Create / Options | Cycle Desktop / Navigation pages / Escape |
+| Create | Cycle Desktop / Navigation pages |
+| Options | Escape |
 | D-pad up / left / right / down | Ctrl+K / Ctrl+C / Ctrl+J / Enter |
 | L3 / R3 | Previous / next window |
 | PS | Open application launcher |
@@ -291,3 +292,32 @@ and symlinks match the signed package. No live voice utterance was recorded and
 no physical button press was synthesized; SDL and private-bus fixtures provide
 the action evidence. Final package: 87,296,000 bytes, SHA-256
 `2edd3ee9a80a18b5c9a88b7101fc1d3132f09a47aa08eb3e6af39c19ff4f0f96`.
+
+### October 20 programmable profiles and macros acceptance
+
+Source `0c1e29fb3` implements ADR-0427 and is integrated on main. The final
+Portage-installed package is r42. Its controller plugin remains r40; r41/r42
+update only Settings Input QML. The original compositor and shell stay alive.
+Controllers1 schema 2 and InputActions1 schema 1 report ready, and the connected
+DualSense reports active desktop control, main page and successful LED writes.
+
+Authoritative readback verifies the four-page preset on all five DualSense
+profiles; five other profiles and saved speeds are preserved. Contact-only gyro,
+right-stick pointing, Meta plus left click, held movement/editing, Create cycling
+and Options Escape are configured. Both saved files are mode 0600.
+
+Fourteen focused CTest groups pass (128 QtTest results, no failures or skips),
+including the production shortcut-client plugin link, virtual SDL/LED/contact
+fixtures, schema migration, held ownership, text/macro cancellation and real QML
+editing/confirmation lifetimes. Six candidate application open/shutdown cycles
+and both final installed Controllers/Macros probes report ready with no QML
+warnings. A live InputActions1 wait-only macro verifies native assignment,
+playback and cleanup without typing or clicking into applications. No physical
+button presses, live voice utterances or browser-video playback were synthesized.
+
+The signed r42 image retains 2,699 r40 base paths and changes four Input QML
+paths. Every one of its 2,420 installed files/symlinks matches the image. The
+source archive is immutable `645fb4dfc` over the installed Harmony Settings
+baseline, with tracked PIC and confirmation-lifetime patches. The existing r32
+shared catalog is unchanged. Artifact: 87,674,880 bytes; SHA-256
+`2533aade6b725d94b50995a0519a68191a3dae524045ecd5de62b5bd4095e92c`.

@@ -1,11 +1,11 @@
 # Codex controller profiles
 
 - Role: Controller settings implementer and integration owner
-- Status: working — final focused verification and signed settings/controller delivery
+- Status: available — programmable controller pages and shared macros installed and verified
 - Base: `56891a71a`
 - Branch: `feat/controller-profiles-20261020`
 - Worktree: `.cache/controller-profiles-20261020`
-- Ownership: `src/controllers`, `tests/controllers`, controller Settings model/QML, controller wiki/ADR and bounded Portage delivery
+- Ownership: `src/controllers`, `src/input_actions`, shortcut-client lease, focused tests, Settings Input model/QML, owning wiki/ADR and bounded Portage delivery
 - Execution: selected Codex session only; no delegated agents or external model workers
 
 ## Updates
@@ -25,3 +25,7 @@
 - 2026-10-21T02:22:45+00:00 — r40 is Portage-installed; all 2,420 installed file/symlink checks pass, original compositor/shell alive, five DualSense profiles applied and five other profiles preserved. Live InputActions1 native assignment/wait-playback/cleanup pass. Installed Controllers probe exposed one shutdown geometry warning; add positive confirmation widths and a zero-size-window/open-close fixture, then package only QML over signed r40 as r41.
 
 - 2026-10-21T02:32:10+00:00 — r41 preserves every controller/runtime file and the full Controllers probe is clean, but the final Macro route exposed an eager confirmation shutdown loop. Move both confirmations to on-demand Loader ownership with disposal on close; warning-strict fixtures cover both cancellation lifetimes. Build only QML again over the same authenticated r40 base; no controller reconfiguration or restart.
+
+- 2026-10-21T02:38:19+00:00 — Final r42 is Portage-installed and every one of 2,420 files/symlinks matches its signed image. Six candidate lifecycle checks and both final installed routes are clean; live controller/LED and InputActions1 are ready. Exact profile readback preserves five unrelated profiles and saved speeds. Completing durable records and docs gates; code checks pass 14/14 (128 QtTest results).
+
+- 2026-10-21T02:41:14+00:00 — Delivery complete: r42 installed, original desktop processes alive, both live services ready, both installed editor routes clean, all 2,420 installed paths match, 14 focused groups / 128 QtTest results pass, strict docs and 576-document link gate pass. Available for a concrete regression in this scope; no new queue implementation or model review claimed.

@@ -1,3 +1,37 @@
+## October 20 — Programmable controllers and shared macros installed
+
+Product source `0c1e29fb3` is integrated on main (ADR-0427). Settings Input now
+supports custom held key/mouse combinations, text blocks, named RGB profiles,
+held modifier layers and shared typed macros with native keyboard and physical
+mouse triggers. Fullscreen video alone keeps desktop control; lock/inactive,
+Steam and genuine controller consumers retain their existing priority.
+
+Signed `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r42` is Portage-installed on
+qinda-top. Its controller remains `qindaqt_controllers_r40`; the original
+compositor (1181) and shell (1318) remained alive. Five DualSense profiles have
+the four-page preset, with five other profiles and saved motion speeds preserved.
+Create cycles blue Desktop/purple Navigation; Options is Escape; R2 is Meta plus
+left click with orange D-pad movement; touch contact enables gyro and touchpad
+click is left click. Navigation's L2 selects green Ctrl editing. Both user config
+files are owner-only (0600); Controllers1 and InputActions1 report ready.
+
+All 14 focused groups pass (128 QtTest results, no failures/skips), including
+warning-strict confirmation acceptance/cancellation lifetimes. Six complete
+candidate application lifecycles and both final installed routes are clean.
+Live macro assignment, delayed wait-only playback and removal pass without
+typing/clicking into applications. All 2,420 installed files/symlinks match the
+signed image. r40 retained 2,686 r39 base paths; r42 changes only four Settings
+Input paths over r40, retaining 2,699 base paths. Final artifact: 87,674,880 bytes,
+SHA-256 `2533aade6b725d94b50995a0519a68191a3dae524045ecd5de62b5bd4095e92c`.
+
+The packaging source preserves installed Harmony baseline `645fb4dfc`, with
+tracked PIC and QML lifetime patches; overlay `9f812bd` provides r42. The shared
+r32 delivery catalog remains unchanged. No live voice utterance, physical button
+press or browser-video playback was synthesized; source/SDL/private-bus fixtures
+provide those behavior checks. No model workers or independent model review
+were launched, following the direct quota preference. Detailed evidence is in
+`ops/team/messages/controller-profiles/` and the owning controller/input-actions wiki pages.
+
 ## October 20 — Requested DualSense layout installed
 
 Controller source `d4c85a4b5` is integrated on main. DualSense has separate family

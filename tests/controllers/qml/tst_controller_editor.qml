@@ -114,6 +114,10 @@ TestCase {
     function test_09_coldWindowStartsAtZeroSizeWithoutDialogWarnings() {
         editor = createTemporaryObject(coldRouteComponent, null)
         verify(editor !== null)
+        const activeBefore = testControllers.selected.config.activePage
+        const target = testControllers.pages.find(page => page.name === "Work")
+        verify(target !== undefined)
+        testControllers.selectPage(target.id)
         wait(30)
         verify(findChild(editor, "controllerDeleteProfile") === null)
         editor.width = 1000; editor.height = 900; editor.visible = true
@@ -124,6 +128,13 @@ TestCase {
         verify(remove.width >= 320)
         remove.close()
         tryVerify(() => findChild(editor, "controllerDeleteProfile") === null)
+        const count = testControllers.pages.length
+        findChild(editor, "controllerDeleteProfileButton").clicked()
+        tryVerify(() => findChild(editor, "controllerDeleteProfile") !== null)
+        findChild(editor, "controllerDeleteProfile").accept()
+        tryCompare(testControllers, "busy", false)
+        compare(testControllers.pages.length, count - 1)
+        compare(testControllers.selected.config.activePage, activeBefore)
     }
 
     function test_10_macroConfirmationIsCreatedAndDisposedOnDemand() {
@@ -135,6 +146,11 @@ TestCase {
         findChild(editor, "inputMacroDelete").close()
         tryVerify(() => findChild(editor, "inputMacroDelete") === null)
         compare(testMacros.macros.length, 1)
+        findChild(editor, "inputMacroDeleteButton").clicked()
+        tryVerify(() => findChild(editor, "inputMacroDelete") !== null)
+        findChild(editor, "inputMacroDelete").accept()
+        tryCompare(testMacros, "busy", false)
+        compare(testMacros.macros.length, 0)
     }
 
 }
