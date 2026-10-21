@@ -16,10 +16,11 @@ namespace QindaQt::Audio
 // the strip's device, runs the enabled blocks in order, and presents the
 // result as a virtual SOURCE the sends and the meter read instead.
 //
-// AGENT-CONTRACT: the plugin labels and control names below are the swh
-// LADSPA plugins' own, verified with `analyseplugin`; the equalizer is
-// PipeWire's builtin biquads. A rename on either side is a silent chain that
-// PipeWire refuses to load, so tests pin every one of them.
+// AGENT-CONTRACT: the plugin labels, control names and audio port names below
+// are the swh/rnnoise LADSPA plugins' own ("Input"/"Output"), verified with
+// `analyseplugin`; the equalizer is PipeWire's builtin biquads ("In"/"Out").
+// A rename on either side is a silent chain that PipeWire refuses to load, so
+// tests pin every one of them.
 
 // The virtual source the chain presents for a strip.
 [[nodiscard]] QString processedNodeName(const QString &stripId);

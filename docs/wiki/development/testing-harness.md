@@ -2747,7 +2747,7 @@ The focused Audio1 boundary is selected with:
 
 ```sh
 ctest --test-dir build/dev \
-  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|wireplumber-(runtime|reset-lifecycle))$' \
+  -R '^qindaqt\.audio-(protocol|client|qt-transport|activation|service|module-refusals|wireplumber-(runtime|reset-lifecycle|rack-churn))$' \
   --output-on-failure
 ```
 
@@ -2789,6 +2789,18 @@ requires every second loss to advance epoch and publish `pipewire-unavailable`,
 with bounded file descriptors and exact child reaping. This ordering test must
 remain deterministic; an unforced timing loop does not cover the source/latch
 ownership contract.
+
+`qindaqt.audio-wireplumber-rack-churn` runs the production backend and
+coordinator in the test process against the same private PipeWire and
+WirePlumber layout, racks one hardware and one virtual strip, and churns 10
+warm-up then 40 measured short `pw-cat` playback clients. It bounds glibc's
+in-use heap growth (`mallinfo2`) to 8 kB per stream. One row requires an
+equalizer rack's processed sources to exist; the other points the in-process
+`LADSPA_PATH` at an empty directory so the rack is refused, and requires the
+refusal to cost nothing per graph event. Daemon output goes to files in the
+private root: QProcess buffering it in-process was itself 16 kB per stream.
+`qindaqt.audio-module-refusals` is the pure retry policy behind it
+([Audio service](../architecture/audio-service.md#2026-10-21-rack-refusal-heap-growth)).
 
 This runtime proof does not use physical microphones, speakers, or input and
 does not qualify USB/HDMI/Bluetooth/jack/multichannel behavior, suspend/resume,

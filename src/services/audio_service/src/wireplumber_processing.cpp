@@ -147,34 +147,56 @@ QByteArray processingModuleArguments(const QString &stripId, const QString &sour
         return {};
     }
     // Enabled blocks in processing order; the chain links each to the next.
+    // AGENT-GUARD: a block is linked by the ports its node really has. The
+    // LADSPA plugins name theirs "Input"/"Output", PipeWire's builtin biquads
+    // "In"/"Out". One wrong name makes filter-graph refuse the whole rack
+    // ("unknown input port eq_low:Input"): every rack with the equalizer on
+    // was refused this way, and PipeWire 1.6.8 leaks the nodes it had already
+    // loaded on each refusal (audio-service wiki, 2026-10-21).
+    struct Block {
+        QString name;
+        QString input;
+        QString output;
+    };
+    const auto ladspa = [](const char *name) {
+        return Block{QLatin1String(name), QStringLiteral("Input"), QStringLiteral("Output")};
+    };
+    const auto builtin = [](const char *name) {
+        return Block{QLatin1String(name), QStringLiteral("In"), QStringLiteral("Out")};
+    };
     QStringList nodes;
-    QStringList order;
+    QList<Block> order;
     if (processing.denoiser.enabled) {
         nodes << denoiserNode(processing.denoiser);
-        order << QStringLiteral("denoise");
+        order << ladspa("denoise");
     }
     if (processing.gate.enabled) {
         nodes << gateNode(processing.gate);
-        order << QStringLiteral("gate");
+        order << ladspa("gate");
     }
     if (processing.compressor.enabled) {
         nodes << compressorNode(processing.compressor);
-        order << QStringLiteral("comp");
+        order << ladspa("comp");
     }
     if (processing.equalizer.enabled) {
         nodes << equalizerNodes(processing.equalizer);
-        order << QStringLiteral("eq_low") << QStringLiteral("eq_mid")
-              << QStringLiteral("eq_high");
+        order << builtin("eq_low") << builtin("eq_mid") << builtin("eq_high");
     }
     if (processing.limiter.enabled) {
         nodes << limiterNode(processing.limiter);
-        order << QStringLiteral("lim");
+        order << ladspa("lim");
     }
     QStringList links;
     for (qsizetype index = 0; index + 1 < order.size(); ++index) {
-        links << QStringLiteral("{ output = \"%1:Output\" input = \"%2:Input\" }")
-                     .arg(order.at(index), order.at(index + 1));
+        const Block &from = order.at(index);
+        const Block &to = order.at(index + 1);
+        links << QStringLiteral("{ output = \"%1:%2\" input = \"%3:%4\" }")
+                     .arg(from.name, from.output, to.name, to.input);
     }
+    const QString chainInput = order.constFirst().name + QLatin1Char(':')
+        + order.constFirst().input;
+    const QString chainOutput = order.constLast().name + QLatin1Char(':')
+        + order.constLast().output;
     // AGENT-GUARD: the swh plugins are mono; PipeWire runs one chain instance
     // per channel when the stream is stereo, so a stereo strip is processed
     // as two identical mono chains. Gate and compressor therefore act per
@@ -190,11 +212,11 @@ QByteArray processingModuleArguments(const QString &stripId, const QString &sour
                " playback.props = { node.name = \"%5\" media.class = Audio/Source"
                " audio.position = [ FL FR ] node.autoconnect = false }"
                " filter.graph = { nodes = [ %6 ] links = [ %7 ]"
-               " inputs = [ \"%8:Input\" ] outputs = [ \"%9:Output\" ] } }")
+               " inputs = [ \"%8\" ] outputs = [ \"%9\" ] } }")
         .arg(chain, stripId, sourceNodeName,
              sourceIsSink ? QStringLiteral("true") : QStringLiteral("false"), processed,
-             nodes.join(QLatin1Char(' ')), links.join(QLatin1Char(' ')), order.first(),
-             order.last())
+             nodes.join(QLatin1Char(' ')), links.join(QLatin1Char(' ')), chainInput,
+             chainOutput)
         .toUtf8();
 }
 

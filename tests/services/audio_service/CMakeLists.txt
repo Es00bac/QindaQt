@@ -35,6 +35,18 @@ qindaqt_enable_warnings(qindaqt_audio_processing_tests)
 add_test(NAME qindaqt.audio-processing COMMAND qindaqt_audio_processing_tests)
 set_tests_properties(qindaqt.audio-processing PROPERTIES LABELS "audio;service;pure")
 
+# The worker's refused-module memory: a refusal is retried when its
+# declaration changes, never on every graph rebuild. Pure policy.
+qt_add_executable(qindaqt_audio_module_refusals_tests tst_module_refusals.cpp)
+target_include_directories(qindaqt_audio_module_refusals_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+target_link_libraries(
+    qindaqt_audio_module_refusals_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_module_refusals_tests)
+add_test(NAME qindaqt.audio-module-refusals COMMAND qindaqt_audio_module_refusals_tests)
+set_tests_properties(qindaqt.audio-module-refusals PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_console_endpoints_tests tst_console_endpoints.cpp)
 target_link_libraries(
     qindaqt_audio_console_endpoints_tests PRIVATE QindaQt::AudioService Qt6::Test
@@ -251,6 +263,35 @@ add_test(
 )
 set_tests_properties(
     qindaqt.audio-wireplumber-latency-runtime
+    PROPERTIES
+        LABELS "service;audio;wireplumber;isolated-runtime"
+        TIMEOUT 120
+        RUN_SERIAL TRUE
+)
+
+# Strip racks under client-stream churn: the real backend and coordinator in
+# process, short pw-cat clients against a private graph, bounded heap growth.
+qt_add_executable(qindaqt_audio_wireplumber_rack_churn_tests tst_wireplumber_rack_churn.cpp)
+target_link_libraries(
+    qindaqt_audio_wireplumber_rack_churn_tests
+    PRIVATE QindaQt::AudioService Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_audio_wireplumber_rack_churn_tests
+    PRIVATE
+        QINDAQT_PIPEWIRE_EXECUTABLE="${QINDAQT_PIPEWIRE_EXECUTABLE}"
+        QINDAQT_WIREPLUMBER_EXECUTABLE="${QINDAQT_WIREPLUMBER_EXECUTABLE}"
+        QINDAQT_PW_CLI_EXECUTABLE="${QINDAQT_PW_CLI_EXECUTABLE}"
+        QINDAQT_PW_CAT_EXECUTABLE="${QINDAQT_PW_CAT_EXECUTABLE}"
+        QINDAQT_PIPEWIRE_TEST_CONFIG="${QINDAQT_PIPEWIRE_TEST_CONFIG}"
+)
+qindaqt_enable_warnings(qindaqt_audio_wireplumber_rack_churn_tests)
+add_test(
+    NAME qindaqt.audio-wireplumber-rack-churn
+    COMMAND qindaqt_audio_wireplumber_rack_churn_tests
+)
+set_tests_properties(
+    qindaqt.audio-wireplumber-rack-churn
     PROPERTIES
         LABELS "service;audio;wireplumber;isolated-runtime"
         TIMEOUT 120

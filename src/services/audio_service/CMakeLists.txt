@@ -85,6 +85,8 @@ target_sources(
         src/wireplumber_volume_p.h
         src/wireplumber_meters.cpp
         src/wireplumber_meters_p.h
+        src/module_refusals.cpp
+        src/module_refusals_p.h
         src/wireplumber_processing.cpp
         src/wireplumber_processing_p.h
         src/wireplumber_routing.cpp

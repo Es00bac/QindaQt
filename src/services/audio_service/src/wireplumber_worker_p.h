@@ -6,6 +6,7 @@
 
 #include "latency_policy_p.h"
 #include "console_send_reconciler_p.h"
+#include "module_refusals_p.h"
 #include "wireplumber_meters_p.h"
 #include "wireplumber_recorder_p.h"
 #include "wireplumber_vban_p.h"
@@ -251,6 +252,10 @@ private:
     std::unordered_map<std::string, LoadedModule> m_processingModules;
     QList<BackendBusChain> m_declaredBusProcessing;
     std::unordered_map<std::string, LoadedModule> m_busProcessingModules;
+    // Strip and bus racks PipeWire refused, with the refused arguments; see
+    // module_refusals_p.h. Cleared with the core in unloadAllProcessing().
+    ModuleRefusals m_refusedProcessing;
+    ModuleRefusals m_refusedBusProcessing;
     std::vector<void *> m_modulesPendingDestroy;
     GSource *m_moduleDestroySource = nullptr;
     // Bus loopback modules this worker loaded, keyed by the bus sink's node

@@ -69,8 +69,13 @@ void WirePlumberWorker::applyProcessingOnWorker(const QList<BackendProcessingCha
             ++it;
         }
     }
+    // AGENT-GUARD: a refused rack is attempted once per declaration, never
+    // once per rebuild. This runs on every graph event, and each refused
+    // filter-chain load leaks inside PipeWire (module_refusals_p.h).
+    m_refusedProcessing.retainDeclared(wanted);
     for (const auto &[stripId, arguments] : wanted) {
-        if (m_processingModules.find(stripId) != m_processingModules.end()) {
+        if (m_processingModules.find(stripId) != m_processingModules.end()
+            || m_refusedProcessing.refused(stripId, arguments)) {
             continue;
         }
         struct pw_impl_module *const module = pw_context_load_module(
@@ -82,7 +87,9 @@ void WirePlumberWorker::applyProcessingOnWorker(const QList<BackendProcessingCha
         if (module == nullptr) {
             // A refused chain - a missing plugin, most likely - leaves the
             // strip unprocessed rather than silent: its sends keep reading
-            // the device. Retried on the next rebuild.
+            // the device. It is tried again when the rack or its source
+            // changes, or with the next core.
+            m_refusedProcessing.remember(stripId, arguments);
             continue;
         }
         watchModule(ModuleKind::Chain, stripId, module);
@@ -132,8 +139,12 @@ void WirePlumberWorker::applyBusProcessingOnWorker(const QList<BackendBusChain> 
             ++it;
         }
     }
+    // The same once-per-declaration rule as a strip rack: a bus rack goes
+    // through the same leaking filter-chain refusal.
+    m_refusedBusProcessing.retainDeclared(wanted);
     for (const auto &[busId, arguments] : wanted) {
-        if (m_busProcessingModules.find(busId) != m_busProcessingModules.end()) {
+        if (m_busProcessingModules.find(busId) != m_busProcessingModules.end()
+            || m_refusedBusProcessing.refused(busId, arguments)) {
             continue;
         }
         struct pw_impl_module *const module = pw_context_load_module(
@@ -143,6 +154,7 @@ void WirePlumberWorker::applyBusProcessingOnWorker(const QList<BackendBusChain> 
                     module != nullptr ? "loaded" : "REFUSED", arguments.constData());
         }
         if (module == nullptr) {
+            m_refusedBusProcessing.remember(busId, arguments);
             continue;
         }
         watchModule(ModuleKind::BusChain, busId, module);
@@ -167,6 +179,9 @@ QString WirePlumberWorker::busWriteNode(const QString &busId, const Handle &devi
 
 void WirePlumberWorker::unloadAllProcessing()
 {
+    // A replaced core earns every refused rack one fresh attempt.
+    m_refusedProcessing.clear();
+    m_refusedBusProcessing.clear();
     std::unordered_map<std::string, LoadedModule> loaded;
     loaded.swap(m_processingModules);
     for (auto &[stripId, entry] : loaded) {

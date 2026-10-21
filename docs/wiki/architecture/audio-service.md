@@ -1,5 +1,45 @@
 # Audio service
 
+## 2026-10-21 rack refusal heap growth
+
+The installed service's anonymous heap grew about 310 kB each time an
+ordinary client playback stream appeared and disappeared, with no new
+mappings, descriptors or threads. In a private PipeWire graph the growth
+needed one condition: a strip rack (ADR-0179) that PipeWire refuses.
+
+Two defects combined. `processingModuleArguments` linked every rack block
+as `<block>:Output -> <block>:Input`, but PipeWire's builtin biquads name
+their ports `In`/`Out`; only the LADSPA plugins use `Input`/`Output`. Every
+strip rack with the equalizer on was refused (`parse_link: unknown input
+port eq_low:Input`), so that strip silently stayed unprocessed. The worker
+then retried the refused load on every rebuild, and rebuild runs on each
+graph event: about three times per client stream for each racked strip.
+PipeWire 1.6.8's filter-graph leaks the nodes it has already loaded when it
+refuses a graph (`spa/plugins/filter-graph/filter-graph.c` `impl_init`
+returns after a `load_graph` failure without `graph_free`), 48–110 kB per
+attempt depending on the blocks enabled.
+
+The rack now links each block by its own ports. A refused strip or bus rack
+is remembered with its exact arguments (`ModuleRefusals`) and attempted
+again only when its declaration changes, when it is withdrawn and declared
+again (its device came back), or when the core is replaced. A plugin
+installed while the service runs is therefore picked up on the next rack
+change or reconnect, not on the next graph event.
+
+Evidence: `qindaqt.audio-wireplumber-rack-churn` runs the real backend and
+coordinator against a private graph and churns 40 measured `pw-cat` clients
+after 10 warm-up ones. On the old worker both rows grew 624–638 kB per
+stream; with the fix, 22–404 B per stream over ten runs, under an 8 kB
+bound. One row proves an equalizer rack now loads; the other forces a
+refusal with an empty `LADSPA_PATH` and proves it is attempted once.
+`qindaqt.audio-module-refusals` pins the retry policy and
+`qindaqt.audio-processing` pins the port names. The upstream filter-graph
+leak itself remains in PipeWire; one refused declaration now costs it once.
+The loopback loaders (legacy sends, virtual-bus endpoints, VBAN routes)
+still retry a refused load on each rebuild; that path was not measured
+here. This private-graph evidence does not identify the live console's
+racks or qualify physical devices.
+
 ## 2026-09-19 endpoint lifetime diagnosis
 
 At base `01e919f6`, send and rack modules register a PipeWire destroy listener

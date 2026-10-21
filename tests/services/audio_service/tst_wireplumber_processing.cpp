@@ -18,6 +18,7 @@ class WirePlumberProcessingTests final : public QObject
 private slots:
     void anIdleRackHasNoChain();
     void enabledBlocksAreChainedInOrder();
+    void anEqualizerOnlyRackUsesTheBuiltinPorts();
     void namesAndControlsMatchThePlugins();
     void controlsListOnlyEnabledBlocks();
     void theDenoiserComesFirst();
@@ -45,9 +46,16 @@ void WirePlumberProcessingTests::enabledBlocksAreChainedInOrder()
         QStringLiteral("strip.hw.1"), QStringLiteral("alsa_input.x"), false, rack));
     QVERIFY(!text.isEmpty());
     // gate -> eq_low -> eq_mid -> eq_high -> lim, with the compressor absent.
+    // AGENT-GUARD: each end uses its own node's ports. The LADSPA blocks have
+    // "Input"/"Output", PipeWire's builtin biquads "In"/"Out"; the former
+    // "eq_low:Input" made PipeWire refuse every rack with the equalizer on.
     QVERIFY(!text.contains(QStringLiteral("name = comp")));
-    QVERIFY(text.contains(QStringLiteral("{ output = \"gate:Output\" input = \"eq_low:Input\" }")));
-    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_high:Output\" input = \"lim:Input\" }")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"gate:Output\" input = \"eq_low:In\" }")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_low:Out\" input = \"eq_mid:In\" }")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_mid:Out\" input = \"eq_high:In\" }")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_high:Out\" input = \"lim:Input\" }")));
+    QVERIFY(!text.contains(QStringLiteral("eq_low:Input")));
+    QVERIFY(!text.contains(QStringLiteral("eq_high:Output")));
     QVERIFY(text.contains(QStringLiteral("inputs = [ \"gate:Input\" ]")));
     QVERIFY(text.contains(QStringLiteral("outputs = [ \"lim:Output\" ]")));
     // Reads the device, plays into the processed sink the sends will read.
@@ -68,6 +76,23 @@ void WirePlumberProcessingTests::enabledBlocksAreChainedInOrder()
         QStringLiteral("strip.virtual.1"), QStringLiteral("qindaqt.console.strip.virtual.1"),
         true, rack));
     QVERIFY(virtualText.contains(QStringLiteral("stream.capture.sink = true")));
+}
+
+// The chain's own ends are a builtin biquad's ports when the equalizer is the
+// whole rack; the live private-graph row proves PipeWire accepts the result.
+void WirePlumberProcessingTests::anEqualizerOnlyRackUsesTheBuiltinPorts()
+{
+    StripProcessing rack;
+    rack.equalizer.enabled = true;
+    const QString text = QString::fromUtf8(processingModuleArguments(
+        QStringLiteral("strip.hw.1"), QStringLiteral("alsa_input.x"), false, rack));
+    QVERIFY(!text.isEmpty());
+    QVERIFY(text.contains(QStringLiteral("inputs = [ \"eq_low:In\" ]")));
+    QVERIFY(text.contains(QStringLiteral("outputs = [ \"eq_high:Out\" ]")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_low:Out\" input = \"eq_mid:In\" }")));
+    QVERIFY(text.contains(QStringLiteral("{ output = \"eq_mid:Out\" input = \"eq_high:In\" }")));
+    QVERIFY(!text.contains(QStringLiteral(":Input")));
+    QVERIFY(!text.contains(QStringLiteral(":Output")));
 }
 
 void WirePlumberProcessingTests::namesAndControlsMatchThePlugins()
