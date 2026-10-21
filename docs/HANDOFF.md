@@ -27,11 +27,11 @@ Install notes for the owner and the package pass:
 - New code takes effect only after re-login: the compositor plugin and shell,
   plus the Audio1 restart that `qindaqt-session` performs at login (ADR-0256).
 
-Still open: ADR-0394's deferred `AcquireMeters`/`ReleaseMeters` (11 meter
-streams keep ALSA awake, ~4% CPU); recreating a virtual strip sink that
-PipeWire destroys without a reconnect; repeated `qindaqt-settings` SIGABRTs
-since 2026-10-16 (no symbolized backtrace yet); PipeWire 1.6.8 filter-graph
-leak on failed graph load (report upstream).
+Round 2 (owner: "Fix all"), started 2026-10-21 from `58f434b81`: four lanes now cover
+every open item, plus Settings freezes diagnosed as KWin not-responding kills of a GUI
+thread blocked in `wl_display_dispatch()`. See
+`ops/team/specs/2026-10-21-audio-controller/round-2-open-items.md` for the branches and
+scope. Package once after all four land.
 
 ## October 20 — Programmable controllers and shared macros installed
 
