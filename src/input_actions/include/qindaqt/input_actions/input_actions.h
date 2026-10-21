@@ -15,9 +15,11 @@ inline constexpr qsizetype MaxMacroBytes = 120 * 1024;
 inline constexpr qsizetype MaxLibraryBytes = 1024 * 1024;
 struct Binding {
     QString action = QStringLiteral("none");
-    QString shortcut; // Legacy single-key chord; retained for stored bindings.
-    QStringList modifiers, keys, mouseButtons;
-    QString text, page, holdPage, macro;
+    // Every member carries a default initializer so the many partial aggregate
+    // initializers ({"maximize", {}}) stay valid under -Wmissing-field-initializers.
+    QString shortcut{}; // Legacy single-key chord; retained for stored bindings.
+    QStringList modifiers{}, keys{}, mouseButtons{};
+    QString text{}, page{}, holdPage{}, macro{};
     friend bool operator==(const Binding &, const Binding &) = default;
 };
 
