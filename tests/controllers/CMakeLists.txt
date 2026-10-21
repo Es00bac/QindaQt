@@ -4,6 +4,14 @@ target_link_libraries(qindaqt_controller_policy_test PRIVATE qindaqt_controller_
 add_test(NAME qindaqt.controller-policy COMMAND qindaqt_controller_policy_test)
 set_tests_properties(qindaqt.controller-policy PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
 
+# ADR-0428: which holders of a controller node pause desktop control for the
+# focused application, over fake /proc trees (no live process is read).
+add_executable(qindaqt_game_priority_focus_test tst_game_priority_focus.cpp fake_proc_tree.h)
+target_include_directories(qindaqt_game_priority_focus_test PRIVATE ../../src/controllers)
+target_link_libraries(qindaqt_game_priority_focus_test PRIVATE qindaqt_controller_policy Qt6::Test)
+add_test(NAME qindaqt.controller-focus-ownership COMMAND qindaqt_game_priority_focus_test)
+set_tests_properties(qindaqt.controller-focus-ownership PROPERTIES TIMEOUT 30)
+
 add_executable(qindaqt_controller_input_state_test tst_held_input_state.cpp)
 target_include_directories(qindaqt_controller_input_state_test PRIVATE ../../src/controllers)
 target_link_libraries(qindaqt_controller_input_state_test PRIVATE qindaqt_controller_policy Qt6::Test)

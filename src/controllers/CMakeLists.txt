@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-add_library(qindaqt_controller_policy STATIC controller_policy.cpp button_layers.cpp profile_codec.cpp text_delivery.cpp text_delivery_p.h profile_store.cpp game_priority.cpp held_input_state.cpp)
+add_library(qindaqt_controller_policy STATIC controller_policy.cpp button_layers.cpp profile_codec.cpp text_delivery.cpp text_delivery_p.h profile_store.cpp game_priority.cpp
+    focus_ownership.cpp focus_ownership_p.h proc_files.cpp proc_files_p.h held_input_state.cpp)
 add_library(QindaQt::ControllerPolicy ALIAS qindaqt_controller_policy)
 target_include_directories(qindaqt_controller_policy PUBLIC include)
 target_link_libraries(qindaqt_controller_policy PUBLIC Qt6::Core Qt6::Gui QindaQt::InputActions)

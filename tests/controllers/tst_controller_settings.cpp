@@ -49,6 +49,32 @@ private Q_SLOTS:
         QVERIFY(model.statusText().contains("Steam")); QVERIFY(model.setOption("gyro", true));
         QCOMPARE(port.lastPatch.value("gyro").toBool(), true);
     }
+    // ADR-0428: "game" now means the app being used reads the pad directly; the
+    // optional additive `consumer` field names it without a schema change.
+    void gameReasonDescribesTheFocusedAppAndNamesItsConsumerSafely() {
+        FakePort port; ControllersModel model(port);
+        const auto publish = [&](const QJsonValue &consumer) {
+            auto data = snapshot(); data["schemaVersion"] = 2; data["ready"] = true;
+            auto row = data.value("controllers").toArray().first().toObject();
+            row["id"] = "pad:connected"; row["template"] = false; row["connected"] = true; row["reason"] = "game";
+            row["futureField"] = "ignored";
+            if (!consumer.isUndefined()) row["consumer"] = consumer;
+            data["controllers"] = QJsonArray{row}; Q_EMIT port.snapshotReceived(data);
+        };
+        publish(QJsonValue::Undefined);
+        QVERIFY(model.available()); QCOMPARE(model.selectedId(), "pad:connected");
+        QVERIFY2(model.statusText().contains("reading this controller directly"), qPrintable(model.statusText()));
+        QVERIFY(model.statusText().contains("while it's focused"));
+        QVERIFY(!model.statusText().contains("A game or another app"));
+        publish("mygame");
+        QVERIFY2(model.statusText().startsWith("mygame is reading"), qPrintable(model.statusText()));
+        publish("<b>x</b>\u202e" + QString(80, 'y'));
+        QVERIFY(model.available());
+        QVERIFY(!model.statusText().contains('<')); QVERIFY(!model.statusText().contains(QChar(0x202e)));
+        QVERIFY(model.statusText().size() < 140);
+        publish(42);
+        QVERIFY2(model.statusText().startsWith("The app you're using"), qPrintable(model.statusText()));
+    }
     void lostOwnerDropsAuthority() {
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
         Q_EMIT port.unavailable(); QVERIFY(!model.available()); QVERIFY(!model.setBinding("back", "dictate"));

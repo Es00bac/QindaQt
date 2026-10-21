@@ -4,6 +4,7 @@
 - Date: 2026-10-17
 - Owners: Controller runtime and compositor integration
 - Amends: [ADR-0347](0347-controller-desktop-integration.md), observation scheduling only
+- Extended by: [ADR-0428](0428-pause-controller-desktop-input-only-for-the-focused-application.md), which adds the focused process to the scan input and a focus-change invalidation rule; this decision's threading, fencing and teardown contract is unchanged
 
 ## Context
 

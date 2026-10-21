@@ -601,3 +601,4 @@ nav:
       - "0397: Controller observation off the compositor thread": adr/0397-observe-controller-consumers-off-the-compositor-thread.md
       - "0426: DualSense layout and held actions": adr/0426-dualsense-desktop-layout-and-held-actions.md
       - "0427: Shared input actions and controller layers": adr/0427-share-programmable-input-actions-and-controller-layers.md
+      - "0428: Pause controller input only for the focused application": adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md

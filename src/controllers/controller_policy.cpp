@@ -84,6 +84,14 @@ QPointF gyroMotion(QPointF v, double sensitivity, double dt) {
     return v * (sensitivity * std::min(dt, 0.05));
 }
 QString defaultFamilyId(const QString &family) { return QStringLiteral("default:") + family; }
+QString displayableConsumerName(const QString &name) {
+    QString safe;
+    for (const QChar ch : name) {
+        if (ch.isLetterOrNumber() || QLatin1String(" ._-+").contains(ch)) safe += ch;
+        if (safe.size() >= 32) break;
+    }
+    return safe.trimmed();
+}
 QString controllerProfileId(const QString &guid, const QString &serial, quint16 vendor, quint16 product, const QString &family) {
     auto stableSerial = serial.trimmed().toLower();
     if (family == "playstation" || family == "dualsense") { stableSerial.remove(':'); stableSerial.remove('-'); }

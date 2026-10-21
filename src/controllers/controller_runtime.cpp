@@ -58,7 +58,8 @@ public:
         SDL_JoystickID instance = 0;
     };
     Private(ControllerRuntime &owner, InputSink &sink, QString path, RuntimeEnvironment env)
-        : q(owner), sink(sink), store(std::move(path)), observer(std::move(env.procRoot)), virtualOnly(env.virtualDevicesOnly) {
+        : q(owner), sink(sink), store(std::move(path)), observer(std::move(env.procRoot)), virtualOnly(env.virtualDevicesOnly),
+          sysRoot(std::move(env.sysRoot)), devRoot(std::move(env.devRoot)) {
         QObject::connect(&observer, &GamePriorityObserver::invalidated, &q, [this] {
             priorityReady = false;
             for (auto &[id, device] : devices) { Q_UNUSED(id); release(device); }
@@ -96,6 +97,14 @@ public:
         observer.refresh(std::move(paths), invalidate);
     }
     void bump() { ++revision; Q_EMIT q.changed(revision); }
+    // Name of the process pausing this device, for Settings. Smallest path
+    // first so the label does not change between equivalent scans.
+    QString gameConsumer(const Device &device) const {
+        auto paths = device.paths;
+        paths.sort();
+        for (const auto &path : paths) if (const auto name = game.gameConsumers.value(path); !name.isEmpty()) return name;
+        return {};
+    }
     void toggleGyro(Device &device) {
         if (!SDL_GamepadHasSensor(device.pad, SDL_SENSOR_GYRO)) return;
         auto profile = device.profile;
@@ -206,7 +215,7 @@ public:
                 store.set(dev.id, dev.profile, dev.description);
                 store.save(error);
             }
-            dev.paths = controllerDevicePaths(SDL_GetGamepadVendor(pad), SDL_GetGamepadProduct(pad), QString::fromUtf8(SDL_GetGamepadPath(pad)));
+            dev.paths = controllerDevicePaths(SDL_GetGamepadVendor(pad), SDL_GetGamepadProduct(pad), QString::fromUtf8(SDL_GetGamepadPath(pad)), sysRoot, devRoot);
             for (const auto &path : dev.paths) if (!watchedPaths.contains(path) && fd >= 0) {
                 const int watch = inotify_add_watch(fd, path.toUtf8().constData(), IN_OPEN | IN_CLOSE_WRITE | IN_CLOSE_NOWRITE | IN_DELETE_SELF);
                 if (watch >= 0) { watches.append(watch); watchedPaths.insert(path); }
@@ -229,7 +238,11 @@ public:
     }
     void process(SDL_JoystickID instance, Device &dev, double dt) {
         QString reason = !priorityReady ? "checking-game" : !context ? contextReason : !dev.profile.enabled ? "disabled" : QString{};
-        for (const auto &path : dev.paths) if (game.busyPaths.contains(path)) reason = "game";
+        // AGENT-GUARD (ADR-0428): only a holder that belongs to the focused
+        // application and is not a passive web-engine host pauses desktop
+        // control. busyPaths also lists browsers and background daemons, which
+        // must never disable the pad merely by holding its nodes open.
+        for (const auto &path : dev.paths) if (game.gamePaths.contains(path)) reason = "game";
         if (!reason.isEmpty()) {
             if (dev.armed || !dev.down.isEmpty()) release(dev);
             if (dev.reason != reason) { dev.reason = reason; bump(); }
@@ -308,6 +321,7 @@ public:
     GamePriorityState game;
     quint64 revision = 1;
     bool initialized = false, context = true, priorityReady = false, configReady = false, virtualOnly = false;
+    QString sysRoot, devRoot;
     QString contextReason, error;
     int fd = -1;
     QList<int> watches;
@@ -333,6 +347,9 @@ void ControllerRuntime::setContext(bool allowed, QString reason) {
 }
 void ControllerRuntime::refreshPriority() {
     d->refreshPriority(true);
+}
+void ControllerRuntime::setFocusedProcess(qint64 pid) {
+    d->observer.setFocusedProcess(pid);
 }
 void ControllerRuntime::tick() {
     if (!d->configReady) return;
@@ -360,7 +377,7 @@ QString ControllerRuntime::snapshot() const {
         row["config"] = profileJson(d->store.profile(id));
         row["connected"] = false;
         row["reason"] = d->game.steam ? "steam" : "disconnected";
-        for (const auto &[instance, dev] : d->devices) { Q_UNUSED(instance); if (dev.id == id) { row = dev.description; row["config"] = profileJson(dev.profile); row["connected"] = true; row["reason"] = dev.reason; row["ledStatus"] = dev.ledStatus; row["effectivePage"] = dev.layers.page(dev.profile).id; break; } }
+        for (const auto &[instance, dev] : d->devices) { Q_UNUSED(instance); if (dev.id == id) { row = dev.description; row["config"] = profileJson(dev.profile); row["connected"] = true; row["reason"] = dev.reason; if (dev.reason == "game") if (const auto name = d->gameConsumer(dev); !name.isEmpty()) row["consumer"] = name; row["ledStatus"] = dev.ledStatus; row["effectivePage"] = dev.layers.page(dev.profile).id; break; } }
         rows.append(row);
     }
     return json({{"schemaVersion", 2}, {"ready", d->configReady}, {"revision", QString::number(d->revision)},

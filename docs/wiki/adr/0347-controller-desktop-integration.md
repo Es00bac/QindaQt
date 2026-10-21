@@ -8,6 +8,7 @@
 - Amended by: [ADR-0426](0426-dualsense-desktop-layout-and-held-actions.md) adds DualSense defaults and held actions
 
 - Amended by: [ADR-0427](0427-share-programmable-input-actions-and-controller-layers.md), programmable input actions/layers, contact gyro and fullscreen media
+- Superseded by: [ADR-0428](0428-pause-controller-desktop-input-only-for-the-focused-application.md) for the clause that other same-user opens of related input/js/hidraw nodes suppress desktop output only; Steam priority, session gates and everything else here stand
 
 ## Context
 

@@ -135,7 +135,14 @@ QString ControllersModel::statusText() const {
     if (m_steam) return tr("Steam has control. Desktop controller input is paused.");
     const auto row = selected(); const auto reason = row.value("reason").toString();
     if (row.value("template").toBool()) return tr("Defaults apply when a new controller of this family connects.");
-    if (reason == "game") return tr("A game or another app is using this controller. Desktop input is paused.");
+    if (reason == "game") {
+        // The compositor pauses a controller only while the focused app is itself
+        // reading it (ADR-0428); `consumer` is optional and additive.
+        const auto name = row.value("consumer");
+        const auto consumer = name.typeId() == QMetaType::QString ? Controllers::displayableConsumerName(name.toString()) : QString{};
+        return consumer.isEmpty() ? tr("The app you're using is reading this controller directly. Desktop input is paused while it's focused.")
+            : tr("%1 is reading this controller directly. Desktop input is paused while it's focused.").arg(consumer);
+    }
     if (reason == "fullscreen") return tr("Desktop controller input is paused while an app is fullscreen.");
     if (reason == "release-controls") return tr("Release the buttons, lift your thumb from the touchpad, and center the sticks to resume desktop control.");
     if (reason == "disabled") return tr("Desktop control is disabled for this controller.");

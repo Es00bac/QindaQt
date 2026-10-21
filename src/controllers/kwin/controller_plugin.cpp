@@ -63,7 +63,17 @@ ControllerPlugin::ControllerPlugin()
             "Text could not be inserted. Focus an application text field and try again.", QStringList{}, QVariantMap{}, 7000});
         QDBusConnection::sessionBus().asyncCall(notify);
     });
-    QTimer::singleShot(0, this, [this] { refreshContext(); m_runtime.start(); m_context.start(); });
+    QTimer::singleShot(0, this, [this] {
+        refreshContext(); m_runtime.start(); m_context.start();
+        // AGENT-CONTRACT (ADR-0428): the runtime pauses a controller only for a
+        // game that belongs to the focused window's application, so it must be
+        // told which process that is, now and on every change. Only the pid is
+        // read here; the runtime's observation worker does all /proc work.
+        if (auto *workspace = KWin::workspace()) {
+            connect(workspace, &KWin::Workspace::windowActivated, this, &ControllerPlugin::focusChanged);
+            focusChanged(workspace->activeWindow());
+        }
+    });
 }
 ControllerPlugin::~ControllerPlugin() {
     if (!m_published) return;
@@ -86,6 +96,12 @@ void ControllerPlugin::refreshContext() {
     if (!reason.isEmpty()) m_input.reset();
     m_runtime.setContext(reason.isEmpty(), reason);
     reconcileTouchpads();
+}
+void ControllerPlugin::focusChanged(KWin::Window *window) {
+    // pid() is -1 for compositor-internal windows and 0 when an X11 client
+    // reports none; both mean "no application", which relates to nothing.
+    const auto pid = window ? window->pid() : 0;
+    m_runtime.setFocusedProcess(pid > 0 ? pid : 0);
 }
 void ControllerPlugin::reconcileTouchpads() {
     const auto devices = KWin::input()->devices();

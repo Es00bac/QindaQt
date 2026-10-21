@@ -14,8 +14,11 @@ records how a desk tablet keeps the screen's up and how its areas are mapped.
 The [Controllers destination](../architecture/controller-input.md) adds family
 defaults (including a separate DualSense layout) and per-controller button
 bindings, hold-to-dictate or voice commands, Meta+Shift mouse holds, gyro toggle, stick mouse and
-scrolling, supported touchpad and gyro controls. Steam and game consumers have
-priority under [ADR-0347](../adr/0347-controller-desktop-integration.md).
+scrolling, supported touchpad and gyro controls. Steam has priority under
+[ADR-0347](../adr/0347-controller-desktop-integration.md); a game reading the
+controller pauses it only while that game's own window is focused, and browsers
+or web-engine apps never do
+([ADR-0428](../adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md)).
 
 | Tab | What it changes | Authority |
 | --- | --- | --- |
@@ -302,8 +305,8 @@ layers. Page editing is independent of activation, with editable name/RGB color
 and ordinary/temporary type. The cycle-button picker applies one assignment to
 every page. DualSense ships Desktop/Navigation pages plus movement and editing
 layers; contact enables gyro and the click remains a left click. Fullscreen
-video keeps desktop control. Steam and actual device consumers still have
-priority. See [Controller input](../architecture/controller-input.md).
+video keeps desktop control. Steam has priority, and a game reading the pad pauses
+it while the game is focused. See [Controller input](../architecture/controller-input.md).
 
 Macros has a visual step builder with ordering, duplication, holds/releases,
 text, delays, motion, scrolling, a recording pad and copy/paste/window-drag

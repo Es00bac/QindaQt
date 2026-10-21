@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QTimer>
 
+namespace KWin { class Window; }
 namespace QindaQt::Controllers {
 class ControllerEndpoint final : public QObject {
     Q_OBJECT
@@ -31,6 +32,7 @@ public:
 private:
     void refreshContext();
     void reconcileTouchpads();
+    void focusChanged(KWin::Window *window);
     InputActions::MacroStore m_macros;
     ControllerInputDevice m_input;
     ControllerRuntime m_runtime;

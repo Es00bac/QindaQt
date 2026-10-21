@@ -62,4 +62,9 @@ QString defaultFamilyId(const QString &family);
 // Serial-backed physical identity ignores transport; empty serial preserves
 // the legacy GUID identity. No runtime handles or filesystem access.
 QString controllerProfileId(const QString &guid, const QString &serial, quint16 vendor, quint16 product, const QString &family);
+// A process name that is safe to show (ADR-0428): at most 32 letters, digits,
+// spaces and . _ - +, so a hostile name cannot inject control, bidirectional or
+// markup characters. The compositor applies it before publishing a snapshot's
+// optional `consumer` field and Settings applies it again on receipt.
+QString displayableConsumerName(const QString &name);
 } // namespace QindaQt::Controllers

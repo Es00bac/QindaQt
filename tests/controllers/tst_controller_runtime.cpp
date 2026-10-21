@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "fake_proc_tree.h"
 #include "qindaqt/controllers/controller_runtime.h"
 #include <SDL3/SDL.h>
 #include <QDir>
@@ -9,6 +10,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 using namespace QindaQt::Controllers;
+using QindaQt::Controllers::Testing::FakeProcTree;
 class Sink final : public InputSink {
 public:
     void button(const QString &token, const Binding &b, bool down) override {
@@ -43,6 +45,23 @@ class ControllerRuntimeTest final : public QObject {
             if (entry.toObject().value("connected").toBool()) return entry.toObject().value("reason").toString();
         return {};
     }
+    QJsonValue connectedField(ControllerRuntime &runtime, const QString &key) {
+        for (const auto &entry : snapshot(runtime).value("controllers").toArray())
+            if (entry.toObject().value("connected").toBool()) return entry.toObject().value(key);
+        return QJsonValue::Undefined;
+    }
+    // A fake /proc, /sys and /dev in which the virtual DualSense owns one input
+    // node, so a fake process can hold it exactly as a real consumer would.
+    struct Machine {
+        Machine() {
+            node = tree.device("event77");
+            tree.describeInputNode("event77", 0x054c, 0x0ce6);
+        }
+        RuntimeEnvironment environment() const { return {tree.root(), true, tree.sysRoot(), tree.devRoot()}; }
+        QTemporaryDir config;
+        FakeProcTree tree;
+        QString node;
+    };
     void button(SDL_GamepadButton b, bool down, ControllerRuntime &runtime) {
         QVERIFY(SDL_SetJoystickVirtualButton(m_joystick, b, down)); SDL_UpdateGamepads(); runtime.tick();
     }
@@ -254,6 +273,80 @@ private Q_SLOTS:
         QCOMPARE(sink.events.size(), count);
         button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime); button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
         QVERIFY(sink.events.size() > count);
+    }
+    // ADR-0428. The reported failure: a browser or web-engine app held the pad's
+    // nodes for as long as it ran and turned desktop control off, focused or not.
+    void holderOutsideTheFocusedApplicationNeverPausesDesktopControl() {
+        Machine machine; Sink sink;
+        machine.tree.add(5001, {.comm = "mygame", .holds = {machine.node}});
+        machine.tree.add(6001, {.comm = "terminal"});
+        ControllerRuntime runtime(sink, machine.config.filePath("controllers.json"), nullptr, machine.environment());
+        runtime.setFocusedProcess(6001);
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        QVERIFY(!connectedField(runtime, "consumer").isString());
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
+        QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.events.last().first, "dictate");
+    }
+    void focusingTheGameReleasesAtOnceThenReportsGameAndFocusingAwayResumesOnlyAfterNeutralControls() {
+        Machine machine; Sink sink;
+        machine.tree.add(5001, {.comm = "mygame", .holds = {machine.node}});
+        machine.tree.add(6001, {.comm = "terminal"});
+        ControllerRuntime runtime(sink, machine.config.filePath("controllers.json"), nullptr, machine.environment());
+        runtime.setFocusedProcess(6001);
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(!sink.held.isEmpty());
+        const auto count = sink.events.size();
+        // The release happens inside the focus change itself, before any scan
+        // result, so the game can never receive the desktop button.
+        runtime.setFocusedProcess(5001);
+        QVERIFY(sink.held.isEmpty());
+        QTRY_COMPARE(connectedReason(runtime), "game");
+        QCOMPARE(connectedField(runtime, "consumer").toString(), "mygame");
+        runtime.tick(); QVERIFY(sink.held.isEmpty()); QCOMPARE(sink.events.size(), count);
+        // Focusing away resumes only once the buttons are neutral again.
+        runtime.setFocusedProcess(6001);
+        QTRY_COMPARE(connectedReason(runtime), "release-controls");
+        QVERIFY(!connectedField(runtime, "consumer").isString());
+        QCOMPARE(sink.events.size(), count);
+        button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime); QCOMPARE(connectedReason(runtime), "active");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(sink.events.size() > count);
+    }
+    void focusChangeNeverReleasesHeldInputWhileNoGameHoldsTheController() {
+        const auto run = [this](bool passiveHolder) {
+            Machine machine; Sink sink;
+            if (passiveHolder) machine.tree.add(5001, {.comm = "qindastream",
+                .maps = "7f00-7f01 r-xp 0 00:00 1 /usr/lib64/libQt6WebEngineCore.so.6.11.1\n", .holds = {machine.node}});
+            machine.tree.add(6001, {.comm = "terminal"});
+            ControllerRuntime runtime(sink, machine.config.filePath("controllers.json"), nullptr, machine.environment());
+            runtime.setFocusedProcess(6001);
+            runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+            button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime); QVERIFY(!sink.held.isEmpty());
+            const auto resets = sink.resets;
+            // A held Meta-drag that activates another window must keep working.
+            for (const qint64 pid : {5001, 6001, 7002, 0, 5001}) {
+                runtime.setFocusedProcess(pid);
+                QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.resets, resets);
+            }
+            QTest::qWait(150); runtime.tick();
+            QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.resets, resets);
+            QCOMPARE(connectedReason(runtime), "active");
+            // The virtual pad outlives this runtime; leave it neutral for the next.
+            button(SDL_GAMEPAD_BUTTON_SOUTH, false, runtime);
+        };
+        run(false);
+        if (!QTest::currentTestFailed()) run(true);
+    }
+    void passiveWebEngineHolderNeverPausesEvenWhenItsAppIsFocused() {
+        Machine machine; Sink sink;
+        // qindastream: a QtWebEngine video app that never asked for the pad but
+        // inherits Chromium's gamepad service, which holds every node for life.
+        machine.tree.add(5001, {.comm = "qindastream",
+            .maps = "7f00-7f01 r-xp 0 00:00 1 /usr/lib64/libQt6WebEngineCore.so.6.11.1\n", .holds = {machine.node}});
+        ControllerRuntime runtime(sink, machine.config.filePath("controllers.json"), nullptr, machine.environment());
+        runtime.setFocusedProcess(5001);
+        runtime.start(); QTRY_COMPARE(connectedReason(runtime), "active");
+        button(SDL_GAMEPAD_BUTTON_SOUTH, true, runtime);
+        QVERIFY(!sink.held.isEmpty()); QCOMPARE(sink.events.last().first, "dictate");
     }
     void stickTouchpadAndGyro() {
         QTemporaryDir dir; Sink sink; QDir().mkpath(dir.filePath("proc"));

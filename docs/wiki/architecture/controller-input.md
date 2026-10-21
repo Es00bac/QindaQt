@@ -118,13 +118,55 @@ mouse and scrolling while keeping buttons, touchpad and gyro available.
 ## Games and session ownership
 
 Steam always takes priority while running. The desktop plugin releases its SDL
-handles until Steam exits. A game or other same-user process holding a related
-input/js/hidraw node suppresses that controller's desktop output, including when
-the game opened it before the desktop discovered it. Locked screens and inactive sessions also suppress output. Fullscreen status
-alone does not suppress input, so browser video and other fullscreen desktop
-applications retain controller control. Current buttons and keys are
-released, and controller-owned dictation is canceled. After suppression, controls
-must be released and sticks centered before desktop actions resume.
+handles until Steam exits. Locked screens and inactive sessions also suppress
+output. Fullscreen status alone does not suppress input, so browser video and
+other fullscreen desktop applications retain controller control.
+
+Another same-user process holding a related input/js/hidraw node pauses that
+controller (`game`) only while it is part of the application that owns the
+focused window **and** is not a passive web-engine host
+([ADR-0428](../adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md),
+which supersedes ADR-0347's any-open rule). This includes a game that opened the
+node before the desktop discovered it. A background holder suppresses nothing, so
+a game in another window, a browser or a daemon holding the pad never turns
+desktop control off. Current buttons and keys are released, and
+controller-owned dictation is canceled, whenever control pauses. After a pause,
+controls must be released and sticks centered before desktop actions resume.
+
+A **passive web-engine host** is a holder whose mappings include QtWebEngine
+(`libQt6WebEngineCore.so`), Gecko (`libxul.so`), CEF (`libcef.so`) or the ICU data
+file that Chromium and Electron map (`icudtl.dat`). Their gamepad service opens
+every pad once any page touches the Gamepad API and keeps it for the life of the
+process, so the hold says nothing about what the user is doing. It never pauses
+control, even while that app is focused. Mappings are read only for processes
+that hold a watched node, in bounded chunks; a holder that cannot be classified is
+treated as a possible game.
+
+The compositor plugin reports the process of the active window on every
+activation. A holder is **part of the focused application** when any of these
+holds; a relation that needs an unreadable fact does not exist, and the
+compositor's own session, cgroup and windows never relate anything:
+
+| Rule | The holder and the focused window's process |
+| --- | --- |
+| Same process | are one process |
+| Ancestry | are ancestor and descendant (at most 32 parent hops; the walk stops at pid 1, the compositor and other users' processes), which covers gamescope and launchers |
+| Private session | share a session id that is not the compositor's; shell launches each get their own session and their children inherit it |
+| Private cgroup | share a cgroup v2 path that is not a login `session-*.scope`, not the root and not the compositor's, such as a QindaLutris `systemd-run --user --scope` game |
+| Wine prefix | are both Wine processes (image `.exe`, or the `wine`/`wine64`/`wine-preloader`/`wine64-preloader` loader) with the same `WINEPREFIX`, unset meaning `~/.wine`; this joins `winedevice.exe`, which holds the HID nodes, to the game's window |
+
+Focusing the application of a holder that is not a web engine stops desktop
+output immediately, before the application can receive leaked desktop input, and
+reports `game`. A focus change when no such holder exists releases nothing, so a
+held Meta-drag that activates another window keeps working.
+
+Accepted limits: a browser, Electron, NW.js or CEF game that reads the pad through
+the Gamepad API shares it with desktop control while focused, so turn the
+profile's desktop control off for that controller in Settings; and background
+remapper daemons are not recognized, because nothing they hold is the focused
+application's input. The relation rules are heuristics over process facts; a
+window whose process the compositor cannot report (an X11 client without XRes)
+cannot own a game.
 
 The plugin never grabs controller nodes, never creates a virtual gamepad, never
 remaps input delivered to games, and does not change Steam configuration.
@@ -159,7 +201,9 @@ owner-only permissions. It stores no credentials and invokes no shell commands.
 
 Snapshots are at most 4 MiB with at most 64 profiles and 32 connected devices.
 Fields include id/name/family, connection/capability truth, current suppression
-reason, RGB capability/LED status, effective page and config. Config has enabled,
+reason (plus an optional sanitized `consumer` name, at most 32 characters, while
+the reason is `game`; additive, so `schemaVersion` stays 2), RGB capability/LED
+status, effective page and config. Config has enabled,
 pointerStick, pointerSpeed, deadzone, touchpad, gyro, gyroSpeed, activePage and
 1–12 pages (id/name/color/layer/bindings). Each controller config is ≤128 KiB;
 the atomic profile file is ≤2 MiB and schemaVersion 2. Version-1 files remain
@@ -184,6 +228,12 @@ an invalidated result cannot restore authority. This transient state reports
 runs, so held controls do not drop once a second. Destruction interrupts and
 joins the worker before unloading plugin code
 ([ADR-0397](../adr/0397-observe-controller-consumers-off-the-compositor-thread.md)).
+The plugin passes the active window's pid to the runtime on the compositor
+thread; the worker alone reads `/proc`. A focus change requests a fresh scan and
+invalidates held input only when the last observation had a holder that is not a
+web engine; a scan computed for another focus is kept if it names no such holder
+and rescanned if it does
+([ADR-0428](../adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md)).
 The SDL runtime borrows a sink that outlives it; each held
 token must be released on suppression/disconnect/destruction. Voice1 dictation and command requests
 use its exact unique bus owner and current revision, with no replay after an
@@ -194,6 +244,8 @@ DualSense family, gyro persistence and held action contract.
 [ADR-0427](../adr/0427-share-programmable-input-actions-and-controller-layers.md)
 supersedes its fixed chord/fullscreen rules with shared combinations, pages,
 contact gyro, held layers and reusable input macros.
+[ADR-0428](../adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md)
+supersedes its rule that any other same-user open pauses a controller.
 Qt method-return messages do not supply the service owner through `service()`.
 Controller dictation resolves the activated Voice1 name through the bus and reads
 that unique owner before starting the capture.
@@ -208,13 +260,25 @@ installed QindaQt KWin SDK. It does not compile the desktop or KWin.
 - `qindaqt.controller-input-state`: modifier/mouse event ordering, shared-trigger
   modifiers and duplicate mouse holds.
 - `qindaqt.controller-settings`: family/default display, available buttons/actions,
-  edits gated by authority, readback, Steam status, owner loss.
+  edits gated by authority, readback, Steam status, owner loss, the `game`
+  wording and the optional sanitized consumer name.
 - `qindaqt.controller-runtime`: SDL virtual DualSense layout, both voice actions, trigger chords,
   gyro press/hold/release and persisted preference, family-correct reset,
-  stick/touchpad/gyro motion, suppression releases, neutral resume, Steam startup.
+  stick/touchpad/gyro motion, suppression releases, neutral resume, Steam startup,
+  and the focus lifecycle over fake `/proc`, `/sys` and `/dev` trees: a background
+  or passive web-engine holder never pauses, focusing a game releases at once and
+  reports `game`, focusing away resumes after neutral controls, and focus changes
+  without a game never release held input.
 - `qindaqt.controller-observation`: a blocked scan leaves the event loop live,
   coalesced requests, invalidated-result rejection, normal scheduling and joined
-  interrupted teardown.
+  interrupted teardown; focus-change invalidation only with a non-web-engine
+  holder, fencing of the scan computed for the old focus, and rescans of results
+  that name a holder under a stale focus.
+- `qindaqt.controller-focus-ownership`: fake `/proc` trees for background versus
+  focused holders, each passive web-engine marker (including a marker across a read
+  chunk and past the read bound), every relation rule with the compositor's
+  session and cgroup exclusions, the ancestry bounds, Wine prefixes, unknown
+  compositor identity and name sanitization.
 - `qindaqt.controller-bus`: private out-of-process provider, change-during-read
   convergence, mutation completion after readback, and dictation/command start, release and cancellation.
 
