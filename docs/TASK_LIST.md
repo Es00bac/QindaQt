@@ -1,31 +1,34 @@
 ## Laptop playback and screensaver frame stalls — 2026-10-17
 
-## October 20 — Requested DualSense desktop layout
+## October 20 — Requested DualSense layout installed
 
-The controller-only slice from `4e886968b` is integrated here with identical
-controller, Settings Input and test blobs. DualSense has its own family defaults,
-all 19 requested bindings, held Voice1 command/dictation modes, a persistent gyro
-toggle, and Meta+Shift held mouse actions. Other controller families and saved
-motion preferences retain their values. ADR-0426 records the contract.
+Controller source `d4c85a4b5` is integrated on main. DualSense has separate family
+defaults with all 19 requested bindings, held Voice1 command/dictation modes,
+persistent gyro toggling and Meta+Shift mouse holds (ADR-0426). New voice holds
+also recover from a previous provider Error without replaying an utterance.
 
-The standalone plugin build and six controller CTest groups pass (41 QtTest
-results, no failures/skips); the real QML controller section exposes DualSense
-motion controls in an offscreen capability smoke (3 results). The implementation
-was reviewed in the selected Codex session; no other model or worker was
-requested or launched. The signed r38 Portage build is in progress over the
-laptop's exact signed r35 image, rebuilding Settings Input/Settings and the
-controller plugin. Installed adoption and authoritative 19-binding readback are
-still pending. This controller integration does not integrate the separate
-Desktop Harmony or animation work.
+Signed `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r39` is Portage-installed on
+qinda-top. The running compositor loaded `qindaqt_controllers_r39`; the original
+compositor and shell processes remained alive. Authoritative Controllers1
+readback verifies 19 bindings on five profiles: one connected DualSense, three
+remembered DualSense profiles and the DualSense defaults. Motion preferences and
+all other controller profiles retain their values; the saved file is mode 0600.
 
-Controller process inspection blocked the compositor for roughly 450 ms once
-per second. Source `b331c826c` moves it to one coalesced worker and preserves
-game priority, current-result fencing and neutral resume. The signed r32 package
-is Portage-installed and its controller plugin is live without restarting the
-compositor or shell. Five controller test groups (28 QtTest cases), complete
-installed-file verification, strict docs and local links pass. The final trace
-has no long stalls; the controller had disconnected by then, so connected-device
-playback confirmation is separate. See [acceptance evidence](wiki/architecture/controller-input.md#october-17-frame-timing-acceptance).
+The focused build and six CTest groups pass (43 QtTest results, zero failures or
+skips), as does the real QML capability smoke. The installed Controllers route
+reports `QINDAQT_ROUTE_CONSTRUCTED input ready`. Every one of the package's 2,411
+installed files/symlinks matches its signed image. r38 replaced only five Settings
+paths plus the controller plugin over the signed r35 image (2,688 base paths
+unchanged); r39 changes only that plugin over r38 (2,693 base paths unchanged).
+Final artifact: 87,296,000 bytes; SHA-256
+`2edd3ee9a80a18b5c9a88b7101fc1d3132f09a47aa08eb3e6af39c19ff4f0f96`.
+
+This is an explicit laptop repair over its installed r35 image. The shared
+catalog's existing r32 baseline remains unchanged; use the r39 atom for this
+layout until the next desktop delivery adopts it. No Desktop Harmony or animation
+source was integrated here. No physical button presses or live voice utterances
+were synthesized or recorded. All work and packaging are preserved on qinda;
+no other model or worker was launched.
 
 ## Post-reboot service incident — 2026-10-17
 

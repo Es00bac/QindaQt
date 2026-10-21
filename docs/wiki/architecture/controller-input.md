@@ -216,3 +216,28 @@ The focused standalone build and five controller CTest groups pass (28 QtTest
 cases, zero failures/skips). Strict MkDocs and local link/navigation validation
 pass. The signed artifact is 63,313,920 bytes, SHA-256
 `83637df1d16e3af764a4a87027093f1b80ec5475682c5cfc3d2b08ec6b84f5ca`.
+
+### October 20 DualSense layout acceptance
+
+The requested layout and fresh voice capture recovery are integrated on main at
+`d4c85a4b5`. The signed r39 package is installed on qinda-top; the running
+compositor adopted `qindaqt_controllers_r39` without restarting the compositor
+or shell. Exact-revision Controllers1 patches and readback verify all 19 bindings
+on the connected DualSense, three remembered DualSense profiles and its family
+defaults, preserving motion preferences and other families. The saved file is
+owner-only (0600).
+
+The r38 build reuses the authenticated r35 image and rebuilds Settings/Input and
+the controller plugin; five Settings paths and that plugin change, while 2,688
+base paths retain their contents and modes. r39 uses the authenticated r38 image
+and replaces only the controller plugin, retaining 2,693 other paths. This is an
+explicit laptop repair over its installed r35 desktop; the existing shared r32
+delivery catalog is unchanged. Older plugins cannot read the new action IDs.
+
+The focused build and all six controller CTest groups pass (43 QtTest results,
+zero failures/skips). The real QML controller section's capability smoke and the
+installed Controllers route construction probe pass. All 2,411 installed files
+and symlinks match the signed package. No live voice utterance was recorded and
+no physical button press was synthesized; SDL and private-bus fixtures provide
+the action evidence. Final package: 87,296,000 bytes, SHA-256
+`2edd3ee9a80a18b5c9a88b7101fc1d3132f09a47aa08eb3e6af39c19ff4f0f96`.

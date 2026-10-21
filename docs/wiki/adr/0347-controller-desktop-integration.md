@@ -5,6 +5,7 @@
 - Owners: Controller platform and Settings Input modules
 - Scope: Compositor input, controller preferences and Controllers1
 - Amended by: [ADR-0397](0397-observe-controller-consumers-off-the-compositor-thread.md) moves process observation to one owned worker
+- Amended by: [ADR-0426](0426-dualsense-desktop-layout-and-held-actions.md) adds DualSense defaults and held actions
 
 ## Context
 
