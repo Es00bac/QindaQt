@@ -510,7 +510,11 @@ bounded `InjectTestInput` method emits only the documented absolute pointer,
 left button, and small fixed keyboard allowlist through the ordinary input
 chain. The allowed keyboard names include `volume-up` and `print` for the
 installed daily-controls row, and `left-control`/`w` for the workspace reopen
-row; shutdown releases held state before removing the device. Production
+row. Lowercase letters `a`-`z` and digits `0`-`9` are also accepted so
+scripted recordings can press shortcuts such as Meta+Shift+D; the wire names
+are a table in `developmentinputprotocol.cpp` and the evdev codes live in
+`kwindevelopmentinputinjector.cpp`. Shutdown releases held state before
+removing the device. Production
 does not construct the injector, and its gate-before-parse reply is identical
 for malformed and oversized input. This is a deterministic nested-session seam,
 never a public automation API or physical-device claim.

@@ -161,6 +161,7 @@ private Q_SLOTS:
     void emitsTouchContactsWithFramesThroughTheRegisteredDevice();
     void emitsWheelNotchesThroughTheRegisteredDevice();
     void translatesFullscreenAndShellProbeKeys();
+    void translatesLetterAndDigitKeys();
     void removesDeviceBeforeOwnedLifetimeEnds();
     void remainsUnavailableWithoutARegistrarBackend();
 };
@@ -403,6 +404,50 @@ void KWinDevelopmentInputInjectorTest::translatesFullscreenAndShellProbeKeys()
                                             KWin::KeyboardKeyState::Pressed,
                                             KWin::KeyboardKeyState::Released,
                                             KWin::KeyboardKeyState::Pressed}));
+}
+
+void KWinDevelopmentInputInjectorTest::translatesLetterAndDigitKeys()
+{
+    const auto state = std::make_shared<RegistrarState>();
+    KWinDevelopmentInputInjector injector(
+        std::make_unique<RecordingRegistrar>(state));
+    DevelopmentInputBatch batch;
+    batch.events = {
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::A, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::D, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::M, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::R, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::S, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::T, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::Z, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::D0, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::D1, true,
+         DevelopmentInputButton::Left},
+        {DevelopmentInputEventType::Key, {}, DevelopmentInputKey::D9, true,
+         DevelopmentInputButton::Left},
+    };
+    QVERIFY(injector.inject(batch));
+    QCOMPARE(state->keys,
+             QList<quint32>({
+                             static_cast<quint32>(KEY_A),
+                             static_cast<quint32>(KEY_D),
+                             static_cast<quint32>(KEY_M),
+                             static_cast<quint32>(KEY_R),
+                             static_cast<quint32>(KEY_S),
+                             static_cast<quint32>(KEY_T),
+                             static_cast<quint32>(KEY_Z),
+                             static_cast<quint32>(KEY_0),
+                             static_cast<quint32>(KEY_1),
+                             static_cast<quint32>(KEY_9)}));
+    QCOMPARE(state->keyStates.size(), 10);
 }
 
 void KWinDevelopmentInputInjectorTest::removesDeviceBeforeOwnedLifetimeEnds()

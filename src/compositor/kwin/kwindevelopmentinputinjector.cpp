@@ -91,6 +91,70 @@ quint32 linuxKeyCode(DevelopmentInputKey key)
         return KEY_VOLUMEUP;
     case DevelopmentInputKey::Print:
         return KEY_SYSRQ;
+    case DevelopmentInputKey::A:
+        return KEY_A;
+    case DevelopmentInputKey::B:
+        return KEY_B;
+    case DevelopmentInputKey::D:
+        return KEY_D;
+    case DevelopmentInputKey::E:
+        return KEY_E;
+    case DevelopmentInputKey::F:
+        return KEY_F;
+    case DevelopmentInputKey::G:
+        return KEY_G;
+    case DevelopmentInputKey::H:
+        return KEY_H;
+    case DevelopmentInputKey::I:
+        return KEY_I;
+    case DevelopmentInputKey::J:
+        return KEY_J;
+    case DevelopmentInputKey::K:
+        return KEY_K;
+    case DevelopmentInputKey::L:
+        return KEY_L;
+    case DevelopmentInputKey::M:
+        return KEY_M;
+    case DevelopmentInputKey::O:
+        return KEY_O;
+    case DevelopmentInputKey::P:
+        return KEY_P;
+    case DevelopmentInputKey::Q:
+        return KEY_Q;
+    case DevelopmentInputKey::R:
+        return KEY_R;
+    case DevelopmentInputKey::S:
+        return KEY_S;
+    case DevelopmentInputKey::T:
+        return KEY_T;
+    case DevelopmentInputKey::U:
+        return KEY_U;
+    case DevelopmentInputKey::X:
+        return KEY_X;
+    case DevelopmentInputKey::Y:
+        return KEY_Y;
+    case DevelopmentInputKey::Z:
+        return KEY_Z;
+    case DevelopmentInputKey::D0:
+        return KEY_0;
+    case DevelopmentInputKey::D1:
+        return KEY_1;
+    case DevelopmentInputKey::D2:
+        return KEY_2;
+    case DevelopmentInputKey::D3:
+        return KEY_3;
+    case DevelopmentInputKey::D4:
+        return KEY_4;
+    case DevelopmentInputKey::D5:
+        return KEY_5;
+    case DevelopmentInputKey::D6:
+        return KEY_6;
+    case DevelopmentInputKey::D7:
+        return KEY_7;
+    case DevelopmentInputKey::D8:
+        return KEY_8;
+    case DevelopmentInputKey::D9:
+        return KEY_9;
     }
     Q_UNREACHABLE_RETURN(0);
 }
@@ -201,33 +265,14 @@ public:
         // AGENT-GUARD: Removing a keyboard/pointer device does not synthesize
         // releases in KWin 6.6.5. Clear held test state first or an interrupted
         // scenario can leave compositor modifiers/buttons logically stuck.
-        for (const auto key : {DevelopmentInputKey::LeftMeta,
-                               DevelopmentInputKey::LeftAlt,
-                               DevelopmentInputKey::LeftControl,
-                               DevelopmentInputKey::LeftShift,
-                               DevelopmentInputKey::F1,
-                               DevelopmentInputKey::F11,
-                               DevelopmentInputKey::C,
-                               DevelopmentInputKey::N,
-                               DevelopmentInputKey::Tab,
-                               DevelopmentInputKey::Escape,
-                               DevelopmentInputKey::Space,
-                               DevelopmentInputKey::Up,
-                               DevelopmentInputKey::Down,
-                               DevelopmentInputKey::Left,
-                               DevelopmentInputKey::Right,
-                               DevelopmentInputKey::Enter,
-                               DevelopmentInputKey::V,
-                               DevelopmentInputKey::W,
-                               DevelopmentInputKey::VolumeUp,
-                               DevelopmentInputKey::Print}) {
-            if (m_pressedKeys.contains(key)) {
-                dispatch({.type = DevelopmentInputEventType::Key,
-                          .position = {},
-                          .key = key,
-                          .pressed = false,
-                          .button = DevelopmentInputButton::Left});
-            }
+        // Copy: dispatch() erases from m_pressedKeys as each release lands.
+        const auto pressed = m_pressedKeys;
+        for (const auto key : pressed) {
+            dispatch({.type = DevelopmentInputEventType::Key,
+                      .position = {},
+                      .key = key,
+                      .pressed = false,
+                      .button = DevelopmentInputButton::Left});
         }
         for (const auto button : {DevelopmentInputButton::Left,
                                   DevelopmentInputButton::Right}) {

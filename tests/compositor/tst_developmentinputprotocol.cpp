@@ -72,6 +72,7 @@ private Q_SLOTS:
     void parsesBoundedPointerAxisSteps();
     void parsesFullscreenAndShellProbeKeys();
     void parsesDailyControlsAndWorkspaceProbeKeys();
+    void parsesEveryLetterAndDigitKey();
     void rejectsMalformedAndLimitFailures();
     void checksProductionGateBeforePayloadInspection();
     void reportsUnavailableSinkAndCapabilities();
@@ -255,6 +256,29 @@ void DevelopmentInputProtocolTest::parsesDailyControlsAndWorkspaceProbeKeys()
     QCOMPARE(parsed->events.at(1).key, DevelopmentInputKey::Print);
     QCOMPARE(parsed->events.at(2).key, DevelopmentInputKey::LeftControl);
     QCOMPARE(parsed->events.at(3).key, DevelopmentInputKey::W);
+}
+
+void DevelopmentInputProtocolTest::parsesEveryLetterAndDigitKey()
+{
+    // Each lowercase letter and digit is accepted and maps to a distinct key;
+    // uppercase and multi-character names stay rejected.
+    QSet<int> seen;
+    for (const QString &name : QString(QStringLiteral("abcdefghijklmnopqrstuvwxyz0123456789")).split(QString(), Qt::SkipEmptyParts)) {
+        const auto payload = request({QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                                                   {QStringLiteral("key"), name},
+                                                   {QStringLiteral("pressed"), true}}});
+        DevelopmentInputFailure failure;
+        const auto parsed = DevelopmentInputCodec::parse(payload, &failure);
+        QVERIFY2(parsed.has_value(), qPrintable(name));
+        seen.insert(static_cast<int>(parsed->events.at(0).key));
+    }
+    QCOMPARE(seen.size(), 36);
+    for (const QString &bad : {QStringLiteral("A"), QStringLiteral("ab"), QStringLiteral("10"), QStringLiteral("")}) {
+        const auto payload = request({QJsonObject{{QStringLiteral("type"), QStringLiteral("key")},
+                                                   {QStringLiteral("key"), bad},
+                                                   {QStringLiteral("pressed"), true}}});
+        QVERIFY2(!DevelopmentInputCodec::parse(payload), qPrintable(bad));
+    }
 }
 
 void DevelopmentInputProtocolTest::rejectsMalformedAndLimitFailures()

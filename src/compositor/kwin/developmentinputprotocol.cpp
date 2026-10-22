@@ -70,6 +70,79 @@ bool isTouchId(const QJsonValue &value)
     return id >= 0.0 && id <= DevelopmentInputCodec::MaxTouchId && id == std::floor(id);
 }
 
+struct KeyName final
+{
+    QLatin1StringView name;
+    DevelopmentInputKey key;
+};
+
+// AGENT-CONTRACT: These names are the wire grammar of InjectTestInput; the
+// evdev mapping lives in kwindevelopmentinputinjector.cpp. Add a key to both.
+constexpr KeyName kKeyNames[] = {
+    {QLatin1StringView("left-meta"), DevelopmentInputKey::LeftMeta},
+    {QLatin1StringView("left-alt"), DevelopmentInputKey::LeftAlt},
+    {QLatin1StringView("left-control"), DevelopmentInputKey::LeftControl},
+    {QLatin1StringView("left-shift"), DevelopmentInputKey::LeftShift},
+    {QLatin1StringView("f1"), DevelopmentInputKey::F1},
+    {QLatin1StringView("f11"), DevelopmentInputKey::F11},
+    {QLatin1StringView("tab"), DevelopmentInputKey::Tab},
+    {QLatin1StringView("escape"), DevelopmentInputKey::Escape},
+    {QLatin1StringView("space"), DevelopmentInputKey::Space},
+    {QLatin1StringView("up"), DevelopmentInputKey::Up},
+    {QLatin1StringView("down"), DevelopmentInputKey::Down},
+    {QLatin1StringView("left"), DevelopmentInputKey::Left},
+    {QLatin1StringView("right"), DevelopmentInputKey::Right},
+    {QLatin1StringView("enter"), DevelopmentInputKey::Enter},
+    {QLatin1StringView("volume-up"), DevelopmentInputKey::VolumeUp},
+    {QLatin1StringView("print"), DevelopmentInputKey::Print},
+    {QLatin1StringView("a"), DevelopmentInputKey::A},
+    {QLatin1StringView("b"), DevelopmentInputKey::B},
+    {QLatin1StringView("c"), DevelopmentInputKey::C},
+    {QLatin1StringView("d"), DevelopmentInputKey::D},
+    {QLatin1StringView("e"), DevelopmentInputKey::E},
+    {QLatin1StringView("f"), DevelopmentInputKey::F},
+    {QLatin1StringView("g"), DevelopmentInputKey::G},
+    {QLatin1StringView("h"), DevelopmentInputKey::H},
+    {QLatin1StringView("i"), DevelopmentInputKey::I},
+    {QLatin1StringView("j"), DevelopmentInputKey::J},
+    {QLatin1StringView("k"), DevelopmentInputKey::K},
+    {QLatin1StringView("l"), DevelopmentInputKey::L},
+    {QLatin1StringView("m"), DevelopmentInputKey::M},
+    {QLatin1StringView("n"), DevelopmentInputKey::N},
+    {QLatin1StringView("o"), DevelopmentInputKey::O},
+    {QLatin1StringView("p"), DevelopmentInputKey::P},
+    {QLatin1StringView("q"), DevelopmentInputKey::Q},
+    {QLatin1StringView("r"), DevelopmentInputKey::R},
+    {QLatin1StringView("s"), DevelopmentInputKey::S},
+    {QLatin1StringView("t"), DevelopmentInputKey::T},
+    {QLatin1StringView("u"), DevelopmentInputKey::U},
+    {QLatin1StringView("v"), DevelopmentInputKey::V},
+    {QLatin1StringView("w"), DevelopmentInputKey::W},
+    {QLatin1StringView("x"), DevelopmentInputKey::X},
+    {QLatin1StringView("y"), DevelopmentInputKey::Y},
+    {QLatin1StringView("z"), DevelopmentInputKey::Z},
+    {QLatin1StringView("0"), DevelopmentInputKey::D0},
+    {QLatin1StringView("1"), DevelopmentInputKey::D1},
+    {QLatin1StringView("2"), DevelopmentInputKey::D2},
+    {QLatin1StringView("3"), DevelopmentInputKey::D3},
+    {QLatin1StringView("4"), DevelopmentInputKey::D4},
+    {QLatin1StringView("5"), DevelopmentInputKey::D5},
+    {QLatin1StringView("6"), DevelopmentInputKey::D6},
+    {QLatin1StringView("7"), DevelopmentInputKey::D7},
+    {QLatin1StringView("8"), DevelopmentInputKey::D8},
+    {QLatin1StringView("9"), DevelopmentInputKey::D9},
+};
+
+[[nodiscard]] std::optional<DevelopmentInputKey> keyFromName(const QString &name)
+{
+    for (const auto &entry : kKeyNames) {
+        if (name == entry.name) {
+            return entry.key;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
 {
     if (!value.isObject()) {
@@ -175,49 +248,11 @@ std::optional<DevelopmentInputEvent> parseEvent(const QJsonValue &value)
         event.type = DevelopmentInputEventType::Key;
         event.pressed = object.value(QStringLiteral("pressed")).toBool();
         const auto key = object.value(QStringLiteral("key")).toString();
-        if (key == QStringLiteral("left-meta")) {
-            event.key = DevelopmentInputKey::LeftMeta;
-        } else if (key == QStringLiteral("left-alt")) {
-            event.key = DevelopmentInputKey::LeftAlt;
-        } else if (key == QStringLiteral("left-control")) {
-            event.key = DevelopmentInputKey::LeftControl;
-        } else if (key == QStringLiteral("left-shift")) {
-            event.key = DevelopmentInputKey::LeftShift;
-        } else if (key == QStringLiteral("f1")) {
-            event.key = DevelopmentInputKey::F1;
-        } else if (key == QStringLiteral("f11")) {
-            event.key = DevelopmentInputKey::F11;
-        } else if (key == QStringLiteral("c")) {
-            event.key = DevelopmentInputKey::C;
-        } else if (key == QStringLiteral("n")) {
-            event.key = DevelopmentInputKey::N;
-        } else if (key == QStringLiteral("tab")) {
-            event.key = DevelopmentInputKey::Tab;
-        } else if (key == QStringLiteral("escape")) {
-            event.key = DevelopmentInputKey::Escape;
-        } else if (key == QStringLiteral("space")) {
-            event.key = DevelopmentInputKey::Space;
-        } else if (key == QStringLiteral("up")) {
-            event.key = DevelopmentInputKey::Up;
-        } else if (key == QStringLiteral("down")) {
-            event.key = DevelopmentInputKey::Down;
-        } else if (key == QStringLiteral("left")) {
-            event.key = DevelopmentInputKey::Left;
-        } else if (key == QStringLiteral("right")) {
-            event.key = DevelopmentInputKey::Right;
-        } else if (key == QStringLiteral("enter")) {
-            event.key = DevelopmentInputKey::Enter;
-        } else if (key == QStringLiteral("v")) {
-            event.key = DevelopmentInputKey::V;
-        } else if (key == QStringLiteral("w")) {
-            event.key = DevelopmentInputKey::W;
-        } else if (key == QStringLiteral("volume-up")) {
-            event.key = DevelopmentInputKey::VolumeUp;
-        } else if (key == QStringLiteral("print")) {
-            event.key = DevelopmentInputKey::Print;
-        } else {
+        const auto parsedKey = keyFromName(key);
+        if (!parsedKey) {
             return std::nullopt;
         }
+        event.key = *parsedKey;
         return event;
     }
 
