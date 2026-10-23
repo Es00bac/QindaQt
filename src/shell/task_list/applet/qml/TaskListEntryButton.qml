@@ -94,11 +94,9 @@ T.ToolButton {
     transform: Translate {
         x: button.dragShiftX + button.dragFollowX
     }
-    // A container's user-chosen accent color (see ContainerAppearance)
-    // recolors its dock/panel icon; empty for every standalone window and
-    // every container that never picked a color, in which case the icon
-    // keeps the ordinary enabled/disabled token color — or white on the
-    // Luna dressing, where the bar supplies the dark ground.
+    // The compositor resolves a container override or its theme accent so
+    // chrome, taskbar and Alt+Tab agree. Empty is for ordinary windows or
+    // older producers; retain their token/Luna fallback for compatibility.
     readonly property color resolvedIconColor: String(entry.colorHex ?? "").length > 0
         ? entry.colorHex
         : (luna ? "white" : (enabled ? Tokens.fg.default : Tokens.fg.disabled))

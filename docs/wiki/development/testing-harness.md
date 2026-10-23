@@ -2310,8 +2310,9 @@ ctest --test-dir build/release \
 - `compositor.title-change-budget`: one title at 10 Hz for 10 simulated seconds
   through the production components. After: 41 caption deliveries,
   `WindowsChanged`, task-fact samples and `TaskListSnapshotChanged` each, 0
-  re-plans, 0 full-frame renders, 41 band renders, 13.9 MB uploaded, 1
-  credential lookup. Its model of the previous wiring: 100 / 100 / 200 / 100,
+  re-plans, 0 full-frame renders, 0 band renders, 0 bytes uploaded, 1
+  credential lookup. Since ADR-0429, numbered or renamed tabs do not follow
+  application caption spinners. Its model of the previous wiring: 100 / 100 / 200 / 100,
   100 re-plans and full renders, 1.48 GB, 200 lookups. The numbers are printed
   with `qInfo`.
 - `compositor.shell-credential-cache`: one lookup per unique name, no cached
@@ -2406,7 +2407,9 @@ The focused suites cover:
   and WindowSwitcher default seeding that preserves every existing user
   choice; and
 - QindaQt WindowSwitcher package metadata and warning-free QML validation over
-  KWin's native caption, icon, minimized, current-index, and activation model.
+  KWin's native minimized, current-index and activation model. The optional
+  process-local projection supplies container names and colored emblems;
+  ordinary windows keep native captions and icons (ADR-0429).
 
 The live Hybrid workflows are selected with:
 
@@ -5163,3 +5166,23 @@ These exercise injected platform writes only, not physical radio access.
 
 Viewer text-bound fixtures use ordinary-size in-bounds glyphs and direct Poppler
 ReadingOrder cap/cap-plus-one extraction preconditions before renderer admission.
+
+## Container identity and compact applet regression checks
+
+The October 23 maintenance slice is covered by 30 focused CTest groups, selected
+in `ops/team/messages/container-identity/20261023-handoff.md`. The new
+`core.page-names` row covers generated names, rename/reset, invalid text,
+reorder/transfer and old/new JSON. `compositor.container-identity` covers the
+switcher projection and native fallback. The existing Hybrid runtime and group
+menu rows now cover atomic rename rollback and exact page targeting.
+
+The four applet controller/QML rows cover snapshot withdrawal, owner replacement,
+keyboard control and Settings routing. Power interleaves an actual held-button
+drag with a provider snapshot, requires the same slider and grab to survive,
+and requires exactly one final request on release. Its three-level backlight
+fixture verifies a keyboard step reaches the next physical level. Bluetooth's
+missing-readback fixture retires its convergence fence within five seconds and
+never repeats the mutation. Optional `QINDAQT_APPLET_CAPTURE_DIR` captures each
+real popup against deterministic fake services; screenshots stay in ignored
+build output. The exact source also passes a native isolated container lifecycle
+smoke; none of these fixtures mutates host radios, brightness or session power.

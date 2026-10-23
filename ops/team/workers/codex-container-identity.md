@@ -1,6 +1,6 @@
 # Codex container identity and compact applets
 
-- Status: working — implementing the owner-requested container identity, tab naming, and compact applet reliability repairs
+- Status: available — source integrated and verified; waiting only for the established consolidated package/login delivery
 - Base: 0f2c3ca10
 - Branch: fix/container-identity-20261022
 - Ownership: container presentation/name model, task/switcher presentation, Bluetooth/Audio/Network/Power applets, focused tests and owning documentation
@@ -13,3 +13,5 @@
 - 2026-10-23T06:01:48+00:00 — Implemented identity projection, page name persistence and compact applet controls. Focused build is running; no completion or installation claimed.
 
 - 2026-10-23T06:25:37+00:00 — Native compositor target and isolated container lifecycle smoke pass on qinda. Core/page/workspace/chrome identity, Audio, Bluetooth and taskbar rendering checks pass; Network withdrawal and Power drag/scroll repairs are under focused rerun. Shell route integration target is building in the isolated qinda checkout.
+
+- 2026-10-23T07:04:09+00:00 — Product source 133fb8211 integrated on qinda hub main. Thirty focused CTest groups, compositor/shell builds, isolated native lifecycle smoke, strict docs and 578-document link/navigation validation pass. Handoff records the package boundary; no model workers or live service mutations.

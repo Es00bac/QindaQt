@@ -1,3 +1,27 @@
+## October 23 — Container identity and compact applets verified
+
+Product source `133fb8211` is integrated on the qinda hub's main branch
+(ADR-0429). Containers now use their own name and a dedicated tab-and-split
+emblem in the resolved container color in the taskbar, dock and bundled Alt+Tab.
+Tabs start as Tab 1, Tab 2, etc.; Rename Tab selects a stable page, and names
+survive reorder, transfer and saved-workspace round trips.
+
+Bluetooth, Audio, Network and Power have compact quick controls and direct
+Settings routes. Audio opens with Input/Output expanded and optional mixer
+bands collapsed. Bluetooth keeps secondary actions in its device menu and
+recovers from an accepted operation whose readback never arrives. Power keeps
+brightness gestures intact through popup forwarding and snapshot updates,
+sends their final value once, and supports keyboards with discrete levels.
+
+Verification: 30/30 focused CTest groups pass in 13.46 seconds; strict GCC builds
+of the compositor and production shell pass on qinda. One isolated native
+container lifecycle smoke passes. Strict MkDocs and repository link validation
+pass. Details: [handoff](../ops/team/messages/container-identity/20261023-handoff.md).
+
+This is verified, integrated source, not an installed desktop package. Keep the
+existing October 21 package-once/logout boundary and its audio equalizer note;
+no package installation or live desktop/service restart occurred in this slice.
+
 ## October 21: audio leak and controller ownership — RESUME HERE (Claude ⇄ Codex)
 
 Both owner-reported daily-driving defects are fixed and integrated on hub main

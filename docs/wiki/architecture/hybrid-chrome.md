@@ -396,11 +396,10 @@ both travel on the layout request, so the strip frame the compositor sizes and
 the string the badge paints can never disagree. `shade()` reserves the minimum
 because the placement controller has neither page titles nor a font; chrome
 synchronization then resizes the strip to the measured label, which is also how
-a strip grows and shrinks as its foremost page title changes while the
-container stays rolled up. The strip keeps its top-left and never outgrows the
+a strip grows and shrinks when its container is renamed while rolled up. The strip keeps its top-left and never outgrows the
 frame it was shaded from. When a strip cannot hold both, page pills drop into
 the "+N" counter before the label gives up any of its measured width: the label
-is the only thing on a rolled-up badge that says which page this is.
+identifies the container even when no page pills fit.
 
 That label is the container's own name
 ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md),
@@ -410,8 +409,9 @@ the user's rename, else "Container". The generated `Container N` numbering of
 [ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)
 is retired. The page title is only the fallback for a caller that supplies no
 name, and it is never prefixed or appended. Container
-names are not persisted: they live only for the container's process lifetime
-(see ADR-0189's consequences for exactly why a restart cannot keep them yet).
+names are not automatically restored after a process restart. Explicitly saved
+workspaces retain the name and color together with tab names/numbers and the
+layout; see [Saved workspaces](workspaces.md).
 No member is minimized (the container never becomes one collapsed dock
 entry) and no member's real frame is resized, but every member's content and
 pointer input are genuinely hidden while shaded, and only the shared-chrome
