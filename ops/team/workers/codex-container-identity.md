@@ -11,3 +11,5 @@
 - 2026-10-23T05:48:31+00:00 — Claimed the direct user requests in an isolated worktree. Preserve unrelated laptop and qinda changes. Focused checks only; package delivery remains at the established logout boundary.
 
 - 2026-10-23T06:01:48+00:00 — Implemented identity projection, page name persistence and compact applet controls. Focused build is running; no completion or installation claimed.
+
+- 2026-10-23T06:25:37+00:00 — Native compositor target and isolated container lifecycle smoke pass on qinda. Core/page/workspace/chrome identity, Audio, Bluetooth and taskbar rendering checks pass; Network withdrawal and Power drag/scroll repairs are under focused rerun. Shell route integration target is building in the isolated qinda checkout.

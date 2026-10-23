@@ -5,8 +5,14 @@
 The popup keeps its heading and direct **Settings…** link above its scrollable,
 output-bounded content. Power profiles share one compact row. Keyboard brightness
 keeps the same slider through snapshot updates and holds the user's drag value;
-one write is sent on release against the original control ID. Keyboard steps
-still dispatch directly. A disappearing or replaced control cannot redirect the
+one write is sent on release against the original control ID. The vertical
+scroll area cannot steal an active brightness drag and commit an early value.
+A passive `PointHandler` tracks physical pointer lifetime because Qt 6.11's
+[popup move forwarding](https://github.com/qt/qtdeclarative/blob/v6.11.1/src/quicktemplates/qquickpopupwindow.cpp)
+temporarily releases the slider's exclusive grab during moves; `pressedChanged`
+alone must never be treated as the end of that gesture. Keyboard steps
+use the same checked dispatch after key release and advance by at least one
+hardware brightness level, so keyboards with only a few levels remain usable. A disappearing or replaced control cannot redirect the
 unfinished gesture to another device. Session actions and confirmations remain
 available below the quick controls.
 

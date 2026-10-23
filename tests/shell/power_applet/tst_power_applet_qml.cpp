@@ -277,7 +277,8 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     const auto beforeDrag = transport.operations.size();
     QTest::mousePress(popupWindow, Qt::LeftButton, Qt::NoModifier, point(0.4));
     QTest::mouseMove(popupWindow, point(0.65));
-    QVERIFY(slider->property("pressed").toBool());
+    QVERIFY(slider->property("gestureActive").toBool());
+    QCOMPARE(popupWindow->mouseGrabberItem(), slider);
     const auto heldValue = slider->property("value").toReal();
     transport.invalidate(kOwner, 11, 3);
     transport.reply(transport.fetches.constLast(), powerClientSnapshot(11, 3));
@@ -430,7 +431,7 @@ void PowerAppletQmlTests::peripheralInventoryScrollsAndPreservesLaptopSummary()
     QVERIFY(scroll);
     QVERIFY(popup->property("height").toReal()<=600);
     QVERIFY(scroll->property("contentHeight").toReal()>scroll->height());
-    auto *flickable=scroll->property("contentItem").value<QQuickItem *>();
+    auto *flickable = scroll;
     QVERIFY(flickable);
     flickable->setProperty("contentY",flickable->property("contentHeight").toReal()-flickable->height());
     QTRY_VERIFY(flickable->property("contentY").toReal()>0);

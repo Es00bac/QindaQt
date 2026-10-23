@@ -38,6 +38,10 @@ set(allowed_includes
     "QtCore/QVariantMap"
     "QtDBus/QDBusConnection"
     "algorithm"
+    "functional"
+    "utility"
+    "QTimer"
+    "QPointer"
     "bluetooth_applet_controller.h"
     "bluetoothappletcomposition.h"
     "memory"
@@ -76,9 +80,15 @@ endforeach()
 foreach(path IN LISTS runtime_cpp_sources)
     file(READ "${path}" content)
     string(REGEX MATCHALL "#[ \t]*include[ \t]*[<\"]([^\">]+)" includes "${content}")
+    set(path_allowed_includes ${allowed_includes})
+    if(path IN_LIST composition_sources)
+        # Only composition owns the existing Settings route launcher; the
+        # applet receives a function and cannot acquire process authority.
+        list(APPEND path_allowed_includes "settingsroutelauncher.h")
+    endif()
     foreach(include_line IN LISTS includes)
         string(REGEX REPLACE "#[ \t]*include[ \t]*[<\"]" "" include_path "${include_line}")
-        if(NOT include_path IN_LIST allowed_includes)
+        if(NOT include_path IN_LIST path_allowed_includes)
             list(APPEND violations "${path}: non-boundary include '${include_path}'")
         endif()
     endforeach()

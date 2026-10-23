@@ -104,6 +104,11 @@ QVariantList PowerAppletController::keyboardRows() const
             {QStringLiteral("name"), row.name},
             {QStringLiteral("currentKnown"), row.currentKnown},
             {QStringLiteral("normalizedCurrent"), row.normalizedCurrent},
+            // A one-percent key step can round back to the same raw level on
+            // three/four-level keyboards. Always reach the next usable level.
+            {QStringLiteral("normalizedStep"), qMax<quint32>(100, row.rawMaximum == 0
+                ? 100 : quint32((quint64(Power::kNormalizedBrightnessMaximum)
+                                + row.rawMaximum - 1) / row.rawMaximum))},
             {QStringLiteral("adjustable"),
              m_powerControlGranted && row.adjustable},
             {QStringLiteral("pending"), operationPending()

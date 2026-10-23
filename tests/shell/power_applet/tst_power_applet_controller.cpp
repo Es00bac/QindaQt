@@ -43,6 +43,22 @@ class PowerAppletControllerTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void keyboardStepsReachTheNextHardwareLevel() {
+        FakePowerTransport transport;
+        Power::PowerClient client(&transport);
+        PowerAppletController controller(&client, true, true);
+        auto snapshot = powerClientSnapshot();
+        snapshot.keyboardBacklights[0].maximum = 3;
+        snapshot.keyboardBacklights[0].value = 1;
+        snapshot.keyboardBacklights[0].normalized = 3333;
+        publishReady(client, transport, snapshot);
+        const auto row = controller.keyboardRows().first().toMap();
+        const int next = row.value("normalizedCurrent").toInt()
+            + row.value("normalizedStep").toInt();
+        QVERIFY(controller.requestKeyboardBrightness(row.value("controlId").toString(), next));
+        QCOMPARE(transport.operations.size(), 1);
+        QCOMPARE(transport.operations.first().request.value, quint32(2));
+    }
     void settingsRouteDoesNotDependOnServiceAvailability() {
         FakePowerTransport transport;
         Power::PowerClient client(&transport);

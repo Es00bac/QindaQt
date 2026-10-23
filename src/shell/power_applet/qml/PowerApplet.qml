@@ -18,6 +18,7 @@ Item {
     readonly property bool available: access !== null
     readonly property var sessionActions: root.available ? root.access.sessionActions : null
     property string confirmationAction: ""
+    property Item brightnessDragControl: null
 
     objectName: "powerApplet"
     readonly property string percentageText: available && /[0-9]+%/.test(access.batteryLabel) ? access.batteryLabel.match(/[0-9]+%/)[0] : ""
@@ -132,18 +133,44 @@ Item {
                     }
                 }
             }
-            ScrollView {
+            Flickable {
                 id: powerScroll
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 objectName: "powerAppletScroll"
                 implicitHeight: Math.min(powerContents.implicitHeight, 360)
                 clip: true
-                contentWidth: availableWidth
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                contentWidth: width
+                contentHeight: powerContents.implicitHeight
+                flickableDirection: Flickable.VerticalFlick
+                boundsBehavior: Flickable.StopAtBounds
+                // Keep scrolling separate from an active brightness gesture.
+                // The passive pointer lifetime below survives popup forwarding;
+                // transient changes to Slider.pressed must not unlock this view.
+                interactive: root.brightnessDragControl === null
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                function revealFocusedControl() {
+                    const focused = powerScroll.Window.window?.activeFocusItem;
+                    let ancestor = focused;
+                    while (ancestor && ancestor !== powerContents)
+                        ancestor = ancestor.parent;
+                    if (!ancestor || !focused)
+                        return;
+                    const y = focused.mapToItem(powerContents, 0, 0).y;
+                    if (y < contentY)
+                        contentY = Math.max(0, y);
+                    else if (y + focused.height > contentY + height)
+                        contentY = Math.min(Math.max(0, contentHeight - height),
+                                            y + focused.height - height);
+                }
+                Connections {
+                    target: powerScroll.Window.window
+                    function onActiveFocusItemChanged() { powerScroll.revealFocusedControl(); }
+                }
                 ColumnLayout {
                     id: powerContents
-                    width: powerScroll.availableWidth
+                    width: powerScroll.width - (powerScroll.contentHeight > powerScroll.height ? 12 : 0)
                     spacing: 6
 
                     Label {
@@ -201,7 +228,7 @@ Item {
                                 objectName: "powerAppletProfileButton"
                                 Layout.fillWidth: true
                                 emphasized: modelData.active
-                                text: modelData.label
+                                text: modelData.active ? qsTr("✓ %1").arg(modelData.label) : modelData.label
                                 available: modelData.adjustable && !modelData.pending && !root.access.operationPending
                                 focusPolicy: Qt.TabFocus
                                 Accessible.role: Accessible.RadioButton
@@ -234,6 +261,7 @@ Item {
                                     "controlId": "",
                                     "currentKnown": false,
                                     "normalizedCurrent": 0,
+                                    "normalizedStep": 100,
                                     "adjustable": false,
                                     "pending": false,
                                     "accessibleName": "",
@@ -255,12 +283,13 @@ Item {
                                 Layout.fillWidth: true
                                 from: 0
                                 to: 10000
-                                stepSize: 100
+                                stepSize: parent.modelData.normalizedStep
                                 Binding {
                                     target: brightnessSlider
                                     property: "value"
                                     value: brightnessSlider.parent.modelData.currentKnown ? brightnessSlider.parent.modelData.normalizedCurrent : 0
-                                    when: !brightnessSlider.pressed
+                                    when: !brightnessSlider.gestureActive && !brightnessSlider.changedByUser
+                                          && !brightnessSlider.parent.modelData.pending
                                     restoreMode: Binding.RestoreNone
                                 }
                                 enabled: parent.modelData.adjustable && !parent.modelData.pending && !root.access.operationPending
@@ -270,23 +299,49 @@ Item {
                                 property bool changedByUser: false
                                 property string gestureControlId: ""
                                 property int requestedValue: 0
-                                onMoved: {
-                                    if (pressed) {
-                                        changedByUser = true;
-                                        requestedValue = Math.round(value);
+                                readonly property bool gestureActive: brightnessPointer.active || pressed
+
+                                // AGENT-GUARD: Popup.Window temporarily drops exclusive
+                                // grabs on moves (Qt 6.11). Its Slider.pressed change is
+                                // not a release; the passive point owns pointer lifetime.
+                                PointHandler {
+                                    id: brightnessPointer
+                                    acceptedButtons: Qt.LeftButton
+                                    target: null
+                                    onActiveChanged: brightnessSlider.updateGesture()
+                                }
+                                function updateGesture() {
+                                    if (brightnessPointer.active || brightnessSlider.pressed) {
+                                        if (gestureControlId === "")
+                                            gestureControlId = parent.modelData.controlId;
+                                        root.brightnessDragControl = brightnessSlider;
                                     } else {
-                                        root.access.requestKeyboardBrightness(parent.modelData.controlId, Math.round(value));
+                                        // Release delivery updates the final position after
+                                        // pointer handlers. Commit once after that event.
+                                        Qt.callLater(commitGesture);
                                     }
                                 }
-                                onPressedChanged: {
-                                    if (pressed) {
+                                function commitGesture() {
+                                    if (brightnessPointer.active || brightnessSlider.pressed)
+                                        return;
+                                    if (root.brightnessDragControl === brightnessSlider)
+                                        root.brightnessDragControl = null;
+                                    if (changedByUser && enabled
+                                            && gestureControlId === parent.modelData.controlId)
+                                        root.access.requestKeyboardBrightness(gestureControlId, requestedValue);
+                                    changedByUser = false;
+                                    gestureControlId = "";
+                                }
+                                onMoved: {
+                                    if (gestureControlId === "")
                                         gestureControlId = parent.modelData.controlId;
-                                    } else if (changedByUser) {
-                                        changedByUser = false;
-                                        if (enabled && gestureControlId === parent.modelData.controlId)
-                                            root.access.requestKeyboardBrightness(gestureControlId, requestedValue);
-                                    }
+                                    changedByUser = true;
+                                    requestedValue = Math.round(value);
+                                    if (!brightnessPointer.active && !brightnessSlider.pressed)
+                                        Qt.callLater(commitGesture);
                                 }
+                                onPressedChanged: updateGesture()
+
                             }
                         }
                     }

@@ -76,7 +76,13 @@ Frame {
         ToolButton {
             objectName: "bluetoothAppletDeviceMenuButton"
             visible: root.row.paired
-            text: "⋮"
+            implicitWidth: 28
+            contentItem: Label {
+                text: "⋮"
+                color: root.colors.text ?? "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
             Accessible.name: qsTr("More options for %1").arg(root.row.label)
             onClicked: {
                 deviceMenu.deviceId = root.row.id
