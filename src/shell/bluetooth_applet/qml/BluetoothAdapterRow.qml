@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaQt.Controls 1.0 as C
 
 Frame {
     id: root
@@ -25,7 +26,8 @@ Frame {
             Accessible.description: root.row.accessibleDescription
         }
 
-        Button {
+        C.Button {
+            emphasized: false
             objectName: "bluetoothAppletPowerButton"
             text: root.row.powered ? qsTr("Turn off") : qsTr("Turn on")
             enabled: root.row.canSetPowered
@@ -35,7 +37,8 @@ Frame {
             onClicked: root.access.requestAdapterPower(root.row.id, !root.row.powered)
         }
 
-        Button {
+        C.Button {
+            emphasized: false
             objectName: "bluetoothAppletDiscoveryButton"
             visible: root.row.powered
             text: root.row.canReleaseDiscovery ? qsTr("Stop") : qsTr("Find devices")

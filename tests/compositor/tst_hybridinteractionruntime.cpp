@@ -19,6 +19,7 @@ private slots:
     void delegatesNarrowDirectInteractions();
     void reportsUnavailableAndRejectedContainerResizeDelegates();
     void activatesTabsAndResizesDividersAtomically();
+    void renamesPagesAtomicallyWithoutChangingSelection();
     void selectsFirstActivePageSplitDeterministically();
     void releasesOneRequestedContainer();
     void releasesEveryContainerInStableOrder();
@@ -26,6 +27,33 @@ private slots:
     void adoptsRestoredIndependentLayoutAtomically();
     void rejectsInvalidRestoredLayoutWithoutMutation();
 };
+
+void HybridInteractionRuntimeTest::renamesPagesAtomicallyWithoutChangingSelection()
+{
+    RecordingSceneFactory scene;
+    HybridInteractionRuntime runtime({QStringLiteral("a"), QStringLiteral("b")}, scene);
+    QVERIFY(dock(runtime, QStringLiteral("a"), QStringLiteral("b"),
+                 HybridInput::DockZone::Tab).topologyChanged());
+    const auto id = runtime.topology().containerIds().first();
+    const auto *container = runtime.topology().container(id);
+    const auto pageId = container->pages().first().id();
+    const auto active = container->activePageId();
+    const auto before = container->toJson();
+    const auto revision = runtime.topology().revision();
+    QVERIFY(!runtime.renamePage(id, pageId, QString(256, 'x')).topologyChanged());
+    QCOMPARE(runtime.topology().revision(), revision);
+    scene.outcomes.resize(scene.nextOutcome + 1);
+    scene.outcomes[scene.nextOutcome] = false;
+    QVERIFY(!runtime.renamePage(id, pageId, QStringLiteral("Notes")).topologyChanged());
+    QCOMPARE(runtime.topology().container(id)->toJson(), before);
+    QCOMPARE(runtime.topology().revision(), revision);
+    scene.outcomes.clear();
+    QVERIFY(runtime.renamePage(id, pageId, QStringLiteral("Notes")).topologyChanged());
+    QCOMPARE(scene.kinds.constLast(), Hybrid::TopologyCommandKind::RenamePage);
+    QCOMPARE(runtime.topology().container(id)->page(pageId)->displayName(), QStringLiteral("Notes"));
+    QCOMPARE(runtime.topology().container(id)->activePageId(), active);
+    QVERIFY(!runtime.renamePage(id, QStringLiteral("missing"), QStringLiteral("Name")).topologyChanged());
+}
 
 void HybridInteractionRuntimeTest::validatesAndReconcilesLifecycle()
 {

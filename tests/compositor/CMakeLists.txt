@@ -843,6 +843,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/WindowManagementConfigTests.cmake")
 
 include("${CMAKE_CURRENT_LIST_DIR}/TestWarnings.cmake")
 
+if(TARGET Qt6::Quick AND TARGET Qt6::Qml)
 qt_add_executable(qindaqt_container_identity_tests
     tst_containeridentity.cpp
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/containeridentityprojection.h")
@@ -853,3 +854,5 @@ target_compile_definitions(qindaqt_container_identity_tests PRIVATE
 target_link_libraries(qindaqt_container_identity_tests PRIVATE Qt6::Test Qt6::Quick Qt6::Qml)
 add_test(NAME compositor.container-identity COMMAND qindaqt_container_identity_tests)
 set_tests_properties(compositor.container-identity PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
+qindaqt_enable_warnings(qindaqt_container_identity_tests)
+endif()

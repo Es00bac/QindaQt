@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "../applet_capture_fixture.h"
+#include "../task_list/task_list_applet_qml_theme_fixture.h"
 #include "bluetooth_applet_controller.h"
 #include "../icon_resolution_test_fixture.h"
 
@@ -108,6 +109,8 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
 
     QQmlEngine engine;
     engine.addImportPath(QStringLiteral(QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH));
+    QString tokenError;
+    QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError), qPrintable(tokenError));
     QString iconError;
     QVERIFY2(installResolvedIconFixture(
                  engine, QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
@@ -230,6 +233,8 @@ void BluetoothAppletQmlTests::pairingPromptHasKeyboardAccessibleActions()
 
     QQmlEngine engine;
     engine.addImportPath(QStringLiteral(QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH));
+    QString tokenError;
+    QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError), qPrintable(tokenError));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.BluetoothApplet"),
                              QStringLiteral("BluetoothApplet"));
@@ -318,6 +323,8 @@ void BluetoothAppletQmlTests::pairingPromptAcceptsPasskeyEntry()
 
     QQmlEngine engine;
     engine.addImportPath(QStringLiteral(QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH));
+    QString tokenError;
+    QVERIFY2(TaskListAppletQmlTest::publishTokens(engine, &tokenError), qPrintable(tokenError));
     QQmlComponent component(&engine);
     component.loadFromModule(QStringLiteral("QindaQt.Shell.BluetoothApplet"),
                              QStringLiteral("BluetoothApplet"));

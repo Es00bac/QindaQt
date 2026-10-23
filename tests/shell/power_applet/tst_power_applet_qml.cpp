@@ -268,9 +268,38 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
                           QStringLiteral("applied")));
     QTRY_VERIFY(!controller.operationPending());
 
+    QPointer<QQuickItem> retainedSlider = slider;
+    auto *popupWindow = popupContent(root)->window();
+    const auto point = [slider](qreal fraction) {
+        return slider->mapToScene(QPointF(slider->width() * fraction,
+                                         slider->height() / 2)).toPoint();
+    };
+    const auto beforeDrag = transport.operations.size();
+    QTest::mousePress(popupWindow, Qt::LeftButton, Qt::NoModifier, point(0.4));
+    QTest::mouseMove(popupWindow, point(0.65));
+    QVERIFY(slider->property("pressed").toBool());
+    const auto heldValue = slider->property("value").toReal();
+    transport.invalidate(kOwner, 11, 3);
+    transport.reply(transport.fetches.constLast(), powerClientSnapshot(11, 3));
+    QCoreApplication::processEvents();
+    QVERIFY(retainedSlider);
+    QCOMPARE(visualItemsNamed(popupContent(root), QStringLiteral("powerAppletKeyboardSlider")).first(),
+             retainedSlider.data());
+    QCOMPARE(slider->property("value").toReal(), heldValue);
+    QCOMPARE(transport.operations.size(), beforeDrag);
+    QTest::mouseRelease(popupWindow, Qt::LeftButton, Qt::NoModifier, point(0.65));
+    QTRY_COMPARE(transport.operations.size(), beforeDrag + 1);
+    QCOMPARE(transport.operations.constLast().request.kind, Power::OperationKind::SetKeyboardBrightness);
+    auto dragResult = powerClientResult(transport.operations.constLast(),
+        Power::OperationStatus::Succeeded, QStringLiteral("applied"));
+    dragResult.initiatingRevision = 3;
+    dragResult.observedRevision = 3;
+    transport.finish(transport.operations.constLast(), dragResult);
+    QTRY_VERIFY(!controller.operationPending());
+
     powerSaver->forceActiveFocus();
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Space);
-    QTRY_COMPARE(transport.operations.size(), 2);
+    QTRY_COMPARE(transport.operations.size(), 3);
     QCOMPARE(transport.operations.constLast().request.kind,
              Power::OperationKind::SetProfile);
     QCOMPARE(transport.operations.constLast().request.profileId,
@@ -314,32 +343,6 @@ void PowerAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     QCOMPARE(sessionActions.requests.constLast(), QStringLiteral("reboot"));
     popupContent(root)->window()->requestActivate();
     QTRY_COMPARE(QGuiApplication::focusWindow(), popupContent(root)->window());
-    transport.finish(transport.operations.constLast(),
-        powerClientResult(transport.operations.constLast(), Power::OperationStatus::Succeeded,
-                          QStringLiteral("applied")));
-    QTRY_VERIFY(!controller.operationPending());
-    QPointer<QQuickItem> retainedSlider = slider;
-    auto *popupWindow = popupContent(root)->window();
-    const auto point = [slider](qreal fraction) {
-        return slider->mapToScene(QPointF(slider->width() * fraction,
-                                         slider->height() / 2)).toPoint();
-    };
-    const auto beforeDrag = transport.operations.size();
-    QTest::mousePress(popupWindow, Qt::LeftButton, Qt::NoModifier, point(0.4));
-    QTest::mouseMove(popupWindow, point(0.65));
-    QVERIFY(slider->property("pressed").toBool());
-    const auto heldValue = slider->property("value").toReal();
-    transport.invalidate(kOwner, 11, 3);
-    transport.reply(transport.fetches.constLast(), powerClientSnapshot(11, 3));
-    QCoreApplication::processEvents();
-    QVERIFY(retainedSlider);
-    QCOMPARE(visualItemsNamed(popupContent(root), QStringLiteral("powerAppletKeyboardSlider")).first(),
-             retainedSlider.data());
-    QCOMPARE(slider->property("value").toReal(), heldValue);
-    QCOMPARE(transport.operations.size(), beforeDrag);
-    QTest::mouseRelease(popupWindow, Qt::LeftButton, Qt::NoModifier, point(0.65));
-    QTRY_COMPARE(transport.operations.size(), beforeDrag + 1);
-    QCOMPARE(transport.operations.constLast().request.kind, Power::OperationKind::SetKeyboardBrightness);
     QTest::keyClick(QGuiApplication::focusWindow(), Qt::Key_Escape);
     QTRY_VERIFY(!popup->property("opened").toBool());
 }
@@ -423,7 +426,8 @@ void PowerAppletQmlTests::peripheralInventoryScrollsAndPreservesLaptopSummary()
 
     const auto rows=visualItemsNamed(popupContent(root),QStringLiteral("powerAppletPeripheralRow"));
     QCOMPARE(rows.size(),64);
-    auto *scroll=popupContent(root);
+    auto *scroll = root->findChild<QQuickItem *>(QStringLiteral("powerAppletScroll"));
+    QVERIFY(scroll);
     QVERIFY(popup->property("height").toReal()<=600);
     QVERIFY(scroll->property("contentHeight").toReal()>scroll->height());
     auto *flickable=scroll->property("contentItem").value<QQuickItem *>();

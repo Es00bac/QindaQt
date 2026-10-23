@@ -253,6 +253,7 @@ Item {
                                     "accessibleDescription": ""
                                 })
                             Layout.fillWidth: true
+                            visible: !modelData.active
                             row: modelData
                             access: root.access
                             colors: root.colors

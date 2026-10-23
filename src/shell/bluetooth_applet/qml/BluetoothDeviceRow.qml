@@ -59,7 +59,8 @@ Frame {
             }
         }
 
-        Button {
+        C.Button {
+            emphasized: false
             objectName: "bluetoothAppletConnectionButton"
             visible: root.row.paired
             text: root.row.connected ? qsTr("Disconnect") : qsTr("Connect")

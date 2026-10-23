@@ -249,7 +249,7 @@ Item {
                                 elide: Text.ElideRight
                             }
 
-                            Slider {
+                            C.Slider {
                                 id: brightnessSlider
                                 objectName: "powerAppletKeyboardSlider"
                                 Layout.fillWidth: true

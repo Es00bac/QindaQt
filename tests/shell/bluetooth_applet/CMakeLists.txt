@@ -97,6 +97,7 @@ target_link_libraries(
     qindaqt_bluetooth_applet_qml_tests
     PRIVATE
         QindaQt::ShellBluetoothAppletRuntime
+        QindaQt::TokensQml
         qindaqt_shell_bluetooth_applet_runtimeplugin
         QindaQt::ShellIcons
         qindaqt_shell_iconsplugin
@@ -109,6 +110,7 @@ target_compile_definitions(
     qindaqt_bluetooth_applet_qml_tests
     PRIVATE
         QINDAQT_BLUETOOTH_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_SOURCE_DIR="${bluetooth_applet_source_root}"
         QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
 )
 qindaqt_enable_warnings(qindaqt_bluetooth_applet_qml_tests)

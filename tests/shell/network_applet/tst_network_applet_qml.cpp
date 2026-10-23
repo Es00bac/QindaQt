@@ -150,6 +150,7 @@ private Q_SLOTS:
 void NetworkAppletQmlTests::keyboardJoinsANetworkAndSwitchShowsOnlyConfirmedTruth()
 {
     Harness h;
+    h.controller.setSettingsLaunch([] { return true; });
     QTRY_COMPARE(h.controller.phase(), QStringLiteral("ready"));
     QString error;
     QVERIFY2(h.load(false, QSize(480, 30), &error), qPrintable(error));
