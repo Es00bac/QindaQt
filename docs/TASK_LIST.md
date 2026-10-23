@@ -1,4 +1,4 @@
-## October 23 — Container identity and compact applets verified
+## October 23 — Container identity and compact applets installed on qinda-top
 
 Product source `133fb8211` is integrated on the qinda hub's main branch
 (ADR-0429). Containers now use their own name and a dedicated tab-and-split
@@ -18,9 +18,18 @@ of the compositor and production shell pass on qinda. One isolated native
 container lifecycle smoke passes. Strict MkDocs and repository link validation
 pass. Details: [handoff](../ops/team/messages/container-identity/20261023-handoff.md).
 
-This is verified, integrated source, not an installed desktop package. Keep the
-existing October 21 package-once/logout boundary and its audio equalizer note;
-no package installation or live desktop/service restart occurred in this slice.
+Installed `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r43` on qinda-top through
+Portage after the user's explicit install request. Delivery source `3ae099948`
+adds the verified container/applet changes to the installed Harmony/input base
+`645fb4dfc`, retaining the existing Settings patches and policy-aware Sleep.
+The full signed package and isolated native smoke pass; all **2,422** installed
+files/symlinks match its image. Desktop and service process identities stayed
+unchanged. **Log out and back in to load the new shell and compositor.**
+
+This targeted package preserves the installed Audio1/controller service code;
+it does not activate the separate October 21 audio EQ repair or complete that
+older delivery queue. The shared delivery catalog is unchanged. Details:
+[installed handoff](../ops/team/messages/container-identity/20261023-installed.md).
 
 ## October 20 — Programmable controllers and shared macros installed
 

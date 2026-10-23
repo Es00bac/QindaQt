@@ -262,3 +262,23 @@ restart, route interaction, or logout/login was performed. The evidence here
 is a read-only system audit, generated-script containment checks, and focused
 checkpoint tests; no live Settings route, radio, network route, speaker, or
 post-login claim is made.
+
+## October 23 container and compact applet delivery
+
+The explicit qinda-top install request is completed by desktop `0.1.0_pre20261002-r43`,
+with source `3ae099948` and overlay `ab7eb97`. The delivery branch preserves the
+installed Harmony/input base `645fb4dfc`, adds main's container/tab identity and
+compact applet changes, and retains policy-aware Sleep, alternative sleep modes,
+Neon content and the existing PIC/Settings dialog-lifetime patches. It builds a
+coherent full image with the unchanged KWin fork `6.6.6_p1-r7`. Audio1 and OBS
+stay on the installed baseline; this package does not activate the pending
+main-branch EQ repair. The shared delivery catalog is unchanged.
+
+The signed Portage build, private virtual compositor smoke, and laptop binary
+install completed successfully. All 2,422 installed files/symlinks match the
+signed image. The shell/compositor and service process identities were preserved.
+The updated shell and compositor load at the next user logout/login; a physical
+login was not forced or claimed. The target-local signed r42 rollback artifact
+and saved-state capture remain in the ignored delivery evidence directory.
+See `ops/team/messages/container-identity/20261023-installed.md` for exact
+commands, hashes and limits.
