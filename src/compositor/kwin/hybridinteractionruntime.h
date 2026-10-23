@@ -118,6 +118,9 @@ public:
 
     [[nodiscard]] HybridRuntimeResult addWindow(const QString &windowId);
     [[nodiscard]] HybridRuntimeResult forgetWindow(const QString &windowId);
+    [[nodiscard]] HybridRuntimeResult renamePage(const QString &containerId,
+                                                  const QString &pageId,
+                                                  const QString &name);
     [[nodiscard]] HybridRuntimeResult activatePage(const QString &containerId,
                                                    const QString &pageId);
     [[nodiscard]] HybridRuntimeResult reorderPage(const QString &containerId,

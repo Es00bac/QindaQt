@@ -10,6 +10,10 @@ Rectangle {
 
     required property int index
     required property string caption
+    required property var windowId
+    property var containerIdentities: ({})
+    readonly property var container: containerIdentities[String(windowId).replace(/[{}]/g, "")] ?? null
+    readonly property string displayCaption: container ? container.name : caption
     required property var icon
     required property bool minimized
     required property bool selected
@@ -23,8 +27,8 @@ Rectangle {
     border.color: appearancePalette.accent ?? Kirigami.Theme.focusColor
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: selected ? qsTr("%1, selected").arg(caption) : caption
-    Accessible.description: minimized ? qsTr("Minimized") : ""
+    Accessible.name: selected ? qsTr("%1, selected").arg(displayCaption) : displayCaption
+    Accessible.description: container ? qsTr("Container") : (minimized ? qsTr("Minimized") : "")
     Accessible.focused: selected
 
     RowLayout {
@@ -33,11 +37,24 @@ Rectangle {
         anchors.rightMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.largeSpacing
 
-        Kirigami.Icon {
-            source: row.icon
-            Layout.preferredWidth: Kirigami.Units.iconSizes.medium
-            Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-            Accessible.ignored: true
+        Rectangle {
+            Layout.preferredWidth: Kirigami.Units.iconSizes.medium + 8
+            Layout.preferredHeight: Kirigami.Units.iconSizes.medium + 8
+            radius: Kirigami.Units.cornerRadius
+            // Keep the exact container accent visible even when selection
+            // uses that same accent as its background.
+            color: row.container ? (row.appearancePalette.surface ?? Kirigami.Theme.backgroundColor)
+                                 : "transparent"
+            Kirigami.Icon {
+                objectName: "switcherIdentityIcon"
+                anchors.centerIn: parent
+                width: Kirigami.Units.iconSizes.medium
+                height: Kirigami.Units.iconSizes.medium
+                source: row.container ? Qt.resolvedUrl("qindaqt-container-symbolic.svg") : row.icon
+                isMask: row.container !== null
+                color: row.container ? row.container.color : Kirigami.Theme.textColor
+                Accessible.ignored: true
+            }
         }
 
         ColumnLayout {
@@ -46,7 +63,7 @@ Rectangle {
 
             Text {
                 Layout.fillWidth: true
-                text: row.caption
+                text: row.displayCaption
                 color: row.selected
                     ? (row.appearancePalette.accentText ?? Kirigami.Theme.highlightedTextColor)
                     : (row.appearancePalette.text ?? Kirigami.Theme.textColor)

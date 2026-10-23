@@ -1,5 +1,16 @@
 # Power applet
 
+## Compact quick controls
+
+The popup keeps its heading and direct **Settings…** link above its scrollable,
+output-bounded content. Power profiles share one compact row. Keyboard brightness
+keeps the same slider through snapshot updates and holds the user's drag value;
+one write is sent on release against the original control ID. Keyboard steps
+still dispatch directly. A disappearing or replaced control cannot redirect the
+unfinished gesture to another device. Session actions and confirmations remain
+available below the quick controls.
+
+
 `src/shell/power_applet` owns the pure projection and the shell-private runtime
 adapter for the production panel Power applet: battery summary and per-supply rows, charge
 states, bounded time-remaining truth, critical/low/full severity, brightness

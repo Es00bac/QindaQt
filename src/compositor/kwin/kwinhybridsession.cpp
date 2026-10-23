@@ -53,6 +53,7 @@
 #include <KSharedConfig>
 
 #include <QApplication>
+#include <QtQml/qqml.h>
 #include <QMargins>
 #include <QScopedValueRollback>
 #include <utility>
@@ -109,6 +110,8 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
     , m_containerLedger(std::make_unique<ContainerLifetimeLedger>(
           [this](const QString &containerId) { forgetContainerState(containerId); }))
 {
+    qmlRegisterSingletonInstance("QindaQt.Compositor.Containers", 1, 0,
+                                 "ContainerIdentities", &m_containerIdentities);
     m_sceneFactory = std::make_unique<KWinHybridSceneFactory>(registry, sceneMetrics());
     m_sceneFactory->setMinimizedContainerProbe(
         [this](const QString &containerId) {
@@ -399,6 +402,7 @@ void KWinHybridSession::shutdown() noexcept
     }
     m_minimizedContainers.clear();
     m_appearance.clear();
+    m_containerIdentities.publish({});
     m_dockPreview.reset();
     m_closePrompt.reset();
     m_iconChipMenu.reset();
@@ -448,6 +452,7 @@ void KWinHybridSession::synchronizeChrome()
     // ADR-0384: one diff forgets every container that dissolved since the
     // last publication, whichever path dissolved it.
     m_containerLedger->reconcile(m_runtime->topology().containerIds());
+    synchronizeContainerIdentities();
     QString error;
     // Native title restoration belongs to topology lifetime, not scene image
     // lifetime. It must still run while compositing is temporarily unavailable.

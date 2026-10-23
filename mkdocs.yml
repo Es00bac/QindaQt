@@ -602,3 +602,4 @@ nav:
       - "0426: DualSense layout and held actions": adr/0426-dualsense-desktop-layout-and-held-actions.md
       - "0427: Shared input actions and controller layers": adr/0427-share-programmable-input-actions-and-controller-layers.md
       - "0428: Pause controller input only for the focused application": adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md
+      - "0429: Container and tab identity": adr/0429-container-and-tab-identity.md

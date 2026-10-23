@@ -138,6 +138,7 @@ private:
     // The gather overview and its three doors. Called after the task-list
     // composition has started, because it borrows m_taskListApplet->access().
     void initializeGatherOverview();
+    void attachAppletSettingsRoutes();
     void initializeServiceAppletCompositions(const Profiles::LayoutProfile &profile);
     void initializeDesktopControls(std::optional<qint64> compositorProcessId);
     void initializeAppearanceBridge(bool explicitThemeSelection);

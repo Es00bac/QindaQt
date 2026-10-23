@@ -71,8 +71,9 @@ struct TaskIdentityDecision final
 };
 
 // Pure policy for collapsing every group to one native KWin task identity.
-// The chosen member remains a real client, so its native caption and icon are
-// the container identity; no synthetic window or transient enters topology.
+// The chosen member remains the native activation target. The shell and
+// bundled switcher project the container's own name, icon and accent; no
+// synthetic window or rewritten application caption enters topology.
 class HybridTaskIdentityPolicy final
 {
 public:

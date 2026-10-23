@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls as T
 import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
@@ -32,9 +33,7 @@ Item {
     // action. No service or app-launch authority is acquired inside QML.
     property var desktopControls: null
 
-    readonly property bool showLists:
-        controller?.phaseText === "ready"
-            || controller?.phaseText === "degraded"
+    readonly property bool showLists: controller?.phaseText === "ready" || controller?.phaseText === "degraded"
 
     // Band state lives on the applet, not on the Popup: the Popup's contents
     // are destroyed when it closes, and a section the user collapsed must
@@ -43,8 +42,8 @@ Item {
     // Settings1 key is a behaviour change outside this lane.
     property bool outputExpanded: true
     property bool inputExpanded: true
-    property bool appsExpanded: true
-    property bool consoleExpanded: true
+    property bool appsExpanded: false
+    property bool consoleExpanded: false
     // 0 means "ride whatever the service calls the default"; a non-zero serial
     // pins the band to one device for as long as it exists.
     property int outputSelectedSerial: 0
@@ -54,38 +53,41 @@ Item {
     Accessible.name: qsTr("Audio")
     Accessible.description: {
         if (!controller)
-            return qsTr("Audio controls are not connected")
+            return qsTr("Audio controls are not connected");
         if (controller.phaseText === "loading")
-            return qsTr("Audio device information is loading")
+            return qsTr("Audio device information is loading");
         if (controller.phaseText === "unavailable")
-            return qsTr("Audio is unavailable")
-        return qsTr("Volume and mute controls for audio devices and application streams")
+            return qsTr("Audio is unavailable");
+        return qsTr("Volume and mute controls for audio devices and application streams");
     }
 
     function defaultOutputRow() {
         if (!controller)
-            return null
-        const rows = controller.deviceRows ?? []
+            return null;
+        const rows = controller.deviceRows ?? [];
         for (let i = 0; i < rows.length; ++i) {
             if (rows[i].isOutput === true && rows[i].isDefault === true)
-                return rows[i]
+                return rows[i];
         }
         for (let i = 0; i < rows.length; ++i) {
             if (rows[i].isOutput === true)
-                return rows[i]
+                return rows[i];
         }
-        return null
+        return null;
     }
 
     readonly property var outputRow: defaultOutputRow()
     readonly property string summaryIconName: {
         if (!outputRow || outputRow.muted)
-            return "audio-volume-muted"
-        const volume = Number(outputRow.volume ?? 0)
-        if (volume <= 0) return "audio-volume-muted"
-        if (volume < 1 / 3) return "audio-volume-low"
-        if (volume < 2 / 3) return "audio-volume-medium"
-        return "audio-volume-high"
+            return "audio-volume-muted";
+        const volume = Number(outputRow.volume ?? 0);
+        if (volume <= 0)
+            return "audio-volume-muted";
+        if (volume < 1 / 3)
+            return "audio-volume-low";
+        if (volume < 2 / 3)
+            return "audio-volume-medium";
+        return "audio-volume-high";
     }
 
     T.ToolButton {
@@ -101,19 +103,21 @@ Item {
 
         function toggleDetails() {
             if (!enabled)
-                return
-            if (details.opened) details.close()
-            else details.open()
+                return;
+            if (details.opened)
+                details.close();
+            else
+                details.open();
         }
         onClicked: toggleDetails()
         Accessible.onPressAction: toggleDetails()
         Keys.onReturnPressed: event => {
-            toggleDetails()
-            event.accepted = true
+            toggleDetails();
+            event.accepted = true;
         }
         Keys.onEnterPressed: event => {
-            toggleDetails()
-            event.accepted = true
+            toggleDetails();
+            event.accepted = true;
         }
 
         contentItem: ShellIcons.Icon {
@@ -153,31 +157,23 @@ Item {
         Connections {
             target: summary.Window.window
             function onScreenChanged() {
-                details.screenSelectionRevision = details.screenSelectionRevision === 2147483647
-                    ? 0 : details.screenSelectionRevision + 1
+                details.screenSelectionRevision = details.screenSelectionRevision === 2147483647 ? 0 : details.screenSelectionRevision + 1;
             }
         }
         readonly property size outputSpace: {
-            const revision = placementRevision + screenSelectionRevision
-                + (root.controller?.popupGeometryRevision ?? 0)
-            const attachedWindow = summary.Window.window
-            const width = summary.Screen.width
-            const height = summary.Screen.height
+            const revision = placementRevision + screenSelectionRevision + (root.controller?.popupGeometryRevision ?? 0);
+            const attachedWindow = summary.Window.window;
+            const width = summary.Screen.width;
+            const height = summary.Screen.height;
             if (!attachedWindow || revision < 0 || width <= 0 || height <= 0)
-                return Qt.size(0, 0)
-            return root.controller
-                ? root.controller.popupAvailableSize(summary, summary.Screen.name)
-                : Qt.size(0, 0)
+                return Qt.size(0, 0);
+            return root.controller ? root.controller.popupAvailableSize(summary, summary.Screen.name) : Qt.size(0, 0);
         }
-        readonly property real widthLimit: Math.max(1,
-            outputSpace.width - padding * 2)
-        readonly property real heightLimit: Math.max(1,
-            outputSpace.height - summary.height - padding * 2)
+        readonly property real widthLimit: Math.max(1, outputSpace.width - padding * 2)
+        readonly property real heightLimit: Math.max(1, outputSpace.height - summary.height - padding * 2)
         width: Math.min(360, widthLimit)
-        height: Math.min(480, heightLimit,
-            Math.max(160, panel.implicitHeight + padding * 2))
-        closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside
-                     | T.Popup.CloseOnPressOutsideParent
+        height: Math.min(480, heightLimit, Math.max(160, panel.implicitHeight + popupHeader.implicitHeight + 6 + padding * 2))
+        closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutside | T.Popup.CloseOnPressOutsideParent
 
         background: Rectangle {
             radius: Tokens.radius.l
@@ -185,76 +181,103 @@ Item {
             border.color: Tokens.outline.divider
         }
 
-        contentItem: Flickable {
-            id: scroller
-            objectName: "audioAppletViewport"
-            clip: true
-            contentWidth: width
-            contentHeight: panel.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
-            flickableDirection: Flickable.VerticalFlick
-            activeFocusOnTab: false
-
-            T.ScrollBar.vertical: T.ScrollBar {
-                objectName: "audioAppletScrollbar"
-                policy: T.ScrollBar.AsNeeded
+        contentItem: ColumnLayout {
+            spacing: 6
+            RowLayout {
+                id: popupHeader
+                Layout.fillWidth: true
+                C.Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Audio")
+                    font.bold: true
+                    Accessible.role: Accessible.Heading
+                }
+                AudioAppletPad {
+                    objectName: "audioOpenSettings"
+                    text: qsTr("Settings…")
+                    accessibleDescription: qsTr("Open the Audio page of Settings")
+                    visible: Boolean(root.controller?.canOpenSettings) || Boolean(root.desktopControls?.canOpenSettings)
+                    onClicked: {
+                        const opened = root.controller?.canOpenSettings ? root.controller.openSettings() : root.desktopControls.openSettings();
+                        if (opened)
+                            details.close();
+                    }
+                }
+            }
+            Flickable {
+                id: scroller
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                objectName: "audioAppletViewport"
+                clip: true
+                contentWidth: width
+                contentHeight: panel.implicitHeight
+                boundsBehavior: Flickable.StopAtBounds
+                flickableDirection: Flickable.VerticalFlick
                 activeFocusOnTab: false
-                Accessible.name: qsTr("Audio controls scroll position")
-            }
 
-            function revealItem(item) {
-                let cursor = item
-                while (cursor && cursor !== panel)
-                    cursor = cursor.parent
-                if (!cursor || !item)
-                    return
-                const position = item.mapToItem(panel, 0, 0)
-                const margin = Tokens.space["1"]
-                if (position.y - margin < contentY)
-                    contentY = Math.max(0, position.y - margin)
-                else if (position.y + item.height + margin > contentY + height)
-                    contentY = Math.min(Math.max(0, contentHeight - height),
-                        position.y + item.height + margin - height)
-            }
+                T.ScrollBar.vertical: T.ScrollBar {
+                    objectName: "audioAppletScrollbar"
+                    policy: T.ScrollBar.AsNeeded
+                    activeFocusOnTab: false
+                    Accessible.name: qsTr("Audio controls scroll position")
+                }
 
-            function revealActiveFocus() {
-                const window = panel.Window.window
-                if (window)
-                    revealItem(window.activeFocusItem)
-            }
+                function revealItem(item) {
+                    let cursor = item;
+                    while (cursor && cursor !== panel)
+                        cursor = cursor.parent;
+                    if (!cursor || !item)
+                        return;
+                    const position = item.mapToItem(panel, 0, 0);
+                    const margin = Tokens.space["1"];
+                    if (position.y - margin < contentY)
+                        contentY = Math.max(0, position.y - margin);
+                    else if (position.y + item.height + margin > contentY + height)
+                        contentY = Math.min(Math.max(0, contentHeight - height), position.y + item.height + margin - height);
+                }
 
-            // Preserve child slider/combo keys; page navigation bubbles here.
-            Keys.onPressed: event => {
-                const limit = Math.max(0, contentHeight - height)
-                if (event.key === Qt.Key_PageDown)
-                    contentY = Math.min(limit, contentY + height * 0.8)
-                else if (event.key === Qt.Key_PageUp)
-                    contentY = Math.max(0, contentY - height * 0.8)
-                else if (event.key === Qt.Key_End && (event.modifiers & Qt.ControlModifier))
-                    contentY = limit
-                else if (event.key === Qt.Key_Home && (event.modifiers & Qt.ControlModifier))
-                    contentY = 0
-                else
-                    return
-                event.accepted = true
-            }
+                function revealActiveFocus() {
+                    const window = panel.Window.window;
+                    if (window)
+                        revealItem(window.activeFocusItem);
+                }
 
-            onHeightChanged: Qt.callLater(revealActiveFocus)
-            onContentHeightChanged: Qt.callLater(revealActiveFocus)
+                // Preserve child slider/combo keys; page navigation bubbles here.
+                Keys.onPressed: event => {
+                    const limit = Math.max(0, contentHeight - height);
+                    if (event.key === Qt.Key_PageDown)
+                        contentY = Math.min(limit, contentY + height * 0.8);
+                    else if (event.key === Qt.Key_PageUp)
+                        contentY = Math.max(0, contentY - height * 0.8);
+                    else if (event.key === Qt.Key_End && (event.modifiers & Qt.ControlModifier))
+                        contentY = limit;
+                    else if (event.key === Qt.Key_Home && (event.modifiers & Qt.ControlModifier))
+                        contentY = 0;
+                    else
+                        return;
+                    event.accepted = true;
+                }
 
-            AudioAppletPanel {
-                id: panel
-                width: scroller.width - (scroller.contentHeight > scroller.height
-                    ? Tokens.space["3"] : 0)
-                height: implicitHeight
-                controller: root.controller
-                store: root
-            }
+                onHeightChanged: Qt.callLater(revealActiveFocus)
+                onContentHeightChanged: Qt.callLater(revealActiveFocus)
 
-            Connections {
-                target: panel.Window.window
-                enabled: target !== null
-                function onActiveFocusItemChanged() { scroller.revealActiveFocus() }
+                AudioAppletPanel {
+                    id: panel
+                    width: scroller.width - (scroller.contentHeight > scroller.height ? Tokens.space["3"] : 0)
+                    height: implicitHeight
+                    controller: root.controller
+                    store: root
+                    settingsInHeader: true
+                }
+
+                Connections {
+                    target: panel.Window.window
+                    enabled: target !== null
+                    function onActiveFocusItemChanged() {
+                        scroller.revealActiveFocus();
+                    }
+                }
             }
         }
     }

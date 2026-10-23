@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "bluetoothappletcomposition.h"
+#include "settingsroutelauncher.h"
+#include <QPointer>
 
 #include "bluetooth_applet_controller.h"
 
@@ -84,6 +86,16 @@ BluetoothApplet::BluetoothAppletController *
 BluetoothAppletComposition::access() const noexcept
 {
     return m_access.get();
+}
+
+void BluetoothAppletComposition::attachRoutes(SettingsRouteLauncher *launcher)
+{
+    if (!m_access) {
+        return;
+    }
+    m_access->setSettingsLaunch([guard = QPointer<SettingsRouteLauncher>(launcher)] {
+        return guard && guard->openRoute(QStringLiteral("bluetooth"));
+    });
 }
 
 } // namespace QindaQt::Shell

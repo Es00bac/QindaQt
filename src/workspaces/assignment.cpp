@@ -85,7 +85,7 @@ std::optional<Core::WindowContainer> instantiate(const Workspace &workspace,
   for (const auto &page : workspace.layout.pages())
     if (!result.addPage(
             Core::ContainerPage(
-                page.id(), Detail::bindNode(page.root(), plan.windowsBySlot)),
+                page.id(), Detail::bindNode(page.root(), plan.windowsBySlot), page.name(), page.number()),
             error))
       return std::nullopt;
   if (!result.activatePage(workspace.layout.activePageId(), error))

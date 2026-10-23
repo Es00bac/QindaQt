@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <functional>
+#include <utility>
+
 #include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/services/power_client/peripheral_client.h>
 #include <qindaqt/shell/power_applet/brightness_request_state.h>
@@ -24,6 +27,7 @@ namespace QindaQt::Shell::PowerApplet {
 class PowerAppletController final : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool canOpenSettings READ canOpenSettings NOTIFY stateChanged)
     Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)
     Q_PROPERTY(QString diagnostic READ diagnostic NOTIFY stateChanged)
     Q_PROPERTY(bool hasBattery READ hasBattery NOTIFY stateChanged)
@@ -40,6 +44,20 @@ class PowerAppletController final : public QObject
     Q_PROPERTY(QObject *sessionActions READ sessionActions CONSTANT)
 
 public:
+    // Same-thread launch seam owned by shell composition; no app execution in QML.
+    void setSettingsLaunch(std::function<bool()> launch) {
+        m_settingsLaunch = std::move(launch);
+        Q_EMIT stateChanged();
+    }
+    [[nodiscard]] bool canOpenSettings() const { return bool(m_settingsLaunch); }
+    Q_INVOKABLE bool openSettings() {
+        if (m_settingsLaunch && m_settingsLaunch()) {
+            return true;
+        }
+        publishFeedback(tr("Could not open Power Settings."));
+        return false;
+    }
+
     explicit PowerAppletController(Power::PowerClient *client,
                                    bool powerReadGranted,
                                    bool powerControlGranted,
@@ -76,6 +94,7 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
+    std::function<bool()> m_settingsLaunch;
     enum class PendingKind {
         None,
         KeyboardBrightness,

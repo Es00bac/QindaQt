@@ -16,8 +16,8 @@ Frame {
 
     objectName: "networkAppletConnectionRow"
 
-    RowLayout {
-        anchors.fill: parent
+    padding: 6
+    contentItem: RowLayout {
         spacing: 8
 
         ColumnLayout {

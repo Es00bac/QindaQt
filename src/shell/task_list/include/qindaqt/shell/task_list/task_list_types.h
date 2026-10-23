@@ -47,8 +47,8 @@ struct TaskWindowFact {
   QString applicationId;
   QString applicationName;
   QString title;
-  // A ContainerPrimary's user-chosen container color override, exact
-  // "#RRGGBB" or empty for no override. Always empty for every other role.
+  // A ContainerPrimary's resolved container accent, exact
+  // "#RRGGBB" (older producers may leave it empty). Always empty for every other role.
   QString colorHex;
   // Compositor-assigned output and virtual-desktop scope of the window (for
   // members: the primary's placement describes the whole container).

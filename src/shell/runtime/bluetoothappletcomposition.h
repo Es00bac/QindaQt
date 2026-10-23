@@ -22,6 +22,7 @@ class BluetoothAppletController;
 }
 
 namespace QindaQt::Shell {
+class SettingsRouteLauncher;
 
 // Shell-private ownership boundary for the public Bluetooth1 client and the
 // purpose-specific built-in facade. The audited manifest/registry/policy gates
@@ -29,6 +30,7 @@ namespace QindaQt::Shell {
 class BluetoothAppletComposition final
 {
 public:
+    void attachRoutes(SettingsRouteLauncher *launcher);
     BluetoothAppletComposition(const Applets::ManifestCatalog &catalog,
                                const AppletHost::CapabilityPolicy &policy);
     ~BluetoothAppletComposition();

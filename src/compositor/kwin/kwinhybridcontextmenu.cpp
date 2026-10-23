@@ -20,8 +20,6 @@
 #include <window.h>
 #include <workspace.h>
 
-#include <QInputDialog>
-#include <QLineEdit>
 
 #include <algorithm>
 #include <array>
@@ -154,6 +152,7 @@ bool applyContextCommand(
     case GroupContextMenuCommandKind::MinimizeGroup:
     case GroupContextMenuCommandKind::ToggleShadeGroup:
     case GroupContextMenuCommandKind::RenameContainer:
+    case GroupContextMenuCommandKind::RenameTab:
     case GroupContextMenuCommandKind::SetContainerColor:
     case GroupContextMenuCommandKind::SetContainerAspectRatio:
         return fail(error, QStringLiteral("group action requires session policy"));
@@ -253,6 +252,14 @@ void KWinHybridSession::initializeGroupContextMenu()
             state->shaded = isContainerShaded(containerId);
             const auto appearance = containerAppearance(containerId);
             state->containerName = appearance.name;
+            const auto *container = m_runtime->topology().container(containerId);
+            if (!container) {
+                return std::nullopt;
+            }
+            for (const auto &page : container->pages()) {
+                state->tabs.append({page.id(), page.displayName(),
+                                    page.id() == container->activePageId()});
+            }
             state->containerColors.append(
                 {QStringLiteral("default"), QStringLiteral("Default"),
                  appearance.colorHex.isEmpty()});
@@ -323,22 +330,10 @@ void KWinHybridSession::initializeGroupContextMenu()
                     ? unshadeContainer(containerId, error)
                     : shadeContainer(containerId, error);
             }
-            case GroupContextMenuCommandKind::RenameContainer: {
-                // AGENT-GUARD: Runs after the popup finishes hiding (see the
-                // menu's hideEvent/schedulePendingDispatches contract), so
-                // this modal prompt cannot stack a second popup over an
-                // in-flight QMenu close animation.
-                bool accepted = false;
-                const QString current = containerAppearance(containerId).name;
-                const QString entered = QInputDialog::getText(
-                    nullptr, QObject::tr("Rename Window Group"),
-                    QObject::tr("Group name:"), QLineEdit::Normal, current,
-                    &accepted);
-                if (!accepted) {
-                    return true;
-                }
-                return renameContainer(containerId, entered, error);
-            }
+            case GroupContextMenuCommandKind::RenameContainer:
+                return promptContainerRename(containerId, error);
+            case GroupContextMenuCommandKind::RenameTab:
+                return promptTabRename(containerId, command.destinationId, error);
             case GroupContextMenuCommandKind::SetContainerColor: {
                 const QString colorHex =
                     command.destinationId == QLatin1StringView("default")

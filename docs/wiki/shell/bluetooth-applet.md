@@ -1,5 +1,17 @@
 # Bluetooth applet
 
+## Compact quick controls
+
+The popup has a fixed heading and direct **Settings…** link above a scrollable,
+output-bounded list. Connect/Disconnect or Pair stays inline; **More options**
+contains Trust and Forget, leaving room for device names. Device and adapter
+controls survive ordinary snapshot updates instead of being recreated. Opening
+refreshes observation; closing or destroying the popup releases its discovery
+interest. An accepted operation's snapshot-convergence fence expires after five
+seconds: the applet reports uncertainty and refreshes state without replaying
+the mutation, so a missing readback cannot disable the controls indefinitely.
+
+
 `src/shell/bluetooth_applet` owns the production panel Bluetooth applet. A pure
 target projects bounded current Bluetooth2 values and evaluates operation admission; a
 separately linked shell-private controller borrows the public
@@ -108,8 +120,9 @@ controller retains a pending-equivalent control fence until the same exact
 owner and epoch publish a validated snapshot whose revision reaches the
 result's observed revision. Controls cannot dispatch from the stale initiating
 snapshot while that fence is live. Owner, epoch, or snapshot-authority loss ends
-the fence as uncertainty and leaves presentation fail-closed; no operation is
-replayed.
+the fence as uncertainty and leaves presentation fail-closed. A five-second
+convergence deadline also retires a missing readback and refreshes observation;
+no operation is replayed.
 
 ## Discovery-lease lifetime
 

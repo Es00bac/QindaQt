@@ -22,6 +22,7 @@ class AudioAppletController;
 }
 
 namespace QindaQt::Shell {
+class SettingsRouteLauncher;
 
 // Shell-private ownership boundary for the public Audio1 client and the
 // purpose-specific built-in facade. The audited manifest/registry/policy gates
@@ -29,6 +30,7 @@ namespace QindaQt::Shell {
 class AudioAppletComposition final
 {
 public:
+    void attachRoutes(SettingsRouteLauncher *launcher);
     AudioAppletComposition(const Applets::ManifestCatalog &catalog,
                            const AppletHost::CapabilityPolicy &policy);
     ~AudioAppletComposition();

@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <functional>
+#include <utility>
+
 #include "audio_applet_model.h"
 
 #include <qindaqt/services/audio_client/audio_client.h>
@@ -40,6 +43,7 @@ namespace QindaQt::Shell::AudioApplet {
 // the deliberate bounded stale-cleanup path, not an operation replay.
 class AudioAppletController final : public QObject {
     Q_OBJECT
+    Q_PROPERTY(bool canOpenSettings READ canOpenSettings NOTIFY stateReprojected)
     Q_PROPERTY(int popupGeometryRevision READ popupGeometryRevision NOTIFY popupGeometryChanged)
     Q_PROPERTY(QString phaseText READ phaseText NOTIFY stateReprojected)
     Q_PROPERTY(bool controlGranted READ isControlGranted NOTIFY
@@ -68,6 +72,20 @@ class AudioAppletController final : public QObject {
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
 
 public:
+    // Same-thread launch seam owned by shell composition; no app execution in QML.
+    void setSettingsLaunch(std::function<bool()> launch) {
+        m_settingsLaunch = std::move(launch);
+        Q_EMIT stateReprojected();
+    }
+    [[nodiscard]] bool canOpenSettings() const { return bool(m_settingsLaunch); }
+    Q_INVOKABLE bool openSettings() {
+        if (m_settingsLaunch && m_settingsLaunch()) {
+            return true;
+        }
+        publishFeedback(tr("Could not open Audio Settings."));
+        return false;
+    }
+
     explicit AudioAppletController(Audio::AudioClient *client,
                                    bool audioReadGranted,
                                    bool audioControlGranted,
@@ -164,6 +182,7 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
+    std::function<bool()> m_settingsLaunch;
     void initializePopupGeometry();
     int m_popupGeometryRevision = 0;
     enum class RequestKind { Volume, Mute, Default };

@@ -30,8 +30,8 @@ Frame {
 
     objectName: "networkAppletAccessPointRow"
 
-    RowLayout {
-        anchors.fill: parent
+    padding: 6
+    contentItem: RowLayout {
         spacing: 8
 
         ColumnLayout {
@@ -52,7 +52,7 @@ Frame {
                 Layout.fillWidth: true
                 text: root.details
                 color: root.colors.textMuted ?? "#a9afa9"
-                wrapMode: Text.Wrap
+                elide: Text.ElideRight
             }
         }
 

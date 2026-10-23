@@ -446,8 +446,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             std::make_unique<NotificationApplicationSettingsBridge>(
                 *m_quietingSettingsClient, *m_notificationApplicationPolicy);
         m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
-        m_voiceApplet->attachRoutes(m_settingsRouteLauncher.get());
-        m_networkApplet->attachRoutes(m_settingsRouteLauncher.get());
+        attachAppletSettingsRoutes();
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient, *m_notificationInterruptionPolicy,

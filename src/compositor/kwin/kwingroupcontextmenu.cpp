@@ -116,7 +116,8 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
         return fail(error,
                     QStringLiteral("group context menu received contradictory layers"));
     }
-    if (!destinationsValid(state->workspaces,
+    if (!destinationsValid(state->tabs, QLatin1StringView("tab"), error)
+        || !destinationsValid(state->workspaces,
                            QLatin1StringView("workspace"), error)
         || !destinationsValid(state->activities,
                               QLatin1StringView("activity"), error)
@@ -169,6 +170,14 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
                    QStringLiteral("qindaqt-context-rename"),
                    GroupContextMenuCommandKind::RenameContainer, false);
     addSeparator();
+
+    auto *const tabMenu = addMenu(menuText("Rename Tab…"));
+    tabMenu->setObjectName(QStringLiteral("qindaqt-context-rename-tabs"));
+    for (const auto &tab : std::as_const(state->tabs)) {
+        addDestinationAction(tabMenu, tab, QStringLiteral("qindaqt-context-rename-tab-"),
+                             GroupContextMenuCommandKind::RenameTab, false);
+    }
+    tabMenu->setEnabled(!state->tabs.isEmpty());
 
     auto *const colorMenu = addMenu(menuText("Group Color"));
     colorMenu->setObjectName(QStringLiteral("qindaqt-context-colors"));

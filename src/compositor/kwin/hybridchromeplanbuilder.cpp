@@ -29,31 +29,10 @@ std::optional<HybridChrome::ChromeRenderPlan> reject(QString *error, QString mes
     return std::nullopt;
 }
 
-QStringList leafWindowIds(const Core::LayoutNode &node)
-{
-    if (node.isLeaf()) {
-        return {node.windowId()};
-    }
-    auto result = leafWindowIds(*node.firstChild());
-    result.append(leafWindowIds(*node.secondChild()));
-    return result;
-}
-
 QString resolvedTitle(const QString &windowId, const HybridWindowTitleLookup &lookup)
 {
     const auto title = lookup ? lookup(windowId).trimmed() : QString{};
     return title.isEmpty() ? windowId : title;
-}
-
-QString pageTitle(const Core::ContainerPage &page,
-                  const HybridWindowTitleLookup &titleLookup)
-{
-    const auto ids = leafWindowIds(page.root());
-    const auto firstTitle = resolvedTitle(ids.constFirst(), titleLookup);
-    if (ids.size() == 1) {
-        return firstTitle;
-    }
-    return QStringLiteral("%1 +%2").arg(firstTitle).arg(ids.size() - 1);
 }
 
 bool appendNodeGeometry(
@@ -141,16 +120,17 @@ HybridChromePlanBuilder::ShadedLabel HybridChromePlanBuilder::shadedLabel(
     const HybridChromePlanOptions &options,
     const HybridWindowTitleLookup &titleLookup)
 {
+    Q_UNUSED(titleLookup);
     // The foremost page is the active one; an empty active title falls back to
     // the first page, exactly as the badge used to derive it while painting.
     // A tab-title override wins, because that is what the pill shows.
     QString foremost;
     const auto *active = container.page(container.activePageId());
     if (active) {
-        foremost = pageTitle(*active, titleLookup);
+        foremost = active->displayName();
     }
     if (foremost.isEmpty() && !container.pages().isEmpty()) {
-        foremost = pageTitle(container.pages().constFirst(), titleLookup);
+        foremost = container.pages().constFirst().displayName();
     }
     const QString foremostId = active ? container.activePageId()
         : (container.pages().isEmpty() ? QString{}
@@ -191,7 +171,7 @@ HybridChromePlanBuilder::TitleRefresh HybridChromePlanBuilder::refreshTitles(
         const QString title =
             overridden != options.tabTitleOverrides.cend() && !overridden->isEmpty()
             ? *overridden
-            : pageTitle(*page, titleLookup);
+            : page->displayName();
         if (tab.title != title) {
             tab.title = title;
             changed = true;
@@ -271,7 +251,7 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         // names), so the shaded request carries the real page list.
         for (const auto &page : container.pages()) {
             shadedRequest.tabs.append({page.id(),
-                                       pageTitle(page, titleLookup),
+                                       page.displayName(),
                                        page.id() == container.activePageId()});
         }
         // ADR-0189: one resolution, shared with the session's strip sizing.
@@ -313,7 +293,7 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
     };
     for (const auto &page : container.pages()) {
         request.tabs.append({page.id(),
-                             pageTitle(page, titleLookup),
+                             page.displayName(),
                              page.id() == container.activePageId()});
     }
     if (!sameLogicalRect(expectedContentRect(request), QRectF(solution.contentFrame))) {

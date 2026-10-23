@@ -29,3 +29,9 @@ if(COMMAND qindaqt_enable_warnings)
 endif()
 
 add_test(NAME core.reorganization COMMAND tst_reorganization)
+
+add_executable(tst_pagenames tst_pagenames.cpp)
+target_link_libraries(tst_pagenames PRIVATE QindaQt::Core Qt6::Test)
+set_target_properties(tst_pagenames PROPERTIES AUTOMOC ON)
+qindaqt_enable_warnings(tst_pagenames)
+add_test(NAME core.page-names COMMAND tst_pagenames)

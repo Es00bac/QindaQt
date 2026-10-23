@@ -13,8 +13,8 @@ Frame {
     required property var access
     required property var colors
 
-    RowLayout {
-        anchors.fill: parent
+    padding: 6
+    contentItem: RowLayout {
         spacing: 8
 
         ColumnLayout {
@@ -32,22 +32,12 @@ Frame {
 
             Label {
                 Layout.fillWidth: true
-                text: root.row.accessibleDescription
+                text: root.row.connected ? qsTr("Connected") : (root.row.paired ? qsTr("Paired") : qsTr("Available"))
                 color: root.colors.textMuted ?? "#a9afa9"
-                wrapMode: Text.Wrap
+                elide: Text.ElideRight
             }
         }
 
-        C.Switch {
-            objectName: "bluetoothAppletTrustSwitch"
-            visible: root.row.paired
-            text: qsTr("Trust")
-            enabled: root.row.canSetTrusted
-            checked: root.row.trusted
-            accessibleDescription: qsTr("Allow %1 to connect without asking")
-                .arg(root.row.label)
-            onToggled: root.access.requestTrusted(root.row.id, checked)
-        }
 
         C.Button {
             objectName: "bluetoothAppletPairButton"
@@ -82,16 +72,31 @@ Frame {
                                                             !root.row.connected)
         }
 
-        C.Button {
-            objectName: "bluetoothAppletForgetButton"
+        ToolButton {
+            objectName: "bluetoothAppletDeviceMenuButton"
             visible: root.row.paired
-            emphasized: false
-            destructive: true
-            text: qsTr("Forget")
-            available: root.row.canRemove
-            accessibleDescription: qsTr("Forget %1 and remove its pairing")
-                .arg(root.row.label)
-            onClicked: root.access.requestRemoval(root.row.id)
+            text: "⋮"
+            Accessible.name: qsTr("More options for %1").arg(root.row.label)
+            onClicked: {
+                deviceMenu.deviceId = root.row.id
+                deviceMenu.popup()
+            }
+            Menu {
+                id: deviceMenu
+                property string deviceId: ""
+                MenuItem {
+                    objectName: "bluetoothAppletTrustSwitch"
+                    text: root.row.trusted ? qsTr("Stop trusting") : qsTr("Trust device")
+                    enabled: root.row.canSetTrusted && deviceMenu.deviceId === root.row.id
+                    onTriggered: root.access.requestTrusted(deviceMenu.deviceId, !root.row.trusted)
+                }
+                MenuItem {
+                    objectName: "bluetoothAppletForgetButton"
+                    text: qsTr("Forget device")
+                    enabled: root.row.canRemove && deviceMenu.deviceId === root.row.id
+                    onTriggered: root.access.requestRemoval(deviceMenu.deviceId)
+                }
+            }
         }
     }
 }

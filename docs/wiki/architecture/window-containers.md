@@ -156,12 +156,21 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
   Without the veto, the member's real geometry diverges from its tile until
   the next reflow snaps it back.
 - Task lists and Alt-Tab expose exactly one primary active-page member as the
-  container identity. The dock renders that identity with a stacked-window
-  icon in the user-chosen container color, rather than the primary application
-  icon. Every other member is suppressed while grouped;
+  native activation target. The dock, taskbar and bundled Alt-Tab show the
+  container's own name and a dedicated icon depicting tabs and split panes
+  within one frame. The icon uses the container's chosen color or its resolved
+  theme accent. Every other member is suppressed while grouped;
   activating or unminimizing an inactive-page member activates that page before
   it can paint. Each member's independent task/switcher/minimized baseline is
   restored on detach, normalization, close recovery, rollback, or unload.
+- Tabs have their own names: **Tab 1**, **Tab 2**, and so on until renamed.
+  The group menu's **Rename Tab…** submenu selects a tab by its stable ID.
+  Blank text resets its numbered name. Names and assigned numbers survive
+  reorder and member-title changes; moving a page preserves its custom name
+  and preserves its number unless that number is taken in the destination.
+  Saved workspaces preserve both. Names are trimmed, limited to 255 characters,
+  and reject control/format characters and invalid Unicode. See
+  [ADR-0429](../adr/0429-container-and-tab-identity.md).
 - Theme decoration tokens may place the outer controls on either side and lay
   tabs left-to-right or right-to-left. This presentation choice never changes
   page order, stable IDs, keyboard traversal, or persistence semantics.

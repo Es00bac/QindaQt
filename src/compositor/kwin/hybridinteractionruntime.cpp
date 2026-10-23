@@ -82,6 +82,13 @@ HybridRuntimeResult HybridInteractionRuntime::forgetWindow(const QString &window
     return execute(Hybrid::ForgetWindow{windowId});
 }
 
+HybridRuntimeResult HybridInteractionRuntime::renamePage(
+    const QString &containerId, const QString &pageId, const QString &name)
+{
+    return ready() ? execute(Hybrid::RenamePage{containerId, pageId, name})
+                   : rejected(m_initializationError);
+}
+
 HybridRuntimeResult HybridInteractionRuntime::activatePage(const QString &containerId,
                                                            const QString &pageId)
 {

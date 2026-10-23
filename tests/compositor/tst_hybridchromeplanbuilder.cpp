@@ -111,7 +111,7 @@ void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
     QVERIFY(plan->style.hoverGlyphs);
     QCOMPARE(plan->tabs.size(), 2);
     QCOMPARE(plan->tabs[0].tabId, QStringLiteral("work"));
-    QCOMPARE(plan->tabs[0].title, QStringLiteral("Files +1"));
+    QCOMPARE(plan->tabs[0].title, QStringLiteral("Tab 1"));
     QCOMPARE(plan->tabs[0].logicalIndex, 0);
     QVERIFY(plan->tabs[0].rect.left() > plan->tabs[1].rect.left());
     QCOMPARE(plan->members.size(), 2);
@@ -321,7 +321,7 @@ void HybridChromePlanBuilderTest::splitDeckPlanIsTitledByTheMeasuredContainerNam
     QVERIFY(plan->titleLabelRect.width() + 0.01
             >= measured + 2.0 * HybridChrome::ChromeSplitDeck::TitleTextInset);
     QCOMPARE(plan->tabs.size(), 2);
-    QCOMPARE(plan->tabs[1].title, QStringLiteral("Chat - Firefox"));
+    QCOMPARE(plan->tabs[1].title, QStringLiteral("Tab 2"));
     QVERIFY(plan->titleTab.right() < plan->deckPiece.left());
 }
 
@@ -357,8 +357,8 @@ void HybridChromePlanBuilderTest::titleRefreshEqualsAFreshBuild()
         HybridChromePlanBuilder::build(container, *solution, chromeOptions(), lookup, &error);
     QVERIFY2(rebuilt, qPrintable(error));
     QCOMPARE(compareChromePlans(refresh.plan, *rebuilt), ChromePlanDifferences{});
-    QCOMPARE(refresh.plan.tabs[0].title, QStringLiteral("⠙ Claude Code +1"));
-    QCOMPARE(refresh.plan.tabs[1].title, QStringLiteral("chat (2)"));
+    QCOMPARE(refresh.plan.tabs[0].title, QStringLiteral("Tab 1"));
+    QCOMPARE(refresh.plan.tabs[1].title, QStringLiteral("Tab 2"));
     // Only text differs from what was published.
     const auto differences = compareChromePlans(*published, refresh.plan);
     QVERIFY(!differences.testFlag(ChromePlanDifference::Structure));
@@ -403,6 +403,7 @@ void HybridChromePlanBuilderTest::titleRefreshAsksForAReplanWhenAShadedLabelWoul
         options.shaded = true;
         options.containerTitle = named ? QStringLiteral("Container") : QString();
         caption = QStringLiteral("first");
+        QVERIFY(container.renamePage(QStringLiteral("work"), QString{}));
         const auto label = HybridChromePlanBuilder::shadedLabel(container, options, lookup);
         options.shadedOuterFrame = QRectF(
             0.0, 0.0,
@@ -415,9 +416,13 @@ void HybridChromePlanBuilderTest::titleRefreshAsksForAReplanWhenAShadedLabelWoul
         caption = QStringLiteral("a much longer second caption");
         const auto refresh =
             HybridChromePlanBuilder::refreshTitles(container, *published, options, lookup);
-        // A named strip keeps its label (only pill titles change); an unnamed
-        // one is labelled by its page, so its width must be re-measured.
-        QCOMPARE(refresh.outcome,
+        QCOMPARE(refresh.outcome, HybridChromePlanBuilder::TitleRefresh::Outcome::Unchanged);
+        QVERIFY(container.renamePage(QStringLiteral("work"), QStringLiteral("Renamed tab")));
+        const auto renamed =
+            HybridChromePlanBuilder::refreshTitles(container, *published, options, lookup);
+        // A tab rename changes pill text. Only an anonymous badge derives
+        // its width from that tab; a named container retains its own label.
+        QCOMPARE(renamed.outcome,
                  named ? HybridChromePlanBuilder::TitleRefresh::Outcome::Patched
                        : HybridChromePlanBuilder::TitleRefresh::Outcome::NeedsReplan);
     }

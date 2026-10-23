@@ -842,3 +842,14 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/WindowManagementConfigTests.cmake")
 
 include("${CMAKE_CURRENT_LIST_DIR}/TestWarnings.cmake")
+
+qt_add_executable(qindaqt_container_identity_tests
+    tst_containeridentity.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/containeridentityprojection.h")
+target_include_directories(qindaqt_container_identity_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin")
+target_compile_definitions(qindaqt_container_identity_tests PRIVATE
+    SWITCHER_ROW="${CMAKE_CURRENT_LIST_DIR}/../../data/kwin/tabbox/qindaqt/contents/ui/QindaQtSwitcherRow.qml")
+target_link_libraries(qindaqt_container_identity_tests PRIVATE Qt6::Test Qt6::Quick Qt6::Qml)
+add_test(NAME compositor.container-identity COMMAND qindaqt_container_identity_tests)
+set_tests_properties(compositor.container-identity PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")

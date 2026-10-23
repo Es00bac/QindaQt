@@ -19,12 +19,15 @@ Item {
     property bool vertical: false
     readonly property var colors: theme.colors ?? ({})
     readonly property bool available: access !== null
-    readonly property bool troubled: available
-        && (access.requestPhase === "failed" || access.requestPhase === "uncertain")
+    readonly property bool troubled: available && (access.requestPhase === "failed" || access.requestPhase === "uncertain")
 
     objectName: "networkApplet"
     implicitWidth: 32
     implicitHeight: 28
+    Component.onDestruction: {
+        if (root.access !== null)
+            root.access.setExpanded(false);
+    }
 
     ToolButton {
         id: summary
@@ -34,13 +37,16 @@ Item {
         focusPolicy: Qt.TabFocus
         text: ""
         Accessible.role: Accessible.Button
-        Accessible.name: root.available ? root.access.accessibleName
-                                        : qsTr("Network is unavailable")
+        Accessible.name: root.available ? root.access.accessibleName : qsTr("Network is unavailable")
         Accessible.description: root.available ? root.access.accessibleDescription : ""
 
         function openDetails() {
-            if (root.available)
-                details.open()
+            if (root.available) {
+                if (details.opened)
+                    details.close();
+                else
+                    details.open();
+            }
         }
 
         onClicked: openDetails()
@@ -70,16 +76,16 @@ Item {
         anchorItem: summary
         vertical: root.vertical
         objectName: "networkAppletPopup"
-        width: 340
+        width: Math.min(340, Math.max(1, outputWidth() - 24))
         padding: 12
 
         onOpened: {
             if (root.access !== null)
-                root.access.setExpanded(true)
+                root.access.setExpanded(true);
         }
         onClosed: {
             if (root.access !== null)
-                root.access.setExpanded(false)
+                root.access.setExpanded(false);
         }
 
         background: Rectangle {
@@ -88,161 +94,190 @@ Item {
             border.color: root.colors.border ?? "#3c433f"
         }
 
-        contentItem: ScrollView {
-            implicitHeight: Math.min(contentColumn.implicitHeight, 460)
-            clip: true
-
-            // AGENT-GUARD: shortcut ownership follows the focusable popup
-            // window; the string form is required on the offscreen path.
-            Shortcut {
-                sequence: "Escape"
-                context: Qt.WindowShortcut
-                enabled: details.opened
-                onActivated: details.close()
-            }
-
-            ColumnLayout {
-                id: contentColumn
-                width: details.availableWidth
-                spacing: 8
-
+        contentItem: ColumnLayout {
+            spacing: 6
+            RowLayout {
+                Layout.fillWidth: true
                 Label {
                     objectName: "networkAppletHeading"
                     Layout.fillWidth: true
                     text: qsTr("Network")
-                    color: root.colors.text ?? "white"
                     font.bold: true
+                    color: Tokens.fg.default
                     Accessible.role: Accessible.Heading
                 }
-                Label {
-                    objectName: "networkAppletStatus"
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.phase !== "loading"
-                             && root.access.phase !== "unavailable"
-                    text: visible ? root.access.summaryLabel : ""
-                    color: root.colors.text ?? "white"
-                    wrapMode: Text.Wrap
-                }
-                Label {
-                    objectName: "networkAppletDiagnostic"
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.diagnostic !== ""
-                    text: visible ? root.access.diagnostic : ""
-                    color: root.colors.textMuted ?? "#a9afa9"
-                    wrapMode: Text.Wrap
-                }
-
-                Repeater {
-                    model: root.available ? root.access.radioRows : []
-
-                    C.Switch {
-                        id: radioSwitch
-                        required property var modelData
-                        objectName: "networkAppletRadioSwitch"
-                        Layout.fillWidth: true
-                        text: modelData.pending ? qsTr("%1 (changing…)").arg(modelData.label)
-                                                : modelData.label
-                        enabled: modelData.canToggle && !modelData.pending
-                        // AGENT-GUARD: the switch shows confirmed truth only.
-                        // It never toggles itself, so a pending request can
-                        // never read as done before Network1 confirms it.
-                        checkable: false
-                        checked: modelData.enabled
-                        accessibleDescription: modelData.accessibleDescription
-                        onClicked: root.access.requestRadio(radioSwitch.modelData.id,
-                                                            !radioSwitch.modelData.enabled)
+                C.Button {
+                    objectName: "networkAppletSettingsButton"
+                    text: qsTr("Settings…")
+                    emphasized: false
+                    visible: Boolean(root.access?.canOpenSettings)
+                    accessibleDescription: qsTr("Open the Network page of Settings")
+                    onClicked: {
+                        if (root.access.openSettings())
+                            details.close();
                     }
                 }
+            }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-                Label {
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.connectionRows.length > 0
-                    text: qsTr("Connected")
-                    color: root.colors.text ?? "white"
-                    font.bold: true
-                    Accessible.role: Accessible.Heading
+                implicitHeight: Math.min(contentColumn.implicitHeight, 360, Math.max(1, details.outputHeight() - 112))
+                contentWidth: availableWidth
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                clip: true
+
+                // AGENT-GUARD: shortcut ownership follows the focusable popup
+                // window; the string form is required on the offscreen path.
+                Shortcut {
+                    sequence: "Escape"
+                    context: Qt.WindowShortcut
+                    enabled: details.opened
+                    onActivated: details.close()
                 }
-                Repeater {
-                    model: root.available ? root.access.connectionRows : []
 
-                    NetworkConnectionRow {
-                        required property var modelData
+                ColumnLayout {
+                    id: contentColumn
+                    width: details.availableWidth
+                    spacing: 6
+
+                    Label {
+                        objectName: "networkAppletStatus"
                         Layout.fillWidth: true
-                        row: modelData
-                        access: root.access
-                        colors: root.colors
+                        visible: root.available && root.access.phase !== "loading" && root.access.phase !== "unavailable"
+                        text: visible ? root.access.summaryLabel : ""
+                        color: root.colors.text ?? "white"
+                        wrapMode: Text.Wrap
                     }
-                }
+                    Label {
+                        objectName: "networkAppletDiagnostic"
+                        Layout.fillWidth: true
+                        visible: root.available && root.access.diagnostic !== ""
+                        text: visible ? root.access.diagnostic : ""
+                        color: root.colors.textMuted ?? "#a9afa9"
+                        wrapMode: Text.Wrap
+                    }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.wifiDevicePresent
-                             && (root.access.phase === "ready"
-                                 || root.access.phase === "degraded")
+                    Repeater {
+                        model: root.available ? (root.access.radioRows ?? []).length : 0
+
+                        C.Switch {
+                            id: radioSwitch
+                            required property int index
+                            readonly property var modelData: root.access?.radioRows?.[index] ?? ({
+                                    "id": "",
+                                    "label": "",
+                                    "pending": false,
+                                    "canToggle": false,
+                                    "enabled": false,
+                                    "accessibleDescription": ""
+                                })
+                            objectName: "networkAppletRadioSwitch"
+                            Layout.fillWidth: true
+                            text: modelData.pending ? qsTr("%1 (changing…)").arg(modelData.label) : modelData.label
+                            enabled: modelData.canToggle && !modelData.pending
+                            // AGENT-GUARD: the switch shows confirmed truth only.
+                            // It never toggles itself, so a pending request can
+                            // never read as done before Network1 confirms it.
+                            checkable: false
+                            checked: modelData.enabled
+                            accessibleDescription: modelData.accessibleDescription
+                            onClicked: root.access.requestRadio(radioSwitch.modelData.id, !radioSwitch.modelData.enabled)
+                        }
+                    }
+
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("Wi-Fi networks")
+                        visible: root.available && root.access.connectionRows.length > 0
+                        text: qsTr("Connected")
                         color: root.colors.text ?? "white"
                         font.bold: true
                         Accessible.role: Accessible.Heading
                     }
-                    C.Button {
-                        objectName: "networkAppletRescanButton"
-                        text: root.available && root.access.scanning ? qsTr("Searching…")
-                                                                     : qsTr("Rescan")
-                        emphasized: false
-                        available: root.available && root.access.scanAvailable
-                        accessibleDescription: qsTr("Search again for nearby Wi-Fi networks")
-                        onClicked: root.access.requestScan()
-                    }
-                }
-                Repeater {
-                    model: root.available ? root.access.accessPointRows : []
+                    Repeater {
+                        model: root.available ? (root.access.connectionRows ?? []).length : 0
 
-                    NetworkAccessPointRow {
-                        required property var modelData
+                        NetworkConnectionRow {
+                            required property int index
+                            readonly property var modelData: root.access?.connectionRows?.[index] ?? ({
+                                    "id": "",
+                                    "label": "",
+                                    "kindLabel": "",
+                                    "pending": false,
+                                    "canDisconnect": false,
+                                    "accessibleName": "",
+                                    "accessibleDescription": ""
+                                })
+                            Layout.fillWidth: true
+                            row: modelData
+                            access: root.access
+                            colors: root.colors
+                        }
+                    }
+
+                    RowLayout {
                         Layout.fillWidth: true
-                        row: modelData
-                        access: root.access
-                        colors: root.colors
+                        visible: root.available && root.access.wifiDevicePresent && (root.access.phase === "ready" || root.access.phase === "degraded")
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Wi-Fi networks")
+                            color: root.colors.text ?? "white"
+                            font.bold: true
+                            Accessible.role: Accessible.Heading
+                        }
+                        C.Button {
+                            objectName: "networkAppletRescanButton"
+                            text: root.available && root.access.scanning ? qsTr("Searching…") : qsTr("Rescan")
+                            emphasized: false
+                            available: root.available && root.access.scanAvailable
+                            accessibleDescription: qsTr("Search again for nearby Wi-Fi networks")
+                            onClicked: root.access.requestScan()
+                        }
                     }
-                }
-                Label {
-                    objectName: "networkAppletEmpty"
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.phase === "ready"
-                             && root.access.accessPointRows.length === 0
-                    text: root.available && root.access.wifiDevicePresent
-                          ? qsTr("No Wi-Fi networks found.")
-                          : qsTr("No Wi-Fi adapter is available.")
-                    color: root.colors.textMuted ?? "#a9afa9"
-                    wrapMode: Text.Wrap
-                }
+                    Repeater {
+                        model: root.available ? (root.access.accessPointRows ?? []).length : 0
 
-                Label {
-                    objectName: "networkAppletFeedback"
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.feedbackPresent
-                    text: visible ? root.access.feedback : ""
-                    // Colour reinforces the words; the text itself says
-                    // whether the change is pending, done, failed, or uncertain.
-                    color: root.troubled ? (root.colors.warning ?? "#e5a84b")
-                                         : (root.colors.textMuted ?? "#a9afa9")
-                    wrapMode: Text.Wrap
-                    Accessible.role: Accessible.AlertMessage
-                    Accessible.name: text
-                }
+                        NetworkAccessPointRow {
+                            required property int index
+                            readonly property var modelData: root.access?.accessPointRows?.[index] ?? ({
+                                    "id": "",
+                                    "label": "",
+                                    "signalPercent": 0,
+                                    "active": false,
+                                    "saved": false,
+                                    "secured": false,
+                                    "securityLabel": "",
+                                    "pending": false,
+                                    "canConnect": false,
+                                    "accessibleName": "",
+                                    "accessibleDescription": ""
+                                })
+                            Layout.fillWidth: true
+                            row: modelData
+                            access: root.access
+                            colors: root.colors
+                        }
+                    }
+                    Label {
+                        objectName: "networkAppletEmpty"
+                        Layout.fillWidth: true
+                        visible: root.available && root.access.phase === "ready" && root.access.accessPointRows.length === 0
+                        text: root.available && root.access.wifiDevicePresent ? qsTr("No Wi-Fi networks found.") : qsTr("No Wi-Fi adapter is available.")
+                        color: root.colors.textMuted ?? "#a9afa9"
+                        wrapMode: Text.Wrap
+                    }
 
-                C.Button {
-                    objectName: "networkAppletSettingsButton"
-                    Layout.fillWidth: true
-                    visible: root.available && root.access.canOpenSettings
-                    text: qsTr("Network Settings…")
-                    emphasized: false
-                    accessibleDescription: qsTr("Open the Network page of Settings")
-                    onClicked: {
-                        if (root.access.openSettings())
-                            details.close()
+                    Label {
+                        objectName: "networkAppletFeedback"
+                        Layout.fillWidth: true
+                        visible: root.available && root.access.feedbackPresent
+                        text: visible ? root.access.feedback : ""
+                        // Colour reinforces the words; the text itself says
+                        // whether the change is pending, done, failed, or uncertain.
+                        color: root.troubled ? (root.colors.warning ?? "#e5a84b") : (root.colors.textMuted ?? "#a9afa9")
+                        wrapMode: Text.Wrap
+                        Accessible.role: Accessible.AlertMessage
+                        Accessible.name: text
                     }
                 }
             }

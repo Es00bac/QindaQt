@@ -20,6 +20,7 @@ ColumnLayout {
 
     required property var controller
     required property var store
+    property bool settingsInHeader: false
 
     readonly property bool showLists:
         controller?.phaseText === "ready"
@@ -143,6 +144,7 @@ ColumnLayout {
         Layout.topMargin: Tokens.space["1"]
         controller: panel.controller
         desktopControls: panel.store.desktopControls
+        showSettingsLink: !panel.settingsInHeader
         statusText: panel.statusText
         statusIsError: panel.statusIsError
         showLists: panel.showLists

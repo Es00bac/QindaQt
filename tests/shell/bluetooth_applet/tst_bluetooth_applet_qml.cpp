@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "../applet_capture_fixture.h"
 #include "bluetooth_applet_controller.h"
 #include "../icon_resolution_test_fixture.h"
 
@@ -102,6 +103,7 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     FakeBluetoothTransport transport;
     Bluetooth::BluetoothClient client(&transport);
     BluetoothAppletController controller(&client, true, true);
+    controller.setSettingsLaunch([] { return true; });
     publishReady(client, transport);
 
     QQmlEngine engine;
@@ -149,6 +151,7 @@ void BluetoothAppletQmlTests::compiledAppletSupportsKeyboardAccessibilityAndLeas
     QVERIFY(popup != nullptr);
     QTRY_VERIFY(popup->property("opened").toBool());
     QVERIFY(popupContent(root) != nullptr);
+    QVERIFY(captureApplet(popupContent(root), QStringLiteral("bluetooth")));
     QVERIFY(popupContent(root)->window() != &window);
     QTRY_VERIFY(popup->property("height").toReal() > window.height());
 

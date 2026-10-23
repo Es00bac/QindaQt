@@ -2,11 +2,15 @@
 
 #pragma once
 
+#include <functional>
+#include <utility>
+
 #include <qindaqt/services/bluetooth_client/bluetooth_client.h>
 #include <qindaqt/shell/bluetooth_applet/bluetooth_applet_types.h>
 #include <qindaqt/shell/bluetooth_applet/bluetooth_request_state.h>
 
 #include <QtCore/QObject>
+#include <QTimer>
 #include <QtCore/QVariantList>
 
 #include <optional>
@@ -24,6 +28,7 @@ namespace QindaQt::Shell::BluetoothApplet
 class BluetoothAppletController final : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool canOpenSettings READ canOpenSettings NOTIFY stateChanged)
     Q_PROPERTY(QString phase READ phase NOTIFY stateChanged)
     Q_PROPERTY(QString diagnostic READ diagnostic NOTIFY stateChanged)
     Q_PROPERTY(QString summaryLabel READ summaryLabel NOTIFY stateChanged)
@@ -45,6 +50,20 @@ class BluetoothAppletController final : public QObject
     Q_PROPERTY(bool pairingReplyPending READ pairingReplyPending NOTIFY stateChanged)
 
 public:
+    // Same-thread launch seam owned by shell composition; no app execution in QML.
+    void setSettingsLaunch(std::function<bool()> launch) {
+        m_settingsLaunch = std::move(launch);
+        Q_EMIT stateChanged();
+    }
+    [[nodiscard]] bool canOpenSettings() const { return bool(m_settingsLaunch); }
+    Q_INVOKABLE bool openSettings() {
+        if (m_settingsLaunch && m_settingsLaunch()) {
+            return true;
+        }
+        publishFeedback(tr("Could not open Bluetooth Settings."));
+        return false;
+    }
+
     explicit BluetoothAppletController(Bluetooth::BluetoothClient *client,
                                        bool bluetoothReadGranted,
                                        bool bluetoothControlGranted,
@@ -107,6 +126,8 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
+    std::function<bool()> m_settingsLaunch;
+    QTimer m_convergenceDeadline;
     struct SuccessConvergence {
         QString owner;
         quint64 epoch = 0;

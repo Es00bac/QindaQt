@@ -219,9 +219,12 @@ window at most four times a second with a trailing flush; the session re-derives
 only title text with `HybridChromePlanBuilder::refreshTitles()` (the same page
 and member title rules as a full build) and publishes it through
 `KWinChromeManager::updateTitles()`, which refuses anything but a text change.
-A caption change never re-plans a container or runs `synchronizeChrome()`,
-except for an unnamed rolled-up strip, whose width is measured for a label
-derived from its page title.
+A caption change never re-plans a container or runs `synchronizeChrome()`.
+Tabs use their own numbered or manually assigned page names (ADR-0429), so
+application spinners no longer repaint the shared title band. A page rename
+uses the topology transaction and republishes the relevant text and layout.
+The group menu exposes **Rename Tab…** for every page; accessibility and shaded
+pills consume the same page names.
 
 Shared chrome creates no production `QWidget`, `QWindow`, internal window,
 input mask, focusable surface, or `outputOnly` property. It consequently cannot

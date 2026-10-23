@@ -52,7 +52,7 @@ capture(const QString &id, const QString &name, const QString &color,
   for (const auto &page : liveLayout.pages())
     if (!result.layout.addPage(
             Core::ContainerPage(page.id(),
-                                Detail::bindNode(page.root(), bindings)),
+                                Detail::bindNode(page.root(), bindings), page.name(), page.number()),
             error))
       return std::nullopt;
   if (!result.layout.activatePage(liveLayout.activePageId(), error))

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "../applet_capture_fixture.h"
 #include "support/audio_applet_qml_fixture.h"
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_AudioAppletPlugin)
@@ -25,6 +26,7 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     FakeAudioTransport transport;
     Audio::AudioClient client(&transport);
     AudioAppletController controller(&client, true, true);
+    controller.setSettingsLaunch([] { return true; });
     client.start();
     transport.announceOwner(kOwner);
     transport.reply(transport.fetches.constLast(), clientSnapshot());
@@ -68,6 +70,12 @@ void AudioAppletQmlTests::compiledAppletSupportsKeyboardAndAccessibility()
     summary->forceActiveFocus();
     QQuickItem *popupContent = openPopupContent(root, &window);
     QVERIFY(popupContent != nullptr);
+    QVERIFY(captureApplet(popupContent, QStringLiteral("audio")));
+
+    QVERIFY(!root->property("appsExpanded").toBool());
+    QVERIFY(visualItemsNamed(popupContent, QStringLiteral("audioStreamVolume")).isEmpty());
+    root->setProperty("appsExpanded", true);
+    QTRY_COMPARE(visualItemsNamed(popupContent, QStringLiteral("audioStreamVolume")).size(), 1);
 
     // One fader per default-device band — output first, then input — and one
     // stream slider; every control carries a complete accessible identity.
@@ -466,6 +474,10 @@ void AudioAppletQmlTests::popupMetersHoldALeaseOnlyWhileTheConsoleIsShown()
     summary->forceActiveFocus();
     QQuickItem *popupContent = openPopupContent(root, &window);
     QVERIFY(popupContent != nullptr);
+    QCOMPARE(controller.meterLeaseCount(), 0);
+    QVERIFY(!root->property("consoleExpanded").toBool());
+    root->setProperty("consoleExpanded", true);
+    QTRY_COMPARE(controller.meterLeaseCount(), 2);
     const auto meters = visualItemsNamed(popupContent, QStringLiteral("audioConsoleMeter_strip.hardware.1"))
         + visualItemsNamed(popupContent, QStringLiteral("audioConsoleMeter_strip.hardware.2"));
     QCOMPARE(meters.size(), 2);

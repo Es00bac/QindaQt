@@ -55,7 +55,12 @@ it does not invite retrying an already committed layout.
 ## Names, colors and application slots
 
 Version 1 stores a workspace identifier, a one-line name, an optional sRGB
-`#RRGGBB` accent, a Core container layout and application slots. An empty color
+`#RRGGBB` accent, a Core container layout and application slots. Each page's
+optional `name` and positive integer `number` fields preserve manually renamed
+and numbered tabs through capture, disk round trip and rebinding. Older layouts
+without these fields receive numbers in stored page order; invalid text,
+fractional/nonpositive numbers and duplicate numbers are rejected. See
+[ADR-0429](../adr/0429-container-and-tab-identity.md). An empty color
 means follow the theme. Each slot has a durable identifier, a human label, a
 desktop-entry identifier and optional absolute URLs. Layout leaves refer to
 slot identifiers. The sets must match exactly. A saved layout contains at

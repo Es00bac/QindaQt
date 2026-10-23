@@ -42,6 +42,8 @@ TopologyCommandKind commandKind(const TopologyCommand &command) noexcept
                 return TopologyCommandKind::MoveMember;
             } else if constexpr (std::is_same_v<Command, ReorderPage>) {
                 return TopologyCommandKind::ReorderPage;
+            } else if constexpr (std::is_same_v<Command, RenamePage>) {
+                return TopologyCommandKind::RenamePage;
             } else if constexpr (std::is_same_v<Command, ActivatePage>) {
                 return TopologyCommandKind::ActivatePage;
             } else if constexpr (std::is_same_v<Command, ResizeSplit>) {

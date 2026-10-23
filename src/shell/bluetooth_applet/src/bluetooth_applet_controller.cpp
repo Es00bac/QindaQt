@@ -39,6 +39,19 @@ BluetoothAppletController::BluetoothAppletController(
     , m_bluetoothControlGranted(bluetoothReadGranted && bluetoothControlGranted)
 {
     Q_ASSERT(m_client != nullptr); Q_ASSERT(m_client->thread() == thread());
+    m_convergenceDeadline.setSingleShot(true);
+    m_convergenceDeadline.setInterval(5000);
+    connect(&m_convergenceDeadline, &QTimer::timeout, this, [this] {
+        if (!m_successConvergence) {
+            return;
+        }
+        // A lost readback must not leave every control disabled indefinitely.
+        // Retire uncertainty, refresh observation, and never replay the mutation.
+        m_successConvergence.reset();
+        publishFeedback(tr("Bluetooth has not confirmed the change. Refreshing current state."));
+        m_client->refresh();
+        reproject();
+    });
     connect(m_client, &Bluetooth::BluetoothClient::stateChanged,
             this, &BluetoothAppletController::reproject);
     connect(m_client, &Bluetooth::BluetoothClient::snapshotChanged,
@@ -283,6 +296,9 @@ void BluetoothAppletController::setExpanded(const bool expanded)
     const bool newlyClosed = m_expanded && !expanded;
     m_expanded = expanded;
     if (expanded) {
+        if (m_bluetoothReadGranted) {
+            m_client->refresh();
+        }
         return;
     }
     if (newlyClosed || m_shuttingDown) {
@@ -365,6 +381,7 @@ void BluetoothAppletController::handleOperationCompleted(
         // Keep all controls fenced until same-authority snapshot truth reaches
         // the result's observed revision; otherwise stale state can dispatch
         // the same mutation a second time.
+        m_convergenceDeadline.start();
         m_successConvergence = SuccessConvergence{
             .owner = initiatingOwner,
             .epoch = result.observedEpoch,
@@ -486,6 +503,9 @@ void BluetoothAppletController::reproject()
         publishFeedback(tr("Bluetooth authority changed. The pairing response was not replayed."));
     }
     observeSuccessConvergence();
+    if (!m_successConvergence) {
+        m_convergenceDeadline.stop();
+    }
     retireLeaseIfAuthorityEnded();
     if (requestInFlight()) {
         const bool exact = presentationOwnerAvailable()

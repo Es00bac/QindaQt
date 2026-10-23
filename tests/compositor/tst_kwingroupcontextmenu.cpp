@@ -29,6 +29,8 @@ GroupContextMenuState populatedState()
         .activeMemberId = QStringLiteral("member-active"),
         .shaded = false,
         .containerName = QStringLiteral("Research Stack"),
+        .tabs = {{QStringLiteral("page-a"), QStringLiteral("Tab 1"), true},
+                 {QStringLiteral("page-b"), QStringLiteral("Notes"), false}},
         .containerColors = {
             {QStringLiteral("default"), QStringLiteral("Default"), true},
             {QStringLiteral("#0091FF"), QStringLiteral("Blue"), false},
@@ -64,6 +66,7 @@ private Q_SLOTS:
     void defersDispatchWithStableContainerIdentity();
     void rejectsStaleOrMalformedState();
     void exposesShadeRenameAndColorControls();
+    void renamesAnExactTab();
     void exposesAspectRatioLockChoices();
     void hidesUnavailableActivitiesAndKeepsWorkspaceActions();
 };
@@ -270,6 +273,25 @@ void KWinGroupContextMenuTest::rejectsStaleOrMalformedState()
         disabledMinimize, QStringLiteral("qindaqt-context-minimize-group"));
     QVERIFY(minimize);
     QVERIFY(!minimize->isEnabled());
+}
+
+void KWinGroupContextMenuTest::renamesAnExactTab()
+{
+    QVector<GroupContextMenuCommand> commands;
+    KWinGroupContextMenu menu(
+        [](const QString &, QString *) { return std::optional(populatedState()); },
+        [&commands](const QString &, const GroupContextMenuCommand &command, QString *) {
+            commands.append(command);
+            return true;
+        });
+    QVERIFY(menu.prepare(QStringLiteral("group-a")));
+    auto *rename = actionNamed(menu, QStringLiteral("qindaqt-context-rename-tab-page-b"));
+    QVERIFY(rename);
+    QCOMPARE(rename->text(), QStringLiteral("Notes"));
+    rename->trigger();
+    QTRY_COMPARE(commands.size(), 1);
+    QCOMPARE(commands[0].kind, GroupContextMenuCommandKind::RenameTab);
+    QCOMPARE(commands[0].destinationId, QStringLiteral("page-b"));
 }
 
 void KWinGroupContextMenuTest::exposesShadeRenameAndColorControls()

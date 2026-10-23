@@ -1,5 +1,16 @@
 # Audio applet
 
+## Compact quick controls
+
+The popup initially expands Output and Input; Apps and Console remain one-click
+expandable bands and remember their expanded state for the applet's lifetime.
+**Audio Settings…** uses the injected route launcher to open the Audio page
+directly; standalone previews may still supply the generic Settings facade.
+Meter leases follow visibility, so a collapsed Console does not retain a meter
+subscription. Existing volume coalescing, keyboard and pointer continuity, and
+owner-loss recovery remain the controller contracts.
+
+
 `src/shell/audio_applet` owns the production panel Audio applet: bounded
 device and application-stream rows, default-device labels, and serialized
 volume/mute mutation lifecycles. A pure target projects bounded Audio1 values

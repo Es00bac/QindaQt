@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "audioappletcomposition.h"
+#include "settingsroutelauncher.h"
+#include <QPointer>
 
 #include "audio_applet_controller.h"
 
@@ -81,6 +83,16 @@ AudioAppletComposition::~AudioAppletComposition()
 AudioApplet::AudioAppletController *AudioAppletComposition::access() const noexcept
 {
     return m_access.get();
+}
+
+void AudioAppletComposition::attachRoutes(SettingsRouteLauncher *launcher)
+{
+    if (!m_access) {
+        return;
+    }
+    m_access->setSettingsLaunch([guard = QPointer<SettingsRouteLauncher>(launcher)] {
+        return guard && guard->openRoute(QStringLiteral("audio"));
+    });
 }
 
 } // namespace QindaQt::Shell

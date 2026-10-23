@@ -11,6 +11,7 @@ Rectangle {
     required property var nativeModel
     required property rect screenGeometry
     required property var appearancePalette
+    property var containerIdentities: ({})
     property alias currentIndex: windowList.currentIndex
     signal activateRequested(int index)
 
@@ -69,6 +70,7 @@ Rectangle {
                 height: frame.rowHeight
                 selected: index === windowList.currentIndex
                 appearancePalette: frame.appearancePalette
+                containerIdentities: frame.containerIdentities
                 onTriggered: {
                     windowList.currentIndex = index
                     frame.activateRequested(index)

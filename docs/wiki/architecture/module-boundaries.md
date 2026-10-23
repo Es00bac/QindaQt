@@ -34,7 +34,7 @@ tests, and the wiki page describing its contract.
 | `src/compositor/kwin/kwinworkspacecontroller.*` | GUI-thread saved-workspace library lifetime, stable shortcut and native palette | Borrows the KWin workspace port; owns dialogs and action, destroyed before the port/runtime; no topology or persistence policy |
 | `src/workspaces` | Saved workspace values, slot assignment, container instantiation and atomic workspace storage | Public Core plus Qt Core; never live compositor handles, app launching, shell or QML |
 | `src/services/power_policy` | Immutable native power preferences and pure, bounded PowerDevil import planning | Qt Core and KF6 ConfigCore; no hardware actions, runtime authority, shell or presentation |
-| `src/core` | Pure window-container domain model, mutations, invariants, and persistence-neutral values | Qt Core and the C++ standard library |
+| `src/core` | Pure window-container domain model, mutations, invariants, page names/numbers, and serializable values | Qt Core and the C++ standard library |
 | `src/hybrid` | Session-wide window ownership, typed topology commands, and atomic candidate/scene publication | `core` and Qt Core; never KWin objects or input events |
 | `src/hybrid_constraints` | Recursive member-size solving and lossless independent-window restore values | `core` and Qt Core; never compositor objects or presentation |
 | `src/hybrid_input` | Toolkit-neutral pointer/keyboard docking grab and intent state machine | Qt Core/Gui value types and an injected target resolver |

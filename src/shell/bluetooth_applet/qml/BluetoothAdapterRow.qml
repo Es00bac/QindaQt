@@ -12,9 +12,9 @@ Frame {
     required property var access
     required property var colors
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 4
+    padding: 6
+    contentItem: RowLayout {
+        spacing: 6
 
         Label {
             Layout.fillWidth: true
@@ -25,33 +25,25 @@ Frame {
             Accessible.description: root.row.accessibleDescription
         }
 
-        RowLayout {
-            Layout.fillWidth: true
+        Button {
+            objectName: "bluetoothAppletPowerButton"
+            text: root.row.powered ? qsTr("Turn off") : qsTr("Turn on")
+            enabled: root.row.canSetPowered
+            focusPolicy: Qt.TabFocus
+            Accessible.name: qsTr("%1: %2").arg(root.row.label).arg(text)
+            Accessible.description: root.row.accessibleDescription
+            onClicked: root.access.requestAdapterPower(root.row.id, !root.row.powered)
+        }
 
-            Button {
-                objectName: "bluetoothAppletPowerButton"
-                text: root.row.powered ? qsTr("Turn off") : qsTr("Turn on")
-                enabled: root.row.canSetPowered
-                focusPolicy: Qt.TabFocus
-                Accessible.name: qsTr("%1: %2").arg(root.row.label).arg(text)
-                Accessible.description: root.row.accessibleDescription
-                onClicked: root.access.requestAdapterPower(root.row.id,
-                                                           !root.row.powered)
-            }
-
-            Button {
-                objectName: "bluetoothAppletDiscoveryButton"
-                visible: root.row.powered
-                text: root.row.canReleaseDiscovery
-                      ? qsTr("Stop discovery") : qsTr("Discover devices")
-                enabled: root.row.canAcquireDiscovery
-                         || root.row.canReleaseDiscovery
-                focusPolicy: Qt.TabFocus
-                Accessible.name: qsTr("%1: %2").arg(root.row.label).arg(text)
-                Accessible.description: root.row.accessibleDescription
-                onClicked: root.access.requestDiscovery(
-                    root.row.id, !root.row.canReleaseDiscovery)
-            }
+        Button {
+            objectName: "bluetoothAppletDiscoveryButton"
+            visible: root.row.powered
+            text: root.row.canReleaseDiscovery ? qsTr("Stop") : qsTr("Find devices")
+            enabled: root.row.canAcquireDiscovery || root.row.canReleaseDiscovery
+            focusPolicy: Qt.TabFocus
+            Accessible.name: qsTr("%1: %2").arg(root.row.label).arg(text)
+            Accessible.description: root.row.accessibleDescription
+            onClicked: root.access.requestDiscovery(root.row.id, !root.row.canReleaseDiscovery)
         }
     }
 }

@@ -152,7 +152,7 @@ private slots:
         container.windowCount = 3;
         container.minimized = true;
         QCOMPARE(TaskListPresentationModel::accessibleName(container),
-                 QStringLiteral("Files — Projects, 3 windows, minimized"));
+                 QStringLiteral("Projects, container, 3 windows, minimized"));
 
         // ADR-0203: a window rolled up to its icon chip says so, after
         // minimized and before urgent, so screen readers hear the state.
@@ -168,7 +168,7 @@ private slots:
         singletonContainer.windowCount = 1;
         singletonContainer.minimized = false;
         QCOMPARE(TaskListPresentationModel::accessibleName(singletonContainer),
-                 QStringLiteral("Files — Projects"));
+                 QStringLiteral("Projects, container"));
     }
 };
 

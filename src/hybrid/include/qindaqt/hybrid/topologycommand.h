@@ -191,6 +191,13 @@ struct ReorderPage final
     qsizetype destinationPageIndex = 0;
 };
 
+struct RenamePage final
+{
+    QString containerId;
+    QString pageId;
+    QString name;
+};
+
 struct ActivatePage final
 {
     QString containerId;
@@ -284,6 +291,7 @@ using TopologyCommand = std::variant<AddIndependentWindow,
                                      MoveMember,
                                      ReorderPage,
                                      ActivatePage,
+                                     RenamePage,
                                      ResizeSplit,
                                      ReorderMembers,
                                      ReparentMember,
@@ -308,6 +316,7 @@ enum class TopologyCommandKind {
     MoveMember,
     ReorderPage,
     ActivatePage,
+    RenamePage,
     ResizeSplit,
     ReorderMembers,
     ReparentMember,

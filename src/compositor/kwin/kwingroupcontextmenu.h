@@ -31,6 +31,7 @@ struct GroupContextMenuState final
     // Current rename override, empty when the container has never been
     // renamed. Used only to prefill the rename prompt.
     QString containerName;
+    QVector<GroupContextMenuDestination> tabs = {};
     // "default" plus every containerColorSwatches() entry, selected marking
     // the current override (or "default" when colorHex is unset).
     QVector<GroupContextMenuDestination> containerColors;
@@ -54,6 +55,7 @@ enum class GroupContextMenuCommandKind {
     MinimizeGroup,
     ToggleShadeGroup,
     RenameContainer,
+    RenameTab,
     SetContainerColor,
     SetKeepAbove,
     SetKeepBelow,

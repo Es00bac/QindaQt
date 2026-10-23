@@ -28,6 +28,7 @@ class PowerAppletController;
 }
 
 namespace QindaQt::Shell {
+class SettingsRouteLauncher;
 
 // Shell-private ownership boundary for the public Power1 and session-actions
 // clients plus the purpose-specific applet facade. It evaluates the audited
@@ -38,6 +39,7 @@ namespace QindaQt::Shell {
 class PowerAppletComposition final
 {
 public:
+    void attachRoutes(SettingsRouteLauncher *launcher);
     PowerAppletComposition(const Applets::ManifestCatalog &catalog,
                            const AppletHost::CapabilityPolicy &policy);
     ~PowerAppletComposition();

@@ -8,7 +8,7 @@ import org.qindaqt.kwin as KWin
 
 // KWin remains the focus and activation authority. Its model already consumes
 // each window's skipSwitcher flag, so a QindaQt container arrives here as one
-// current-page representative under that representative's native caption.
+// current-page activation target. The optional bridge supplies container identity.
 KWin.TabBoxSwitcher {
     id: tabBox
 
@@ -71,6 +71,8 @@ KWin.TabBoxSwitcher {
             // typed palette property when and only when its import succeeds.
             appearancePalette: appearanceBridge.status === Loader.Ready
                                ? appearanceBridge.item.palette : ({})
+            containerIdentities: appearanceBridge.status === Loader.Ready
+                                 ? appearanceBridge.item.containers : ({})
             // qmllint enable missing-property
             onActivateRequested: index => {
                 activationTimer.selectedIndex = index

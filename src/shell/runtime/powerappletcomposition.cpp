@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "powerappletcomposition.h"
+#include "settingsroutelauncher.h"
+#include <QPointer>
 
 #include "power_applet_controller.h"
 
@@ -93,6 +95,16 @@ PowerAppletComposition::~PowerAppletComposition()
 PowerApplet::PowerAppletController *PowerAppletComposition::access() const noexcept
 {
     return m_access.get();
+}
+
+void PowerAppletComposition::attachRoutes(SettingsRouteLauncher *launcher)
+{
+    if (!m_access) {
+        return;
+    }
+    m_access->setSettingsLaunch([guard = QPointer<SettingsRouteLauncher>(launcher)] {
+        return guard && guard->openRoute(QStringLiteral("power"));
+    });
 }
 
 } // namespace QindaQt::Shell

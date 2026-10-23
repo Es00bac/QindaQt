@@ -39,6 +39,8 @@ QJsonObject WindowContainer::toJson() const
     QJsonArray serializedPages;
     for (const auto &candidate : m_pages) {
         serializedPages.append(QJsonObject{{QStringLiteral("id"), candidate.id()},
+                                           {QStringLiteral("name"), candidate.name()},
+                                           {QStringLiteral("number"), candidate.number()},
                                            {QStringLiteral("root"), candidate.root().toJson()}});
     }
 
@@ -107,7 +109,17 @@ std::optional<WindowContainer> WindowContainer::fromJson(const QJsonObject &obje
                         QStringLiteral("page %1 root: %2").arg(index).arg(pageError));
             return std::nullopt;
         }
-        parsed.m_pages.append(ContainerPage(*pageId, std::move(*root)));
+        const auto nameValue = pageObject.value(QStringLiteral("name"));
+        const auto numberValue = pageObject.value(QStringLiteral("number"));
+        const int number = numberValue.isUndefined() ? int(index + 1) : numberValue.toInt(-1);
+        if ((!nameValue.isUndefined() && !nameValue.isString())
+            || (!numberValue.isUndefined()
+                && (!numberValue.isDouble() || numberValue.toDouble() != number))
+            || number <= 0 || !ContainerPage::isValidName(nameValue.toString())) {
+            assignError(error, QStringLiteral("page %1 has an invalid name or number").arg(index));
+            return std::nullopt;
+        }
+        parsed.m_pages.append(ContainerPage(*pageId, std::move(*root), nameValue.toString(), number));
     }
     parsed.m_activePageId = *activePageId;
 

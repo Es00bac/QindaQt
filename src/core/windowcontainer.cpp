@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace QindaQt::Core {
@@ -19,12 +20,6 @@ bool fail(QString *error, QString message)
 }
 
 } // namespace
-
-ContainerPage::ContainerPage(QString pageId, LayoutNode root)
-    : m_id(std::move(pageId))
-    , m_root(std::move(root))
-{
-}
 
 WindowContainer::WindowContainer(QString containerId)
     : m_id(std::move(containerId))
@@ -91,6 +86,23 @@ bool WindowContainer::addPage(ContainerPage pageToAdd, QString *error)
     // AGENT-GUARD: Validate a copy so an invalid imported subtree never leaves
     // the live model partially modified.
     WindowContainer candidate(*this);
+    QSet<int> numbers;
+    for (const auto &existing : m_pages) {
+        numbers.insert(existing.number());
+    }
+    if (pageToAdd.m_number <= 0 || numbers.contains(pageToAdd.m_number)) {
+        // Keep existing tab identities stable when a page moves or is removed.
+        int next = 1;
+        for (const int number : numbers) {
+            if (number >= next && number < std::numeric_limits<int>::max()) {
+                next = number + 1;
+            }
+        }
+        while (numbers.contains(next) && next > 0) {
+            --next;
+        }
+        pageToAdd.m_number = next;
+    }
     candidate.m_pages.append(std::move(pageToAdd));
     if (candidate.m_pages.size() == 1) {
         candidate.m_activePageId = candidate.m_pages.constFirst().id();
@@ -431,8 +443,14 @@ ValidationResult WindowContainer::validate() const
 
     QSet<QString> structuralIds{m_id};
     QSet<QString> windowIds;
+    QSet<int> pageNumbers;
     for (qsizetype index = 0; index < m_pages.size(); ++index) {
         const auto &candidate = m_pages[index];
+        if (candidate.number() <= 0 || pageNumbers.contains(candidate.number())
+            || !ContainerPage::isValidName(candidate.name())) {
+            return ValidationResult::failure(QStringLiteral("invalid page name or number"));
+        }
+        pageNumbers.insert(candidate.number());
         if (candidate.id().isEmpty()) {
             return ValidationResult::failure(
                 QStringLiteral("page %1 has an empty ID").arg(index));

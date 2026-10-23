@@ -53,6 +53,7 @@ private slots:
                           QStringLiteral("third-leaf"),
                           QStringLiteral("live-c")));
     QVERIFY(live->activatePage(QStringLiteral("second-page")));
+    QVERIFY(live->renamePage(QStringLiteral("second-page"), QStringLiteral("Notes")));
     QMap<QString, ApplicationSlot> intent{
         {QStringLiteral("live-a"), original.applicationSlots.at(0)},
         {QStringLiteral("live-b"), original.applicationSlots.at(1)},
@@ -67,6 +68,8 @@ private slots:
     QVERIFY(saved->layout.findWindow(QStringLiteral("notes")));
     QVERIFY(!saved->layout.findWindow(QStringLiteral("live-c")));
     QCOMPARE(saved->layout.activePageId(), QStringLiteral("second-page"));
+    QCOMPARE(saved->layout.page(QStringLiteral("second-page"))->displayName(), QStringLiteral("Notes"));
+    QCOMPARE(saved->layout.page(QStringLiteral("second-page"))->number(), 2);
     auto inventory = windows();
     inventory.append({QStringLiteral("new-c"),
                       QStringLiteral("org.qindaqt.TextEditor"), true});
@@ -79,6 +82,8 @@ private slots:
     QCOMPARE(rebound->pages().size(), 2);
     QCOMPARE(rebound->activePageId(), QStringLiteral("second-page"));
     QVERIFY(rebound->findWindow(QStringLiteral("new-c")));
+    QCOMPARE(rebound->page(QStringLiteral("second-page"))->displayName(), QStringLiteral("Notes"));
+    QCOMPARE(rebound->page(QStringLiteral("second-page"))->number(), 2);
     intent.remove(QStringLiteral("live-c"));
     QVERIFY(
         !capture(original.id, original.name, original.color, *live, intent));

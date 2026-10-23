@@ -138,7 +138,7 @@ HybridChrome::ChromeRenderPlan planFor(const Core::WindowContainer &container,
     request.containerTitleIsGenerated = true;
     request.style = HybridChrome::ChromeStyle::qindaMacOS({});
     for (const auto &page : container.pages()) {
-        request.tabs.append({page.id(), titles.value(page.root().windowId()),
+        request.tabs.append({page.id(), page.displayName(),
                              page.id() == container.activePageId()});
     }
     const auto &metrics = request.metrics;
@@ -341,7 +341,7 @@ void TitleChangeBudgetTest::spinnerTitleStaysWithinTheBudget()
     QCOMPARE(after.chromeReplans, 0);
     QCOMPARE(after.chromePublications, 0);
     QCOMPARE(after.fullFrameRenders, quint64(0));
-    QVERIFY(after.bandRenders >= 39 && after.bandRenders <= 41);
+    QCOMPARE(after.bandRenders, quint64(0)); // numbered tabs ignore application spinners
     // One credential lookup for the shell's connection, then cached.
     QCOMPARE(after.credentialLookups, qsizetype(1));
 

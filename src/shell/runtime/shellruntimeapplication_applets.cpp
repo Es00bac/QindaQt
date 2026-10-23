@@ -2,6 +2,7 @@
 #include "shellruntimeapplication.h"
 
 #include "livecustomizationcontroller.h"
+#include "settingsroutelauncher.h"
 
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
@@ -41,6 +42,15 @@
 #include <utility>
 
 namespace QindaQt::Shell {
+
+void ShellRuntimeApplication::attachAppletSettingsRoutes()
+{
+    m_voiceApplet->attachRoutes(m_settingsRouteLauncher.get());
+    m_networkApplet->attachRoutes(m_settingsRouteLauncher.get());
+    m_audioApplet->attachRoutes(m_settingsRouteLauncher.get());
+    m_bluetoothApplet->attachRoutes(m_settingsRouteLauncher.get());
+    m_powerApplet->attachRoutes(m_settingsRouteLauncher.get());
+}
 
 bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
 {

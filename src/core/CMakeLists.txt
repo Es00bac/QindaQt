@@ -3,6 +3,7 @@
 add_library(qindaqt_core STATIC
     layoutnode.cpp
     layoutnode_json.cpp
+    containerpage.cpp
     windowcontainer.cpp
     windowcontainer_json.cpp
 )

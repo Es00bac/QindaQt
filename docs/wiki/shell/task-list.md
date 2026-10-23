@@ -15,8 +15,8 @@ copied from one coherent compositor/hybrid generation:
 
 - unique window identity, application identity and display name, and window
   title;
-- for a `ContainerPrimary` fact only, a user-chosen container color override
-  (`colorHex`, exact `"#RRGGBB"` or empty for no override);
+- for a `ContainerPrimary` fact only, the resolved container accent
+  (`colorHex`, exact `"#RRGGBB"`; empty remains accepted from older producers);
 - compositor-assigned output plus the window's virtual-desktop scope (an
   explicit all-workspaces flag, or a workspace id list);
 - the task-list role: `Standalone`, `ContainerPrimary`, or `ContainerMember`;
@@ -31,29 +31,20 @@ row and the accessible-name suffix ", rolled up"). It is a schema-1 wire
 boolean beside `minimized` (exact keys in both codecs), copied to the entry by
 grouping, and never true for a container member.
 
-For a `ContainerPrimary` fact, `title` is the container's user-chosen rename
-override (`ContainerAppearance::name`, see
-[Hybrid container chrome](../architecture/hybrid-chrome.md)) when one is set,
-falling back to the primary member's native caption otherwise; this is a
-same-process substitution in `KWinShellTaskFactsPublisher::sample()`; no new
-wire field or schema change was needed for the rename since `title` is
-already free-form, hostile-input-bounded text. The container color override
-(`ContainerAppearance::colorHex`) *is* a new field, `colorHex`, added to
-`Compositor::ShellTaskWindow`/the schema-1 task-facts wire object (encoded in
-`shelltaskfacts.cpp`, decoded and validated in `shelltaskfactscodec.cpp`,
-which both the compositor's reference decoder and the shell's
-`TaskListWireDecoder::decodeTaskFacts` share, so there is exactly one hostile-
-input boundary for it). It is empty for every role except `ContainerPrimary`;
-a non-empty value on any other role, or a value that is not exact
-`"#RRGGBB"`, is rejected atomically like every other malformed fact. The
-field flows through `TaskWindowFact` → `TaskEntry` (copied for the collapsed
-container entry only, `task_list_grouping.cpp`) → `TaskListAppletRow` → the
-QML row map (`colorHex`) → `TaskListEntryButton.qml`, which recolors both the
-panel-row and dock-tile icon glyph when set, leaving every standalone window
-and every uncolored container using the ordinary enabled/disabled token
-color. Containers use the bundled symbolic stacked-window icon, independent
-of the primary member’s application icon. Symbolic rendering applies the
-chosen color to the glyph in both dock and taskbar modes.
+For a `ContainerPrimary` fact, `title` is the container's own name: the
+user rename or the translated default "Container". `colorHex` is its explicit
+color or the current theme accent, resolved by the compositor from the same
+style used by container chrome. Native application captions remain unchanged.
+The existing schema-1 task fields carry both values; `colorHex` is empty for
+every non-primary role and malformed colors are rejected atomically.
+
+The color travels through `TaskWindowFact`, `TaskEntry`, `TaskListAppletRow`
+and the QML row map. Both panel rows and dock tiles paint the dedicated
+`qindaqt-container-symbolic` emblem in that color. Its enclosing frame,
+page tabs and split panes identify a container at small sizes. The shell
+embeds this same asset used by Alt+Tab, so an icon theme cannot replace it
+with a generic restore-window glyph. Ordinary applications retain their own
+icons. See [ADR-0429](../adr/0429-container-and-tab-identity.md).
 
 The producer classifies containers before publishing: exactly one primary
 represents each container, and suppressed members reference it by container id.
@@ -86,8 +77,12 @@ per member after detach or release.
 
 KWin's `qindaqt` WindowSwitcher package consumes the same native
 `skipSwitcher` projection for Alt-Tab. KWin remains the activation authority;
-the package changes presentation and labels the one container representative
-with its native caption. Session first-run policy selects that package only
+the package labels the representative with its container name and paints the
+same container emblem and resolved accent. A read-only process-local projection
+maps every grouped member's native UUID to its container identity; primary
+changes therefore keep that identity, and a dissolved container immediately
+falls back to native application presentation. The optional bridge preserves
+native presentation when the compositor plugin is absent. Session first-run policy selects that package only
 when `TabBox/LayoutName` is absent, so an explicit switcher preference is
 preserved.
 

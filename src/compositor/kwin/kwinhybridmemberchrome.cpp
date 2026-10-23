@@ -148,6 +148,7 @@ void KWinHybridSession::setChromePalette(const HybridChrome::ChromePalette &pale
 void KWinHybridSession::setChromeStyle(const HybridChrome::ChromeStyle &style)
 {
     m_chromeStyle = style;
+    Q_EMIT shellVisibilityStateChanged();
     // AGENT-GUARD: overlays skip plans that compare equal (ADR-0383), and the
     // comparison cannot see ChromeStyle::buttonPainter. A new style may swap
     // only the painter, so every overlay repaints once regardless.

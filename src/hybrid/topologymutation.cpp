@@ -448,6 +448,11 @@ bool TopologyMutation::apply(WindowTopology &candidate,
                 return applyMove(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, ReorderPage>) {
                 return applyReorderPage(candidate, typedCommand, error);
+            } else if constexpr (std::is_same_v<Command, RenamePage>) {
+                auto *container = mutableContainer(candidate, typedCommand.containerId);
+                return container
+                    ? container->renamePage(typedCommand.pageId, typedCommand.name, error)
+                    : fail(error, QStringLiteral("unknown container ID"));
             } else if constexpr (std::is_same_v<Command, ActivatePage>) {
                 return applyActivatePage(candidate, typedCommand, error);
             } else if constexpr (std::is_same_v<Command, ResizeSplit>) {

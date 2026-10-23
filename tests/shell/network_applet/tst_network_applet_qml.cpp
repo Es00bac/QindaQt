@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "../applet_capture_fixture.h"
 #include "network_applet_controller.h"
 #include "network_applet_test_support.h"
 #include "../icon_resolution_test_fixture.h"
@@ -168,6 +169,7 @@ void NetworkAppletQmlTests::keyboardJoinsANetworkAndSwitchShowsOnlyConfirmedTrut
     QTRY_VERIFY(h.popup()->property("opened").toBool());
     QQuickItem *content = popupContent(h.root);
     QVERIFY(content != nullptr);
+    QVERIFY(captureApplet(content, QStringLiteral("network")));
     QVERIFY(content->window() != &h.window); // a real, focusable popup window
 
     // The open network is joined with the keyboard alone.

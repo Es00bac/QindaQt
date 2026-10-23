@@ -114,7 +114,7 @@ QVariantList TaskListAppletController::rowsToVariant(
     // AGENT-GUARD: A group keeps its own icon when its active member changes;
     // application artwork also cannot honor the container's symbolic tint.
     const QString iconName = row.kind == ShellTaskList::TaskEntryKind::Container
-        ? QStringLiteral("window-restore-symbolic")
+        ? QStringLiteral("qindaqt-container-symbolic")
         : (m_iconNameResolver ? m_iconNameResolver(row.applicationId) : QString{});
     map.insert(QStringLiteral("iconName"), iconName);
     map.insert(QStringLiteral("iconResolved"),

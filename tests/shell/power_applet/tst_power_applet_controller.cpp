@@ -43,6 +43,21 @@ class PowerAppletControllerTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void settingsRouteDoesNotDependOnServiceAvailability() {
+        FakePowerTransport transport;
+        Power::PowerClient client(&transport);
+        PowerAppletController controller(&client, true, true);
+        QVERIFY(!controller.canOpenSettings());
+        int launches = 0;
+        controller.setSettingsLaunch([&] { ++launches; return true; });
+        QVERIFY(controller.canOpenSettings());
+        QVERIFY(controller.openSettings());
+        QCOMPARE(launches, 1);
+        controller.setSettingsLaunch([] { return false; });
+        QVERIFY(!controller.openSettings());
+        QVERIFY(controller.feedbackPresent());
+    }
+
     void projectsBoundedProfileAndBrightnessRows();
     void capabilityDenialFailsClosedBeforeDispatch();
     void profileDispatchIsSerializedAndSuccessClearsPending();

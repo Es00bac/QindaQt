@@ -553,7 +553,7 @@ void TaskListAppletDockQmlTests::groupingReplacesApplicationsWithOneColoredConta
     auto *icon = entry->findChild<QQuickItem *>(dockMode
         ? QStringLiteral("taskListDockEntryIcon") : QStringLiteral("taskListEntryIcon"));
     QVERIFY(icon);
-    QCOMPARE(icon->property("name").toString(), QStringLiteral("window-restore-symbolic"));
+    QCOMPARE(icon->property("name").toString(), QStringLiteral("qindaqt-container-symbolic"));
     QVERIFY(icon->property("symbolic").toBool());
     QVERIFY(icon->property("resolved").toBool());
     QCOMPARE(icon->property("color").value<QColor>(), QColor("#269CDA"));

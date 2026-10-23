@@ -14,7 +14,12 @@ namespace QindaQt::Core {
 class ContainerPage final
 {
 public:
-    ContainerPage(QString pageId, LayoutNode root);
+    ContainerPage(QString pageId, LayoutNode root,
+                  QString name = {}, int number = 0);
+    [[nodiscard]] const QString &name() const noexcept { return m_name; }
+    [[nodiscard]] int number() const noexcept { return m_number; }
+    [[nodiscard]] QString displayName() const;
+    [[nodiscard]] static bool isValidName(const QString &name);
 
     [[nodiscard]] const QString &id() const noexcept { return m_id; }
     [[nodiscard]] const LayoutNode &root() const noexcept { return m_root; }
@@ -22,6 +27,8 @@ public:
 private:
     QString m_id;
     LayoutNode m_root;
+    QString m_name;
+    int m_number = 0;
 
     friend class WindowContainer;
 };
@@ -86,6 +93,10 @@ public:
                                QString windowId,
                                QString *error = nullptr);
     [[nodiscard]] bool addPage(ContainerPage page, QString *error = nullptr);
+    // Blank clears the custom name. Invalid text or a stale ID leaves the
+    // model unchanged. Names and assigned numbers travel with complete pages.
+    [[nodiscard]] bool renamePage(const QString &pageId, const QString &name,
+                                  QString *error = nullptr);
     [[nodiscard]] bool activatePage(const QString &pageId, QString *error = nullptr);
     [[nodiscard]] bool movePage(const QString &pageId,
                                 qsizetype destinationIndex,

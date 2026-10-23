@@ -1,5 +1,14 @@
 # Network applet
 
+## Compact quick controls
+
+The popup keeps its heading and direct **Settings…** link visible above a
+scrolling list capped to the current output. Connection details occupy one
+elided line with full accessible descriptions. Radio, connection and access-point
+controls retain their items and keyboard focus across ordinary snapshot updates.
+The summary button toggles the popup, and destruction clears its expanded state.
+
+
 `src/shell/network_applet` owns the panel Network applet,
 `qindaqt.applets.network`. It is the desktop's first panel view of the network:
 the current wired, Wi-Fi, or mobile connection, a Wi-Fi on/off switch, the

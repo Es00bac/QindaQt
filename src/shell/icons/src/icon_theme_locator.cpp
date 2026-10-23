@@ -58,6 +58,12 @@ QString IconThemeLocator::locate(const QString &iconName, int size, double scale
     if (!isAcceptableIconName(iconName)) {
         return {};
     }
+    // AGENT-GUARD: container identity must not become a theme's generic
+    // restore/application glyph. This shared product asset always recolors.
+    if (iconName == QLatin1String("qindaqt-container-symbolic")) {
+        const QString resource = QStringLiteral(":/qindaqt/container/qindaqt-container-symbolic.svg");
+        return QFile::exists(resource) ? resource : QString{};
+    }
     const int target = normalizedSize(size);
     const double effectiveScale = normalizedScale(scale);
 

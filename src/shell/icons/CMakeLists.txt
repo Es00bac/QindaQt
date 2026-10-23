@@ -47,6 +47,13 @@ qt_add_qml_module(
         qml/Icon.qml
 )
 
+# The container emblem is product identity, independent of the selected app icon theme.
+qt_add_resources(qindaqt_shell_icons qindaqt_container_icon
+    PREFIX "/qindaqt/container"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/../../../data/kwin/tabbox/qindaqt/contents/ui"
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../data/kwin/tabbox/qindaqt/contents/ui/qindaqt-container-symbolic.svg"
+)
+
 # AGENT-CONTRACT: The module consumes the launcher's public pure
 # desktop-entry parser and Qt Core/Gui/Qml/Quick/Svg only. It must never link
 # D-Bus, KWin, LayerShellQt, the shell runtime, or the status-notifier

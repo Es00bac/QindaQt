@@ -17,6 +17,7 @@ ColumnLayout {
     required property string statusText
     required property bool statusIsError
     required property bool showLists
+    property bool showSettingsLink: true
     signal dismissRequested()
 
     readonly property int overflowDevices: controller?.overflowDeviceCount ?? 0
@@ -88,15 +89,20 @@ ColumnLayout {
         }
     }
 
-    // Render only the composed public launch facade; the action opens generic
-    // Settings, not a dedicated Audio route and not a QML-side executable.
+    // The composed route opens Audio directly; previews may supply the
+    // generic Settings facade instead.
     AudioAppletPad {
         objectName: "audioOpenSettings"
         Layout.alignment: Qt.AlignRight
-        visible: footer.desktopControls !== null
-                 && Boolean(footer.desktopControls?.canOpenSettings)
-        text: qsTr("Settings…")
-        accessibleDescription: qsTr("Opens QindaQt Settings")
-        onClicked: footer.desktopControls.openSettings()
+        visible: footer.showSettingsLink && (Boolean(footer.controller?.canOpenSettings)
+                 || Boolean(footer.desktopControls?.canOpenSettings))
+        text: qsTr("Audio Settings…")
+        accessibleDescription: qsTr("Open the Audio page of Settings")
+        onClicked: {
+            if (footer.controller?.canOpenSettings)
+                footer.controller.openSettings()
+            else
+                footer.desktopControls.openSettings()
+        }
     }
 }

@@ -9,6 +9,10 @@ TaskListPresentationModel::accessibleName(const TaskEntry &entry) {
                      ? entry.applicationName
                      : entry.applicationName + QStringLiteral(" — ") +
                            entry.title;
+  if (entry.kind == TaskEntryKind::Container) {
+    name = (entry.title.isEmpty() ? QStringLiteral("Container") : entry.title)
+        + QStringLiteral(", container");
+  }
   if (entry.kind == TaskEntryKind::Container && entry.windowCount != 1) {
     name += QStringLiteral(", %1 windows").arg(entry.windowCount);
   }

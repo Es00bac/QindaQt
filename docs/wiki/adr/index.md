@@ -450,3 +450,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0427: Share programmable input actions and controller layers](0427-share-programmable-input-actions-and-controller-layers.md) — Accepted shared action/macro values and execution, LED pages and held layers, contact gyro and fullscreen media control.
 - [ADR-0428: Pause controller desktop input only for the focused application](0428-pause-controller-desktop-input-only-for-the-focused-application.md) — Accepted focus-owner rule: a holder of a controller node pauses desktop control only when it is not a passive web-engine host and belongs to the focused window's application; supersedes ADR-0347's any-same-user-open clause.
+
+- [ADR-0429: Give containers and tabs their own identity](0429-container-and-tab-identity.md) — Accepted container names and accents in taskbar/Alt+Tab and durable numbered, renameable pages.

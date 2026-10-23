@@ -67,6 +67,21 @@ class BluetoothAppletControllerTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void settingsRouteDoesNotDependOnServiceAvailability() {
+        FakeBluetoothTransport transport;
+        Bluetooth::BluetoothClient client(&transport);
+        BluetoothAppletController controller(&client, true, true);
+        QVERIFY(!controller.canOpenSettings());
+        int launches = 0;
+        controller.setSettingsLaunch([&] { ++launches; return true; });
+        QVERIFY(controller.canOpenSettings());
+        QVERIFY(controller.openSettings());
+        QCOMPARE(launches, 1);
+        controller.setSettingsLaunch([] { return false; });
+        QVERIFY(!controller.openSettings());
+        QVERIFY(controller.feedbackPresent());
+    }
+
     void projectsOnlyOpaqueBoundedRows();
     void grantsGateReadAndControlIndependently();
     void serializesAndPinsPublicOperations();
@@ -75,6 +90,7 @@ private Q_SLOTS:
     void failedCloseReleaseIsNotAutomaticallyReplayed();
     void malformedReleaseNoLeaseRetainsLease();
     void successWaitsForSnapshotConvergence();
+    void missingReadbackRecoversWithoutReplaying();
     void ownerReplacementClearsTruthLeaseAndRequestWithoutReplay();
     void pairingConfirmationRoundTrip_data();
     void pairingConfirmationRoundTrip();
@@ -340,6 +356,32 @@ void BluetoothAppletControllerTests::malformedReleaseNoLeaseRetainsLease()
         kOwner, release.requestId, true,
         resultFor(release, Bluetooth::OperationStatus::Succeeded,
                   QStringLiteral("lease-released"), 7, 6));
+}
+
+void BluetoothAppletControllerTests::missingReadbackRecoversWithoutReplaying()
+{
+    FakeBluetoothTransport transport;
+    Bluetooth::BluetoothClient client(&transport);
+    BluetoothAppletController controller(&client, true, true);
+    publishReady(client, transport);
+    QVERIFY(controller.requestDeviceConnection(QStringLiteral("device-61-700"), false));
+    const auto operation = transport.submissions.constFirst();
+    transport.emitOperationReply(kOwner, operation.requestId, true,
+        resultFor(operation, Bluetooth::OperationStatus::Succeeded,
+                  QStringLiteral("disconnected"), 6));
+    QTRY_COMPARE(transport.fetches.size(), 2);
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId,
+                                true, bluetoothClientSnapshot(61, 5));
+    QVERIFY(controller.operationPending());
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.operationPending(), 6500);
+    QCOMPARE(transport.submissions.size(), 1);
+    QVERIFY(controller.feedback().contains(QStringLiteral("not confirmed")));
+    QTRY_COMPARE(transport.fetches.size(), 3);
+    auto fresh = bluetoothClientSnapshot(61, 6);
+    fresh.devices[0].connected = false;
+    transport.emitSnapshotReply(kOwner, transport.fetches.constLast().requestId, true, fresh);
+    QVERIFY(controller.requestDeviceConnection(QStringLiteral("device-61-700"), true));
+    QCOMPARE(transport.submissions.size(), 2);
 }
 
 void BluetoothAppletControllerTests::successWaitsForSnapshotConvergence()

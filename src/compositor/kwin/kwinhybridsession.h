@@ -8,6 +8,7 @@
 #include "qindaqt/compositor/shellwindowactions.h"
 #include "hybridchromeplanbuilder.h"
 #include "hybridcontainerappearance.h"
+#include "containeridentityprojection.h"
 #include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
 #include "windowmanagementconfig.h"
@@ -143,6 +144,8 @@ public:
     // and ops/team/messages for the exact proposed contract.
     [[nodiscard]] Compositor::ContainerAppearance containerAppearance(
         const QString &containerId) const;
+    [[nodiscard]] QString containerDisplayName(const QString &containerId) const;
+    [[nodiscard]] QString containerIdentityColor(const QString &containerId) const;
     [[nodiscard]] bool renameContainer(const QString &containerId,
                                        const QString &name,
                                        QString *error = nullptr);
@@ -415,6 +418,10 @@ private:
     std::unique_ptr<ContainerClosePrompt> m_closePrompt;
     WindowManagementConfig m_windowManagement;
     HybridChrome::ChromeStyle m_chromeStyle = HybridChrome::ChromeStyle::qindaMacOS({});
+    bool promptContainerRename(const QString &containerId, QString *error);
+    bool promptTabRename(const QString &containerId, const QString &pageId, QString *error);
+    void synchronizeContainerIdentities();
+    ContainerIdentityProjection m_containerIdentities;
     HybridContainerAppearanceStore m_appearance;
     std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;
     std::unique_ptr<HybridShadeController> m_shadeController;
