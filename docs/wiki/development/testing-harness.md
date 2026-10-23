@@ -5186,3 +5186,8 @@ never repeats the mutation. Optional `QINDAQT_APPLET_CAPTURE_DIR` captures each
 real popup against deterministic fake services; screenshots stay in ignored
 build output. The exact source also passes a native isolated container lifecycle
 smoke; none of these fixtures mutates host radios, brightness or session power.
+
+The standalone `tests/shell/power_applet` CMake project resolves its theme
+fixture from the repository root, like the combined build. Use its
+`qindaqt.power-applet-offscreen` and `qindaqt.power-applet-controller` checks
+for a bounded delivery compatibility check.

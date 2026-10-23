@@ -127,7 +127,7 @@ target_compile_definitions(
     PRIVATE
         QINDAQT_POWER_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
         QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
-        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        QINDAQT_SOURCE_DIR="${power_applet_source_root}"
 )
 add_dependencies(qindaqt_power_applet_qml_tests qindaqt_tokens_qmlplugin)
 qindaqt_enable_warnings(qindaqt_power_applet_qml_tests)
