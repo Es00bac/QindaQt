@@ -1,13 +1,15 @@
 # Audio stability investigation
 
 - Role: Single-session implementer and integrator; no delegated model workers.
-- Status: working — trace reported audio applet failures through Audio1 and related consumers.
+- Status: handoff — verified source integrated on qinda main; Portage delivery remains next.
 - Base: `978b9b764` (freshly fetched hub main).
 - Branch: `fix/audio-stability-20261029`.
 - Ownership: Audio1 service/client, shell Audio applet, Settings Audio, the display/clipboard Wayland read callbacks implicated by the Settings core, focused tests and their documentation.
 - Acceptance: causal reproduction, focused regression checks, strict documentation validation, preserved commit on qinda.
 
 ## Updates
+
+- 2026-10-29T13:38:11-06:00 — Source `08dedc68389546709e02eb50298e9e0cdb23bd6e` integrated on the hub. Acceptance and exact paths are in `ops/team/messages/audio-stability/20261029-handoff.md`. Available for the concrete Portage delivery follow-up; no unrelated queue or background worker was started.
 
 - 2026-10-29T13:34:26-06:00 — Product and focused test targets compile under strict warnings. Ten distinct focused CTest groups pass, 79 QtTest results; the only initial failure was a service test reading the user's preset directory, repaired with explicit private store overrides and a passing 1/1 rerun. Buffer ASan/UBSan: 5/5 results. Display/clipboard pre-fix quiet-read binaries timed out; pre-fix meter visibility failed with a real private graph. Preparing the exact source commit and hub integration; no installation.
 

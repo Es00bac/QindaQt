@@ -1,5 +1,8 @@
 ## October 29 — Audio stability source repairs verified
 
+Source candidate `08dedc683` is integrated on qinda main.
+[Exact handoff and verification](../ops/team/messages/audio-stability/20261029-handoff.md).
+
 The investigation found that installed desktop r42/r43 omits the October 21
 Audio1 rack/refusal, meter snapshot identity and coordinator revision repairs.
 Those missing changes can cause growing memory use and disappearing/stale Audio
