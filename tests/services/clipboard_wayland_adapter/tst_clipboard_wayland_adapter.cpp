@@ -6,6 +6,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QSocketNotifier>
 #include <QtTest/QTest>
 
 using namespace QindaQt::Services;
@@ -86,6 +87,26 @@ private Q_SLOTS:
             QDir(m_runtime).removeRecursively();
             m_runtime.clear();
         }
+    }
+
+    void quietReadNotificationDoesNotBlock()
+    {
+        auto *adapterObject = dynamic_cast<QObject *>(m_adapter.get());
+        QVERIFY(adapterObject != nullptr);
+        QTest::qWait(10);
+        int readNotifiers = 0;
+        for (auto *notifier : adapterObject->findChildren<QSocketNotifier *>()) {
+            if (notifier->type() == QSocketNotifier::Read) {
+                QEvent readable(QEvent::SockAct);
+                QCoreApplication::sendEvent(notifier, &readable);
+                ++readNotifiers;
+            }
+        }
+        QCOMPARE(readNotifiers, 1);
+        QVERIFY(m_observer.available);
+        // A harmless stale wake must not withdraw the connection.
+        m_server->sendOffer({{QStringLiteral("text/plain"), QByteArrayLiteral("after wake")}}, false);
+        QTRY_COMPARE(m_observer.captureCount, 1);
     }
 
     void capturesOnlyAdmittedMediaAndPrimary()

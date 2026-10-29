@@ -6,6 +6,7 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QList>
+#include <QtCore/QSet>
 #include <QtCore/QString>
 
 #include <atomic>
@@ -66,6 +67,9 @@ public:
     // each call reports the loudest sample since the previous call rather than
     // an instantaneous value that would miss transients between polls.
     [[nodiscard]] QHash<QString, Level> takeReadings();
+    // Current owned stream identities, sampled on the worker loop. Names are
+    // never authority to hide another application's stream from Audio1.
+    [[nodiscard]] QSet<quint32> nodeIds() const;
     void clear();
 
 private:

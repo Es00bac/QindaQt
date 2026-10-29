@@ -283,7 +283,8 @@ void WirePlumberWorker::rebuild()
     // headroom or disappear from the public application-stream inventory.
     auto graph = WirePlumberGraph::buildSnapshot(m_manager, m_mixer, m_defaultNodes,
         m_epoch, m_revision + 1, capabilities, m_latencyRanges,
-        ConsoleSendImage::enabled() ? &m_ownedSends.admission() : nullptr);
+        ConsoleSendImage::enabled() ? &m_ownedSends.admission() : nullptr,
+        m_meters.nodeIds());
     if (m_ownedSends.refused() && graph.snapshot.availability == Availability::Ready) {
         graph.snapshot.availability = Availability::Degraded;
         graph.snapshot.reasonCode = QStringLiteral("console-send-refused");

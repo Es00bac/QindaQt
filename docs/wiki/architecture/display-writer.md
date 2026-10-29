@@ -82,6 +82,15 @@ without an unrelated operation or extra event; discovery can therefore reach
 available on its own. The existing nonblocking flush handles socket backpressure
 through the write notifier and preserves transport-loss fencing on errors.
 
+The read notifier uses prepare/read/dispatch-pending on its privately owned,
+single-reader display. It never calls blocking `wl_display_dispatch`: an empty
+or already-consumed readiness notification otherwise stalls the Settings GUI
+thread, including the Audio page. The October 24 Settings core shows that wait
+under `QSocketNotifier` when an external process sent SIGABRT. The private
+startup regression delivers a quiet socket notification and requires the port
+to remain available; the pre-fix binary exceeded a four-second process cap.
+This follows the [Wayland event-loop API](https://wayland.freedesktop.org/docs/html/apb.html#Client-classwl__display).
+
 The production port publishes availability edges to D6 and exposes a positive
 peer PID only while its exact private Wayland connection is live. On Linux that
 identity comes from `SO_PEERCRED` on the Wayland socket; no environment value or

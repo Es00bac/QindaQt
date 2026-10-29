@@ -212,7 +212,11 @@ truth and cancels capture instead of silently selecting another protocol
 contract.
 
 The production adapter uses a private Wayland connection and authenticates its
-peer with `SO_PEERCRED`. Its kernel PID is supplied to the clipboard-private
+peer with `SO_PEERCRED`. Its Qt read notifier prepares a read, reads available
+events, dispatches pending callbacks and flushes their requests; it never waits
+for a future event inside the notifier. A private-server regression sends an
+empty readiness notification and then captures a new offer, covering the same
+blocking-dispatch defect found in the Settings display writer. Its kernel PID is supplied to the clipboard-private
 native lock observer. The observer pins the first Session1 unique owner,
 re-resolves that owner on the constructing bus, and joins the public ordinary
 CompositorAttachment's live socket/PIDFD and exact compositor owner/PID/bus proof

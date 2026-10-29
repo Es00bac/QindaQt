@@ -44,7 +44,45 @@ class AudioStreamRoutingPageTest final : public QObject {
 private Q_SLOTS:
   void compactPickerKeyboardAndWheel();
   void emptyStreamAndVirtualListsShowEmptyStates();
+  void focusTargetsSurviveStreamChurn();
 };
+
+void AudioStreamRoutingPageTest::focusTargetsSurviveStreamChurn() {
+  QTest::failOnWarning(QRegularExpression(QStringLiteral("Cannot assign.*QQuickItem")));
+  QQuickView view;
+  QString error;
+  QVERIFY2(prepareAudioPageEngine(view, &error), qPrintable(error));
+  StubAudioSettingsModel model;
+  auto [guard, page] = createAudioPage(view, model, QSize(900, 760));
+  QVERIFY(page != nullptr);
+  auto *empty = findItem(page, QStringLiteral("audioStreamsEmpty"));
+  QVERIFY(empty != nullptr);
+  auto *section = empty->parentItem();
+  // Action-change signals may register a delegate before both of its QML
+  // properties exist. Such a registration must not publish undefined as an
+  // Item, or poison otherwise valid entry/exit targets.
+  QObject incompleteDelegate;
+  QVERIFY(QMetaObject::invokeMethod(section, "updateActionRegistration",
+      Q_ARG(QVariant, QVariant(99)),
+      Q_ARG(QVariant, QVariant::fromValue(&incompleteDelegate))));
+  QVERIFY(QMetaObject::invokeMethod(section, "removeActionRegistration",
+      Q_ARG(QVariant, QVariant(99))));
+  const QVariantList streams = model.streams;
+  for (int round = 0; round < 8; ++round) {
+    model.streams.clear();
+    Q_EMIT model.viewChanged();
+    QCoreApplication::processEvents();
+    QVERIFY(section->property("firstActionTarget").value<QQuickItem *>() == nullptr);
+    QVERIFY(section->property("lastActionTarget").value<QQuickItem *>() == nullptr);
+    model.streams = streams;
+    Q_EMIT model.viewChanged();
+    QCoreApplication::processEvents();
+    auto *first = section->property("firstActionTarget").value<QQuickItem *>();
+    auto *last = section->property("lastActionTarget").value<QQuickItem *>();
+    QVERIFY(first != nullptr && first->isEnabled());
+    QVERIFY(last != nullptr && last->isEnabled());
+  }
+}
 
 void AudioStreamRoutingPageTest::compactPickerKeyboardAndWheel() {
   QQuickView view;

@@ -449,7 +449,21 @@ private:
         if (!m_running || m_display == nullptr) {
             return;
         }
-        if (wl_display_dispatch(m_display) < 0) {
+        // AGENT-GUARD: this private display has one reader, the Qt thread.
+        // A socket wake is not a promise of a default-queue event; dispatch()
+        // can wait forever and freeze every Settings page. Drain queued work,
+        // prepare/read once without polling, then dispatch only pending work.
+        while (wl_display_prepare_read(m_display) != 0) {
+            if (wl_display_dispatch_pending(m_display) < 0) {
+                transportLost();
+                return;
+            }
+            if (!m_running || m_display == nullptr) {
+                return;
+            }
+        }
+        if (wl_display_read_events(m_display) < 0
+            || wl_display_dispatch_pending(m_display) < 0) {
             transportLost();
             return;
         }

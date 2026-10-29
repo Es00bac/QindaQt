@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "wireplumber_recorder_p.h"
+#include "wireplumber_audio_buffer_p.h"
 
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
@@ -88,15 +89,18 @@ void onProcess(void *userData)
     if (buffer == nullptr) {
         return;
     }
-    const spa_data &data = buffer->buffer->datas[0];
-    const auto *samples = static_cast<const float *>(data.data);
-    if (samples != nullptr && data.chunk->size > 0 && !impl->stopping.load()) {
-        const size_t count = data.chunk->size / sizeof(float);
+    for (const auto samples : AudioBuffer::capture(buffer->buffer)) {
+        if (samples.empty() || impl->stopping.load()) {
+            continue;
+        }
+        const size_t count = samples.size();
         size_t h = impl->head.load(std::memory_order_relaxed);
         const size_t t = impl->tail.load(std::memory_order_acquire);
         const size_t capacity = impl->ring.size();
         const size_t free = (t + capacity - h - 1) % capacity;
-        const size_t writable = std::min(count, free);
+        // Keep stereo framing when the ring fills; a half-frame would swap
+        // left/right for every subsequent recording block.
+        const size_t writable = std::min(count, free) / kChannels * kChannels;
         for (size_t index = 0; index < writable; ++index) {
             impl->ring[h] = samples[index];
             h = (h + 1) % capacity;

@@ -139,7 +139,10 @@ private Q_SLOTS:
         QuietOutputServer server;
         QVERIFY(server.start(socket));
         ScopedWaylandDisplay environment(socket);
-        WriterTransactionPort writer(makeProductionOutputManagementPort(),
+        auto port = makeProductionOutputManagementPort();
+        auto *portObject = dynamic_cast<QObject *>(port.get());
+        QVERIFY(portObject != nullptr);
+        WriterTransactionPort writer(std::move(port),
             std::make_unique<QindaQt::DisplayWriter::TestSupport::FakeJournalStore>());
         QSignalSpy availability(&writer, &WriterTransactionPort::mutationAuthorityChanged);
         QCOMPARE(writer.start(), PortStartStatus::Started);
@@ -159,6 +162,22 @@ private Q_SLOTS:
         QVERIFY(availability.at(2).at(0).toBool());
         QCOMPARE(server.configurationRequests, 0);
         QVERIFY(!server.dispatchFailed);
+
+        // A readiness notification may be stale by dispatch time. Deliver it
+        // on a quiet private connection: the GUI thread must not wait for the
+        // compositor to send another event. The old blocking dispatch hangs
+        // here (the test process has an external CTest deadline).
+        QTest::qWait(10);
+        int readNotifiers = 0;
+        for (auto *notifier : portObject->findChildren<QSocketNotifier *>()) {
+            if (notifier->type() == QSocketNotifier::Read) {
+                QEvent readable(QEvent::SockAct);
+                QCoreApplication::sendEvent(notifier, &readable);
+                ++readNotifiers;
+            }
+        }
+        QCOMPARE(readNotifiers, 1);
+        QVERIFY(writer.isOutputManagementAvailable());
         writer.stop();
         QVERIFY(!writer.isOutputManagementAvailable());
     }

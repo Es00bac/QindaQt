@@ -9,7 +9,7 @@
 #include <QtCore/QHash>
 #include <QtTest>
 
-#if defined(__GLIBC__)
+#ifdef __GLIBC__
 #include <malloc.h>
 #endif
 
@@ -21,25 +21,11 @@ namespace QindaQt::Audio::Test
 namespace
 {
 
-bool waitFor(const std::function<bool()> &condition, const int timeoutMs)
-{
-    QElapsedTimer timer;
-    timer.start();
-    while (!condition()) {
-        if (timer.elapsed() > timeoutMs) {
-            return false;
-        }
-        QTest::qWait(5);
-    }
-    return true;
-}
-
 int clientStreams(const Snapshot &snapshot)
 {
     int count = 0;
     for (const Stream &stream : snapshot.streams) {
-        if (stream.direction == StreamDirection::Playback
-            && stream.applicationName.contains(QLatin1String("pw-cat"))) {
+        if (stream.applicationName.contains(QLatin1String("pw-cat"))) {
             ++count;
         }
     }
@@ -81,12 +67,25 @@ void countMessage(const QtMsgType type, const QMessageLogContext &context,
 
 qint64 heapInUse()
 {
-#if defined(__GLIBC__)
+#ifdef __GLIBC__
     const struct mallinfo2 info = mallinfo2();
     return static_cast<qint64>(info.uordblks + info.hblkhd);
 #else
     return 0;
 #endif
+}
+
+bool waitFor(const std::function<bool()> &condition, const int timeoutMs)
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (!condition()) {
+        if (timer.elapsed() > timeoutMs) {
+            return false;
+        }
+        QTest::qWait(5);
+    }
+    return true;
 }
 
 bool hasInput(const Snapshot &snapshot, const QString &nodeName)
@@ -243,14 +242,30 @@ bool PrivateAudioChurn::apply(const OperationRequest &request)
         == OperationStatus::Succeeded;
 }
 
-bool PrivateAudioChurn::cycle()
+bool PrivateAudioChurn::runTool(const QString &program, const QStringList &arguments)
+{
+    QProcess tool;
+    tool.setProcessEnvironment(m_environment);
+    tool.setStandardOutputFile(QProcess::nullDevice());
+    tool.setStandardErrorFile(QProcess::nullDevice());
+    tool.start(program, arguments);
+    return tool.waitForFinished(5000) && tool.exitStatus() == QProcess::NormalExit
+        && tool.exitCode() == 0;
+}
+
+bool PrivateAudioChurn::cycle(const QString &nodeName, const bool capture)
 {
     ChildProcess client;
+    QStringList arguments{capture ? QStringLiteral("--record") : QStringLiteral("--playback"),
+                          QStringLiteral("--raw"), QStringLiteral("--format=s16"),
+                          QStringLiteral("--rate=48000"), QStringLiteral("--channels=2"),
+                          QStringLiteral("--volume=0")};
+    if (!nodeName.isEmpty()) {
+        arguments.append(QStringLiteral("--properties={ node.name = \"%1\" }").arg(nodeName));
+    }
+    arguments.append(capture ? QStringLiteral("/dev/null") : QStringLiteral("/dev/zero"));
     if (!client.start(QStringLiteral(QINDAQT_PW_CAT_EXECUTABLE),
-                      {QStringLiteral("--playback"), QStringLiteral("--raw"),
-                       QStringLiteral("--format=s16"), QStringLiteral("--rate=48000"),
-                       QStringLiteral("--channels=2"), QStringLiteral("--volume=0"),
-                       QStringLiteral("/dev/zero")},
+                      arguments,
                       m_environment)
         || !waitFor([&] { return m_clientStreams == 1; }, 5000)) {
         return false;

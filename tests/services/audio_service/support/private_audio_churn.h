@@ -9,6 +9,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QTemporaryDir>
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -19,6 +20,8 @@ namespace QindaQt::Audio::Test
 // The growth these rows guard was malloc'd heap with no new mapping or fd.
 [[nodiscard]] qint64 heapInUse();
 [[nodiscard]] bool hasInput(const Snapshot &snapshot, const QString &nodeName);
+// Processes events until `condition` holds; false after `timeoutMs`.
+[[nodiscard]] bool waitFor(const std::function<bool()> &condition, int timeoutMs);
 
 // AGENT-GUARD: a child's output never accumulates in this process. QProcess
 // keeps unread output on the heap, and the private daemons log on graph
@@ -53,7 +56,10 @@ public:
     // A console operation the coordinator applies at once; true on success.
     [[nodiscard]] bool apply(const OperationRequest &request);
     // A pw-cat playback client appears in the graph and then leaves it.
-    [[nodiscard]] bool cycle();
+    [[nodiscard]] bool cycle(const QString &nodeName = {}, bool capture = false);
+    // Runs a PipeWire tool (pw-cli, ...) against this rig's private daemon;
+    // true when it exits 0 within five seconds.
+    [[nodiscard]] bool runTool(const QString &program, const QStringList &arguments);
     // Returns once no publication has arrived for half a second.
     void settle();
     // Warm-up then measured cycles; the measured heap growth, if every

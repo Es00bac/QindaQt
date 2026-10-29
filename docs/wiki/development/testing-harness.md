@@ -2746,6 +2746,23 @@ autostart policy, or an agent-owned store.
 
 ## Current Audio1 proof
 
+October 29 stability regressions add `qindaqt.audio-buffer` (bounded F32
+stereo capture/playback views), `qindaqt.audio-wireplumber-endpoint-recovery`
+(twice-destroyed virtual sink, new serial, same epoch, one replacement and
+console rebinding) and `qindaqt.audio-wireplumber-meter-visibility` (owned meters
+excluded while ordinary playback and a capture client with a meter-like name
+remain public). The graph tests use the private churn rig and have 30-second
+CTest limits. No physical source is connected.
+
+`qindaqt.settings-audio-stream-routing-page` also checks incomplete focus
+registration and repeated row removal/recreation without invalid Item
+assignments. `qindaqt.display-writer-wayland-startup` and
+`qindaqt.clipboard-wayland-adapter` deliver a quiet read notification to their
+actual private-connection notifier; pre-fix binaries hang until a four-second
+external cap, while repaired ports must return and remain usable. The existing
+Audio client meter-lineage and coordinator tests remain the October 21
+stale-snapshot guards; installed r42/r43 omit those repairs.
+
 The focused Audio1 boundary is selected with:
 
 ```sh

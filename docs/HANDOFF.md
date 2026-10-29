@@ -1,3 +1,32 @@
+## October 29 — Audio stability source repairs verified
+
+The investigation found that installed desktop r42/r43 omits the October 21
+Audio1 rack/refusal, meter snapshot identity and coordinator revision repairs.
+Those missing changes can cause growing memory use and disappearing/stale Audio
+controls even while the service remains alive. No recent Audio1/shell coredump
+was found; the latest Settings core instead shows its GUI blocked inside a
+Wayland socket-notifier dispatch before external SIGABRT.
+
+This source repair adds nonblocking display/clipboard dispatch, recovery for
+removed virtual-strip sinks, exact owned-meter exclusion from the application
+list, bounded F32 stereo buffers for meters/recording/VBAN, and safe Settings
+focus registration during row creation/removal. The preserved October 21
+endpoint draft was resumed without altering its original worktree.
+
+Focused strict builds pass. Ten distinct CTest groups pass (79 QtTest results)
+after isolating the existing service fixture from the user's presets. The
+buffer regression also passes ASan/UBSan. Documentation and touched-source
+shape checks pass, with the existing large transport files manually reviewed.
+See the owning [Audio service](wiki/architecture/audio-service.md),
+[Audio Settings](wiki/apps/audio-settings.md) and
+[display writer](wiki/architecture/display-writer.md) pages.
+
+**Not installed:** this is verified source, with no Portage transaction, live
+service restart, logout or physical audio mutation. Delivery must include the
+October 21 repairs as well as this change and retain the installed desktop's
+other fixes. The saved EQ boost can become audible when the formerly refused
+rack starts working; preserve the documented delivery notice.
+
 ## October 23 — Container identity and compact applets installed on qinda-top
 
 Product source `133fb8211` is integrated on the qinda hub's main branch

@@ -10,10 +10,68 @@
 #include <pipewire/pipewire.h>
 #include <pipewire/impl-module.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Audio
 {
+namespace
+{
+
+// AGENT-NOTE: a strip's sink lingers by design, so dropping this service's
+// proxy never takes it down, but the DAEMON can still destroy the node (a
+// `pw-cli destroy`, a policy). The proxy then receives `removed`, and the
+// record that guards against duplicate creation must go with it, or the
+// strip has no sink until the next reconnect. Owned by the proxy listener and
+// freed with the proxy.
+struct EndpointProxyHold {
+    WirePlumberWorker *worker = nullptr;
+    void *proxy = nullptr;
+    bool bound = false;
+    spa_hook listener{};
+};
+
+void onEndpointProxyDestroy(void *data)
+{
+    auto *const hold = static_cast<EndpointProxyHold *>(data);
+    spa_hook_remove(&hold->listener);
+    delete hold;
+}
+
+void onEndpointProxyBound(void *data, const uint32_t globalId)
+{
+    Q_UNUSED(globalId)
+    static_cast<EndpointProxyHold *>(data)->bound = true;
+}
+
+void onEndpointProxyRemoved(void *data)
+{
+    const auto *const hold = static_cast<EndpointProxyHold *>(data);
+    hold->worker->endpointProxyRemoved(hold->proxy, hold->bound);
+}
+
+constexpr pw_proxy_events kEndpointProxyEvents = {
+    .version = PW_VERSION_PROXY_EVENTS,
+    .destroy = onEndpointProxyDestroy,
+    .bound = onEndpointProxyBound,
+    .removed = onEndpointProxyRemoved,
+    .done = nullptr,
+    .error = nullptr,
+    .bound_props = nullptr,
+};
+
+// AGENT-GUARD: recovery is spaced. Something that destroys the sink as soon
+// as it appears must not turn into a create/destroy loop at idle speed.
+constexpr gint64 kEndpointRecoverySpacingUs = 2 * G_USEC_PER_SEC;
+
+void watchEndpointProxy(WirePlumberWorker *const worker, struct pw_proxy *const proxy)
+{
+    auto *const hold = new EndpointProxyHold{
+        .worker = worker, .proxy = proxy, .bound = false, .listener = {}};
+    pw_proxy_add_listener(proxy, &hold->listener, &kEndpointProxyEvents, hold);
+}
+
+} // namespace
 
 void WirePlumberWorker::applyConsoleEndpoints(QList<BackendConsoleEndpoint> endpoints)
 {
@@ -66,6 +124,7 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
         }
         const auto proxy = m_endpointProxies.find(name.toStdString());
         if (proxy != m_endpointProxies.end()) {
+            std::erase(m_removedEndpointProxies, proxy->second);
             pw_proxy_destroy(static_cast<struct pw_proxy *>(proxy->second));
             m_endpointProxies.erase(proxy);
         }
@@ -137,6 +196,7 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
                                   PW_VERSION_NODE, &props->dict, 0));
         pw_properties_free(props);
         if (proxy != nullptr) {
+            watchEndpointProxy(this, proxy);
             m_endpointProxies.emplace(key, proxy);
         }
         // A refused creation is retried on the next rebuild: only a local
@@ -144,8 +204,73 @@ void WirePlumberWorker::applyConsoleEndpointsOnWorker(
     }
 }
 
+void WirePlumberWorker::endpointProxyRemoved(void *const proxy, const bool bound)
+{
+    // An unbound proxy is a creation the daemon refused: its record stays, so
+    // the sink is not asked for again on every rebuild (until the next core).
+    if (!bound || m_stopping || m_context == nullptr) {
+        return;
+    }
+    m_removedEndpointProxies.push_back(proxy);
+    if (m_endpointRecoverySource != nullptr) {
+        return;
+    }
+    // Deferred: this runs inside the protocol dispatch that delivered the
+    // event, and a rebuild loads modules and creates objects.
+    const gint64 elapsed = g_get_monotonic_time() - m_lastEndpointRecovery;
+    const gint64 waitUs = m_lastEndpointRecovery == 0
+        ? 0
+        : std::clamp<gint64>(kEndpointRecoverySpacingUs - elapsed, 0,
+                             kEndpointRecoverySpacingUs);
+    GSource *const source = g_timeout_source_new(static_cast<guint>(waitUs / 1000));
+    g_source_set_callback(source, dispatchEndpointRecovery, this, nullptr);
+    g_source_attach(source, m_context);
+    m_endpointRecoverySource = source;
+}
+
+gboolean WirePlumberWorker::dispatchEndpointRecovery(gpointer data)
+{
+    auto *const self = static_cast<WirePlumberWorker *>(data);
+    GSource *const source = std::exchange(self->m_endpointRecoverySource, nullptr);
+    self->recoverRemovedEndpoints();
+    if (source != nullptr) {
+        g_source_unref(source);
+    }
+    return G_SOURCE_REMOVE;
+}
+
+void WirePlumberWorker::recoverRemovedEndpoints()
+{
+    std::vector<void *> removed;
+    removed.swap(m_removedEndpointProxies);
+    for (void *const proxy : removed) {
+        const auto record = std::find_if(m_endpointProxies.begin(), m_endpointProxies.end(),
+                                         [proxy](const auto &entry) {
+                                             return entry.second == proxy;
+                                         });
+        if (record != m_endpointProxies.end()) {
+            qWarning().noquote()
+                << QStringLiteral("Audio1: PipeWire removed console endpoint %1; recreating it")
+                       .arg(QString::fromStdString(record->first));
+            m_endpointProxies.erase(record);
+            pw_proxy_destroy(static_cast<struct pw_proxy *>(proxy));
+        }
+    }
+    m_lastEndpointRecovery = g_get_monotonic_time();
+    // A sink whose node the object manager still lists is created by the
+    // rebuild its removal triggers; this one covers the other order.
+    rebuild();
+}
+
 void WirePlumberWorker::unloadAllEndpoints()
 {
+    // Recovery belongs to this core: its proxies are destroyed below.
+    if (m_endpointRecoverySource != nullptr) {
+        g_source_destroy(m_endpointRecoverySource);
+        g_source_unref(std::exchange(m_endpointRecoverySource, nullptr));
+    }
+    m_removedEndpointProxies.clear();
+    m_lastEndpointRecovery = 0;
     // A replaced core earns every refused bus loopback one fresh attempt.
     m_refusedEndpoints.clear();
     // A destroy callback removes its own entry; take the map before walking.

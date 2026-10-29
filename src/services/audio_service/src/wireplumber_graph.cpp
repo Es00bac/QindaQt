@@ -210,6 +210,58 @@ bool isCaptureClass(const QString &mediaClass)
     return stream;
 }
 
+// Resolve only retained public streams through bounded graph links. Internal
+// send links have their own budget and never lend a public target identity.
+void projectStreamTargets(WpObjectManager *manager,
+                          const QHash<guint32, quint64> &boundToSerial,
+                          const ConsoleSendAdmission *sends, BuildResult &result)
+{
+    GValue value = G_VALUE_INIT;
+    constexpr qsizetype maxObservedLinks = kMaxStreams * 8;
+    qsizetype observedLinks = 0;
+    qsizetype internalLinks = 0;
+    constexpr qsizetype maxInternalLinks = kMaxStrips * kMaxBuses * 4;
+    WpIterator *links = wp_object_manager_new_filtered_iterator(manager, WP_TYPE_LINK, nullptr);
+    while (wp_iterator_next(links, &value)) {
+        auto *link = WP_LINK(g_value_get_object(&value));
+        guint32 outputNode = 0;
+        guint32 inputNode = 0;
+        wp_link_get_linked_object_ids(link, &outputNode, nullptr, &inputNode, nullptr);
+        const bool internal = sends != nullptr
+            && (sends->excludesBoundId(outputNode) || sends->excludesBoundId(inputNode));
+        qsizetype &count = internal ? internalLinks : observedLinks;
+        const qsizetype maximum = internal ? maxInternalLinks : maxObservedLinks;
+        if (count >= maximum) {
+            result.truncatedOrMalformed = true;
+            g_value_unset(&value);
+            break;
+        }
+        ++count;
+        if (internal) {
+            g_value_unset(&value);
+            continue;
+        }
+        const quint64 outputSerial = boundToSerial.value(outputNode, 0);
+        const quint64 inputSerial = boundToSerial.value(inputNode, 0);
+        for (Stream &stream : result.snapshot.streams) {
+            quint64 targetSerial = 0;
+            if (stream.direction == StreamDirection::Playback
+                && stream.handle.serial == outputSerial) {
+                targetSerial = inputSerial;
+            } else if (stream.direction == StreamDirection::Capture
+                       && stream.handle.serial == inputSerial) {
+                targetSerial = outputSerial;
+            }
+            if (targetSerial != 0) {
+                stream.target = {.epoch = result.snapshot.epoch, .serial = targetSerial};
+                stream.targetKnown = true;
+            }
+        }
+        g_value_unset(&value);
+    }
+    wp_iterator_unref(links);
+}
+
 } // namespace
 
 NodeLookup::NodeLookup(NodeLookup &&other) noexcept
@@ -277,7 +329,8 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                           WpPlugin *defaultNodes, const quint64 epoch,
                           const quint64 revision, const Capabilities capabilities,
                           const LatencyPolicy::Ranges &latencyRanges,
-                          const ConsoleSendAdmission *sends)
+                          const ConsoleSendAdmission *sends,
+                          const QSet<quint32> &meterNodeIds)
 {
     BuildResult result;
     result.snapshot.schemaVersion = kSchemaVersion;
@@ -318,6 +371,14 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
             g_value_unset(&value);
             continue;
         }
+        const guint32 boundId = wp_proxy_get_bound_id(WP_PROXY(node));
+        // AGENT-GUARD: only this worker's actual meter streams are private.
+        // A name-prefix filter would hide unrelated apps; exposing our meters
+        // instead fills the applet's bounded Apps list with internal monitors.
+        if (capture && meterNodeIds.contains(boundId)) {
+            g_value_unset(&value);
+            continue;
+        }
         // ADR0361: internal sends have amplitude headroom outside public
         // normalized volume. Only exact producer/module/object admission hides
         // these stream halves; public sink/source endpoints always remain.
@@ -339,7 +400,6 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
             g_value_unset(&value);
             continue;
         }
-        const guint32 boundId = wp_proxy_get_bound_id(WP_PROXY(node));
         boundToSerial.insert(boundId, *serial);
         retainedSerials.insert(*serial);
         const VolumeState volume = readVolume(mixer, boundId);
@@ -371,49 +431,7 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
     }
     wp_iterator_unref(iterator);
 
-    constexpr qsizetype maxObservedLinks = kMaxStreams * 8;
-    qsizetype observedLinks = 0;
-    qsizetype internalLinks = 0;
-    constexpr qsizetype maxInternalLinks = kMaxStrips * kMaxBuses * 4;
-    WpIterator *links = wp_object_manager_new_filtered_iterator(manager, WP_TYPE_LINK, nullptr);
-    while (wp_iterator_next(links, &value)) {
-        auto *link = WP_LINK(g_value_get_object(&value));
-        guint32 outputNode = 0;
-        guint32 inputNode = 0;
-        wp_link_get_linked_object_ids(link, &outputNode, nullptr, &inputNode, nullptr);
-        const bool internal = sends != nullptr
-            && (sends->excludesBoundId(outputNode) || sends->excludesBoundId(inputNode));
-        qsizetype &count = internal ? internalLinks : observedLinks;
-        const qsizetype maximum = internal ? maxInternalLinks : maxObservedLinks;
-        if (count >= maximum) {
-            result.truncatedOrMalformed = true;
-            g_value_unset(&value);
-            break;
-        }
-        ++count;
-        if (internal) {
-            g_value_unset(&value);
-            continue;
-        }
-        const quint64 outputSerial = boundToSerial.value(outputNode, 0);
-        const quint64 inputSerial = boundToSerial.value(inputNode, 0);
-        for (Stream &stream : result.snapshot.streams) {
-            quint64 targetSerial = 0;
-            if (stream.direction == StreamDirection::Playback
-                && stream.handle.serial == outputSerial) {
-                targetSerial = inputSerial;
-            } else if (stream.direction == StreamDirection::Capture
-                       && stream.handle.serial == inputSerial) {
-                targetSerial = outputSerial;
-            }
-            if (targetSerial != 0) {
-                stream.target = {.epoch = epoch, .serial = targetSerial};
-                stream.targetKnown = true;
-            }
-        }
-        g_value_unset(&value);
-    }
-    wp_iterator_unref(links);
+    projectStreamTargets(manager, boundToSerial, sends, result);
 
     const auto sortBySerial = [](const auto &left, const auto &right) {
         return left.handle.serial < right.handle.serial;

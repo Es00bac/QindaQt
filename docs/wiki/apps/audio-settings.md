@@ -1,5 +1,19 @@
 # QindaQt Settings — Audio route
 
+## October 29 recovery fixes
+
+Device, stream and virtual-device focus registration treats a delegate's
+not-yet-created or retiring action as absent. It publishes only real items or
+null, including while application streams disappear and return. This prevents
+the repeated `Cannot assign [undefined] to QQuickItem*` errors observed on qinda.
+The focused stream-routing page test cycles row removal and recreation while
+checking the first/last enabled focus targets and rejecting those warnings.
+
+The [display writer](../architecture/display-writer.md#asynchronous-and-owner-fencing)
+owns a separate Settings-wide freeze: its blocking Wayland read could stall the
+GUI while any page, including Audio, was open. Audio1 can remain running during
+that failure. Source fixes and installed package adoption are distinct gates.
+
 ## 2026-09-19 source diagnosis
 
 Inspection of base `01e919f6` found the earlier drag repair covers ordinary

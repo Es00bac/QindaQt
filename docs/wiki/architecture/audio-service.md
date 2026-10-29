@@ -1,5 +1,39 @@
 # Audio service
 
+## October 29 stability repair
+
+The installed r42/r43 desktop packages still contain the earlier Audio1 worker
+and client. Their source pins omit the October 21 rack/refusal, meter-lineage
+and coordinator-revision repairs below. Source integration alone does not
+establish installed repair. Both hosts' services were running without recorded
+Audio1 or shell coredumps at this investigation's start.
+
+The virtual-strip recovery resumes the preserved October 21 implementation.
+A bound raw sink proxy removed by PipeWire queues recovery outside protocol
+dispatch; it is retired before the declaration recreates exactly one sink.
+Repeated destruction is spaced by two seconds. A never-bound refused creation
+does not retry on graph events, and core teardown cancels pending recovery.
+The private-graph regression destroys the sink twice and checks a new serial,
+unchanged epoch, one endpoint and a rebound console strip each time.
+
+Internal meter streams are excluded by the current meter streams' bound node
+IDs, never by a name prefix. On the installed laptop nine meters occupied the
+application stream list, hiding real applications behind the applet's eight-row
+limit. Public devices and external streams retain their existing visibility.
+
+Metering, recording and VBAN share a private, allocation-free F32 stereo buffer
+view. It validates planes and chunk pointers, honors the modulo offset and
+wrapped region, bounds size by mapped capacity and keeps whole stereo frames.
+VBAN playback bounds its full-width requested frame count before narrowing.
+Recording and VBAN ring overflow retains complete stereo frames, so a dropped
+half-frame cannot swap the channels of later audio.
+These fix source-confirmed out-of-bounds/null-dereference hazards; no recorded
+Audio1 crash was attributed to such a buffer.
+
+The [display writer](display-writer.md#asynchronous-and-owner-fencing) also had
+a blocking Wayland notifier inside Settings. A Settings core confirmed the
+blocked GUI thread; this can freeze the Audio page independently of Audio1.
+
 ## 2026-10-21 rack refusal heap growth
 
 The installed service's anonymous heap grew about 310 kB each time an

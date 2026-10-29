@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "wireplumber_meters_p.h"
+#include "wireplumber_audio_buffer_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 
@@ -67,10 +68,8 @@ void onProcess(void *userData)
     if (buffer == nullptr) {
         return;
     }
-    const spa_data &data = buffer->buffer->datas[0];
-    const auto *samples = static_cast<const float *>(data.data);
-    if (samples != nullptr && data.chunk->size > 0 && data.chunk->stride > 0) {
-        const uint32_t count = data.chunk->size / sizeof(float);
+    for (const auto samples : AudioBuffer::capture(buffer->buffer)) {
+        const auto count = static_cast<uint32_t>(samples.size());
         float peak = 0.0F;
         float energy = 0.0F;
         for (uint32_t index = 0; index < count; ++index) {
@@ -225,6 +224,18 @@ QHash<QString, Level> MeterBank::takeReadings()
 void MeterBank::clear()
 {
     m_streams.clear();
+}
+
+QSet<quint32> MeterBank::nodeIds() const
+{
+    QSet<quint32> ids;
+    for (const auto &[name, stream] : m_streams) {
+        const uint32_t id = pw_stream_get_node_id(stream->stream);
+        if (id != PW_ID_ANY) {
+            ids.insert(id);
+        }
+    }
+    return ids;
 }
 
 } // namespace QindaQt::Audio

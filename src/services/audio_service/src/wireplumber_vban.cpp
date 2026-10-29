@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "wireplumber_vban_p.h"
+#include "wireplumber_audio_buffer_p.h"
 
 #include "vban_packet_p.h"
 
@@ -52,7 +53,8 @@ struct Ring {
         const size_t t = tail.load(std::memory_order_acquire);
         const size_t capacity = data.size();
         const size_t free = (t + capacity - h - 1) % capacity;
-        const size_t n = std::min(count, free);
+        // Both sides carry stereo frames; overflow must never split a pair.
+        const size_t n = std::min(count, free) / kChannels * kChannels;
         for (size_t i = 0; i < n; ++i) {
             data[h] = samples[i];
             h = (h + 1) % capacity;
@@ -181,10 +183,8 @@ void onSenderProcess(void *data)
     if (buffer == nullptr) {
         return;
     }
-    const spa_data &chunk = buffer->buffer->datas[0];
-    const auto *samples = static_cast<const float *>(chunk.data);
-    if (samples != nullptr && chunk.chunk->size > 0) {
-        impl->ring.push(samples, chunk.chunk->size / sizeof(float));
+    for (const auto samples : AudioBuffer::capture(buffer->buffer)) {
+        impl->ring.push(samples.data(), samples.size());
     }
     pw_stream_queue_buffer(impl->stream, buffer);
 }
@@ -352,14 +352,9 @@ void onReceiverProcess(void *data)
     if (buffer == nullptr) {
         return;
     }
-    spa_data &chunk = buffer->buffer->datas[0];
-    auto *out = static_cast<float *>(chunk.data);
-    const uint32_t stride = sizeof(float) * kChannels;
-    uint32_t frames = chunk.maxsize / stride;
-    if (buffer->requested > 0) {
-        frames = std::min<uint32_t>(frames, static_cast<uint32_t>(buffer->requested));
-    }
-    const size_t wanted = static_cast<size_t>(frames) * kChannels;
+    const auto samples = AudioBuffer::playback(buffer->buffer, buffer->requested);
+    float *const out = samples.data();
+    const size_t wanted = samples.size();
     size_t got = 0;
     if (out != nullptr && impl->primed.load()) {
         got = impl->ring.pop(out, wanted);
@@ -370,9 +365,6 @@ void onReceiverProcess(void *data)
     if (out != nullptr && got < wanted) {
         std::memset(out + got, 0, (wanted - got) * sizeof(float));
     }
-    chunk.chunk->offset = 0;
-    chunk.chunk->stride = static_cast<int32_t>(stride);
-    chunk.chunk->size = frames * stride;
     pw_stream_queue_buffer(impl->stream, buffer);
 }
 

@@ -87,8 +87,10 @@ sentence; a read denial maps to its own fixed access sentence. Diagnostics
 are never shown or parsed.
 
 Rows: at most 8 output and 8 input rows (outputs before inputs, protocol
-ascending-serial order within each kind) and 8 stream rows. Each current
-default is retained within its kind budget: if it lies outside the first
+ascending-serial order within each kind) and 8 stream rows. Internal
+Audio1 meters are excluded at the engine's owned-node boundary before projection,
+so internal monitor streams do not consume the eight application slots.
+Each current default is retained within its kind budget: if it lies outside the first
 eight, it replaces the final ordinary slot. Eight outputs cannot hide the
 default microphone. Anything beyond the window is
 summarized as an `overflowDeviceCount`/`overflowStreamCount` label. Each row

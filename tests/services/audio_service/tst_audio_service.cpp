@@ -7,6 +7,7 @@
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
 #include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
 #include <QtTest>
 
 #include <limits>
@@ -18,6 +19,16 @@ class AudioServiceTests final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        QVERIFY(m_state.isValid());
+        // AGENT-GUARD: the fake backend does not isolate the coordinator's
+        // stores. Never read the desktop's presets/macros/peer declarations.
+        qputenv("QINDAQT_AUDIO_PRESET_DIR", m_state.filePath(QStringLiteral("presets")).toUtf8());
+        qputenv("QINDAQT_AUDIO_MACRO_PATH", m_state.filePath(QStringLiteral("macros.json")).toUtf8());
+        qputenv("QINDAQT_AUDIO_VBAN_PATH", m_state.filePath(QStringLiteral("vban.json")).toUtf8());
+        qputenv("QINDAQT_AUDIO_LATENCY_PATH", m_state.filePath(QStringLiteral("latency.json")).toUtf8());
+    }
     void publishesValidatedSnapshots();
     void appliesTypedOperations();
     void rejectsStaleMalformedAndIncompatibleRequests();
@@ -29,6 +40,9 @@ private Q_SLOTS:
     void consoleRevisionsDoNotHideLaterGraphSnapshots();
     void malformedBackendOutcomesBecomeProtocolValidFailures();
     void residentUnitTemplateAllowsVbanNetworking();
+
+private:
+    QTemporaryDir m_state;
 };
 
 void AudioServiceTests::publishesValidatedSnapshots()

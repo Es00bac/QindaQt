@@ -41,11 +41,16 @@ ColumnLayout {
         let last = null
         for (const index of indices) {
             const delegate = root.actionRegistrations[index]
-            if (first === null && delegate.firstEnabledAction !== null) {
-                first = delegate.firstEnabledAction
+            // AGENT-GUARD: action signals can fire before the other action
+            // property is initialized, or while the delegate is retiring.
+            // Item properties accept null, never JavaScript undefined.
+            const firstAction = delegate?.firstEnabledAction ?? null
+            const lastAction = delegate?.lastEnabledAction ?? null
+            if (first === null && firstAction !== null) {
+                first = firstAction
             }
-            if (delegate.lastEnabledAction !== null) {
-                last = delegate.lastEnabledAction
+            if (lastAction !== null) {
+                last = lastAction
             }
         }
         root.firstActionTarget = first

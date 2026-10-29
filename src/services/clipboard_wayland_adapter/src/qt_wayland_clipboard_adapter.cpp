@@ -432,9 +432,29 @@ private:
 
     void dispatchReadable()
     {
-        if (m_display != nullptr && wl_display_dispatch(m_display) < 0) {
-            transportLost();
+        if (!m_running || m_display == nullptr) {
+            return;
         }
+        // AGENT-GUARD: this private display is read only by the Qt thread.
+        // Never wait for a future event inside a socket-notifier callback:
+        // a stale wake must not freeze clipboard/privacy processing.
+        while (wl_display_prepare_read(m_display) != 0) {
+            if (wl_display_dispatch_pending(m_display) < 0) {
+                transportLost();
+                return;
+            }
+            if (!m_running || m_display == nullptr) {
+                return;
+            }
+        }
+        if (wl_display_read_events(m_display) < 0
+            || wl_display_dispatch_pending(m_display) < 0) {
+            transportLost();
+            return;
+        }
+        // Registry/offer callbacks may enqueue requests on an otherwise quiet
+        // connection. Preserve the existing write-notifier backpressure path.
+        flush();
     }
 
     void flush()

@@ -7,6 +7,7 @@
 #include <qindaqt/services/audio_protocol/audio_types.h>
 
 #include <QtCore/QStringList>
+#include <QtCore/QSet>
 
 #include <wp/wp.h>
 
@@ -44,7 +45,8 @@ struct NodeLookup {
                                         WpPlugin *defaultNodes, quint64 epoch,
                                         quint64 revision, Capabilities capabilities,
                                         const LatencyPolicy::Ranges &latencyRanges,
-                                        const ConsoleSendAdmission *sends = nullptr);
+                                        const ConsoleSendAdmission *sends = nullptr,
+                                        const QSet<quint32> &meterNodeIds = {});
 [[nodiscard]] std::optional<NodeLookup> findNode(WpObjectManager *manager,
                                                  quint64 serial);
 // Finds a node by its `node.name`. The console's send loopbacks are addressed

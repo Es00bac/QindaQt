@@ -271,9 +271,10 @@ set_tests_properties(
 
 # Refused graph declarations under client-stream churn: the real backend and
 # coordinator in process, short pw-cat clients against a private graph. The
-# rack row bounds heap growth; the refusal row bounds retries and warnings.
+# rack row bounds heap growth; the refusal row bounds retries and warnings;
+# the recovery row destroys a virtual strip's sink and requires it back.
 pkg_get_variable(QINDAQT_PIPEWIRE_MODULE_DIR libpipewire-0.3 moduledir)
-foreach(row IN ITEMS rack_churn refusal_churn)
+foreach(row IN ITEMS rack_churn refusal_churn endpoint_recovery meter_visibility)
     qt_add_executable(qindaqt_audio_wireplumber_${row}_tests
         tst_wireplumber_${row}.cpp
         support/private_audio_churn.cpp
@@ -294,6 +295,17 @@ foreach(row IN ITEMS rack_churn refusal_churn)
     set_tests_properties(qindaqt.audio-wireplumber-${name} PROPERTIES
         LABELS "service;audio;wireplumber;isolated-runtime" TIMEOUT 120 RUN_SERIAL TRUE)
 endforeach()
+
+set_tests_properties(qindaqt.audio-wireplumber-endpoint-recovery
+    qindaqt.audio-wireplumber-meter-visibility PROPERTIES TIMEOUT 30)
+
+qt_add_executable(qindaqt_audio_buffer_tests tst_audio_buffer.cpp)
+target_include_directories(qindaqt_audio_buffer_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/services/audio_service/src)
+target_link_libraries(qindaqt_audio_buffer_tests PRIVATE Qt6::Test PkgConfig::WirePlumberObserver)
+qindaqt_enable_warnings(qindaqt_audio_buffer_tests)
+add_test(NAME qindaqt.audio-buffer COMMAND qindaqt_audio_buffer_tests)
+set_tests_properties(qindaqt.audio-buffer PROPERTIES LABELS "audio;service;pure" TIMEOUT 10)
 
 qt_add_executable(
     qindaqt_audio_wireplumber_reset_lifecycle_tests

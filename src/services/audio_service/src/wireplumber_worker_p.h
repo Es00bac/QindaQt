@@ -79,6 +79,11 @@ public:
     void forgetModule(ModuleKind kind, const std::string &key, void *module);
     // Attaches the destroy listener; every loaded module goes through it.
     void watchModule(ModuleKind kind, const std::string &key, void *module);
+    // Called from a raw endpoint proxy's `removed` event: the daemon destroyed
+    // the sink it made. A bound proxy schedules its strip's recovery; an
+    // unbound one was a refused creation and keeps its record. Public only
+    // because the event lands in a free C callback.
+    void endpointProxyRemoved(void *proxy, bool bound);
 
 private:
     struct ComponentLoad;
@@ -148,6 +153,10 @@ private:
     void destroyModuleLater(void *module);
     void flushPendingModuleDestroys();
     static gboolean dispatchModuleDestroys(gpointer data);
+    // Drops the records of endpoint sinks the daemon destroyed, then rebuilds
+    // so they are created again; at most one pass per two seconds.
+    void recoverRemovedEndpoints();
+    static gboolean dispatchEndpointRecovery(gpointer data);
     // The node a strip's sends and meter should read: the processed sink when
     // the strip has a running rack, otherwise its device. Empty when the
     // device is not in the graph.
@@ -272,6 +281,11 @@ private:
     // the map exists for the duplicate guard and to release the proxies with
     // the core.
     std::unordered_map<std::string, void *> m_endpointProxies;
+    // Proxies in m_endpointProxies whose sink the daemon destroyed, awaiting
+    // the deferred recovery pass that drops them and recreates the sinks.
+    std::vector<void *> m_removedEndpointProxies;
+    GSource *m_endpointRecoverySource = nullptr;
+    gint64 m_lastEndpointRecovery = 0;
     MeterBank m_meters;
     GSource *m_meterSource = nullptr;
     // The last set of readings handed upstream. Identical readings are not
