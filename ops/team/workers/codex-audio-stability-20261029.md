@@ -1,13 +1,15 @@
 # Audio stability investigation
 
 - Role: Single-session implementer and integrator; no delegated model workers.
-- Status: handoff — verified source integrated on qinda main; Portage delivery remains next.
+- Status: handoff — r44 recipe and archives published; exact source-build install command prepared.
 - Base: `978b9b764` (freshly fetched hub main).
 - Branch: `fix/audio-stability-20261029`.
 - Ownership: Audio1 service/client, shell Audio applet, Settings Audio, the display/clipboard Wayland read callbacks implicated by the Settings core, focused tests and their documentation.
 - Acceptance: causal reproduction, focused regression checks, strict documentation validation, preserved commit on qinda.
 
 ## Updates
+
+- 2026-10-29T14:01:58-06:00 — Prepared r44 source `f0f875f5c`, overlay `d2dc0c1`, matching archives on both hosts and a one-package/zero-download laptop resolver plan. Actual Portage build/install awaits the user-run command; no background job remains. See `ops/team/messages/audio-stability/20261029-r44-ready.md`.
 
 - 2026-10-29T13:38:11-06:00 — Source `08dedc68389546709e02eb50298e9e0cdb23bd6e` integrated on the hub. Acceptance and exact paths are in `ops/team/messages/audio-stability/20261029-handoff.md`. Available for the concrete Portage delivery follow-up; no unrelated queue or background worker was started.
 

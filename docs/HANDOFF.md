@@ -1,3 +1,11 @@
+## October 29 — r44 Portage command ready
+
+Revision `gui-wm/qindaqt-desktop-0.1.0_pre20261002-r44` is published in the overlay
+with verified source archives in both distfile caches. The laptop resolver selects
+one upgrade and zero downloads. The actual source build/install remains for the
+user-run command; no signed r44 binary or installed result is claimed.
+[Exact command and preparation evidence](../ops/team/messages/audio-stability/20261029-r44-ready.md).
+
 ## October 29 — Audio stability source repairs verified
 
 Source candidate `08dedc683` is integrated on qinda main.
