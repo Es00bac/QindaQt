@@ -17,8 +17,22 @@ struct FreedesktopServerIdentity final {
     QString vendor = QStringLiteral("QindaQt");
     QString version = QStringLiteral("0.1.0");
     QString specificationVersion = QStringLiteral("1.3");
+    // AGENT-CONTRACT (ADR-0430): advertise exactly what this host already
+    // does, no more. `freedesktop_notification_codec.cpp` decodes Notify
+    // actions and the adapter emits ActionInvoked; NotificationCard.qml
+    // renders them as buttons. The domain honours the `resident` hint
+    // (notification_service.cpp) and the shell keeps a notification-center
+    // history, which is what `persistence` promises callers. A sender that
+    // calls GetCapabilities first (for example
+    // CriticalNotificationAdapter::show()) and only attaches actions when it
+    // sees "actions" here was previously refused every time, because the
+    // prior default omitted it despite the host supporting it. Markup,
+    // hyperlinks, inline body images, and sound stay unadvertised: nothing
+    // decodes or renders them yet.
     QStringList capabilities = {
         QStringLiteral("body"),
+        QStringLiteral("actions"),
+        QStringLiteral("persistence"),
     };
 };
 

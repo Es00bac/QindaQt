@@ -147,8 +147,13 @@ void verifyIdentityAndInitialSubmission(
     QTRY_VERIFY_WITH_TIMEOUT(capabilitiesWatcher.isFinished(), 5'000);
     const QDBusPendingReply<QStringList> capabilities(capabilitiesWatcher);
     QVERIFY(capabilities.isValid());
+    // ADR-0430: the default already advertises what this host implements
+    // (decoded actions rendered as buttons, the `resident` hint, a kept
+    // history), so a sender that checks GetCapabilities before attaching
+    // actions (CriticalNotificationAdapter::show()) is no longer refused.
     QCOMPARE(capabilities.value(),
-             QStringList({QStringLiteral("body"), QStringLiteral("actions")}));
+             QStringList({QStringLiteral("body"), QStringLiteral("actions"),
+                         QStringLiteral("persistence")}));
 
     QVariantMap criticalHint;
     criticalHint.insert(QStringLiteral("urgency"), QVariant::fromValue(uchar(2)));
@@ -172,6 +177,36 @@ void verifyIdentityAndInitialSubmission(
                                            ->notifications.first()
                                            .sourceService;
     QVERIFY(authenticatedOwner.startsWith(QLatin1Char(':')));
+}
+
+// ADR-0430: `resident` is a known, decoded hint, and an unrecognized hint key
+// must be ignored rather than rejected (the codec only probes the specific
+// keys it knows). Run last, after every other publication/closure/signal
+// count in this test has already been asserted, and close the probe again
+// immediately so no notification is left active when the server stops.
+void verifyResidentHintAndUnknownHintAreAccepted(const QDBusConnection &client,
+                                                 FreedesktopNotificationServer &server)
+{
+    QVariantMap residentHint;
+    residentHint.insert(QStringLiteral("resident"), true);
+    residentHint.insert(QStringLiteral("x-qindaqt-test-unknown-hint"),
+                        QStringLiteral("ignored"));
+    QDBusPendingCallWatcher residentWatcher(call(
+        client,
+        QStringLiteral("Notify"),
+        notifyArguments(0, QStringLiteral("Resident probe"), {}, residentHint)));
+    QTRY_VERIFY_WITH_TIMEOUT(residentWatcher.isFinished(), 5'000);
+    const QDBusPendingReply<quint32> residentNotified(residentWatcher);
+    QVERIFY2(residentNotified.isValid(),
+             qPrintable(residentNotified.error().message()));
+    const quint32 residentId = residentNotified.value();
+    QVERIFY(residentId != 0);
+    QVERIFY(server.service().snapshot()->notifications.last().hints.resident);
+    QDBusPendingCallWatcher residentCloseWatcher(call(
+        client, QStringLiteral("CloseNotification"), {residentId}));
+    QTRY_VERIFY_WITH_TIMEOUT(residentCloseWatcher.isFinished(), 5'000);
+    QVERIFY(QDBusPendingReply<>(residentCloseWatcher).isValid());
+    QVERIFY(server.service().snapshot()->notifications.isEmpty());
 }
 
 void verifyOwnershipAndAction(
@@ -298,9 +333,12 @@ void FreedesktopNotificationDBusTests::protocolOwnsRequestsAndEmitsStandardSigna
     ManualNotificationClock clock;
     RecordingNotificationBackend presentationBackend;
     FreedesktopServerIdentity identity;
-    QCOMPARE(identity.capabilities, QStringList({QStringLiteral("body")}));
+    // ADR-0430: the default already states what the host implements; this
+    // test exercises exactly that default rather than widening it itself.
+    QCOMPARE(identity.capabilities,
+             QStringList({QStringLiteral("body"), QStringLiteral("actions"),
+                         QStringLiteral("persistence")}));
     identity.version = QStringLiteral("test-version");
-    identity.capabilities.push_back(QStringLiteral("actions"));
     FreedesktopNotificationServer server(serverConnection,
                                           clock,
                                           {},
@@ -340,6 +378,7 @@ void FreedesktopNotificationDBusTests::protocolOwnsRequestsAndEmitsStandardSigna
                              receiver,
                              notificationId);
     verifyProtocolErrorsAndClose(firstClient, server, receiver, notificationId);
+    verifyResidentHintAndUnknownHintAreAccepted(firstClient, server);
 
     server.stop();
     QVERIFY(!server.isRunning());

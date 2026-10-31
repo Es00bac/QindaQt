@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-26
+- **Superseded by:** [ADR-0430](0430-advertise-implemented-notification-capabilities.md) (the capability-default clause only; everything else below still holds)
 
 ## Context
 

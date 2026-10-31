@@ -85,10 +85,19 @@ entry, image path/data, sound, resident, transient, action-icon, and
 suppress-sound hints while ignoring unknown hints. Missing-notification close
 uses the specification's empty D-Bus error body.
 
-Default capability advertisement is intentionally only `body`. The session
-host may add `actions` when it composes an accessible action presenter. It must
-not advertise markup, hyperlinks, inline images, sound, or persistence merely
-because the model can retain related hint data.
+Default capability advertisement is `body`, `actions`, and `persistence`
+([ADR-0430](../adr/0430-advertise-implemented-notification-capabilities.md)):
+the host already decodes `Notify` actions and emits them through
+`ActionInvoked`, the shell renders them as buttons
+(`NotificationCard.qml`), the domain honours the `resident` hint instead of
+auto-closing a resident entry, and the notification center keeps a kept
+history — so the default states what already ships rather than what a
+caller must opt an embedder into. A sender that checks `GetCapabilities`
+before attaching actions (`CriticalNotificationAdapter::show()`) previously
+got nothing back and silently dropped its action, even though the host could
+render it. It must still not advertise markup, hyperlinks, inline images, or
+sound merely because the model can retain related hint data; nothing decodes
+or renders those yet.
 
 ## Presentation transport boundary
 
@@ -211,10 +220,12 @@ Only the descriptor number and non-secret PID appear in shell arguments; the
 token never enters argv, environment, a persistent file, a signal, or
 diagnostics. A standalone host still receives no token, so its private object
 is absent. Reads accept one exact record and time out after two seconds. The
-default freedesktop capability remains `body`: the initial action controls do
-not yet provide activation tokens or a screen-reader-qualified accessibility
-path. The installed nested workflow qualifies real compositor keyboard focus
-and QML Accessible roles/names without claiming a screen-reader session. Busy,
+default freedesktop capability list is `body`, `actions`, and `persistence`
+(ADR-0430); the installed action controls render buttons but do not yet
+supply real activation tokens (`NotificationCard.qml` calls `invokeAction`
+with only the id and action key) or a screen-reader-qualified accessibility
+path. The nested workflow qualifies real compositor keyboard focus and QML
+Accessible roles/names without claiming a screen-reader session. Busy,
 confirmed persistence rejection, and uncertain-operation presentation are
 qualified through the production Settings1 DND transaction; no notification-
 host mutation seam exists solely to synthesize a rejected action.
