@@ -126,6 +126,12 @@ add_subdirectory(services/network_qt_transport)
 add_subdirectory(services/network_service)
 add_subdirectory(services/network_manager_adapter)
 add_subdirectory(services/network_secret_agent)
+# Firewall1 panel applet client (ADR-0431): QindaFirewall owns the D-Bus
+# contract (docs/monitor.md); these mirror the Network1 client/transport
+# split with no owner/epoch lineage to fence.
+add_subdirectory(services/firewall_protocol)
+add_subdirectory(services/firewall_client)
+add_subdirectory(services/firewall_qt_transport)
 add_subdirectory(services/keyring_protocol)
 add_subdirectory(services/keyring_client)
 add_subdirectory(apps/settings/keyring)
