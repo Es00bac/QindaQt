@@ -18,11 +18,10 @@ public:
 };
 
 // Behaves like polkit-qt's Session::Private::completed(): emits completed()
-// and then keeps using itself. `destroyedWhileEmitting` records whether the
-// listener chain destroyed it inside that emission (the 2026-10-31 crash).
+// and then keeps using itself. finish() reports whether the listener chain
+// destroyed it inside that emission (the 2026-10-31 crash).
 class SelfTouchingAttempt final : public AuthenticationAttempt {
 public:
-    bool destroyedWhileEmitting = false;
     void respond(const QString &) override { }
     void cancel() override { }
     // Returns false when this object was destroyed during the emission.

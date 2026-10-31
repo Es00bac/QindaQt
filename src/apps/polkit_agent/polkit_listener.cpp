@@ -87,14 +87,30 @@ public:
         // A queued call is dropped if this attempt is gone by delivery time.
         connect(&m_session, &PolkitQt1::Agent::Session::completed, this,
                [this](bool gained) { Q_EMIT completed(gained); }, Qt::QueuedConnection);
+        // polkit-qt has already released its glib session by the time the
+        // queued completed() arrives; a response or cancel in that window
+        // would hand libpolkit-agent a null session.
+        connect(&m_session, &PolkitQt1::Agent::Session::completed, this,
+               [this](bool) { m_done = true; });
         m_session.initiate();
     }
 
-    void respond(const QString &response) override { m_session.setResponse(response); }
-    void cancel() override { m_session.cancel(); }
+    void respond(const QString &response) override
+    {
+        if (!m_done) {
+            m_session.setResponse(response);
+        }
+    }
+    void cancel() override
+    {
+        if (!m_done) {
+            m_session.cancel();
+        }
+    }
 
 private:
     PolkitQt1::Agent::Session m_session;
+    bool m_done = false;
 };
 
 } // namespace
