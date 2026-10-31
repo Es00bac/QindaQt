@@ -35,6 +35,13 @@ void PolkitAttemptController::start()
 
 void PolkitAttemptController::beginAttempt()
 {
+    // AGENT-GUARD: a retry runs inside the failed attempt's completed()
+    // emission; destroying it here (unique_ptr reassignment) frees the object
+    // that is still emitting. Retire it through the event loop instead.
+    if (m_attempt) {
+        m_attempt->disconnect(this);
+        m_attempt.release()->deleteLater();
+    }
     m_attempt = m_factory(m_identities.at(m_selectedIndex).token);
     connect(m_attempt.get(), &AuthenticationAttempt::request, this,
            &PolkitAttemptController::promptRequested);

@@ -77,8 +77,16 @@ public:
                [this](const QString &text) { Q_EMIT showInfo(text); });
         connect(&m_session, &PolkitQt1::Agent::Session::showError, this,
                [this](const QString &text) { Q_EMIT showError(text); });
+        // AGENT-GUARD: queued, never direct. polkit-qt's
+        // Session::Private::completed() emits completed() and THEN unrefs
+        // session->d->polkitAgentSession; a direct connection lets the
+        // controller/queue destroy this attempt (and m_session) inside that
+        // emission, so polkit-qt writes through a freed Session and the agent
+        // segfaults -- polkitd then reports "Not authorized" to every pkexec
+        // caller (2026-10-31, core dumps of qindaqt-polkit-agent on qinda-top).
+        // A queued call is dropped if this attempt is gone by delivery time.
         connect(&m_session, &PolkitQt1::Agent::Session::completed, this,
-               [this](bool gained) { Q_EMIT completed(gained); });
+               [this](bool gained) { Q_EMIT completed(gained); }, Qt::QueuedConnection);
         m_session.initiate();
     }
 

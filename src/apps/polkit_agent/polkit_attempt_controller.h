@@ -73,6 +73,8 @@ private:
     QList<AgentIdentity> m_identities;
     int m_selectedIndex;
     AttemptFactory m_factory;
+    // AGENT-GUARD: never destroyed synchronously while it may be emitting;
+    // see beginAttempt().
     std::unique_ptr<AuthenticationAttempt> m_attempt;
     bool m_started = false;
     bool m_finished = false;

@@ -51,6 +51,14 @@ dropped, and takes over the moment the first is resolved. The password is
 never logged, never kept in any model past the call that uses it, and
 cleared from the field after every attempt, success or failure alike.
 
+An attempt is never destroyed inside its own `completed` signal. polkit-qt
+emits `Session::completed()` and then releases its own session state, so the
+production adapter receives that signal queued, and the controller (on a
+retry) and the request queue (on resolution) retire finished objects with
+`deleteLater()`. Destroying them synchronously crashed the agent after every
+password entry until 2026-10-31, which polkitd reported to callers as
+"Not authorized".
+
 The platform role is provided through the public [AuthenticationOverlay](../architecture/authentication-overlay.md) module. Initialization precedes QGuiApplication and configuration precedes native window creation/show; policy and presentation remain owned by this agent.
 
 ## Appearance and output
@@ -92,10 +100,12 @@ A registration conflict with polkitd (another agent already holds the
 - `qindaqt.polkit-agent-identity` (unit): identity label formatting and the
   current-user/first-identity preference.
 - `qindaqt.polkit-agent-attempt-controller` (unit): attempt, retry, cancel,
-  and cancel-from-polkit transitions.
+  and cancel-from-polkit transitions; a failed attempt outlives its own
+  `completed` emission and is released afterwards.
 - `qindaqt.polkit-agent-request-queue` (unit): a second request queues
   while one is open and activates when it completes; `cancelActive`
-  promotes the next queued request.
+  promotes the next queued request; a resolved request's controller and
+  attempt outlive the emission that resolved them.
 - `qindaqt.polkit-agent-requester-resolver` (unit): pid-to-program
   resolution against a fake `/proc` root and applications directory,
   including the honest-empty case for an unreadable pid.

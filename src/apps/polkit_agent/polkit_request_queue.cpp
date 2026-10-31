@@ -32,7 +32,12 @@ void PolkitRequestQueue::activateNext()
     // than leaving the queue permanently stuck on a controller that can
     // never complete.
     connect(m_active.get(), &PolkitAttemptController::completed, this, [this](bool) {
-        m_active.reset();
+        // AGENT-GUARD: this runs inside the controller's completed(), itself
+        // inside its attempt's completed(); reset() would destroy both while
+        // they are still emitting. deleteLater() keeps them alive until the
+        // emission has unwound.
+        m_active->disconnect(this);
+        m_active.release()->deleteLater();
         if (m_pending.empty()) {
             Q_EMIT queueIdle();
         } else {

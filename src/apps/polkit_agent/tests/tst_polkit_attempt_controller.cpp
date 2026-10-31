@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "polkit_attempt_controller.h"
 
+#include <QPointer>
 #include <QtTest>
 
 using namespace QindaQt::Apps::PolkitAgent;
@@ -14,6 +15,23 @@ public:
 
     void respond(const QString &response) override { responses.append(response); }
     void cancel() override { ++cancelCount; }
+};
+
+// Behaves like polkit-qt's Session::Private::completed(): emits completed()
+// and then keeps using itself. `destroyedWhileEmitting` records whether the
+// listener chain destroyed it inside that emission (the 2026-10-31 crash).
+class SelfTouchingAttempt final : public AuthenticationAttempt {
+public:
+    bool destroyedWhileEmitting = false;
+    void respond(const QString &) override { }
+    void cancel() override { }
+    // Returns false when this object was destroyed during the emission.
+    static bool finish(SelfTouchingAttempt *attempt, bool gained)
+    {
+        QPointer<SelfTouchingAttempt> self(attempt);
+        Q_EMIT attempt->completed(gained);
+        return !self.isNull();
+    }
 };
 
 QList<AgentIdentity> oneIdentity()
@@ -31,6 +49,7 @@ private Q_SLOTS:
     void userCancelCompletesWithoutRetrying();
     void externalCancelFromPolkitCompletesWithoutRetrying();
     void cancelBeforeStartCompletesImmediately();
+    void failedAttemptOutlivesItsOwnCompletedSignal();
 };
 
 void PolkitAttemptControllerTest::wrongPasswordStartsANewAttemptAndDoesNotComplete()
@@ -125,6 +144,24 @@ void PolkitAttemptControllerTest::cancelBeforeStartCompletesImmediately()
     QCOMPARE(factoryCalls, 0);
     controller.start();
     QCOMPARE(factoryCalls, 0);
+}
+
+void PolkitAttemptControllerTest::failedAttemptOutlivesItsOwnCompletedSignal()
+{
+    QList<QPointer<SelfTouchingAttempt>> created;
+    PolkitAttemptController controller(oneIdentity(), 0, [&created](const QString &) {
+        auto attempt = std::make_unique<SelfTouchingAttempt>();
+        created.append(attempt.get());
+        return attempt;
+    });
+    controller.start();
+    // A wrong password: the retry must not free the attempt that is emitting.
+    QVERIFY(SelfTouchingAttempt::finish(created.constFirst(), false));
+    QCOMPARE(created.size(), 2);
+    // ...and it is still released once the event loop runs.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(created.constFirst().isNull());
+    QVERIFY(!created.at(1).isNull());
 }
 
 QTEST_MAIN(PolkitAttemptControllerTest)
