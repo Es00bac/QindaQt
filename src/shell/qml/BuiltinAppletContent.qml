@@ -8,6 +8,7 @@ import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.NetworkApplet 1.0 as NetworkAppletModule
 import QindaQt.Shell.AgentUsageApplet 1.0 as AgentUsageAppletModule
+import QindaQt.Shell.FirewallApplet 1.0 as FirewallAppletModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
 import QindaQt.Shell.VoiceApplet 1.0 as VoiceAppletModule
@@ -29,6 +30,7 @@ Item {
     property var bluetoothAppletAccess: null
     property var networkAppletAccess: null
     property var agentUsageAppletAccess: null
+    property var firewallAppletAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
@@ -69,6 +71,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.agent-usage"
     readonly property bool networkReady:
         ready && entryPoint === "qindaqt.applets.network"
+    readonly property bool firewallReady:
+        ready && entryPoint === "qindaqt.applets.firewall"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
     readonly property bool smartLightsReady:
@@ -104,7 +108,7 @@ Item {
     readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || agentUsageReady || networkReady || powerReady || smartLightsReady || voiceReady || clipboardReady
+        || agentUsageReady || networkReady || firewallReady || powerReady || smartLightsReady || voiceReady || clipboardReady
         || launcherReady || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
         || startMenuReady
@@ -138,6 +142,7 @@ Item {
             : root.bluetoothReady ? bluetoothComponent
             : root.agentUsageReady ? agentUsageComponent
             : root.networkReady ? networkComponent
+            : root.firewallReady ? firewallComponent
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
             : root.voiceReady ? voiceComponent
@@ -282,6 +287,17 @@ Item {
             anchors.fill: parent
             visible: root.networkReady
             access: root.networkAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: firewallComponent
+        FirewallAppletModule.FirewallApplet {
+            anchors.fill: parent
+            visible: root.firewallReady
+            access: root.firewallAppletAccess
             theme: root.theme
             vertical: root.vertical
         }

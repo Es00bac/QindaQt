@@ -57,6 +57,10 @@ enum class Capability {
     NetworkControl,
     // Read-only bounded provider metrics; preserve prior capability ordinals.
     AgentUsageRead,
+    // Public Firewall1 headline/alert truth (ADR-0431). Read-only by design:
+    // the Firewall applet never changes the firewall, so there is no
+    // SecurityControl token.
+    SecurityRead,
 };
 
 struct EntryPoint final {

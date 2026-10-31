@@ -172,6 +172,13 @@
       "capability": "agent-usage.read",
       "decision": "deny",
       "reason": "Provider usage and account quota metadata stay with the audited agent usage applet; third-party packages have no usage read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "security.read",
+      "decision": "deny",
+      "reason": "Whether this computer is being attacked, and by whom, stays with the audited Firewall applet; third-party packages have no security read authority."
     }
   ]
 }

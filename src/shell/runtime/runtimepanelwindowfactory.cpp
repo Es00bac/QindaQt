@@ -238,6 +238,11 @@ void RuntimePanelWindowFactory::setNetworkAppletAccess(QObject *access) noexcept
     m_networkAppletAccess = access;
 }
 
+void RuntimePanelWindowFactory::setFirewallAppletAccess(QObject *access) noexcept
+{
+    m_firewallAppletAccess = access;
+}
+
 void RuntimePanelWindowFactory::setGatherOverviewAccess(QObject *access) noexcept
 {
     m_gatherOverviewAccess = access;
@@ -365,6 +370,10 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
     if (m_networkAppletAccess != nullptr) {
         window->setProperty("networkAppletAccess",
                             QVariant::fromValue(m_networkAppletAccess));
+    }
+    if (m_firewallAppletAccess != nullptr) {
+        window->setProperty("firewallAppletAccess",
+                            QVariant::fromValue(m_firewallAppletAccess));
     }
     if (m_gatherOverviewAccess != nullptr) {
         window->setProperty("gatherOverviewAccess",

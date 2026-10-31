@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "firewall",
+  "name": "Firewall",
+  "description": "Shows whether QindaFirewall's background watcher is running and, in plain English, whether anything is trying to get in. Read-only: it never blocks, allows, or changes a firewall rule.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.firewall"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 72, "maximum": 140, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["security.read"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

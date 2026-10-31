@@ -33,13 +33,18 @@ is the same as for panel instances.
 
 Schema v1 recognizes narrowly named requests for application launching;
 window read, activation, and management; global-menu and status-item access;
-notification, audio, power, clipboard, Bluetooth, network, display, and settings access.
+notification, audio, power, clipboard, Bluetooth, network, display, settings,
+and security access.
 Read and control capabilities are separate where the platform service exposes
 both. Power applets request `power.read` and `power.control`; the production
 Bluetooth applet requests `bluetooth.read` and `bluetooth.control`; the Network
 applet and System Status request `network.read` and `network.control`
 ([ADR-0258](../adr/0258-network-panel-applet-over-public-network1.md)). Control is
-effective only with the corresponding read grant.
+effective only with the corresponding read grant. `security.read`
+([ADR-0431](../adr/0431-firewall-panel-applet-over-public-firewall1.md)) has no
+control counterpart at all: the Firewall applet it gates cannot block, allow,
+confirm an automatic action, or change a rule, so no such authority exists to
+separate.
 
 The manifest is a request, never a grant. Runtime policy must combine package
 trust, user consent, host isolation, and service availability before exposing a
@@ -54,12 +59,20 @@ never authorizes a provider read. Collection is deliberate on popup open or
 Refresh; there is no shell-startup agent launch. See
 [ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
 
+The Firewall manifest requests only `security.read`
+([ADR-0431](../adr/0431-firewall-panel-applet-over-public-firewall1.md)).
+The audited renderer receives a shell-private controller over the public
+`FirewallClient`; a denied grant constructs no transport or client at all
+(the Agent Usage precedent) and the controller presents permanently as
+Unavailable. There is no control grant to deny separately: the applet has
+no method that blocks, allows, or edits a firewall rule.
+
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes
 launcher, task-list, global-menu, status-tray, clock, notification-center,
 audio, Bluetooth, power, clipboard, status-notifier, start-menu,
-desktop-icons, and the desktop-control applets.
+desktop-icons, firewall, and the desktop-control applets.
 Directory loading is atomic and deterministic: malformed manifests, duplicate
 IDs, or incompatible documents leave the previously loaded catalog intact.
 

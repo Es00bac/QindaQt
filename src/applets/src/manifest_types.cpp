@@ -61,6 +61,7 @@ constexpr std::array capabilities{
     EnumToken{Capability::AgentUsageRead, "agent-usage.read"},
     EnumToken{Capability::NetworkRead, "network.read"},
     EnumToken{Capability::NetworkControl, "network.control"},
+    EnumToken{Capability::SecurityRead, "security.read"},
 };
 
 template<typename Enum, std::size_t Size>

@@ -41,6 +41,10 @@ require_declaration("src/shell/launcher/qml/LauncherApplet.qml" "launcherAppletI
 require_declaration("src/shell/audio_applet/qml/AudioApplet.qml" "audioAppletIcon")
 require_declaration("src/shell/bluetooth_applet/qml/BluetoothApplet.qml" "bluetoothAppletIcon")
 require_declaration("src/shell/network_applet/qml/NetworkApplet.qml" "networkAppletIcon")
+# ADR-0431: security-high-symbolic is a QindaQt-only glyph (not resolvable
+# under the pinned Breeze fixture, unlike the icons checked with
+# require_icon below), so only its icon-first declaration is enforced here.
+require_declaration("src/shell/firewall_applet/qml/FirewallApplet.qml" "firewallAppletIcon")
 require_declaration("src/shell/agent_usage_applet/qml/AgentUsageApplet.qml" "agentUsageIcon")
 require_icon("src/shell/agent_usage_applet/qml/AgentUsageApplet.qml" "applications-development")
 if(NOT EXISTS "${QINDAQT_SOURCE_DIR}/data/icons/QindaQt/scalable/categories/applications-development.svg")

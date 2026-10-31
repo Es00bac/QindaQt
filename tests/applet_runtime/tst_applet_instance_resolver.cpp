@@ -64,6 +64,7 @@ private slots:
     void desktopControlsResolveReadyInEveryStockPlacement();
     void networkAppletResolvesInStockAndVerticalPlacements();
     void agentUsageResolvesBesideStatusAcrossAllProfiles();
+    void firewallAppletResolvesWithSecurityReadOnly();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -95,6 +96,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.dashboard"),
         // Worn Luna desktop experience (ADR-0124/ADR-0125); sorted position.
         QStringLiteral("qindaqt.applets.desktop-icons"),
+        // Firewall over public Firewall1 (ADR-0431); sorted position.
+        QStringLiteral("qindaqt.applets.firewall"),
         // The gather overview (ADR-0232); sorted position.
         QStringLiteral("qindaqt.applets.gather-overview"),
         QStringLiteral("qindaqt.applets.global-menu"),
@@ -707,6 +710,22 @@ void AppletInstanceResolverTests::agentUsageResolvesBesideStatusAcrossAllProfile
         ++hosted;
     }
     QCOMPARE(hosted, 11);
+}
+
+void AppletInstanceResolverTests::firewallAppletResolvesWithSecurityReadOnly()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    for (const auto edge : {Profiles::Edge::Top, Profiles::Edge::Bottom,
+                            Profiles::Edge::Left, Profiles::Edge::Right}) {
+        const auto firewall = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            instance(QStringLiteral("firewall")), edge, fixture.catalog,
+            fixture.policy, fixture.registry);
+        QVERIFY2(firewall.ready(), qPrintable(firewall.diagnostic));
+        QCOMPARE(firewall.entryPoint, QStringLiteral("qindaqt.applets.firewall"));
+        QCOMPARE(firewall.grantedCapabilities, QStringList{QStringLiteral("security.read")});
+    }
 }
 
 void AppletInstanceResolverTests::networkAppletResolvesInStockAndVerticalPlacements()
