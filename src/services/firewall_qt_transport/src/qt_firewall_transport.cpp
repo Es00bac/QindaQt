@@ -84,6 +84,11 @@ bool QtFirewallTransport::start(QString *error)
     d->connection.connect(QString::fromLatin1(kServiceName),
                           QString::fromLatin1(kObjectPath),
                           QString::fromLatin1(kInterfaceName),
+                          QStringLiteral("StateChanged"), this,
+                          SLOT(onStateChanged()));
+    d->connection.connect(QString::fromLatin1(kServiceName),
+                          QString::fromLatin1(kObjectPath),
+                          QString::fromLatin1(kInterfaceName),
                           QStringLiteral("AlertRaised"), this,
                           SLOT(onAlertRaised(QString)));
     d->connection.connect(QString::fromLatin1(kServiceName),
@@ -117,6 +122,11 @@ void QtFirewallTransport::stop()
                                  QString::fromLatin1(kObjectPath),
                                  QString::fromLatin1(kInterfaceName),
                                  QStringLiteral("Changed"), this, SLOT(onChanged()));
+        d->connection.disconnect(QString::fromLatin1(kServiceName),
+                                 QString::fromLatin1(kObjectPath),
+                                 QString::fromLatin1(kInterfaceName),
+                                 QStringLiteral("StateChanged"), this,
+                                 SLOT(onStateChanged()));
         d->connection.disconnect(QString::fromLatin1(kServiceName),
                                  QString::fromLatin1(kObjectPath),
                                  QString::fromLatin1(kInterfaceName),
@@ -155,6 +165,16 @@ void QtFirewallTransport::onServiceOwnerChanged(const QString &name,
 
 void QtFirewallTransport::onChanged()
 {
+    if (d->running) {
+        Q_EMIT changed();
+    }
+}
+
+void QtFirewallTransport::onStateChanged()
+{
+    // See the AGENT-NOTE on the class: the live service's StateChanged()
+    // is a second invalidation signal alongside Changed(), not a different
+    // kind of event. Either one means "refetch", so both funnel here.
     if (d->running) {
         Q_EMIT changed();
     }

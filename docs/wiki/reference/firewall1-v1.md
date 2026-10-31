@@ -30,6 +30,14 @@ no client needs custom D-Bus types.
 | `AlertRaised(s)` | signal (JSON) | a live alert appeared or got worse |
 | `Responded(s)` | signal (JSON) | the responder acted (an automatic block, announced like an alert) |
 
+A live `qindafirewall-monitor` also exposes a no-argument `StateChanged()`
+signal (confirmed with `busctl --user introspect org.qindaqt.Firewall1
+/org/qindaqt/Firewall1` against a running monitor), alongside `Changed()`,
+which QindaFirewall's own `docs/monitor.md` table does not list. This
+client treats both as the same "refetch" invalidation hint
+(`QtFirewallTransport`), so a `State`-only transition is never missed
+because only one of the two fired.
+
 ## The alert map
 
 `TopAlert`, `Alerts()`, and `Alert(id)` carry QindaFirewall's SecurityMonitor
