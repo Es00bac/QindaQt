@@ -7,8 +7,11 @@ is required. Unknown requester identity cannot approve, and identity changes
 invalidate queued/completed requests. Bounded QMP2 pairs daemon and helper.
 [Contract and limits](wiki/architecture/keyring-daemon.md#request-identity-and-informed-approval).
 
-Focused source and synthetic private-bus/Wayland verification pass. Portage
-revision 48 is being prepared; live installation and adoption are not claimed.
+Source `539aecf5a` is integrated on main and the qinda hub. Five focused CTest
+groups and eight private protocol cases pass, including the real Wayland
+two-prompt smoke. Portage revision 48 is prepared in overlay `9030897`; the
+resolver selects one upgrade and zero downloads. Live installation, signed
+package build and adoption remain pending administrator authentication.
 The user must initiate administrator authentication for installation, then sign
 out/in to adopt the paired daemon/helper. No real keyring was read or unlocked.
 
