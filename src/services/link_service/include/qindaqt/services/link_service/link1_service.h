@@ -2,6 +2,7 @@
 #pragma once
 
 #include <qindaqt/services/link_adb/tunnel_manager.h>
+#include <qindaqt/services/link_notifications/notifications_module.h>
 #include <qindaqt/services/link_service/pairing_presenter.h>
 #include <qindaqt/services/link_transport/hub.h>
 
@@ -17,6 +18,12 @@ struct ServiceConfig {
     QString dataDir;            // injected; production passes $XDG_DATA_HOME/qindalink
     quint16 port = 47160;       // 0 = ephemeral (tests)
     QString version;
+    // Phone notification mirroring (capability `notify`). A null presenter
+    // leaves the capability off. Not owned; the caller keeps them alive.
+    NotificationPresenter *phoneNotifications = nullptr;
+    ReplyLauncher *replyLauncher = nullptr;
+    QString configDir;          // production passes $XDG_CONFIG_HOME/qindalink
+    QString cacheDir;           // production passes $XDG_CACHE_HOME/qindalink
 };
 
 // Exports org.qindaqt.Link1 at /org/qindaqt/Link1 (docs/wiki/reference/link1-v1.md)
