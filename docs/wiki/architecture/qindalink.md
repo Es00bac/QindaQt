@@ -45,6 +45,17 @@ implemented. See [Link1 protocol 1](../reference/link1-v1.md).
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app |
 | Phone app | `phone/app` | Qt for Android app: QML/QindaTK UI, Java engine under `phone/app/android/` |
+| Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
+| Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
+
+**Phone app maturity (M1c, 2026-11).** Built and installed as a debug APK;
+the Java codec and pairing math pass all golden vectors, and a JVM loopback
+test drives the whole phone session (pairing, pin, status, `ring` refused).
+The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
+through one polled JNI bridge. Only the `status` capability is advertised;
+`ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
+reported as `null`. Live pairing against the real desktop service is not yet
+recorded; see the lane handoff for what was exercised on the device.
 | Mirror server | `phone/mirror_server` | Java `app_process` entry point compiled into the APK |
 | Shared vectors | `tests/link/vectors` | Golden frame and pairing vectors used by both codecs |
 
