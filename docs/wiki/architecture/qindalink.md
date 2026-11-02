@@ -68,6 +68,20 @@ Feature modules (`link_notifications`, `link_messages`, `link_input`,
 one depends only on `link_protocol` and the narrow routing interface of
 `link_service`.
 
+**Adding a feature.** A feature owns one capability string and its frame
+namespaces, and plugs in without editing the session state machine. Desktop:
+subclass `FeatureHandler` (`src/services/link_transport/.../feature.h`) and
+`add()` it to the `FeatureRouter`; the router supplies the hello caps and the
+service calls `handle()` for READY sessions. Phone: implement
+`engine/FeatureHandler` (`capability()`, `namespaces()`, `onReady`, `onTick`,
+`onFrame`, `onClosed`) and add it to the `FeatureRegistry` that `LinkService`
+(or a test) passes to `LinkEngine`; `Session` advertises the registered
+capabilities, routes only READY frames by namespace, answers unhandled
+requests with `error{unknown-type}`, and `FeatureContext.send` refuses a frame
+whose namespace the handler does not own or whose capability the peer did not
+advertise. `status` is the first such feature (`StatusFeature`). Core frames
+(`hello`, `bye`, `ping`, `pong`, `ok`, `error`, `pair.*`) stay in `Session`.
+
 **Phone app maturity (M1c, 2026-11).** Built and installed as a debug APK;
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).

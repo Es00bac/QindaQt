@@ -20,17 +20,18 @@ public final class LinkEngine {
 
     private final Connector connector;
     private final PinStore pins;
-    private final StatusSource status;
+    private final FeatureRegistry features;
     private final DeviceInfo info;
-    private final EngineState state = new EngineState();
+    private final EngineState state;
     private volatile Session session;
     private volatile boolean running;
     private Thread thread;
 
-    public LinkEngine(Connector c, PinStore pins, StatusSource status, DeviceInfo info) {
+    public LinkEngine(Connector c, PinStore pins, FeatureRegistry features, DeviceInfo info, EngineState state) {
         this.connector = c;
         this.pins = pins;
-        this.status = status;
+        this.features = features;
+        this.state = state;
         this.info = info;
         state.setPaired(pins.deviceId() != null, pins.name());
     }
@@ -74,7 +75,7 @@ public final class LinkEngine {
             try {
                 if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.CONNECTING, "", "", "Connecting");
                 link = connector.connect();
-                Session s = new Session(link, pins, status, info, state);
+                Session s = new Session(link, pins, features, info, state);
                 session = s;
                 long t0 = System.currentTimeMillis();
                 s.run();
