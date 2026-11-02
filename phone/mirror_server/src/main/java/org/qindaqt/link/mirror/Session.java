@@ -32,6 +32,7 @@ final class Session implements ScreenEncoder.Sink {
     private final AppInventory inventory = new AppInventory();
     private final DisplayPower power;
     private ScreenEncoder encoder;
+    private boolean versionMismatch;
     private int width;
     private int height;
     private int dpi;
@@ -48,9 +49,16 @@ final class Session implements ScreenEncoder.Sink {
 
     /** Returns false when the peer failed the hello; the server then keeps listening. */
     boolean run() {
+        // AGENT-GUARD: until a valid hello, any failure only drops this peer. Otherwise a
+        // local process that connects first with garbage would end the desktop's session.
+        boolean greeted = false;
         try {
             if (!hello()) {
                 return false;
+            }
+            greeted = true;
+            if (versionMismatch) {
+                return true;
             }
             Frames.Frame frame;
             while ((frame = connection.read()) != null) {
@@ -61,11 +69,17 @@ final class Session implements ScreenEncoder.Sink {
             Ln.i("session ended");
         } catch (Frames.ProtocolException e) {
             Ln.w("protocol error: " + e.getMessage());
+            if (!greeted) {
+                return false;
+            }
         } catch (JSONException e) {
             sendError("bad-message", "malformed control body: " + e.getMessage(), true);
         } catch (IOException e) {
             if (!connection.isClosed()) {
                 Ln.i("connection closed: " + Ln.describe(e));
+            }
+            if (!greeted) {
+                return false;
             }
         } catch (Exception e) {
             Ln.e("session failed", e);
@@ -94,8 +108,10 @@ final class Session implements ScreenEncoder.Sink {
             return false;
         }
         if (body.optInt("version", -1) != Frames.PROTOCOL_VERSION) {
+            // A genuine desktop of another version: tell it and end the server, do not listen on.
             sendError("unsupported-version", "server speaks version " + Frames.PROTOCOL_VERSION, true);
-            throw new IOException("unsupported desktop version");
+            versionMismatch = true;
+            return true;
         }
         JSONObject ready = new JSONObject();
         ready.put("version", Frames.PROTOCOL_VERSION);
