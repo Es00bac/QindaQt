@@ -13,7 +13,10 @@ The durable decisions are
 (transport, identity and pairing). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **design accepted; no implementation integrated.**
+Current maturity: **desktop core implemented on branch `link/desktop-core`** (codec, TLS transport,
+SAS pairing, ADB tunnels, `qindaqt-link-service` with `org.qindaqt.Link1`, typed client; verified with a
+scripted C++ phone peer). The phone app, notification/SMS/input features, LAN mode, applet and app are not
+implemented. See [Link1 protocol 1](../reference/link1-v1.md).
 
 ## Components
 
@@ -34,7 +37,7 @@ Current maturity: **design accepted; no implementation integrated.**
 | --- | --- | --- |
 | Protocol codec | `src/services/link_protocol` | Pure framing, envelope and frame value types; pairing math. No sockets. |
 | Transport | `src/services/link_transport` | Desktop identity (libcrypto key/cert), `QSslServer` listeners, peer pin checks, connection state machine, keepalive |
-| Trust store | inside `link_transport` until it grows | Paired devices in `$XDG_DATA_HOME/qindalink/devices.json`, written atomically |
+| Trust store | inside `link_transport` (`trust_store.h`; implemented) | Paired devices in `$XDG_DATA_HOME/qindalink/devices.json`, written atomically |
 | ADB tunnels | `src/services/link_adb` | Track devices with `adb track-devices`, check that the app is installed, keep `adb reverse tcp:47160`, run setup grants |
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |

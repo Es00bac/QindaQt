@@ -147,6 +147,7 @@ nav:
       - Network1 version 1: reference/network1-v1.md
       - Firewall1 protocol 1: reference/firewall1-v1.md
       - QindaLink protocol 1: reference/qindalink-protocol-v1.md
+      - Link1 protocol 1: reference/link1-v1.md
       - "Removable Media Devices protocol v1": reference/removable-media-protocol-v1.md
       - Removable media client: architecture/removable-media-client.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md

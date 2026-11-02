@@ -1,0 +1,92 @@
+# Link1 protocol 1
+
+`org.qindaqt.Link1` is the session-bus API of `qindaqt-link-service`, the
+desktop half of [QindaLink](../architecture/qindalink.md). The phone-facing
+wire format is the separate [QindaLink protocol 1](qindalink-protocol-v1.md).
+
+- **Bus name:** `org.qindaqt.Link1` (session bus)
+- **Object path:** `/org/qindaqt/Link1`
+- **Interface:** `org.qindaqt.Link1`
+- **Introspection:** `src/services/link_service/data/org.qindaqt.Link1.xml`
+  (installed to `share/dbus-1/interfaces`)
+
+## Methods
+
+| Method | Signature | Behavior |
+| --- | --- | --- |
+| `Devices` | `() → s` | Compact JSON array of device snapshots (below). |
+| `ConfirmPairing` | `(s id, b accept)` | The desktop user's decision for the pending pairing with device `id`. Unknown ids and ids with no pending code are ignored. |
+| `Unpair` | `(s id)` | Deletes the stored pin, sends `bye{unpaired}` on a live connection and closes it. |
+| `Ring` | `(s id)` | Asks a READY phone that lists the `ring` capability to ring. Fire-and-forget; failures are logged without the device id beyond a prefix. |
+| `ListenPort` | `() → q` | The TCP port of the loopback listener (47160 in production). Diagnostics and tests only. |
+
+## Signals
+
+| Signal | Signature | Meaning |
+| --- | --- | --- |
+| `DevicesChanged` | `(s json)` | Any snapshot-visible change; `json` is what `Devices()` would return now. |
+| `PairingRequested` | `(s id, s name, s model, s code)` | The phone and desktop have exchanged nonces. `code` is the raw six digits (`"007123"`); UIs show it as `007 123`. The desktop also posts a notification with Accept and Reject. |
+
+## Device snapshot
+
+```json
+{"id":"<64 hex SPKI digest>","name":"…","model":"…","paired":true,
+ "connected":true,"ready":true,"transport":"usb",
+ "battery":{"level":87,"charging":true,"plugged":"usb"},
+ "network":{"type":"wifi","signal":3},"lastSeen":1767225600000}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `paired` | The key is pinned in `devices.json`. |
+| `connected` | A TLS connection exists and the phone's `hello` was received. |
+| `ready` | Both sides are pinned and the connection is in READY state. A connected but not ready device is waiting for pairing, or is a stale-pin "pair again" case. |
+| `transport` | `usb` for the loopback listener, `lan` for a LAN listener, `none` when not connected. |
+| `battery`, `network` | Latest `status` frame; `null` until one arrives or after disconnect. |
+| `lastSeen` | Milliseconds since the epoch; the current time while connected, the last disconnect otherwise, `0` if never. |
+
+Devices that are paired are always listed. Unpaired devices are listed only
+while connected.
+
+## Service contract
+
+<!-- AGENT-CONTRACT: the applet and app consume this page through
+src/services/link_client; changing a method, signal or JSON key means changing
+the client, the introspection XML and this page together. -->
+
+- **Ownership.** The service owns the identity (`identity-key.pem`,
+  `identity-cert.pem`, key `0600` in a `0700` directory), `devices.json`
+  (written atomically) and the listener. The state directory is
+  `$XDG_DATA_HOME/qindalink`.
+- **Start-up.** An unreadable `devices.json` stops the service rather than
+  starting with an empty trust store. Another owner of the bus name makes the
+  service exit non-zero.
+- **Listener.** `127.0.0.1:47160` only; LAN mode is not implemented. ADB
+  tracking keeps `adb reverse tcp:47160 tcp:47160` in place for each
+  `device`-state phone whose `pm path org.qindaqt.link` succeeds.
+- **Activation.** `org.qindaqt.Link1.service` starts the binary on demand
+  and names the `qindaqt-link-service.service` user unit. The unit is
+  `WantedBy=default.target`, never `graphical-session.target`.
+- **Hardening.** The process sets `PR_SET_DUMPABLE` to 0 at start-up.
+- **Test switches.** `--data-dir DIR`, `--port N` (0 = ephemeral),
+  `--no-adb` and `--no-notifications` exist so tests never touch the real
+  state, port 47160, the adb server or the notification server.
+
+## Client
+
+`src/services/link_client` provides `LinkClient` over a `LinkTransport`
+interface, with `QtLinkTransport` as the QtDBus implementation. The client
+ignores replies to requests made before the latest availability transition
+and clears its device list when the service name disappears.
+
+## Verification
+
+| Row | Covers |
+| --- | --- |
+| `qindaqt.link-vectors` | Every case of `frames-v1.json` and `pairing-v1.json` |
+| `qindaqt.link-identity` | libcrypto identity, pin equals the `openssl` pipeline, 0700/0600 files, trust store round trip |
+| `qindaqt.link-pairing` | TLS 1.3 pairing end to end with a scripted phone: success, tampered reveal, rejects, timeout, UNPAIRED gate, stale pin, busy, LAN window |
+| `qindaqt.link-session` | Replacement, LAN rule, keepalive with injected timings, unpair, error replies, vault log redaction |
+| `qindaqt.link-adb` | Tunnel manager against a fake adb |
+| `qindaqt.link-client` | Parsing and availability gating |
+| `qindaqt.link-service-smoke` | The real binary on a private `dbus-run-session` bus |
