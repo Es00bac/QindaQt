@@ -3,10 +3,6 @@ package org.qindaqt.link.mirror;
 
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.SystemClock;
-import android.view.InputDevice;
-import android.view.KeyCharacterMap;
-import android.view.KeyEvent;
 
 /**
  * Keeps the mirror display's power group awake while a session streams.
@@ -15,11 +11,14 @@ import android.view.KeyEvent;
  * When the phone is asleep, a new group starts non-interactive and Android drops input to it
  * (seen on SDK 37: "non-interactive displays={0, N}"). A screen wake lock bound to our display
  * id with ACQUIRE_CAUSES_WAKEUP wakes and holds only that group; the phone's own screen stays
- * as it was. Without that API the fallback injects KEYCODE_WAKEUP on our display, which some
- * releases route to the default display instead.
+ * as it was.
+ *
+ * <p>AGENT-GUARD: there is deliberately no KEYCODE_WAKEUP or global wakeUp fallback; on some
+ * releases those wake the phone's main display. Without the per-display lock the session runs
+ * only if the display is already interactive, and otherwise fails with a clear message.
  *
  * <p>Lifetime: the wake lock token is a binder owned by this process; system_server drops the
- * lock if the server dies, so a crash never leaves the phone awake.
+ * lock if the server dies, so a crash never leaves the display awake.
  */
 final class DisplayPower {
     private static final int SCREEN_BRIGHT_WAKE_LOCK = 0x0000000a;
@@ -32,7 +31,8 @@ final class DisplayPower {
         this.api = api;
     }
 
-    void keepAwake(int displayId) {
+    /** Returns null when the display is held awake, or the reason it cannot be. */
+    String keepAwake(int displayId) {
         if (api.acquireWakeLock != null) {
             IBinder token = new Binder();
             try {
@@ -41,12 +41,17 @@ final class DisplayPower {
                         HiddenApi.SHELL_PACKAGE, null, null, displayId, null);
                 lock = token;
                 Ln.i("display " + displayId + " held awake (" + interactivity(displayId) + ")");
-                return;
+                return null;
             } catch (Exception e) {
                 Ln.w("per-display wake lock refused: " + Ln.describe(e));
             }
         }
-        wakeWithKey(displayId);
+        if ("interactive".equals(interactivity(displayId))) {
+            Ln.w("display " + displayId + " is awake but cannot be held; it sleeps with the phone");
+            return null;
+        }
+        return "this phone cannot keep the mirror display awake without waking its own screen "
+                + "(no per-display wake lock); wake the phone and try again";
     }
 
     void release() {
@@ -61,7 +66,7 @@ final class DisplayPower {
         lock = null;
     }
 
-    String interactivity(int displayId) {
+    private String interactivity(int displayId) {
         if (api.isDisplayInteractive == null) {
             return "interactivity unknown";
         }
@@ -71,21 +76,5 @@ final class DisplayPower {
         } catch (Exception e) {
             return "interactivity unknown";
         }
-    }
-
-    private void wakeWithKey(int displayId) {
-        long now = SystemClock.uptimeMillis();
-        for (int action : new int[] {KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP}) {
-            KeyEvent event = new KeyEvent(now, now, action, KeyEvent.KEYCODE_WAKEUP, 0, 0,
-                    KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD);
-            try {
-                HiddenApi.call(api.setDisplayId, event, displayId);
-                HiddenApi.call(api.injectInputEvent, api.inputManager, event, 0);
-            } catch (Exception e) {
-                Ln.w("wake key failed: " + Ln.describe(e));
-                return;
-            }
-        }
-        Ln.i("display " + displayId + " woken with KEYCODE_WAKEUP (" + interactivity(displayId) + ")");
     }
 }

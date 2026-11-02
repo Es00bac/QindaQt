@@ -614,3 +614,4 @@ nav:
       - "0432: Review keyring requester before credentials": adr/0432-review-keyring-requester-before-credentials.md
       - "0433: QindaLink phone companion architecture": adr/0433-qindalink-phone-companion-architecture.md
       - "0434: QindaLink pinned TLS transport and pairing": adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md
+      - "0435: Decode QindaLink phone streams with FFmpeg": adr/0435-decode-qindalink-streams-with-ffmpeg.md

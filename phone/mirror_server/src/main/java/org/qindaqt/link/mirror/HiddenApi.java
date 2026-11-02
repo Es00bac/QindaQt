@@ -48,6 +48,9 @@ final class HiddenApi {
     Method queryIntentActivities;
     boolean queryFlagsAreLong;
 
+    Object activityTaskManager;
+    Method rootTasksOnDisplay; // optional: app-exit detection
+
     Object windowManager;
     Method setDisplayImePolicy; // optional: keep the phone keyboard off the mirror display
 
@@ -66,6 +69,7 @@ final class HiddenApi {
         api.probePackages();
         api.probeWindow();
         api.probePower();
+        api.probeTasks();
         return api;
     }
 
@@ -210,6 +214,14 @@ final class HiddenApi {
         }
         releaseWakeLock = method(pm, "releaseWakeLock", false, IBinder.class, int.class);
         isDisplayInteractive = optional(pm, "isDisplayInteractive", int.class);
+    }
+
+    private void probeTasks() {
+        activityTaskManager = serviceOptional("activity_task", "android.app.IActivityTaskManager");
+        Class<?> atm = optionalType("android.app.IActivityTaskManager");
+        if (atm != null && activityTaskManager != null) {
+            rootTasksOnDisplay = method(atm, "getAllRootTaskInfosOnDisplay", false, int.class);
+        }
     }
 
     private Class<?> optionalType(String name) {

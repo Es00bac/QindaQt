@@ -79,4 +79,27 @@ private:
     QString m_lastError;
 };
 
+// Bounds the packets waiting for the decode thread so a slow decoder cannot grow memory or
+// latency without limit.
+//
+// AGENT-GUARD: once the backlog reaches the limit, non-key packets are dropped until the next
+// keyframe and the caller asks the server for one (sync). Config and key packets always
+// pass: they are rare, and the keyframe is the only clean point to resume decoding.
+class BacklogGate {
+public:
+    static constexpr int kDefaultLimit = 8;
+    enum class Verdict { Queue, Drop, DropAndRequestKeyframe };
+
+    explicit BacklogGate(int limit = kDefaultLimit) : m_limit(limit) {}
+    // inFlight: packets queued for the decoder and not yet decoded.
+    [[nodiscard]] Verdict admit(const VideoPacket &packet, int inFlight);
+    // A new stream generation starts clean.
+    void reset() { m_dropping = false; }
+    [[nodiscard]] bool dropping() const { return m_dropping; }
+
+private:
+    int m_limit;
+    bool m_dropping = false;
+};
+
 } // namespace qindaqt::link_mirror

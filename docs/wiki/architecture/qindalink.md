@@ -181,8 +181,10 @@ qindaqt-link-mirror                                phone (shell uid, app_process
 
 - **Start.** The desktop starts the mirror server on the phone with
   `app_process` as the `shell` user. The class path is the installed
-  QindaLink APK, or a development jar passed with `--server-jar`. The socket
-  name carries a random per-session token.
+  QindaLink APK, or a development jar passed with `--server-jar`. A
+  per-session secret reaches the server only on its stdin and in `hello`. The
+  socket name and the ADB forward carry a non-secret random suffix (see the
+  [threat model](../reference/qindalink-mirror-v1.md#threat-model)).
 - **Display.** The server creates a trusted virtual display that owns its
   content, accepts touch, has its own display group and destroys its content
   when removed. It is sized to the window in device pixels at
@@ -193,8 +195,10 @@ qindaqt-link-mirror                                phone (shell uid, app_process
   way. A per-display wake lock keeps only the mirror display awake, and the
   display's IME policy hides the phone keyboard because the desktop types
   instead.
-- **Decode and present.** The desktop decodes with libavcodec, VA-API first
-  (radeonsi on the RX 5700 XT), falling back to software automatically. It
+- **Decode and present.** The desktop decodes with libavcodec
+  ([ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md)), VA-API
+  first (radeonsi on the RX 5700 XT), falling back to software
+  automatically. It
   presents the newest frame letterboxed in a window titled with the app's
   label and icon, with the app id `org.qindaqt.link.mirror.<package>`.
 - **Input.** The primary button is a finger. The secondary button is Back.
@@ -208,6 +212,11 @@ qindaqt-link-mirror                                phone (shell uid, app_process
   forward.
 - **ADB loss.** Streaming needs ADB and stops when ADB drops. A visible window
   then shows the reason until it is closed.
+- **App exit.** When the app leaves its display on the phone, the window shows
+  "App closed on phone" and closes after 2 s.
+- **Server lifetime.** The shell-uid server never outlives its desktop. It
+  exits without a completed `hello` in 20 s, after 3 bad peers, and after
+  30 s without a frame (the desktop pings every 5 s).
 - **Evidence modes.** `--grab`, `--probe` and `--list` run on the offscreen
   Qt platform and never map a window. They are the evidence path for agents.
 

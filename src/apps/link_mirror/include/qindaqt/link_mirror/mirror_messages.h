@@ -39,6 +39,8 @@ enum class TouchAction { Down, Move, Up, Cancel };
 [[nodiscard]] QByteArray textFrame(const QString &text);
 [[nodiscard]] QByteArray syncFrame();
 [[nodiscard]] QByteArray stopFrame();
+// Keepalive; the server ends a greeted session after 30 s without any frame.
+[[nodiscard]] QByteArray pingFrame();
 [[nodiscard]] QByteArray inventoryListFrame(const QStringList &packages, int iconSize);
 
 struct ReadyInfo {
@@ -80,5 +82,7 @@ struct AppEntry {
 [[nodiscard]] std::optional<VideoFormat> parseVideoFormat(const QByteArray &payload);
 [[nodiscard]] std::optional<AppEntry> parseApp(const QByteArray &payload);
 [[nodiscard]] std::optional<int> parseInventoryEnd(const QByteArray &payload);
+// app-exited: the reason string ("no-tasks"), or nullopt for a malformed body.
+[[nodiscard]] std::optional<QString> parseAppExited(const QByteArray &payload);
 
 } // namespace qindaqt::link_mirror

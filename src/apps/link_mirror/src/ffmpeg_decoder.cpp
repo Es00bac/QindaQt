@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ffmpeg_decoder.h"
 
+#include "qindaqt/link_mirror/mirror_protocol.h"
+
 #include <QSysInfo>
 
 #include <cstring>
@@ -144,6 +146,12 @@ private:
             }
             source = m_transfer;
         }
+        // AGENT-GUARD: the bitstream is untrusted phone output; refuse absurd dimensions before
+        // allocating an RGB image for them (ADR-0435).
+        if (!validStreamSize(source->width, source->height)) {
+            *error = QStringLiteral("decoded picture %1x%2 exceeds the stream caps").arg(source->width).arg(source->height);
+            return false;
+        }
         const auto format = static_cast<AVPixelFormat>(source->format);
         m_scaler = sws_getCachedContext(m_scaler, source->width, source->height, format, source->width,
                                         source->height, kRgb32, SWS_BILINEAR, nullptr, nullptr, nullptr);
@@ -156,6 +164,10 @@ private:
         sws_setColorspaceDetails(m_scaler, sws_getCoefficients(colorspace), fullRange, sws_getCoefficients(colorspace),
                                  1, 0, 1 << 16, 1 << 16);
         QImage converted(source->width, source->height, QImage::Format_RGB32);
+        if (converted.isNull()) {
+            *error = QStringLiteral("cannot allocate a %1x%2 picture").arg(source->width).arg(source->height);
+            return false;
+        }
         uint8_t *destination[1] = {converted.bits()};
         const int stride[1] = {static_cast<int>(converted.bytesPerLine())};
         sws_scale(m_scaler, source->data, source->linesize, 0, source->height, destination, stride);

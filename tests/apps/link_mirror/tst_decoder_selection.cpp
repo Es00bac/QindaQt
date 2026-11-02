@@ -156,6 +156,35 @@ private Q_SLOTS:
         QCOMPARE(selector.decode(keyPacket(), &image), DecodeResult::Error);
     }
 
+    void backlogDropsUntilTheNextKeyframe()
+    {
+        BacklogGate gate(8);
+        VideoPacket delta;
+        delta.data = QByteArray("p");
+        QCOMPARE(gate.admit(delta, 7), BacklogGate::Verdict::Queue);
+        QCOMPARE(gate.admit(delta, 8), BacklogGate::Verdict::DropAndRequestKeyframe);
+        QVERIFY(gate.dropping());
+        // Even once the queue drains, deltas wait for a keyframe; only one sync is requested.
+        QCOMPARE(gate.admit(delta, 0), BacklogGate::Verdict::Drop);
+        VideoPacket config;
+        config.config = true;
+        config.data = QByteArray("sps");
+        QCOMPARE(gate.admit(config, 9), BacklogGate::Verdict::Queue);
+        QCOMPARE(gate.admit(keyPacket(), 9), BacklogGate::Verdict::Queue);
+        QVERIFY(!gate.dropping());
+        QCOMPARE(gate.admit(delta, 3), BacklogGate::Verdict::Queue);
+    }
+
+    void backlogResetsForANewGeneration()
+    {
+        BacklogGate gate(2);
+        VideoPacket delta;
+        delta.data = QByteArray("p");
+        QCOMPARE(gate.admit(delta, 2), BacklogGate::Verdict::DropAndRequestKeyframe);
+        gate.reset();
+        QCOMPARE(gate.admit(delta, 0), BacklogGate::Verdict::Queue);
+    }
+
     void parsesPreferences()
     {
         QCOMPARE(parseDecoderPreference(QStringLiteral("auto")), DecoderPreference::Auto);

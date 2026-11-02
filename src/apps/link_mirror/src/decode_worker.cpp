@@ -24,12 +24,31 @@ DecodeWorker::~DecodeWorker()
 
 void DecodeWorker::postFormat(const VideoFormat &format)
 {
+    m_gate.reset();
     QMetaObject::invokeMethod(&m_context, [this, format] { handleFormat(format); }, Qt::QueuedConnection);
 }
 
 void DecodeWorker::postPacket(const VideoPacket &packet)
 {
-    QMetaObject::invokeMethod(&m_context, [this, packet] { handlePacket(packet); }, Qt::QueuedConnection);
+    switch (m_gate.admit(packet, m_inFlight.load())) {
+    case BacklogGate::Verdict::Drop:
+        ++m_dropped;
+        return;
+    case BacklogGate::Verdict::DropAndRequestKeyframe:
+        ++m_dropped;
+        Q_EMIT keyframeNeeded();
+        return;
+    case BacklogGate::Verdict::Queue:
+        break;
+    }
+    m_inFlight.fetch_add(1);
+    QMetaObject::invokeMethod(
+        &m_context,
+        [this, packet] {
+            handlePacket(packet);
+            m_inFlight.fetch_sub(1);
+        },
+        Qt::QueuedConnection);
 }
 
 QImage DecodeWorker::takeFrame()

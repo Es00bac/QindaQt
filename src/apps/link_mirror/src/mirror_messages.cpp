@@ -110,6 +110,11 @@ QByteArray stopFrame()
     return controlFrame(control::Stop, {});
 }
 
+QByteArray pingFrame()
+{
+    return controlFrame(control::Ping, {});
+}
+
 QByteArray inventoryListFrame(const QStringList &packages, int iconSize)
 {
     QJsonObject body{{QStringLiteral("iconSize"), iconSize}};
@@ -145,7 +150,8 @@ std::optional<DisplayInfo> parseDisplay(const QByteArray &payload)
     const QJsonValue id = body->value(QStringLiteral("displayId"));
     const QJsonValue width = body->value(QStringLiteral("width"));
     const QJsonValue height = body->value(QStringLiteral("height"));
-    if (!isInt(id) || !isInt(width) || !isInt(height) || width.toInt() <= 0 || height.toInt() <= 0) {
+    if (!isInt(id) || !isInt(width) || !isInt(height)
+        || !validStreamSize(width.toInteger(), height.toInteger())) {
         return std::nullopt;
     }
     return DisplayInfo{id.toInt(), QSize(width.toInt(), height.toInt()),
@@ -173,7 +179,7 @@ std::optional<VideoFormat> parseVideoFormat(const QByteArray &payload)
     const QJsonValue width = body->value(QStringLiteral("width"));
     const QJsonValue height = body->value(QStringLiteral("height"));
     if ((codec != QLatin1String("h264") && codec != QLatin1String("hevc")) || !isInt(width) || !isInt(height)
-        || width.toInt() <= 0 || height.toInt() <= 0) {
+        || !validStreamSize(width.toInteger(), height.toInteger())) {
         return std::nullopt;
     }
     return VideoFormat{codec, QSize(width.toInt(), height.toInt())};
@@ -203,6 +209,15 @@ std::optional<int> parseInventoryEnd(const QByteArray &payload)
         return std::nullopt;
     }
     return body->value(QStringLiteral("count")).toInt();
+}
+
+std::optional<QString> parseAppExited(const QByteArray &payload)
+{
+    const auto body = object(payload);
+    if (!body) {
+        return std::nullopt;
+    }
+    return body->value(QStringLiteral("reason")).toString(QStringLiteral("unknown"));
 }
 
 } // namespace qindaqt::link_mirror

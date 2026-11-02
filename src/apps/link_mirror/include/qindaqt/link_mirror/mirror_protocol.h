@@ -24,6 +24,10 @@ inline constexpr std::uint32_t kMaxControlPayload = 1U << 20;
 inline constexpr std::uint32_t kMaxVideoPayload = 16U << 20;
 inline constexpr qsizetype kPacketHeaderSize = 9;
 inline constexpr const char *kSocketPrefix = "qindalink-mirror-";
+// Stream size caps shared by message parsing and the decoder: untrusted dimensions beyond
+// these are rejected before any allocation (ADR-0435).
+inline constexpr int kMaxStreamSide = 8192;
+inline constexpr qint64 kMaxStreamPixels = 64'000'000;
 
 enum class Channel : std::uint8_t { Control = 0x01, Video = 0x02, Inventory = 0x03 };
 
@@ -38,9 +42,11 @@ inline constexpr std::uint8_t Key = 0x07;
 inline constexpr std::uint8_t Text = 0x08;
 inline constexpr std::uint8_t Sync = 0x09;
 inline constexpr std::uint8_t Stop = 0x0A;
+inline constexpr std::uint8_t Ping = 0x0B;
 inline constexpr std::uint8_t Ready = 0x81;
 inline constexpr std::uint8_t Display = 0x82;
 inline constexpr std::uint8_t Error = 0x83;
+inline constexpr std::uint8_t AppExited = 0x84;
 } // namespace control
 
 namespace video {
@@ -61,6 +67,9 @@ struct Frame {
     std::uint8_t type = 0;
     QByteArray payload;
 };
+
+// True when both sides are 1..kMaxStreamSide and the area is at most kMaxStreamPixels.
+[[nodiscard]] bool validStreamSize(qint64 width, qint64 height);
 
 // Returns the payload limit for a raw channel byte, or 0 for an unknown channel.
 [[nodiscard]] std::uint32_t maxPayloadFor(std::uint8_t channel);

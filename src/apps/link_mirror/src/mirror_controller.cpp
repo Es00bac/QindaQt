@@ -15,6 +15,12 @@ namespace {
 // restarts the encoder and makes the app re-layout. 250 ms keeps drags smooth and cheap.
 constexpr int kResizeDebounceMs = 250;
 constexpr int kListIconSize = 64;
+// The server ends a greeted session after 30 s without a frame (ListenPolicy.IDLE_TIMEOUT_MS).
+constexpr int kKeepaliveMs = 5000;
+// How long "App closed on phone" stays visible before the window closes itself.
+constexpr int kAppClosedLingerMs = 2000;
+// Exit status of a headless run whose app closed on the phone before the run finished.
+constexpr int kExitAppClosed = 3;
 constexpr int kWindowIconSize = 128;
 
 QSize devicePixels(QSize logical, qreal ratio)
@@ -34,6 +40,8 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
     m_resizeDebounce.setSingleShot(true);
     m_resizeDebounce.setInterval(kResizeDebounceMs);
     connect(&m_resizeDebounce, &QTimer::timeout, this, &MirrorController::applyResize);
+    m_keepalive.setInterval(kKeepaliveMs);
+    connect(&m_keepalive, &QTimer::timeout, this, [this] { m_connection.send(pingFrame()); });
 
     connect(&m_adb, &AdbSession::serverLine, this, [this](const QString &line) {
         if (m_options.verbose) {
@@ -41,13 +49,16 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
         }
     });
     connect(&m_adb, &AdbSession::serverExited, this, [this](int exitCode) {
-        if (!m_connection.isReady()) {
+        // Only a server that dies before ready is a start failure; after ready, the
+        // connection's own disconnect (or app-exited) decides the outcome.
+        if (!m_sessionReady) {
             finish(1, QStringLiteral("the phone mirror server exited with code %1").arg(exitCode));
         }
     });
     connect(&m_connection, &MirrorConnection::ready, this, &MirrorController::onReady);
     connect(&m_connection, &MirrorConnection::displayChanged, this, &MirrorController::onDisplay);
     connect(&m_connection, &MirrorConnection::serverError, this, &MirrorController::onServerError);
+    connect(&m_connection, &MirrorConnection::appExited, this, &MirrorController::onAppExited);
     connect(&m_connection, &MirrorConnection::appReceived, this, &MirrorController::onApp);
     connect(&m_connection, &MirrorConnection::inventoryFinished, this, &MirrorController::inventoryDone);
     connect(&m_connection, &MirrorConnection::videoFormat, this,
@@ -56,6 +67,11 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
             [this](const VideoPacket &packet) { m_worker->postPacket(packet); });
     connect(&m_connection, &MirrorConnection::failed, this, [this](const QString &reason) { finish(1, reason); });
     connect(&m_connection, &MirrorConnection::disconnected, this, [this] {
+        // AGENT-GUARD: the server closes right after app-exited by design; that close is not
+        // an ADB loss and must not replace "App closed on phone" or the clean exit status.
+        if (m_appExited) {
+            return;
+        }
         finish(1, QStringLiteral("the phone mirror ended; streaming needs ADB to stay connected"));
     });
 
@@ -105,20 +121,21 @@ void MirrorController::start(QSize initialViewSize, qreal devicePixelRatio)
     m_pendingRatio = devicePixelRatio;
     m_window.setStatusText(QStringLiteral("Connecting to the phone…"));
     QString error;
-    // AGENT-GUARD: the token goes only to our own server's command line and the forward
-    // spec; it is never logged (MirrorController::report sees neither).
-    const QString token = AdbSession::newToken();
+    // AGENT-GUARD: the secret travels only on the server's stdin and inside hello; argv, the
+    // socket name and the forward carry the non-secret suffix. Neither is ever logged.
+    const QString secret = AdbSession::randomHex(16);
+    const QString socketSuffix = AdbSession::randomHex(8);
     const auto classPath = m_adb.resolveClassPath(m_options.serverJar, &error);
-    if (!classPath || !m_adb.startServer(*classPath, token, m_options.verbose, &error)) {
+    if (!classPath || !m_adb.startServer(*classPath, socketSuffix, secret, m_options.verbose, &error)) {
         finish(1, error);
         return;
     }
-    const auto port = m_adb.forward(token, &error);
+    const auto port = m_adb.forward(socketSuffix, &error);
     if (!port) {
         finish(1, error);
         return;
     }
-    m_connection.connectTo(*port, token, m_options.connectTimeoutMs);
+    m_connection.connectTo(*port, secret, m_options.connectTimeoutMs);
 }
 
 void MirrorController::onReady(const ReadyInfo &info)
@@ -126,6 +143,8 @@ void MirrorController::onReady(const ReadyInfo &info)
     if (m_options.verbose) {
         report(QStringLiteral("server ready: protocol %1, SDK %2").arg(info.version).arg(info.sdk));
     }
+    m_sessionReady = true;
+    m_keepalive.start();
     if (m_options.list) {
         m_connection.send(inventoryListFrame({}, kListIconSize));
         return;
@@ -175,6 +194,22 @@ void MirrorController::onServerError(const ServerError &error)
     }
 }
 
+void MirrorController::onAppExited(const QString &reason)
+{
+    if (m_finished) {
+        return;
+    }
+    m_appExited = true;
+    report(QStringLiteral("the app closed on the phone (%1)").arg(reason));
+    if (m_options.headless()) {
+        finish(kExitAppClosed, QStringLiteral("the app closed on the phone before the run finished"));
+        return;
+    }
+    m_window.setFrame(QImage());
+    m_window.setStatusText(QStringLiteral("App closed on phone"));
+    QTimer::singleShot(kAppClosedLingerMs, this, [this] { finish(0); });
+}
+
 void MirrorController::handleViewResized(QSize logicalSize, qreal devicePixelRatio)
 {
     m_pendingView = logicalSize;
@@ -215,6 +250,7 @@ void MirrorController::finish(int exitCode, const QString &reason)
     m_finished = true;
     m_exitCode = exitCode;
     m_resizeDebounce.stop();
+    m_keepalive.stop();
     if (!reason.isEmpty()) {
         report(reason);
         if (exitCode != 0) {

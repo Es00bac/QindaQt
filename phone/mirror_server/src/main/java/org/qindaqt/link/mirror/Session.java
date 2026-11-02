@@ -16,8 +16,8 @@ import org.json.JSONObject;
 /**
  * One desktop session: hello, then control and inventory requests until the desktop leaves.
  *
- * <p>Ownership: the session owns the virtual display, the encoder and the injector, and
- * releases all three in {@link #close()} whatever ended the session.
+ * <p>Ownership: the session owns the virtual display, the encoder, the wake lock and the task
+ * watcher, and releases all of them in {@link #close()} whatever ended the session.
  *
  * <p>AGENT-CONTRACT: message shapes follow docs/wiki/reference/qindalink-mirror-v1.md and
  * src/apps/link_mirror/src/mirror_messages.cpp on the desktop.
@@ -25,24 +25,27 @@ import org.json.JSONObject;
 final class Session implements ScreenEncoder.Sink {
     private final Connection connection;
     private final HiddenApi api;
-    private final String token;
+    private final String secret;
+    private final Runnable onGreeted;
     private final VirtualDisplayHost display;
-    private final InputInjector injector;
+    private final InputCommands input;
     private final AppLauncher launcher;
     private final AppInventory inventory = new AppInventory();
     private final DisplayPower power;
     private ScreenEncoder encoder;
+    private TaskWatcher watcher;
     private boolean versionMismatch;
     private int width;
     private int height;
     private int dpi;
 
-    Session(Connection connection, HiddenApi api, String token) {
+    Session(Connection connection, HiddenApi api, String secret, Runnable onGreeted) {
         this.connection = connection;
         this.api = api;
-        this.token = token;
+        this.secret = secret;
+        this.onGreeted = onGreeted;
         this.display = new VirtualDisplayHost(api);
-        this.injector = new InputInjector(api);
+        this.input = new InputCommands(new InputInjector(api));
         this.launcher = new AppLauncher(api, 0);
         this.power = new DisplayPower(api);
     }
@@ -53,13 +56,16 @@ final class Session implements ScreenEncoder.Sink {
         // local process that connects first with garbage would end the desktop's session.
         boolean greeted = false;
         try {
+            connection.setReadTimeout(ListenPolicy.HELLO_TIMEOUT_MS);
             if (!hello()) {
                 return false;
             }
             greeted = true;
+            onGreeted.run();
             if (versionMismatch) {
                 return true;
             }
+            connection.setReadTimeout(ListenPolicy.IDLE_TIMEOUT_MS);
             Frames.Frame frame;
             while ((frame = connection.read()) != null) {
                 if (!dispatch(frame)) {
@@ -73,10 +79,13 @@ final class Session implements ScreenEncoder.Sink {
                 return false;
             }
         } catch (JSONException e) {
+            if (!greeted) {
+                return false;
+            }
             sendError("bad-message", "malformed control body: " + e.getMessage(), true);
         } catch (IOException e) {
             if (!connection.isClosed()) {
-                Ln.i("connection closed: " + Ln.describe(e));
+                Ln.i("connection ended: " + Ln.describe(e));
             }
             if (!greeted) {
                 return false;
@@ -96,15 +105,9 @@ final class Session implements ScreenEncoder.Sink {
             Ln.w("first frame was not hello; dropping peer");
             return false;
         }
-        JSONObject body;
-        try {
-            body = json(frame);
-        } catch (JSONException e) {
-            Ln.w("hello was not JSON; dropping peer");
-            return false;
-        }
-        if (!token.equals(body.optString("token"))) {
-            Ln.w("hello token mismatch; dropping peer");
+        JSONObject body = json(frame);
+        if (!SessionSecret.matches(secret, body.optString("token", null))) {
+            Ln.w("hello secret mismatch; dropping peer");
             return false;
         }
         if (body.optInt("version", -1) != Frames.PROTOCOL_VERSION) {
@@ -140,39 +143,19 @@ final class Session implements ScreenEncoder.Sink {
             case Frames.C_RESIZE:
                 resize(body.getInt("width"), body.getInt("height"), body.optInt("dpi", dpi));
                 return true;
-            case Frames.C_TOUCH:
-                injector.touch(body.getString("action"), body.optInt("pointerId", 0),
-                        (float) body.getDouble("x"), (float) body.getDouble("y"),
-                        (float) body.optDouble("pressure", 1.0));
-                return true;
-            case Frames.C_MOUSE:
-                injector.mouse(body.getString("action"), (float) body.getDouble("x"),
-                        (float) body.getDouble("y"), body.optInt("buttons", 0));
-                return true;
-            case Frames.C_SCROLL:
-                injector.scroll((float) body.getDouble("x"), (float) body.getDouble("y"),
-                        (float) body.optDouble("h", 0), (float) body.optDouble("v", 0));
-                return true;
-            case Frames.C_KEY:
-                injector.key(body.getString("action"), body.getInt("keycode"), body.optInt("meta", 0),
-                        body.optInt("repeat", 0));
-                return true;
-            case Frames.C_TEXT:
-                String text = body.getString("text");
-                int unmapped = injector.text(text);
-                if (unmapped > 0) {
-                    Ln.d("text: " + unmapped + " of " + text.length() + " characters had no key mapping");
-                }
-                return true;
             case Frames.C_SYNC:
                 if (encoder != null) {
                     encoder.requestSyncFrame();
                 }
                 return true;
+            case Frames.C_PING:
+                return true; // any frame resets the idle timeout
             case Frames.C_STOP:
                 return false;
             default:
-                Ln.d("ignoring control type " + frame.type);
+                if (!input.apply(frame.type, body)) {
+                    Ln.d("ignoring control type " + frame.type);
+                }
                 return true;
         }
     }
@@ -206,10 +189,16 @@ final class Session implements ScreenEncoder.Sink {
         width = size[0];
         height = size[1];
         int id = display.create(HiddenApi.SHELL_PACKAGE + ".qindalink-mirror", width, height, dpi, surface);
-        injector.setDisplayId(id);
-        power.keepAwake(id);
+        input.setDisplay(id, width, height);
+        String powerProblem = power.keepAwake(id);
+        if (powerProblem != null) {
+            sendError("display-asleep", powerProblem, true);
+            throw new IOException("display cannot be kept awake");
+        }
         launcher.launch(component, id);
         sendDisplay();
+        watcher = new TaskWatcher(api, id, this::appExited);
+        watcher.start();
     }
 
     private void resize(int requestedWidth, int requestedHeight, int requestedDpi) throws Exception {
@@ -230,8 +219,20 @@ final class Session implements ScreenEncoder.Sink {
             width = size[0];
             height = size[1];
             dpi = newDpi;
+            input.setDisplay(display.displayId(), width, height);
         }
         sendDisplay();
+    }
+
+    /** Called on the watcher thread once the app has left the mirror display. */
+    private void appExited(String reason) {
+        try {
+            connection.sendJson(Frames.CH_CONTROL, Frames.C_APP_EXITED, new JSONObject().put("reason", reason));
+        } catch (IOException | JSONException e) {
+            Ln.w("could not report app exit");
+        }
+        Ln.i("app left the mirror display (" + reason + ")");
+        connection.close(); // ends the read loop; close() releases the display
     }
 
     private void listApps(JSONObject body) throws Exception {
@@ -282,6 +283,9 @@ final class Session implements ScreenEncoder.Sink {
     }
 
     private void close() {
+        if (watcher != null) {
+            watcher.stop();
+        }
         if (encoder != null) {
             display.setSurfaceQuietly();
             encoder.stop();

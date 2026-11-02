@@ -172,6 +172,28 @@ private Q_SLOTS:
         QCOMPARE(parseInventoryEnd(R"({"count":3})").value_or(-1), 3);
     }
 
+    void capsUntrustedStreamSizes()
+    {
+        QVERIFY(validStreamSize(720, 1440));
+        QVERIFY(validStreamSize(8192, 7812)); // 63.99 MP
+        QVERIFY(!validStreamSize(8192, 8192)); // 67.1 MP > 64 MP
+        QVERIFY(!validStreamSize(8193, 64));
+        QVERIFY(!validStreamSize(0, 64));
+        QVERIFY(!parseDisplay(R"({"displayId":1,"width":9000,"height":100})"));
+        QVERIFY(!parseVideoFormat(R"({"codec":"h264","width":8192,"height":8192})"));
+        QVERIFY(!parseVideoFormat(R"({"codec":"h264","width":4294967297,"height":8})"));
+    }
+
+    void keepaliveAndAppExit()
+    {
+        const QByteArray ping = pingFrame();
+        QCOMPARE(ping.at(0), char(0x01));
+        QCOMPARE(static_cast<quint8>(ping.at(1)), control::Ping);
+        QCOMPARE(parseAppExited(R"({"reason":"no-tasks"})").value_or(QString()), QStringLiteral("no-tasks"));
+        QCOMPARE(parseAppExited("{}").value_or(QString()), QStringLiteral("unknown"));
+        QVERIFY(!parseAppExited("[1]"));
+    }
+
     void decodesAppIcons()
     {
         QImage icon(4, 4, QImage::Format_ARGB32);

@@ -5,6 +5,12 @@
 
 namespace qindaqt::link_mirror {
 
+bool validStreamSize(qint64 width, qint64 height)
+{
+    return width >= 1 && height >= 1 && width <= kMaxStreamSide && height <= kMaxStreamSide
+           && width * height <= kMaxStreamPixels;
+}
+
 std::uint32_t maxPayloadFor(std::uint8_t channel)
 {
     switch (channel) {

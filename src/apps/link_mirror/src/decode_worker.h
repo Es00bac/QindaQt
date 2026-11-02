@@ -18,7 +18,8 @@
 // worker thread and must be connected with queued or auto connections.
 //
 // AGENT-NOTE: the hand-off is a one-slot mailbox (newest frame wins). If presentation falls
-// behind, old pictures are dropped instead of queueing, so latency never accumulates.
+// behind, old pictures are dropped instead of queueing, so latency never accumulates. On the
+// input side BacklogGate bounds queued packets the same way and asks for a keyframe.
 namespace qindaqt::link_mirror {
 
 class DecodeWorker : public QObject {
@@ -28,12 +29,14 @@ public:
     DecodeWorker(DecoderPreference preference, DecoderFactory factory);
     ~DecodeWorker() override;
 
+    // GUI thread only (the backlog gate is GUI-thread state).
     void postFormat(const VideoFormat &format);
     void postPacket(const VideoPacket &packet);
 
     // Takes the newest decoded picture; null when none arrived since the last call.
     [[nodiscard]] QImage takeFrame();
     [[nodiscard]] quint64 decodedFrames() const { return m_decoded.load(); }
+    [[nodiscard]] quint64 droppedPackets() const { return m_dropped; }
 
 Q_SIGNALS:
     void frameAvailable();
@@ -52,6 +55,9 @@ private:
     QMutex m_mailboxLock;
     QImage m_mailbox;
     std::atomic<quint64> m_decoded{0};
+    std::atomic<int> m_inFlight{0};
+    BacklogGate m_gate;
+    quint64 m_dropped = 0;
     bool m_waitingForKey = true;
 };
 

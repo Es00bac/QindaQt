@@ -3,11 +3,12 @@
 
 #include "qindaqt/link_mirror/mirror_protocol.h"
 
+#include <QCryptographicHash>
+#include <QFile>
 #include <QFileInfo>
 #include <QRandomGenerator>
 #include <QStandardPaths>
 
-#include <array>
 #include <utility>
 
 namespace qindaqt::link_mirror {
@@ -45,18 +46,19 @@ QString AdbSession::defaultAdbPath()
     return QStandardPaths::findExecutable(QStringLiteral("adb"));
 }
 
-QString AdbSession::newToken()
+QString AdbSession::randomHex(int bytes)
 {
-    std::array<quint32, 4> words{};
-    QRandomGenerator::system()->fillRange(words.data(), words.size());
-    QByteArray bytes(reinterpret_cast<const char *>(words.data()), sizeof words);
-    return QString::fromLatin1(bytes.toHex());
+    QByteArray raw(bytes, Qt::Uninitialized);
+    for (char &byte : raw) {
+        byte = static_cast<char>(QRandomGenerator::system()->bounded(256));
+    }
+    return QString::fromLatin1(raw.toHex());
 }
 
 AdbSession::Result AdbSession::run(const QStringList &arguments, int timeoutMs) const
 {
     QProcess process;
-    process.setProcessChannelMode(QProcess::MergedChannels);
+    process.setProcessChannelMode(QProcess::SeparateChannels);
     process.start(m_adb, QStringList{QStringLiteral("-s"), m_serial} + arguments);
     Result result;
     if (!process.waitForStarted(kQuickTimeoutMs)) {
@@ -70,26 +72,46 @@ AdbSession::Result AdbSession::run(const QStringList &arguments, int timeoutMs) 
         return result;
     }
     result.exitCode = process.exitStatus() == QProcess::NormalExit ? process.exitCode() : -1;
-    result.out = process.readAll();
+    result.out = process.readAllStandardOutput();
     if (result.exitCode != 0) {
-        result.error = QStringLiteral("adb %1 failed: %2").arg(arguments.value(0), QString::fromUtf8(result.out).trimmed());
+        const QByteArray detail = process.readAllStandardError().trimmed() + ' ' + result.out.trimmed();
+        result.error = QStringLiteral("adb %1 failed: %2").arg(arguments.value(0), QString::fromUtf8(detail).trimmed());
     }
     return result;
+}
+
+std::optional<QString> AdbSession::pushDevJar(const QString &serverJar, QString *error)
+{
+    QFile jar(serverJar);
+    if (!jar.open(QIODevice::ReadOnly)) {
+        *error = QStringLiteral("server jar %1 is not readable").arg(serverJar);
+        return std::nullopt;
+    }
+    const QByteArray digest = QCryptographicHash::hash(jar.readAll(), QCryptographicHash::Sha256).toHex();
+    const QString devicePath = QLatin1String(kDevJarDevicePrefix) + QString::fromLatin1(digest.left(16)) + QStringLiteral(".jar");
+    const auto onPhone = [&] {
+        const Result sum = run({QStringLiteral("shell"), QStringLiteral("sha256sum"), devicePath}, kQuickTimeoutMs);
+        return sum.error.isEmpty() && sum.out.trimmed().startsWith(digest);
+    };
+    if (onPhone()) {
+        return devicePath;
+    }
+    const Result push = run({QStringLiteral("push"), serverJar, devicePath}, kPushTimeoutMs);
+    if (!push.error.isEmpty()) {
+        *error = push.error;
+        return std::nullopt;
+    }
+    if (!onPhone()) {
+        *error = QStringLiteral("pushed server jar failed its SHA-256 check on the phone");
+        return std::nullopt;
+    }
+    return devicePath;
 }
 
 std::optional<QString> AdbSession::resolveClassPath(const QString &serverJar, QString *error)
 {
     if (!serverJar.isEmpty()) {
-        if (!QFileInfo(serverJar).isReadable()) {
-            *error = QStringLiteral("server jar %1 is not readable").arg(serverJar);
-            return std::nullopt;
-        }
-        const Result push = run({QStringLiteral("push"), serverJar, QString::fromLatin1(kDevJarDevicePath)}, kPushTimeoutMs);
-        if (!push.error.isEmpty()) {
-            *error = push.error;
-            return std::nullopt;
-        }
-        return QString::fromLatin1(kDevJarDevicePath);
+        return pushDevJar(serverJar, error);
     }
     const Result path = run({QStringLiteral("shell"), QStringLiteral("pm"), QStringLiteral("path"),
                              QString::fromLatin1(kLinkPackage)},
@@ -105,14 +127,13 @@ std::optional<QString> AdbSession::resolveClassPath(const QString &serverJar, QS
     return std::nullopt;
 }
 
-bool AdbSession::startServer(const QString &classPath, const QString &token, bool verbose, QString *error)
+bool AdbSession::startServer(const QString &classPath, const QString &socketSuffix, const QString &secret,
+                             bool verbose, QString *error)
 {
-    // AGENT-GUARD: the token reaches the phone only as an argument of our own app_process
-    // command; never write it to a log line or a file.
-    QStringList arguments{QStringLiteral("-s"), m_serial, QStringLiteral("shell"),
+    QStringList arguments{QStringLiteral("-s"), m_serial, QStringLiteral("shell"), QStringLiteral("-T"),
                           QStringLiteral("CLASSPATH=") + classPath, QStringLiteral("app_process"),
                           QStringLiteral("/"), QStringLiteral("org.qindaqt.link.mirror.Server"),
-                          QStringLiteral("version=%1").arg(kProtocolVersion), QStringLiteral("token=") + token};
+                          QStringLiteral("version=%1").arg(kProtocolVersion), QStringLiteral("socket=") + socketSuffix};
     if (verbose) {
         arguments.append(QStringLiteral("verbose=1"));
     }
@@ -121,20 +142,30 @@ bool AdbSession::startServer(const QString &classPath, const QString &token, boo
         *error = QStringLiteral("cannot start %1: %2").arg(m_adb, m_server.errorString());
         return false;
     }
+    // The secret's only route to the phone. stdin stays open (closing it can end older
+    // non-shell-protocol adb sessions); the server reads exactly one line.
+    m_server.write(secret.toLatin1() + '\n');
     return true;
 }
 
-std::optional<quint16> AdbSession::forward(const QString &token, QString *error)
+std::optional<quint16> AdbSession::forward(const QString &socketSuffix, QString *error)
 {
     const Result result = run({QStringLiteral("forward"), QStringLiteral("tcp:0"),
-                               QStringLiteral("localabstract:") + QLatin1String(kSocketPrefix) + token},
+                               QStringLiteral("localabstract:") + QLatin1String(kSocketPrefix) + socketSuffix},
                               kQuickTimeoutMs);
     if (!result.error.isEmpty()) {
         *error = result.error;
         return std::nullopt;
     }
+    // adb prints the chosen port as the last stdout line; earlier lines can be daemon notices.
+    QByteArray last;
+    for (const QByteArray &line : result.out.split('\n')) {
+        if (!line.trimmed().isEmpty()) {
+            last = line.trimmed();
+        }
+    }
     bool ok = false;
-    const uint port = result.out.trimmed().toUInt(&ok);
+    const uint port = last.toUInt(&ok);
     if (!ok || port == 0 || port > 65535) {
         *error = QStringLiteral("adb forward printed no port");
         return std::nullopt;

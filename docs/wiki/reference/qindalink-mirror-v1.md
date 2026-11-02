@@ -8,7 +8,8 @@ separate from the TLS link [QindaLink protocol 1](qindalink-protocol-v1.md):
 the mirror never uses the link connection, pairing keys or the link service.
 
 The decisions behind it are in
-[ADR-0433](../adr/0433-qindalink-phone-companion-architecture.md), and the
+[ADR-0433](../adr/0433-qindalink-phone-companion-architecture.md) and, for
+decoding, [ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md). The
 [architecture page](../architecture/qindalink.md#phone-apps-on-the-desktop)
 describes the components.
 
@@ -21,57 +22,107 @@ value changes all of them in one commit. -->
 
 One desktop process mirrors one phone app. It runs these steps in order:
 
-1. **Token.** The desktop draws 16 bytes from the system CSPRNG and writes
-   them as 32 lowercase hex characters. The token is never logged.
+1. **Secret and suffix.** The desktop draws two values from the system
+   CSPRNG:
+   - a **secret** of 16 bytes, written as 32 lowercase hex characters;
+   - a non-secret **socket suffix** of 8 bytes, written as 16 lowercase hex
+     characters.
+
+   The secret is never logged, and never placed in argv, a socket name or a
+   forward spec.
 2. **Class path.**
-   - With `--server-jar FILE`, the desktop pushes the jar to
-     `/data/local/tmp/qindalink-mirror-dev.jar` and uses that path.
-   - Otherwise it uses the installed QindaLink APK in place, from
+   - With `--server-jar FILE`, the desktop pushes the jar to the
+     content-addressed path
+     `/data/local/tmp/qindalink-mirror-<first 16 hex of its SHA-256>.jar`.
+     It checks the file with `sha256sum` on the phone before and after the
+     push. Two mirror windows never overwrite each other's jar, and an
+     unchanged jar is not pushed again.
+   - Otherwise the desktop uses the installed QindaLink APK in place, from
      `adb shell pm path org.qindaqt.link` (the APK compiles the same
      `phone/mirror_server` sources).
-3. **Server.** The desktop starts the server as the `shell` user:
+3. **Server.** The desktop starts the server as the `shell` user, without a
+   pty (`-T`, so stdin is never echoed), and writes the secret plus a newline
+   as the first line of the server's stdin:
 
    ```
-   adb -s <serial> shell CLASSPATH=<class path> app_process / \
-       org.qindaqt.link.mirror.Server version=1 token=<token> [verbose=1]
+   adb -s <serial> shell -T CLASSPATH=<class path> app_process / \
+       org.qindaqt.link.mirror.Server version=1 socket=<suffix> [verbose=1]
    ```
 
-4. **Socket.** The server listens on the abstract Unix socket
-   `qindalink-mirror-<token>`.
+4. **Socket.** The server reads the secret, then listens on the abstract Unix
+   socket `qindalink-mirror-<suffix>`.
 5. **Forward.** The desktop runs
-   `adb -s <serial> forward tcp:0 localabstract:qindalink-mirror-<token>` and
-   reads the chosen port from its output.
-6. **Connect.** The desktop connects to `127.0.0.1:<port>` and sends `hello`.
-   ADB accepts a forwarded connection even while nothing listens on the
-   phone, then closes it. Until `ready` arrives, the desktop therefore treats
-   a closed connection as "server not listening yet" and retries every
-   150 ms, for up to 10 s.
-7. **Hello.** The server checks the token and the version. A peer whose
-   first frame is not a valid `hello` with the right token is dropped, and the
-   server keeps listening until its accept deadline.
+   `adb -s <serial> forward tcp:0 localabstract:qindalink-mirror-<suffix>`.
+   It takes the port from the last non-empty stdout line, and parses stderr
+   separately.
+6. **Connect.** The desktop connects to `127.0.0.1:<port>` and sends `hello`
+   with the secret as `token`.
+   - ADB accepts a forwarded connection even while nothing listens on the
+     phone, then closes it. Until `ready` arrives, the desktop treats a
+     closed connection as "server not listening yet" and retries every
+     150 ms, for up to 10 s.
+7. **Hello.** The server compares the token with the secret in constant time
+   and checks the version.
+   - A peer gets 5 s to send a valid `hello`. A peer that sends anything else,
+     or nothing, is dropped.
+   - After 3 dropped peers the server exits.
+   - If no peer completes `hello` within the accept deadline (20 s from
+     start), the process exits even if a read is still blocked.
+8. **Keepalive.** After `hello` the desktop sends `ping` every 5 s. A greeted
+   session that receives no frame for 30 s releases its display and exits.
 
 The server serves exactly one session. When that connection closes for any
-reason, the server releases the display and exits.
+reason, the server releases the display and exits. A shell-uid server is
+never left running without its desktop.
 
 ### Server arguments and exit codes
 
 | Argument | Meaning |
 | --- | --- |
 | `version=1` | Required. Protocol version the desktop speaks. |
-| `token=<hex>` | Required. 16–64 lowercase hex characters. |
+| `socket=<hex>` | Required. The non-secret socket suffix, 8–32 lowercase hex characters. |
+| stdin, first line | Required. The secret, 32–64 lowercase hex characters (at most 128 bytes are read). |
 | `verbose=1` | Debug lines on stdout. |
-| `accept-timeout-ms=N` | Exit when no valid desktop connects in time. Default 20 000. |
-| `probe` (alone) | Print the hidden-API report and exit. |
+| `accept-timeout-ms=N` | Exit when no desktop completes `hello` in time. Default 20 000. |
+| `probe` (alone) | Print the hidden-API report and exit; needs no stdin. |
 
 | Exit | Meaning |
 | --- | --- |
 | 0 | A session ran and ended, or `probe` found every required method |
-| 2 | Bad arguments, or a version the server does not speak |
+| 2 | Bad arguments, a missing or malformed secret on stdin, or a version the server does not speak |
 | 3 | `probe` found a required method missing |
-| 4 | No valid desktop connected before the accept deadline |
+| 4 | No desktop completed `hello` before the accept deadline |
+| 5 | Three peers failed `hello` |
 
 The server writes `[qindalink-mirror] <level> <text>` lines to stdout. The
 desktop repeats them with `--verbose`, and after a failure.
+
+## Threat model
+
+The mirror assumes a **single-user desktop**. The ADB connection grants
+shell-uid access to the phone.
+
+- **What the secret protects.** The secret keeps other parties from driving a
+  session. That covers other local users of the desktop, who can reach the
+  forwarded `127.0.0.1` port and read `adb forward --list` and other users'
+  `/proc/<pid>/cmdline`. It also covers apps on the phone that might connect
+  to the abstract socket, whose name is not secret. Neither can complete
+  `hello` without the secret, which travels only on the server's stdin and
+  inside `hello`.
+- **What it cannot stop.** A process running as the **same desktop user** is
+  inside the trust boundary. It can talk to the ADB server and run
+  `adb shell` itself, which already gives it everything the mirror server can
+  do. It can also read the mirror process's memory where ptrace is allowed.
+  The secret does not defend against it, and nothing in this design tries
+  to.
+- **Untrusted video.** The phone side of the stream is treated as untrusted.
+  [ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md) confines
+  bitstream parsing to the per-app mirror process. It also caps frame sizes,
+  stream dimensions and the decoder backlog.
+- **Phone-wide input.** The server injects only allowlisted keys, and only
+  with the mirror display's id. Coordinates are clamped to that display, so
+  desktop input cannot press global keys such as POWER, HOME, ASSIST or
+  volume.
 
 ## Framing
 
@@ -109,12 +160,17 @@ Every frame, in both directions, is an 8-byte header followed by the payload.
 | `0x08` | desktop → phone | `text` | `text` |
 | `0x09` | desktop → phone | `sync` | `{}`: request a keyframe |
 | `0x0A` | desktop → phone | `stop` | `{}`: end the session |
+| `0x0B` | desktop → phone | `ping` | `{}`: keepalive, sent every 5 s after `ready` |
 | `0x81` | phone → desktop | `ready` | `version`, `sdk`, `release`, `model`, `missing` (list of absent required methods) |
 | `0x82` | phone → desktop | `display` | `displayId`, `width`, `height`, `dpi`, `flags` |
 | `0x83` | phone → desktop | `error` | `code`, `message`, `fatal` |
+| `0x84` | phone → desktop | `app-exited` | `reason` (`no-tasks`): the app left the mirror display; the server then closes the session |
 
 Field rules:
 
+- **Stream caps.** A `display` or `format` size beyond 8192 pixels per side or
+  64 000 000 pixels is invalid, and the desktop ignores it. The desktop
+  applies the same caps to every decoded picture.
 - **Sizes** are virtual-display pixels. The server clamps them to 64–8192 and
   rounds them down to what the encoder accepts (multiples of at least 8, and
   smaller still if the encoder rejects the size). It reports the real size in
@@ -125,15 +181,23 @@ Field rules:
 - **Codec.** `codec` is `h264` (the default) or `hevc`. `bitrateBps` is
   clamped to 0.5–100 Mb/s (default 8 Mb/s) and `maxFps` to 1–120 (default
   60).
-- **Coordinates.** `x` and `y` are virtual-display pixels as JSON numbers.
+- **Coordinates.** `x` and `y` are virtual-display pixels as JSON numbers. The
+  server clamps them to the current display, and `NaN` becomes 0.
 - **Touch.** `touch.action` is `down`, `move`, `up` or `cancel`, with up to
   10 pointers distinguished by `pointerId`.
 - **Mouse.** `mouse.action` is `hover`, `down`, `move` or `up`. `buttons`
-  holds Android `MotionEvent.BUTTON_*` bits.
+  holds Android `MotionEvent.BUTTON_*` bits. Only primary, secondary,
+  tertiary, back and forward pass.
 - **Scroll.** `scroll.v` is positive away from the user and `h` positive to
   the right, in wheel notches (Android `AXIS_VSCROLL` and `AXIS_HSCROLL`).
 - **Keys.** `key.action` is `down` or `up`. `keycode` and `meta` are Android
   `KeyEvent` values. A held key repeats as `down` with a growing `repeat`.
+  - The server injects only an **allowlist**: BACK, digits, letters, DPAD,
+    TAB, SPACE, ENTER, DEL, punctuation, MENU, page keys, ESCAPE,
+    FORWARD_DEL, MOVE_HOME/END, INSERT, F1–F12 and NUMPAD_ENTER.
+  - Other keycodes are dropped and logged without their value. That includes
+    POWER, SLEEP, WAKEUP, HOME, ASSIST, APP_SWITCH, volume, call, camera,
+    brightness and META.
 - **Text.** The server types `text` through the virtual keyboard's key
   character map. Characters without a mapping are dropped, and the server
   logs only their count.
@@ -147,6 +211,7 @@ Field rules:
 | `bad-request` | A field has a value outside its contract |
 | `bad-state` | `start` twice, or `resize` before `start` (not fatal) |
 | `bad-message` | A control body is not the expected JSON |
+| `display-asleep` | The phone offers no per-display wake lock and the mirror display is not awake |
 | `internal` | Anything else; the message carries the exception summary |
 
 ## Video channel (`0x02`)
@@ -201,14 +266,24 @@ title and icon.
   never opens the keyboard on the phone's own screen.
 - **Power.** `OWN_DISPLAY_GROUP` gives the display its own wakefulness. The
   server holds a screen wake lock bound to the display id with
-  `ACQUIRE_CAUSES_WAKEUP`, which wakes and keeps only that display group. If
-  that call is unavailable, it injects `KEYCODE_WAKEUP` on the display
-  instead. The lock is a binder of the server process, so it ends with the
-  process.
+  `ACQUIRE_CAUSES_WAKEUP`, which wakes and keeps only that display group.
+  - There is **no** wake-key or global-wakeUp fallback, because those can
+    wake the phone's own screen.
+  - Without the per-display lock, the session continues only if the display is
+    already interactive. Otherwise it ends with `error{display-asleep}`.
+  - The lock is a binder of the server process, so it ends with the process.
 - **Launch.** The server starts the package's first launcher activity for
   user 0 with `FLAG_ACTIVITY_NEW_TASK` and `setLaunchDisplayId`. If the app
   already has a task on the phone's screen, Android moves that task to the
   mirror display.
+- **App exit.** After launch the server polls
+  `IActivityTaskManager.getAllRootTaskInfosOnDisplay` once a second.
+  - Once the app has been seen on the display, two polls in a row with no
+    root task that has a top activity count as an exit. The server then sends
+    `app-exited` and ends the session.
+  - The desktop window shows "App closed on phone" and closes after 2 s.
+    Headless runs exit with status 3.
+  - Without that method, detection is off and the display just stays empty.
 - **Release.** On session end the server detaches and stops the encoder,
   releases the wake lock and releases the display.
   `DESTROY_CONTENT_ON_REMOVAL` then ends the app's task on it. The server never
@@ -231,6 +306,7 @@ SM-S948U (Android 17, SDK 37, One UI).
 | Launch | `IActivityManager.startActivityAsUserWithFeature(…, Bundle, int)`, else `startActivityAsUser` | yes |
 | Launch | `IPackageManager.queryIntentActivities(Intent, String, long, int)`, else the `int` flags form | yes |
 | Keyboard | `IWindowManager.setDisplayImePolicy(int, int)` | no |
+| App exit | `IActivityTaskManager.getAllRootTaskInfosOnDisplay(int)` | no |
 | Power | `IPowerManager.acquireWakeLock(IBinder, int, String, String, WorkSource, String, int, IWakeLockCallback)`, `releaseWakeLock` | no |
 | Inventory | `ActivityThread()` with a `ConfigurationController`, then `getSystemContext()` | inventory only |
 
@@ -269,8 +345,14 @@ as real input.
 `org.qindaqt.link.mirror.<package>`, and its title and icon come from the
 inventory.
 
-Exit status: 0 on a normal end, 1 when the session failed (the reason and the
-last server lines are printed), 2 for bad arguments.
+Exit status:
+
+| Status | Meaning |
+| --- | --- |
+| 0 | Normal end, including a window closed after "App closed on phone" |
+| 1 | The session failed; the reason and the last server lines are printed |
+| 2 | Bad arguments |
+| 3 | A headless run whose app closed on the phone before the run finished |
 
 ## Desktop decoding
 
@@ -285,6 +367,10 @@ last server lines are printed), 2 for bad arguments.
   reports the path that actually decoded.
 - Decoding runs on a worker thread. Only the newest picture is handed to the
   window, so a slow paint drops frames instead of adding latency.
+- **Backlog.** At most 8 packets wait for the decoder. Past that, non-key
+  packets are dropped until the next keyframe, and the desktop sends `sync`.
+  Config and key packets always pass. A session start can trigger one such
+  `sync` while VA-API opens.
 
 ## Desktop input mapping
 

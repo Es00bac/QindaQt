@@ -52,6 +52,7 @@ private:
     void onDisplay(const DisplayInfo &display);
     void onApp(const AppEntry &app);
     void onServerError(const ServerError &error);
+    void onAppExited(const QString &reason);
     void applyResize();
     [[nodiscard]] int densityFor(qreal devicePixelRatio) const;
     void report(const QString &message) const;
@@ -63,6 +64,7 @@ private:
     MirrorConnection m_connection;
     std::unique_ptr<DecodeWorker> m_worker;
     QTimer m_resizeDebounce;
+    QTimer m_keepalive;
     QSize m_pendingView;
     qreal m_pendingRatio = 1.0;
     QSize m_requestedDisplay;
@@ -72,6 +74,8 @@ private:
     bool m_started = false;
     bool m_finished = false;
     bool m_waitingForClose = false;
+    bool m_appExited = false;
+    bool m_sessionReady = false;
     int m_exitCode = 0;
 };
 

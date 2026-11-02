@@ -18,9 +18,15 @@
 //
 // AGENT-CONTRACT: the server command line and socket name follow
 // phone/mirror_server/.../Server.java and docs/wiki/reference/qindalink-mirror-v1.md.
+// AGENT-GUARD: the session secret goes only to the server's stdin (`adb shell -T`, no pty, so
+// it is never echoed). argv, the abstract socket name and the forward spec carry only the
+// non-secret socket suffix, because /proc/<pid>/cmdline and `adb forward --list` are readable
+// by other local users (threat model in the reference page).
 namespace qindaqt::link_mirror {
 
-inline constexpr const char *kDevJarDevicePath = "/data/local/tmp/qindalink-mirror-dev.jar";
+// Development jars are pushed content-addressed: /data/local/tmp/qindalink-mirror-<16 hex of
+// SHA-256>.jar, verified with sha256sum, so two mirror windows never overwrite each other.
+inline constexpr const char *kDevJarDevicePrefix = "/data/local/tmp/qindalink-mirror-";
 inline constexpr const char *kLinkPackage = "org.qindaqt.link";
 
 class AdbSession : public QObject {
@@ -34,14 +40,15 @@ public:
 
     // Default adb: Portage's /usr/bin/adb, else the first adb on PATH.
     [[nodiscard]] static QString defaultAdbPath();
-    // 32 lowercase hex characters from the system CSPRNG.
-    [[nodiscard]] static QString newToken();
+    // Lowercase hex from the system CSPRNG: 32 characters for the secret, 16 for the suffix.
+    [[nodiscard]] static QString randomHex(int bytes);
 
-    // Chooses the server class path: an explicit jar is pushed to kDevJarDevicePath;
+    // Chooses the server class path: an explicit jar is pushed (content-addressed, verified);
     // otherwise the installed QindaLink APK is used in place. Returns nullopt with *error set.
     [[nodiscard]] std::optional<QString> resolveClassPath(const QString &serverJar, QString *error);
-    [[nodiscard]] bool startServer(const QString &classPath, const QString &token, bool verbose, QString *error);
-    [[nodiscard]] std::optional<quint16> forward(const QString &token, QString *error);
+    [[nodiscard]] bool startServer(const QString &classPath, const QString &socketSuffix, const QString &secret,
+                                   bool verbose, QString *error);
+    [[nodiscard]] std::optional<quint16> forward(const QString &socketSuffix, QString *error);
     void stop();
 
     [[nodiscard]] QStringList recentServerOutput() const { return m_recent; }
@@ -53,11 +60,12 @@ Q_SIGNALS:
 private:
     struct Result {
         int exitCode = -1;
-        QByteArray out;
-        QString error;
+        QByteArray out; // stdout only
+        QString error;  // empty on success; otherwise includes stderr
     };
     [[nodiscard]] Result run(const QStringList &arguments, int timeoutMs) const;
     void readServerOutput();
+    [[nodiscard]] std::optional<QString> pushDevJar(const QString &serverJar, QString *error);
 
     QString m_adb;
     QString m_serial;

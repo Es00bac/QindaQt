@@ -27,11 +27,18 @@ if(NOT QINDAQT_BUILD_LINK_MIRROR)
     return()
 endif()
 
-# AGENT-NOTE: libavcodec (with VA-API through libavutil's hwcontext) is the decoder; Portage
-# provides it as media-video/ffmpeg[vaapi]. The desktop package must depend on it.
+# AGENT-CONTRACT: ADR-0435. libavcodec (VA-API through libavutil's hwcontext, software
+# fallback) is the decoder; Portage provides it as media-video/ffmpeg[vaapi], and
+# gui-wm/qindaqt-desktop must DEPEND on it or configure with -DQINDAQT_BUILD_LINK_MIRROR=OFF.
 find_package(Qt6 6.11 REQUIRED COMPONENTS Network)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(QINDAQT_LINK_MIRROR_AV REQUIRED IMPORTED_TARGET libavcodec libavutil libswscale)
+pkg_check_modules(QINDAQT_LINK_MIRROR_AV QUIET IMPORTED_TARGET libavcodec libavutil libswscale)
+if(NOT QINDAQT_LINK_MIRROR_AV_FOUND)
+    message(FATAL_ERROR
+        "qindaqt-link-mirror needs FFmpeg (libavcodec, libavutil, libswscale; Portage "
+        "media-video/ffmpeg[vaapi]), see docs/wiki/adr/0435-decode-qindalink-streams-with-ffmpeg.md. "
+        "Install it, or configure with -DQINDAQT_BUILD_LINK_MIRROR=OFF to build without the mirror.")
+endif()
 
 qt_add_executable(qindaqt-link-mirror
     src/main.cpp

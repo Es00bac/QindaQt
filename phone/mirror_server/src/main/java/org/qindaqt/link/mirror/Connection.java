@@ -36,6 +36,11 @@ final class Connection implements Closeable {
         this.out = socket.getOutputStream();
     }
 
+    /** Bounds each blocking read; a timeout surfaces as an IOException from read(). */
+    void setReadTimeout(int millis) throws IOException {
+        socket.setSoTimeout(millis);
+    }
+
     Frames.Frame read() throws IOException {
         return Frames.read(in);
     }

@@ -35,10 +35,12 @@ final class Frames {
     static final int C_TEXT = 0x08;
     static final int C_SYNC = 0x09;
     static final int C_STOP = 0x0A;
+    static final int C_PING = 0x0B;
     // Control, server -> desktop.
     static final int C_READY = 0x81;
     static final int C_DISPLAY = 0x82;
     static final int C_ERROR = 0x83;
+    static final int C_APP_EXITED = 0x84;
 
     // Video, server -> desktop.
     static final int V_FORMAT = 0x01;
@@ -68,6 +70,8 @@ final class Frames {
 
     /** Thrown for a header that breaks the framing rules; the connection must close. */
     static final class ProtocolException extends IOException {
+        private static final long serialVersionUID = 1L;
+
         ProtocolException(String message) {
             super(message);
         }

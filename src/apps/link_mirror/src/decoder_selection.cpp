@@ -100,4 +100,23 @@ bool DecoderSelector::takeKeyframeRequest()
     return std::exchange(m_keyframeRequested, false);
 }
 
+BacklogGate::Verdict BacklogGate::admit(const VideoPacket &packet, int inFlight)
+{
+    if (packet.config) {
+        return Verdict::Queue;
+    }
+    if (packet.key) {
+        m_dropping = false;
+        return Verdict::Queue;
+    }
+    if (m_dropping) {
+        return Verdict::Drop;
+    }
+    if (inFlight >= m_limit) {
+        m_dropping = true;
+        return Verdict::DropAndRequestKeyframe;
+    }
+    return Verdict::Queue;
+}
+
 } // namespace qindaqt::link_mirror
