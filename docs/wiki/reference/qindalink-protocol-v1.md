@@ -220,5 +220,35 @@ implements it, including any frame that carries user content.
 | `vault.` | `vault` | Secret typing requests. Bodies are never logged by either side. |
 | `apps.` | `apps` | Phone app inventory used by the desktop launcher (streaming itself runs over ADB, not this link) |
 
+## Notifications (`notify.*`)
+
+Not specified yet. The notifications lane replaces this paragraph with the
+frame table for capability `notify`.
+
+## Messages (`sms.*`)
+
+Not specified yet. The SMS lane replaces this paragraph with the
+frame table for capability `sms`.
+
+## Remote input (`input.*`)
+
+Not specified yet. The input and macros lane replaces this paragraph with the
+frame table for capability `input`.
+
+## Macros (`macro.*`)
+
+Not specified yet. The input and macros lane replaces this paragraph with the
+frame table for capability `macro`.
+
+## Desktop facts and secret typing (`desktop.*`, `vault.*`)
+
+Not specified yet. The vault lane replaces this paragraph with the
+frame table for capability `vault`.
+
+## Phone apps (`apps.*`)
+
+Not specified yet. The phone apps lane replaces this paragraph with the
+frame table for capability `apps`.
+
 <!-- AGENT-GUARD: any logging of frames must redact the body of every vault.*
 frame (log the type and length only). A debug flag must not lift this. -->
