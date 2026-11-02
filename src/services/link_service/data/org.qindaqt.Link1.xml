@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "https://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/qindaqt/Link1">
+  <interface name="org.qindaqt.Link1">
+    <method name="Devices"><arg name="json" type="s" direction="out"/></method>
+    <method name="ConfirmPairing">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="accept" type="b" direction="in"/>
+    </method>
+    <method name="Unpair"><arg name="id" type="s" direction="in"/></method>
+    <method name="Ring"><arg name="id" type="s" direction="in"/></method>
+    <method name="ListenPort"><arg name="port" type="q" direction="out"/></method>
+    <signal name="DevicesChanged"><arg name="json" type="s"/></signal>
+    <signal name="PairingRequested">
+      <arg name="id" type="s"/><arg name="name" type="s"/>
+      <arg name="model" type="s"/><arg name="code" type="s"/>
+    </signal>
+  </interface>
+</node>
