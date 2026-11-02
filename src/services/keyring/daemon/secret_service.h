@@ -3,6 +3,7 @@
 #include "collection_repository.h"
 #include "session_crypto.h"
 #include "prompt_provider.h"
+#include "requester_identity.h"
 #include "lock_policy.h"
 #include <QPointer>
 #include <QDBusVirtualObject>
@@ -14,6 +15,7 @@
 namespace qindaqt::keyring::service {
 struct Session { QString owner; SessionCrypto crypto; };
 struct Prompt {
+    RequesterIdentity requester;
     QString owner, action, label, alias;
     QStringList collections;
     Paths objects, completed;

@@ -5,7 +5,9 @@ KeyringGateway and KeyringSettingsModel. It lists Secret Service collections
 and authenticated item metadata, while the service owns storage and prompts.
 The page never accepts a collection password. Unlock, create, password change,
 reveal, and copy invoke native or standard Secret Service prompts through the
-client boundary. The revealed secret is shown only while the model's bounded
+client boundary. The daemon first shows a [request review](../architecture/keyring-daemon.md#request-identity-and-informed-approval)
+with the requesting program, operation and shared access scope. Password entry
+requires Continue; Deny request is focused initially. The revealed secret is shown only while the model's bounded
 reveal window remains active; leaving the route deactivates the model and wipes
 its retained SecureBuffer.
 

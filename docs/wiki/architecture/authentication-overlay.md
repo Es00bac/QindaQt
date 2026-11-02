@@ -23,3 +23,7 @@ owns those contracts.
 See [Polkit agent](../apps/polkit-agent.md),
 [native keyring daemon](keyring-daemon.md) and
 [ADR-0296](../adr/0296-native-keyring-daemon-boundary.md).
+
+The keyring consumer adds [requester review](keyring-daemon.md#request-identity-and-informed-approval)
+before password entry. Its process metadata and review gate do not turn this
+ordinary overlay role into a secure-attention or executable-attestation boundary.

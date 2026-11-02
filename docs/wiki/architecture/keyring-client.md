@@ -117,3 +117,10 @@ full installed Settings executable. The renderer is a test Window containing the
 production route, and input is Qt event injection. The earlier offscreen and
 scripted-prompt rows remain distinct evidence. See the
 [testing harness](../development/testing-harness.md#ordinary-native-keyring-ui-journey).
+
+Request review follows [ADR-0432](../adr/0432-review-keyring-requester-before-credentials.md).
+After subscribing to an owned prompt, the gateway allows five minutes for the
+daemon queue and user review, while ordinary RPC work retains its 45-second
+deadline. Owner loss, route teardown and explicit cancellation still retire the
+request immediately. The service presents process identity and operation/scope
+before the user chooses Continue to enter a password.

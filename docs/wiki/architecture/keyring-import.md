@@ -119,7 +119,9 @@ The CLI requires an explicitly accepted session/display and expected compositor
 owner/PID. Public ordinary socket peer/PIDFD attachment and actual-owner native
 state receipts must report Unlocked before acquisition and through publication.
 Lock, uncertainty, source/session/compositor loss and SIGINT/SIGTERM retire the
-operation. There is no KDE locker fallback. Native helper prompting uses an
+operation. There is no KDE locker fallback. Native prompting first identifies the importer process and explains the import
+operation in the [request review](keyring-daemon.md#request-identity-and-informed-approval).
+Native helper prompting uses an
 owned ordinary connection for that exact display, not ambient Wayland discovery.
 
 The default destination password provider is the existing native keyring helper.

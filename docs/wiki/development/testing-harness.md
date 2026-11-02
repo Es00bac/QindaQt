@@ -5208,3 +5208,20 @@ The standalone `tests/shell/power_applet` CMake project resolves its theme
 fixture from the repository root, like the combined build. Use its
 `qindaqt.power-applet-offscreen` and `qindaqt.power-applet-controller` checks
 for a bounded delivery compatibility check.
+
+## Keyring request review
+
+[ADR-0432](../adr/0432-review-keyring-requester-before-credentials.md) adds three
+focused gates: `keyring_prompt_metadata` rejects malformed/oversized QMP2 and
+visibly escapes control/bidi text; `keyring_requester_identity` checks actual
+private-bus PID/UID, identity changes and disconnect; `keyring_prompt_qml` checks
+review-before-password, unknown identity refusal, safe initial focus and compact
+scrolling with persistent Deny access. Existing private-bus Secret Service and
+native prompt cases retain cancellation, shared unlock and reveal/rekey coverage.
+
+`keyring_request_review_journey` is a bounded two-prompt native smoke. It uses a
+private virtual compositor, bus, storage and test-only visible input driver to
+review then create/unlock a synthetic collection at 800×600. It checks exact
+compositor peer and separate visible review/approval actions; no real wallet,
+host seat, installed service or user password is involved. The larger historical
+Settings journey is not repeated for this focused prompt change.

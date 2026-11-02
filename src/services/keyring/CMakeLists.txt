@@ -26,6 +26,7 @@ target_link_libraries(qindaqt_keyring_import_store PUBLIC QindaQt::KeyringStorag
 qindaqt_enable_warnings(qindaqt_keyring_import_store)
 
 add_library(qindaqt_keyring_service STATIC
+    daemon/requester_identity.cpp
     daemon/session_crypto.cpp daemon/secret_service.cpp daemon/service_methods.cpp
     daemon/control_server.cpp daemon/item_methods.cpp daemon/properties.cpp daemon/prompts.cpp daemon/process_prompt_provider.cpp daemon/session_display_binding.cpp daemon/native_item_methods.cpp daemon/native_consolidation_methods.cpp daemon/prompt_password_change.cpp daemon/portal_methods.cpp daemon/metadata_receipts.cpp)
 target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::KeyringStorage QindaQt::KeyringProtocol Qt6::Core Qt6::DBus PRIVATE QindaQt::KeyringImportStore OpenSSL::Crypto QindaQt::CompositorNames QindaQt::SecretPortalPolicy)

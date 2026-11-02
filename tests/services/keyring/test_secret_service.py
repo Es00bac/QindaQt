@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """All bus, storage and client operations are confined to temporary fixtures."""
 import os
+import json
 import pathlib
 import select
 import shutil
@@ -47,6 +48,23 @@ class SecretServiceTest(unittest.TestCase):
         os.environ["DBUS_SESSION_BUS_ADDRESS"] = self.env["DBUS_SESSION_BUS_ADDRESS"]
         self.start()
         self.connection = secretstorage.dbus_init()
+
+    def test_prompt_identifies_bus_process_instead_of_application_labels(self):
+        label = "Trusted agent <b>approve me</b>"
+        collection = secretstorage.create_collection(self.connection, label, "default")
+        metadata = json.loads((self.runtime / "prompt-request.json").read_text())
+        self.assertEqual(metadata["pid"], os.getpid())
+        self.assertEqual(metadata["uid"], os.geteuid())
+        self.assertEqual(metadata["executable"], os.readlink("/proc/self/exe"))
+        self.assertTrue(metadata["caller"].startswith(":"))
+        self.assertEqual(metadata["label"], label)
+        self.assertEqual(metadata["operation"], "create")
+        self.assertLessEqual(len(metadata["parents"]), 6)
+        collection.lock()
+        self.assertFalse(collection.unlock())
+        metadata = json.loads((self.runtime / "prompt-request.json").read_text())
+        self.assertEqual(metadata["operation"], "unlock")
+        self.assertEqual(metadata["pid"], os.getpid())
 
     def cleanup(self):
         if hasattr(self,"connection"):

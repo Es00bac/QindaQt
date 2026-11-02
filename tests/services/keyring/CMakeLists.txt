@@ -54,6 +54,14 @@ target_link_libraries(tst_keyring_prompt_metadata PRIVATE QindaQt::KeyringProtoc
 qindaqt_enable_warnings(tst_keyring_prompt_metadata)
 add_test(NAME keyring_prompt_metadata COMMAND tst_keyring_prompt_metadata)
 
+qt_add_executable(tst_keyring_requester_identity tst_requester_identity.cpp)
+target_include_directories(tst_keyring_requester_identity PRIVATE "${PROJECT_SOURCE_DIR}/src/services/keyring/daemon")
+target_link_libraries(tst_keyring_requester_identity PRIVATE qindaqt_keyring_service Qt6::Test)
+qindaqt_enable_warnings(tst_keyring_requester_identity)
+find_program(QINDAQT_KEYRING_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+add_test(NAME keyring_requester_identity COMMAND "${QINDAQT_KEYRING_DBUS_RUN_SESSION}" -- $<TARGET_FILE:tst_keyring_requester_identity>)
+set_tests_properties(keyring_requester_identity PROPERTIES TIMEOUT 30 ENVIRONMENT "QT_FATAL_WARNINGS=1")
+
 find_package(Wayland REQUIRED COMPONENTS Server)
 find_program(QINDAQT_TEST_WAYLAND_SCANNER wayland-scanner REQUIRED)
 pkg_get_variable(QINDAQT_TEST_WAYLAND_PROTOCOL_DATA wayland-protocols pkgdatadir)

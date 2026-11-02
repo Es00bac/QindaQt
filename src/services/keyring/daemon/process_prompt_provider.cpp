@@ -39,7 +39,9 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
     active->maximum = request.action == "change-password" ? 8200 : 4096;
     try {
         active->input = SecureBuffer(active->maximum + 1);
-        active->metadata = protocol::encodePromptMetadata({request.label,request.caller});
+        request.metadata.label = request.label;
+        request.metadata.caller = request.caller;
+        active->metadata = protocol::encodePromptMetadata(request.metadata);
     }
     catch (const std::exception &) {
         QTimer::singleShot(0,this,[done=std::move(done)]() mutable { done(SecureBuffer{},true); }); return 0;
@@ -90,7 +92,7 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
     connect(process,&QProcess::errorOccurred,this,[this,id](QProcess::ProcessError) { finish(id,true); });
     active_.emplace(id,std::move(active));
     process->start(executable_,{"--action",request.action,"--collection",request.collection});
-    QTimer::singleShot(30000,this,[this,id] { finish(id,true); });
+    QTimer::singleShot(180000,this,[this,id] { finish(id,true); });
     return id;
 }
 void ProcessPromptProvider::finish(quint64 id,bool cancelled) {

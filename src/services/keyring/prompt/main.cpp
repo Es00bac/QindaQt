@@ -21,7 +21,7 @@ using QindaQt::AuthenticationOverlay::OverlaySurface;
 using qindaqt::keyring::service::PromptController;
 namespace {
 qindaqt::keyring::protocol::PromptMetadata metadataFromPipe() {
-    QByteArray frame(1289,Qt::Uninitialized);
+    QByteArray frame(qindaqt::keyring::protocol::MaxPromptMetadataBytes + 1,Qt::Uninitialized);
     qsizetype used=0;
     QElapsedTimer deadline; deadline.start();
     while(used<frame.size()) {
@@ -53,7 +53,7 @@ int main(int argc,char **argv) {
     controller.changing = parser.value("action") == "change-password";
     controller.revealing = parser.value("action") == "reveal";
     controller.confirming = parser.value("action") == "confirm-delete";
-    try { controller.label = metadataFromPipe().label; }
+    try { if (!controller.setRequest(parser.value("action"), metadataFromPipe())) return 2; }
     catch (const std::exception &) { return 2; }
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("prompt",&controller);
@@ -62,6 +62,6 @@ int main(int argc,char **argv) {
     auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     if (!window || !OverlaySurface::configure(*window,"qindaqt-keyring-prompt")) return 2;
     window->show();
-    QTimer::singleShot(30000,&controller,&PromptController::cancel);
+    QTimer::singleShot(180000,&controller,&PromptController::cancel);
     return app.exec();
 }

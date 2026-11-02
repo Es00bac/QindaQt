@@ -82,6 +82,12 @@ coverage honestly.
 | Compositor/display | Nested deterministic scenario followed by relevant hardware coverage |
 | Visual token/theme | Token validation and approved visual-baseline comparison |
 
+Before credential-bearing work, agents explain the actual tool, affected service,
+user-task purpose and approval scope before any authentication prompt. Background
+work returns an action-required result instead of prompting. Tests use synthetic
+keyrings/private buses; code inspection does not justify reading live credentials.
+See the root agent instructions and [keyring request review](../architecture/keyring-daemon.md#request-identity-and-informed-approval).
+
 Tests describe externally meaningful behavior rather than private call order.
 Keep deterministic fixtures small and make performance measurements repeatable.
 

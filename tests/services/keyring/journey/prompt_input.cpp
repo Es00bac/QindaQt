@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 namespace {
+bool reviewed = false;
 // AGENT-CONTRACT: This test-only input driver links the production prompt main,
 // controller and QML. It injects visible control events; only that controller
 // can approve/write the normal protocol. Fixed synthetic bytes never enter env,
@@ -29,9 +30,19 @@ void input() {
         bool after=phase.open(QIODevice::ReadOnly) && phase.readAll().trimmed()=="1";
         const QString current=after?QStringLiteral("unit-test-only-other-password"):QStringLiteral("unit-test-only-password");
         const bool changing=QCoreApplication::arguments().contains(QStringLiteral("change-password"));
+        auto *review = window->findChild<QQuickItem *>(QStringLiteral("keyringReviewButton"));
+        if (review && review->isVisible()) {
+            if (!review->isEnabled()) {QCoreApplication::exit(4);return;}
+            QTest::mouseClick(window,Qt::LeftButton,Qt::NoModifier,
+                review->mapToScene(QPointF(review->width()/2,review->height()/2)).toPoint());
+            reviewed = true;
+            QTimer::singleShot(100,qApp,input);return;
+        }
         auto type=[window](const char *name,const QString &text) {
             auto *field=window->findChild<QQuickItem *>(QString::fromLatin1(name));
             if (!field || !field->isVisible()) return;
+            // Review details can require scrolling at compact output sizes.
+            field->forceActiveFocus();QCoreApplication::processEvents();
             QTest::mouseClick(window,Qt::LeftButton,Qt::NoModifier,field->mapToScene(QPointF(field->width()/2,field->height()/2)).toPoint());
             for (const QChar c:text) QTest::keyClick(window,c.toLatin1());
         };
@@ -39,11 +50,11 @@ void input() {
         const QString next=changing?QStringLiteral("unit-test-only-other-password"):current;
         type("keyringPasswordField",next);type("keyringConfirmationField",next);
         auto *button=window->findChild<QQuickItem *>(QStringLiteral("keyringApproveButton"));
-        if (!button || !button->isEnabled()) {QCoreApplication::exit(4);return;}
+        if (!reviewed || !button || !button->isEnabled()) {QCoreApplication::exit(4);return;}
         QFile audit(qEnvironmentVariable("QINDAQT_JOURNEY_PROMPT_AUDIT"));
         if(audit.open(QIODevice::WriteOnly|QIODevice::Append)) {
             const auto args=QCoreApplication::arguments();const auto action=args.indexOf(QStringLiteral("--action"));
-            audit.write("ordinary-wayland exposed exact-peer visible-approval "+args.value(action+1).toUtf8()+"\n");
+            audit.write("ordinary-wayland exposed exact-peer visible-review visible-approval "+args.value(action+1).toUtf8()+"\n");
         }
         QTest::mouseClick(window,Qt::LeftButton,Qt::NoModifier,button->mapToScene(QPointF(button->width()/2,button->height()/2)).toPoint());
         return;

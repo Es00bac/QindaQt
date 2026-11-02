@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <qindaqt/services/keyring/secure_buffer.h>
+#include <qindaqt/services/keyring_protocol/prompt_metadata.h>
 #include <QObject>
 #include <QString>
 #include <functional>
 namespace qindaqt::keyring::service {
-struct PromptRequest { QString action, collection, label, caller, window; };
+struct PromptRequest {
+    QString action, collection, label, caller, window;
+    protocol::PromptMetadata metadata;
+};
 using PromptCompletion = std::function<void(SecureBuffer, bool)>;
 // GUI-independent asynchronous seam. Completion must never run inline from
 // begin; exactly once or cancelled. IDs/caller contain no password. Caller

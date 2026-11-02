@@ -6,6 +6,7 @@
 #include <QScopeGuard>
 namespace qindaqt::keyring::service {
 QString SecretService::addPrompt(Prompt prompt) {
+    prompt.requester = identifyRequester(bus_, prompt.owner);
     // A queued portal request has not unlocked anything to restore on cancel.
     if (prompt.action == "portal-unlock") prompt.relockOnCancel = false;
     int owned = 0;
@@ -13,7 +14,7 @@ QString SecretService::addPrompt(Prompt prompt) {
     if (prompts_.size() >= 32 || owned >= 4) throw std::runtime_error("Prompt limit");
     const auto path = QString(Root) + "/prompt/p" + QUuid::createUuid().toString(QUuid::Id128);
     prompts_.emplace(path,std::move(prompt));
-    QTimer::singleShot(60000,this,[this,path] { finishPrompt(path,true); });
+    QTimer::singleShot(300000,this,[this,path] { finishPrompt(path,true); });
     return path;
 }
 void SecretService::finishPrompt(const QString &path, bool dismissed) {
@@ -93,11 +94,18 @@ void SecretService::startPrompt(const QString &path) {
     activePrompt_ = path;
     const auto requestedId = initialPrompt.action == "create" ? QString() : initialPrompt.collections.value(initialPrompt.next);
     const auto c = repository_.find(requestedId);
-    PromptRequest request{initialPrompt.action=="portal-create"?QString("create"):initialPrompt.action=="portal-unlock"?QString("unlock"):initialPrompt.action,requestedId,(initialPrompt.action == "create" || initialPrompt.action == "portal-create" || initialPrompt.action == "confirm-delete") ? initialPrompt.label : c ? c->label : requestedId,initialPrompt.owner,{}};
+    PromptRequest request{initialPrompt.action=="portal-create"?QString("create"):initialPrompt.action=="portal-unlock"?QString("unlock"):initialPrompt.action,requestedId,(initialPrompt.action == "create" || initialPrompt.action == "portal-create" || initialPrompt.action == "confirm-delete") ? initialPrompt.label : c ? c->label : requestedId,initialPrompt.owner,{}, {}};
+    describeRequester(request.metadata, initialPrompt.requester);
+    request.metadata.operation = initialPrompt.action;
+    request.metadata.application = initialPrompt.portalApplication;
     // Rate-limit admission globally in the repository; paced prompts avoid
     // bursts and keep private password bytes absent during the wait.
     QTimer::singleShot(550,this,[this,path,request] {
         const auto pending = prompts_.find(path); if (pending == prompts_.end()) return;
+        // AGENT-GUARD: retain the requester captured at admission; a queued
+        // request must not present a replacement executable as its initiator.
+        if (pending->second.requester.started
+            && !requesterUnchanged(bus_, pending->second.owner, pending->second.requester)) {finishPrompt(path,true);return;}
         if((pending->second.action=="reveal" || pending->second.action.startsWith("portal-")) && !nativeDisclosureAllowed()) {finishPrompt(path,true);return;}
         if ((pending->second.action == "unlock" || pending->second.action == "portal-unlock")
             && !repository_.locked(request.collection)) { startPrompt(path); return; }
@@ -105,6 +113,7 @@ void SecretService::startPrompt(const QString &path) {
         pending->second.ticket = promptsProvider_.begin(request,[this,path](SecureBuffer password,bool cancelled) {
             const auto found = prompts_.find(path); if (found == prompts_.end()) return;
             auto &p = found->second; p.ticket = 0;
+            if (!requesterUnchanged(bus_, p.owner, p.requester)) {finishPrompt(path,true);return;}
             const std::size_t maximum = p.action == "change-password" ? 8200 : 4096;
             if (cancelled || password.size() == 0 || password.size() > maximum) { finishPrompt(path,true); return; }
             try {

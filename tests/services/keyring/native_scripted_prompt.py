@@ -3,12 +3,9 @@
 """Fixed synthetic credentials, never caller-provided password arguments."""
 import sys
 import time
-frame=sys.stdin.buffer.read(1289)
-assert 8<=len(frame)<=1288 and frame[:4]==b"QMP1"
-label_size=int.from_bytes(frame[4:6],"big")
-caller_size=int.from_bytes(frame[6:8],"big")
-assert label_size<=1024 and caller_size<=256 and len(frame)==8+label_size+caller_size
-label=frame[8:8+label_size].decode("utf-8")
+from prompt_metadata_fixture import read_metadata
+metadata = read_metadata()
+label = metadata["label"]
 action=sys.argv[sys.argv.index("--action")+1]
 if action=="reveal" and label=="delayed-reveal-fixture": time.sleep(1.0)
 old=b"synthetic-keyring-password"

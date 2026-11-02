@@ -166,8 +166,13 @@ private Q_SLOTS:
         QCOMPARE(compositor.readLine(),QByteArray("ready\n"));
         QDBusInterface native("org.qindaqt.Keyring1","/org/freedesktop/secrets","org.qindaqt.Keyring1",bus);
         QTRY_VERIFY_WITH_TIMEOUT(native.isValid(),5000);
+        // Name acquisition precedes root-object export. Wait for an actual
+        // read-only reply before attaching this disposable session.
+        QTRY_VERIFY_WITH_TIMEOUT(native.call("ListCollections").type()==QDBusMessage::ReplyMessage,5000);
         const auto attachment=native.call("AttachSessionWithDisplay","qindaqt-7");
-        QCOMPARE(attachment.type(),QDBusMessage::ReplyMessage);QVERIFY(attachment.arguments().first().toBool());
+        QVERIFY2(attachment.type()==QDBusMessage::ReplyMessage,
+                 qPrintable(attachment.errorName()+": "+attachment.errorMessage()));
+        QVERIFY(attachment.arguments().first().toBool());
         auto screenReady=[&]{
             const auto reply=native.call("GetPolicyState");
             if(reply.type()!=QDBusMessage::ReplyMessage) return false;

@@ -150,6 +150,22 @@ The complete delivery loop and queue contract are in
 
 ## Verification
 
+### Credential requests during agent work
+
+Before an operation that can request keyring access or administrator
+authentication, explain the actual tool/program, the account or service involved
+(without secret values), why the user's current task needs it, and the expected
+scope of approval. The user must receive this explanation before a password
+dialog appears. A generic request to inspect or test code does not authorize
+reading live credentials; use private buses and synthetic keyrings for tests.
+
+Do not automatically approve an unexpected prompt or retry credential access to
+make a background job progress. Report the triggering operation and the missing
+context. Unattended work must return an action-required result instead of opening
+an interactive credential prompt. The keyring's process identity is not proof of
+an agent's task, and ordinary unlock grants shared same-user collection access;
+never describe it as a one-agent or one-secret permission.
+
 During implementation, compile only touched targets and run the smallest
 meaningful check of the changed behavior. Default focused tests should finish
 within 30 seconds; stop or split a test that runs beyond 60 seconds. Do not

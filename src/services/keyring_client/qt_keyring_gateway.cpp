@@ -111,6 +111,10 @@ public:
         if(!validObjectPath(value,"prompt")) { fail("Keyring requires an authenticated prompt");return; }
         prompt=value;
         if(!bus.connect(owner,prompt,PromptInterface,"Completed",&q,SLOT(promptCompleted(bool,QDBusVariant,QDBusMessage)))) { fail("Prompt unavailable");return; }
+        // AGENT-CONTRACT: match the daemon's bounded queue/review lifetime
+        // (ADR-0432); the ordinary 45-second RPC deadline is too short to read
+        // a credential request. Owner loss and explicit cancellation still win.
+        timeout.start(300000);
         call(owner,prompt,PromptInterface,"Prompt",{QString()},[](const QDBusMessage &){});
     }
     void begin(quint64 id,Request request,const QString &object,const QString &label) {

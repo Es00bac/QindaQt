@@ -211,7 +211,9 @@ The default helper is the compiled `qindaqt-keyring-prompt`. It creates a
 uses QindaTK password fields, confirmation for creation, accessible field
 names, Enter and Escape, and clears fields after each attempt. Offscreen or
 unsupported platforms fail closed; no ordinary password window fallback.
-A newly active prompt focuses its initial password field (or delete confirmation).
+A newly active prompt focuses Deny request. Password fields remain hidden and
+disabled until the user reviews the requester, operation and access scope and
+chooses Continue. Direct controller approval also requires that review.
 A missing helper cancels, never creates an empty-password collection.
 The minimal factory is replaceable by later PK4 scripted/native policy.
 Helper arguments contain bounded non-secret request metadata only; approved
@@ -225,6 +227,48 @@ that this module cannot lock or fully erase. We do not claim universal secure
 memory. No secret is placed in argv, environment, temporary files, logs or
 error text. This does not isolate secrets from compromised same-user clients
 of an unlocked collection, root, or memory snapshots.
+
+## Request identity and informed approval
+
+[ADR-0432](../adr/0432-review-keyring-requester-before-credentials.md) requires
+request review before password entry for unlock, creation, reveal, password
+change, deletion and the native importer. The screen identifies the immediate
+requester's executable, PID, user ID and unique bus connection. Up to six
+same-user parent processes provide observed context for helpers started by
+agents; ancestry does not prove an agent's task or intent. No command arguments,
+environment variables, script contents or credentials are inspected or logged.
+
+The daemon captures PID/UID from the bus and executable/start time from bounded
+`/proc` reads when admitting a prompt. It rechecks that identity before starting
+a queued helper and before consuming approval. Disconnect retains its existing
+cancellation behavior. Missing process identity disables approval. Protected processes can hide their
+executable path; the screen explicitly warns about that missing evidence and
+requires Continue without executable identity instead of claiming a program name. Parent
+context can be incomplete, and neither a process path nor a bus credential
+attests software safety. Interpreters identify the interpreter executable,
+not an authenticated script. This is request transparency, not a secure-attention
+mechanism or per-agent credential isolation.
+
+Operation explanations come from the daemon's actual operation. Standard
+Secret Service has no agent-task or reason field, so the screen explicitly says
+that information was not supplied. Portal application IDs are separately labelled
+as reported by the portal; labels and caller-supplied window strings never identify
+the requester. All dynamic values are plain text, and control/bidirectional format
+characters become visible escapes. Long details scroll while Deny remains visible.
+
+Unlock approval discloses that collections become available to other programs
+running as the same user, and ordinary unlock also attempts other collections
+using the same password. It is not a one-program or one-task grant. Reveal,
+password change, deletion and import have their own operation/scope explanations.
+The helper allows three minutes for review/input and an outstanding prompt is
+bounded to five minutes including queuing. Client-side deadlines may be shorter.
+
+The private daemon/helper metadata pipe now uses bounded QMP2 (maximum 12 KiB),
+carrying label, bus owner, executable, operation, portal app, PID/UID and parent
+context. Both executables must be deployed together; mixed QMP1/QMP2 versions
+reject instead of silently dropping identity. Password output remains unchanged.
+Restart/adoption of a newly installed daemon is a separate step from replacing
+its helper on disk; never restart the user's desktop as a test.
 
 ## Verification
 

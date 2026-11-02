@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "import_passwords_p.h"
+#include "../daemon/requester_identity.h"
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QEventLoop>
@@ -58,7 +59,10 @@ ImportPassword Passwords::take(const QString &id,const QString &label,bool exist
         return {CollectionImportError::None,std::move(password)};
     }
     QEventLoop wait;SecureBuffer password;bool cancelled=true,completed=false;
-    const auto token=provider_.begin({existing?"unlock":"create",id,label,"QindaQt one-time keyring import",{}},
+    service::PromptRequest request{existing?"unlock":"create",id,label,"QindaQt one-time keyring import",{}, {}};
+    service::describeRequester(request.metadata, service::identifyLocalRequester());
+    request.metadata.operation = existing ? "import-unlock" : "import-create";
+    const auto token=provider_.begin(std::move(request),
         [&](SecureBuffer value,bool refused){password=std::move(value);cancelled=refused;completed=true;wait.quit();});
     QTimer lifetime;QObject::connect(&lifetime,&QTimer::timeout,&wait,[&]{if(!admitted_()) wait.quit();});lifetime.start(100);
     if(!completed) wait.exec();

@@ -14,6 +14,10 @@ target_link_libraries(qindaqt_keyring_ui_prompt PRIVATE qindaqt_keyring_service
     QindaQt::AuthenticationOverlay QindaTK::qindatk Qt6::Qml Qt6::Quick
     Qt6::QuickControls2 Qt6::Test Wayland::Client)
 qindaqt_enable_warnings(qindaqt_keyring_ui_prompt)
+add_test(NAME keyring_request_review_journey COMMAND ${Python3_EXECUTABLE}
+    "${CMAKE_CURRENT_SOURCE_DIR}/../test_request_review_journey.py" "$<TARGET_FILE:qindaqt-keyring>"
+    "$<TARGET_FILE:qindaqt_keyring_ui_prompt>" "${QINDAQT_KWIN_WAYLAND}")
+set_tests_properties(keyring_request_review_journey PROPERTIES TIMEOUT 30 LABELS "keyring;wayland;private-fixture")
 qt_add_executable(qindaqt_keyring_clipboard_probe clipboard_probe.cpp)
 target_link_libraries(qindaqt_keyring_clipboard_probe PRIVATE Qt6::Gui Qt6::Quick Qt6::Core)
 qindaqt_enable_warnings(qindaqt_keyring_clipboard_probe)
