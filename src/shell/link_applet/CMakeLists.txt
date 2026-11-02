@@ -44,6 +44,7 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml/QindaQt/Shell/LinkApplet"
     QML_FILES
         qml/LinkApplet.qml
+        qml/LinkPairingSection.qml
     DEPENDENCIES
         TARGET qindaqt_shell_icons
 )

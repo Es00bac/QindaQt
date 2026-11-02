@@ -44,7 +44,10 @@ effective only with the corresponding read grant. `security.read`
 ([ADR-0431](../adr/0431-firewall-panel-applet-over-public-firewall1.md)) has no
 control counterpart at all: the Firewall applet it gates cannot block, allow,
 confirm an automatic action, or change a rule, so no such authority exists to
-separate.
+separate. The QindaLink applet requests `phone.read` and `phone.control`
+([ADR-0435](../adr/0435-qindalink-panel-applet-and-phone-capability-tokens.md));
+control covers `ConfirmPairing`, `Ring` and `Unpair`, and a denied read grant
+constructs no client.
 
 The manifest is a request, never a grant. Runtime policy must combine package
 trust, user consent, host isolation, and service availability before exposing a

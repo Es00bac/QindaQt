@@ -36,6 +36,16 @@ private Q_SLOTS:
         QCOMPARE(list[0].signal, -1);
         QCOMPARE(list[0].transport, QStringLiteral("usb"));
         QVERIFY(parseDevices("not json").isEmpty());
+        // Link1 does not emit `caps` yet: absent means unknown (empty).
+        QVERIFY(list[0].capabilities.isEmpty());
+    }
+    void parsesOptionalCapabilities()
+    {
+        const auto list = parseDevices(
+            R"([{"id":"a","caps":["status","ring",7]},{"id":"b","caps":"ring"}])");
+        QCOMPARE(list.size(), 2);
+        QCOMPARE(list[0].capabilities, (QStringList{QStringLiteral("status"), QStringLiteral("ring")}));
+        QVERIFY(list[1].capabilities.isEmpty());
     }
 
     void staleRepliesAreIgnoredAndLossClearsDevices()

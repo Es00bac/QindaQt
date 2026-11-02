@@ -33,6 +33,7 @@ private slots:
     void everyBuiltInProfileHasOneNotificationCenter();
     void stockProfileResolvesNonemptyDesktopInventory();
     void theDefaultProfilePlacesTheStreamingApplet();
+    void onlyTheFlagshipProfilePlacesTheLinkChip();
     void userStoreRemovesExactlyItsOwnFile();
     void familiarExperiencesPairTheirThemesAndMenus();
     void macDockKeepsTheFileManagerFirstAndTheTrashLast();
@@ -343,6 +344,30 @@ void ProfileTests::theDefaultProfilePlacesTheStreamingApplet()
 
     QCOMPARE(obsCount, 1);
     QCOMPARE(zone, QStringLiteral("end"));
+}
+
+// ADR-0435: the QindaLink chip is a hardware chip like OBS, so only the
+// flagship profile places it; desktop-imitation profiles carry none.
+void ProfileTests::onlyTheFlagshipProfilePlacesTheLinkChip()
+{
+    const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"));
+    qsizetype flagship = 0;
+    for (const QString &name : directory.entryList({QStringLiteral("*.json")}, QDir::Files)) {
+        const auto result = ProfileLoader::fromFile(directory.filePath(name));
+        QVERIFY2(result.ok, qPrintable(name));
+        qsizetype count = 0;
+        for (const auto &panel : result.profile.panels) {
+            for (const auto &applet : panel.applets) {
+                count += applet.plugin == QLatin1String("link") ? 1 : 0;
+            }
+        }
+        if (name == QLatin1String("qindaqt.json")) {
+            flagship = count;
+        } else {
+            QCOMPARE(count, qsizetype(0));
+        }
+    }
+    QCOMPARE(flagship, qsizetype(1));
 }
 
 // ADR-0267: Settings deletes a user preset and restores a built-in layout by

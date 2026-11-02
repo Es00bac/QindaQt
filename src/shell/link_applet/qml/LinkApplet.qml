@@ -59,7 +59,7 @@ Item {
         onOpened: {
             // Pairing: land on Reject so a stray Enter never approves.
             if (root.linkState === "pairing-request") {
-                rejectButton.forceActiveFocus(Qt.PopupFocusReason)
+                pairing.rejectButton.forceActiveFocus(Qt.PopupFocusReason)
             }
         }
         onClosed: summary.forceActiveFocus(Qt.PopupFocusReason)
@@ -103,70 +103,12 @@ Item {
                 wrapMode: Text.Wrap
             }
 
-            // Pairing request: phone identity, then the code to compare.
-            ColumnLayout {
+            LinkPairingSection {
+                id: pairing
                 Layout.fillWidth: true
                 visible: root.linkState === "pairing-request"
-                spacing: 6
-
-                Label {
-                    objectName: "linkAppletPairingPhone"
-                    Layout.fillWidth: true
-                    textFormat: Text.PlainText
-                    text: root.available
-                        ? (access.pairingModel.length > 0
-                           ? qsTr("%1 (%2)").arg(access.pairingName).arg(access.pairingModel)
-                           : access.pairingName)
-                        : ""
-                    color: Tokens.fg.default
-                    wrapMode: Text.Wrap
-                }
-                Label {
-                    Layout.fillWidth: true
-                    textFormat: Text.PlainText
-                    text: qsTr("Make sure this code matches the one on your phone.")
-                    color: Tokens.fg.muted
-                    wrapMode: Text.Wrap
-                }
-                Label {
-                    objectName: "linkAppletPairingCode"
-                    Layout.alignment: Qt.AlignHCenter
-                    textFormat: Text.PlainText
-                    text: root.available ? access.pairingCode : ""
-                    font.bold: true
-                    font.pointSize: Tokens.type.title
-                    font.letterSpacing: 2
-                    color: Tokens.fg.default
-                    Accessible.name: qsTr("Pairing code %1").arg(text)
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-                    C.Button {
-                        id: rejectButton
-                        objectName: "linkAppletRejectButton"
-                        text: qsTr("Reject")
-                        emphasized: false
-                        enabled: root.available && access.canControl
-                        accessibleDescription: qsTr("Refuse to pair with this phone")
-                        onClicked: {
-                            root.access.rejectPairing()
-                            details.close()
-                        }
-                    }
-                    C.Button {
-                        id: acceptButton
-                        objectName: "linkAppletAcceptButton"
-                        text: qsTr("Accept")
-                        emphasized: false
-                        enabled: root.available && access.canControl
-                        accessibleDescription: qsTr("Pair with this phone; the code must match")
-                        onClicked: {
-                            root.access.acceptPairing()
-                            details.close()
-                        }
-                    }
-                }
+                access: root.access
+                onDecided: details.close()
             }
 
             // Connected: battery and network at a glance.
@@ -300,83 +242,83 @@ Item {
             implicitWidth: chipRow.implicitWidth
             implicitHeight: chipRow.implicitHeight
 
-          Row {
-            id: chipRow
-            spacing: 4
-            anchors.centerIn: parent
+            Row {
+                id: chipRow
+                spacing: 4
+                anchors.centerIn: parent
 
-            Item {
-                id: glyphBox
-                implicitWidth: glyph.implicitWidth
-                implicitHeight: glyph.implicitHeight
-                width: implicitWidth
-                height: implicitHeight
-                anchors.verticalCenter: parent.verticalCenter
+                Item {
+                    id: glyphBox
+                    implicitWidth: glyph.implicitWidth
+                    implicitHeight: glyph.implicitHeight
+                    width: implicitWidth
+                    height: implicitHeight
+                    anchors.verticalCenter: parent.verticalCenter
 
-                // A fixed ring (never an animation) while a code waits.
-                Rectangle {
-                    visible: root.linkState === "pairing-request"
-                    anchors.centerIn: glyph
-                    width: glyph.width + 10
-                    height: glyph.height + 10
-                    radius: width / 2
-                    color: "transparent"
-                    border.width: 2
-                    border.color: Tokens.status.warning.foreground
-                    Accessible.ignored: true
-                }
+                    // A fixed ring (never an animation) while a code waits.
+                    Rectangle {
+                        visible: root.linkState === "pairing-request"
+                        anchors.centerIn: glyph
+                        width: glyph.width + 10
+                        height: glyph.height + 10
+                        radius: width / 2
+                        color: "transparent"
+                        border.width: 2
+                        border.color: Tokens.status.warning.foreground
+                        Accessible.ignored: true
+                    }
 
-                ShellIcons.Icon {
-                    id: glyph
-                    objectName: "linkAppletIcon"
-                    anchors.centerIn: parent
-                    name: "phone-symbolic"
-                    size: Math.min(20, root.height - 8)
-                    color: root.iconColor
-                    symbolic: true
-                    fallbackText: qsTr("Phone")
-                    Accessible.ignored: true
-                }
-
-                // Badge slot for the SMS lane; hidden while the count is 0.
-                Rectangle {
-                    objectName: "linkAppletBadge"
-                    visible: root.unread > 0
-                    width: Math.max(14, badgeLabel.implicitWidth + 6)
-                    height: 14
-                    radius: height / 2
-                    color: Tokens.danger.default
-                    anchors.top: glyph.top
-                    anchors.right: glyph.right
-                    anchors.topMargin: -4
-                    anchors.rightMargin: -6
-                    Accessible.ignored: true
-
-                    Label {
-                        id: badgeLabel
+                    ShellIcons.Icon {
+                        id: glyph
+                        objectName: "linkAppletIcon"
                         anchors.centerIn: parent
-                        textFormat: Text.PlainText
-                        text: root.unread > 99 ? qsTr("99+") : String(root.unread)
-                        color: Tokens.danger.fg
-                        font.pointSize: Tokens.type.caption
-                        font.bold: true
+                        name: "phone-symbolic"
+                        size: Math.min(20, root.height - 8)
+                        color: root.iconColor
+                        symbolic: true
+                        fallbackText: qsTr("Phone")
+                        Accessible.ignored: true
+                    }
+
+                    // Badge slot for the SMS lane; hidden while the count is 0.
+                    Rectangle {
+                        objectName: "linkAppletBadge"
+                        visible: root.unread > 0
+                        width: Math.max(14, badgeLabel.implicitWidth + 6)
+                        height: 14
+                        radius: height / 2
+                        color: Tokens.danger.default
+                        anchors.top: glyph.top
+                        anchors.right: glyph.right
+                        anchors.topMargin: -4
+                        anchors.rightMargin: -6
+                        Accessible.ignored: true
+
+                        Label {
+                            id: badgeLabel
+                            anchors.centerIn: parent
+                            textFormat: Text.PlainText
+                            text: root.unread > 99 ? qsTr("99+") : String(root.unread)
+                            color: Tokens.danger.fg
+                            font.pointSize: Tokens.type.caption
+                            font.bold: true
+                        }
                     }
                 }
-            }
 
-            Label {
-                id: batteryLabel
-                objectName: "linkAppletBatteryLabel"
-                visible: root.showBattery && !root.vertical
-                anchors.verticalCenter: parent.verticalCenter
-                textFormat: Text.PlainText
-                text: root.showBattery
-                    ? access.batteryText + (access.charging ? "⚡" : "") : ""
-                color: Tokens.fg.default
-                font.pointSize: Tokens.type.caption
-                Accessible.ignored: true
+                Label {
+                    id: batteryLabel
+                    objectName: "linkAppletBatteryLabel"
+                    visible: root.showBattery && !root.vertical
+                    anchors.verticalCenter: parent.verticalCenter
+                    textFormat: Text.PlainText
+                    text: root.showBattery
+                        ? access.batteryText + (access.charging ? "⚡" : "") : ""
+                    color: Tokens.fg.default
+                    font.pointSize: Tokens.type.caption
+                    Accessible.ignored: true
+                }
             }
-          }
         }
         background: Item {}
     }
