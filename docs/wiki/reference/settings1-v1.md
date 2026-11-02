@@ -30,19 +30,19 @@ and the [Launcher contract](../shell/launcher.md).
 
 ### Terminal application scope
 
-The Terminal S1 client uses three schema-v2 keys in the existing `services`
+The removed `qindaqt-terminal` client used three schema-v2 keys in the existing `services`
 domain. `services.terminalProfiles` is a string containing the terminal-owned
 canonical JSON profile array (default `[]`),
 `services.terminalDefaultProfile` is a string naming the built-in or one listed
 user profile (default `builtin-default`), and `services.terminalRestoreWindows` is
-a Boolean policy flag (default `false`). The client
-requests all three in every snapshot and rejects the logical value as a whole
+a Boolean policy flag (default `false`). The former client
+requested all three in every snapshot and rejected the logical value as a whole
 when any field is absent, incorrectly typed, or internally inconsistent. It
-persists no session content, scrollback, argv history, title, process identity,
+persisted no session content, scrollback, argv history, title, process identity,
 or window inventory; the opt-in restore inventory enabled by the Boolean flag
-is an application-owned state file, not a Settings1 value. Profile structure
-and bounds are owned by the
-[Terminal application contract](../apps/terminal.md#profiles-and-settings1-persistence).
+is an application-owned state file, not a Settings1 value. These legacy schema keys do not describe QQ_Term's current profile store.
+QQ_Term owns its own INI settings and does not consume these keys; see the
+[current terminal contract](../apps/terminal.md#profiles-and-terminal-interactions).
 
 ## Methods and signal
 

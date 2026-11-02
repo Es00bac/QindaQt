@@ -1,3 +1,27 @@
+## November 2 — QQ_Term baseline audit and 0.3.1 repairs
+
+QQ_Term 0.3.1 is integrated in QindaQt_Apps (`e8e998a`, tested source
+`44088c4`) and published to qinda's hub. Regex search, explicit web/email links,
+quoted file drops, multiline-paste review, window-local zoom and Qt accessible
+output are implemented. Four private app regression groups pass (31 QtTest
+results plus the D-Bus process fixture); narrow search and paste UI captures
+were inspected. Overlay `dadd1aa` publishes the exact new recipe. The read-only
+Portage resolver selects one upgrade and zero downloads.
+
+**Full terminal parity is still open.** An independent engine probe reproduces
+text cropping on narrow resize and newlines in soft-wrapped copies. Reflow
+experiment `0a165c57` is preserved only on its QindaTK branch: a logical line
+spanning history crashes libvterm (exit 134), so it is rejected and excluded
+from the package. History, OSC 8, configurable shortcuts and native
+screen-reader qualification remain gaps. No feature-completion credit changed.
+
+**Not installed:** `qinda-sync --prepare-only` stopped at `sudo -n` because an
+administrator password is required. No password dialog was opened, package
+merged or live terminal restarted. From the QindaGentoo checkout, the user can
+run `sudo -v`, then `python3 tools/qinda-sync packages '=gui-apps/qqterm-0.3.1'`.
+[Current contract](wiki/apps/terminal.md) and
+[exact handoff](../ops/team/messages/20261102-qqterm-audit-handoff.md).
+
 ## November 2 — Keyring request review before credentials
 
 The native prompt now shows the bus/OS-derived executable and process identity,
