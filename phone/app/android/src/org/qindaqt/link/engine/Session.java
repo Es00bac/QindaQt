@@ -32,14 +32,13 @@ public final class Session {
     private enum Phase { HELLO, UNPAIRED, REQUESTED, NONCE_SENT, CONFIRM, READY }
 
     private static final long HELLO_TIMEOUT_MS = 10000, PING_AFTER_MS = 30000, DEAD_AFTER_MS = 90000,
-            PAIR_TIMEOUT_MS = 120000, STATUS_MIN_GAP_MS = 2000,
-            WRITE_STALL_MS = 10000;
+            PAIR_TIMEOUT_MS = 120000, WRITE_STALL_MS = 10000;
     private static final int EVENT_CAPACITY = 128, WRITE_CAPACITY = 64;
     private static final Object WAKE = new Object();
 
     private final Link link;
     private final PinStore pins;
-    private final StatusSource status;
+    private final FeatureRegistry features;
     private final DeviceInfo info;
     private final EngineState state;
     // AGENT-GUARD: both queues are bounded. The reader blocks when events is full (TCP backpressure,
@@ -57,16 +56,21 @@ public final class Session {
     private String desktopName = "";
     private List<?> desktopCaps = new ArrayList<>();
     private boolean desktopTrusted, pinMatches, stale;
-    private long nextId = 1, requestId, lastSentMs, lastRecvMs, pairStartMs, lastStatusMs;
+    private long nextId = 1, requestId, lastSentMs, lastRecvMs, pairStartMs;
     private byte[] np, nd, commit;
-    private String code = "", lastStatusJson = "", lastChargeKey = "";
-    private boolean localAccepted, remoteAccepted;
+    private String code = "";
+    private boolean localAccepted, remoteAccepted, readyHandlers;
     private final String peerId;
 
+    /** Convenience for tests and simple hosts: the registry holds only the status feature. */
     public Session(Link link, PinStore pins, StatusSource status, DeviceInfo info, EngineState state) {
+        this(link, pins, new FeatureRegistry().add(new StatusFeature(status, state)), info, state);
+    }
+
+    public Session(Link link, PinStore pins, FeatureRegistry features, DeviceInfo info, EngineState state) {
         this.link = link;
         this.pins = pins;
-        this.status = status;
+        this.features = features;
         this.info = info;
         this.state = state;
         this.peerId = Pairing.hex(link.peerSpki());
@@ -91,13 +95,12 @@ public final class Session {
             }
             writer.start();
             reader.start();
-            status.setListener(() -> events.offer(WAKE));
             sendHello();
             loop();
         } catch (IOException e) {
             if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.DISCONNECTED, desktopName, "", "Connection lost");
         } finally {
-            status.setListener(null);
+            if (readyHandlers) for (FeatureHandler h : features.handlers()) h.onClosed();
             done = true;
             outbox.offer(END); // lets a queued bye flush; the watchdog bounds how long this can take
             try { writer.join(1500); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
@@ -175,7 +178,7 @@ public final class Session {
             state.set(EngineState.Phase.ERROR, desktopName, "", "Pairing timed out");
             return false;
         }
-        if (phase == Phase.READY) sendStatus(t, false);
+        if (phase == Phase.READY) for (FeatureHandler h : features.handlers()) h.onTick(t);
         return true;
     }
 
@@ -191,8 +194,10 @@ public final class Session {
         if (phase == Phase.HELLO) throw new IOException("frame before hello");
         if (e.t.startsWith("pair.")) return onPair(e);
         if (phase != Phase.READY) throw new IOException("frame not allowed unpaired: " + e.t);
+        FeatureHandler h = features.find(e.t);
+        if (h != null && h.onFrame(e)) return true;
         if (e.id != 0) {
-            // `ring` is advertised nowhere yet; answer honestly instead of ringing the user's phone.
+            // AGENT-NOTE: `ring` without a registered handler is answered honestly instead of ringing the user's phone.
             Map<String, Object> b = new LinkedHashMap<>();
             boolean ring = e.t.equals("ring");
             b.put("code", ring ? "unsupported" : "unknown-type");
@@ -333,30 +338,29 @@ public final class Session {
     private void becomeReady() throws IOException {
         phase = Phase.READY;
         state.set(EngineState.Phase.READY, desktopName, "", "Connected");
-        sendStatus(now(), true);
+        readyHandlers = true;
+        for (FeatureHandler h : features.handlers()) h.onReady(new Ctx(h));
     }
 
-    private void sendStatus(long t, boolean force) throws IOException {
-        if (!desktopCaps.contains("status")) return;
-        Map<String, Object> body = status.snapshot();
-        String json = org.qindaqt.link.proto.Json.write(body);
-        if (!force && json.equals(lastStatusJson)) return;
-        String key = chargeKey(body);
-        boolean urgent = !key.equals(lastChargeKey);
-        if (!force && !urgent && t - lastStatusMs < STATUS_MIN_GAP_MS) return;
-        send(Envelope.of("status", body));
-        lastStatusJson = json;
-        lastChargeKey = key;
-        lastStatusMs = t;
-        state.statusSent(System.currentTimeMillis());
-    }
+    /** Per-handler view of this session; enforces the namespace and capability rules centrally. */
+    private final class Ctx implements FeatureContext {
+        private final FeatureHandler h;
+        Ctx(FeatureHandler h) { this.h = h; }
 
-    @SuppressWarnings("unchecked")
-    private static String chargeKey(Map<String, Object> body) {
-        Object b = body.get("battery");
-        if (!(b instanceof Map)) return "";
-        Map<String, Object> m = (Map<String, Object>) b;
-        return m.get("charging") + "/" + m.get("plugged");
+        @Override public boolean send(Envelope e) throws IOException {
+            int dot = e.t.indexOf('.');
+            String ns = dot < 0 ? e.t : e.t.substring(0, dot);
+            if (phase != Phase.READY || !h.namespaces().contains(ns) || !desktopCaps.contains(h.capability())) return false;
+            Session.this.send(e);
+            return true;
+        }
+        @Override public long nextId() { return nextId++; }
+        @Override public boolean peerHas(String capability) { return desktopCaps.contains(capability); }
+        @Override public void replyOk(long id) throws IOException { Session.this.send(new Envelope("ok", 0, id, null)); }
+        @Override public void replyError(long id, String code, String message) throws IOException {
+            Session.this.send(new Envelope("error", 0, id, map("code", code, "message", message)));
+        }
+        @Override public void wake() { events.offer(WAKE); }
     }
 
     private void sendHello() throws IOException {
@@ -368,7 +372,7 @@ public final class Session {
         b.put("os", info.os);
         b.put("app", info.app);
         List<Object> caps = new ArrayList<>();
-        caps.add("status"); // `ring` is deliberately absent until it is implemented.
+        caps.addAll(features.caps()); // `ring` is advertised only once a handler for it is registered.
         b.put("caps", caps);
         b.put("trusted", pinMatches);
         send(Envelope.of("hello", b));

@@ -16,6 +16,15 @@ class LinkBridge : public QObject
     Q_PROPERTY(QString message READ message NOTIFY changed)
     Q_PROPERTY(bool paired READ paired NOTIFY changed)
     Q_PROPERTY(QString pairedName READ pairedName NOTIFY changed)
+    // Device facts for the UI (additive; DeviceFacts.java is the other side). transport is "usb",
+    // "wifi" or "" and is "usb" while a session is up until the engine reports its own.
+    // perm maps notificationAccess|sms|contacts|postNotifications|batteryOptimisation to
+    // "granted" | "denied" | "later".
+    Q_PROPERTY(QString transport READ transport NOTIFY changed)
+    Q_PROPERTY(int batteryLevel READ batteryLevel NOTIFY changed)
+    Q_PROPERTY(bool charging READ charging NOTIFY changed)
+    Q_PROPERTY(QString network READ network NOTIFY changed)
+    Q_PROPERTY(QVariantMap perm READ perm NOTIFY changed)
 
 public:
     explicit LinkBridge(QObject *parent = nullptr);
@@ -27,6 +36,13 @@ public:
     bool paired() const { return m_s.value(QStringLiteral("paired")).toBool(); }
     QString pairedName() const { return m_s.value(QStringLiteral("pairedName")).toString(); }
 
+    QString transport() const;
+    int batteryLevel() const { return m_dev.value(QStringLiteral("batteryLevel"), -1).toInt(); }
+    bool charging() const { return m_dev.value(QStringLiteral("charging")).toBool(); }
+    QString network() const { return m_dev.value(QStringLiteral("network")).toString(); }
+    QVariantMap perm() const { return m_dev.value(QStringLiteral("perm")).toMap(); }
+
+    Q_INVOKABLE void openSettings(const QString &key);
     Q_INVOKABLE void pair();
     Q_INVOKABLE void pairAgain();
     Q_INVOKABLE void accept();
@@ -38,7 +54,10 @@ signals:
 
 private:
     void poll();
+    void pollDevice();
     void call(const char *method);
     QVariantMap m_s;
+    QVariantMap m_dev;
+    int m_tick = 0;
     QTimer m_timer;
 };

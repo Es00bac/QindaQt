@@ -57,7 +57,8 @@ Current maturity: **M1 link core integrated (desktop service and phone engine); 
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app |
-| Phone app | `phone/app` | Qt for Android app: QML/QindaTK UI, Java engine under `phone/app/android/` |
+| Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
+| Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
 | Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
 | Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
 | Mirror server | `phone/mirror_server` | Java `app_process` entry point compiled into the APK |
@@ -67,6 +68,20 @@ Feature modules (`link_notifications`, `link_messages`, `link_input`,
 `link_macros`) are added under `src/services/` as each feature lands. Each
 one depends only on `link_protocol` and the narrow routing interface of
 `link_service`.
+
+**Adding a feature.** A feature owns one capability string and its frame
+namespaces, and plugs in without editing the session state machine. Desktop:
+subclass `FeatureHandler` (`src/services/link_transport/.../feature.h`) and
+`add()` it to the `FeatureRouter`; the router supplies the hello caps and the
+service calls `handle()` for READY sessions. Phone: implement
+`engine/FeatureHandler` (`capability()`, `namespaces()`, `onReady`, `onTick`,
+`onFrame`, `onClosed`) and add it to the `FeatureRegistry` that `LinkService`
+(or a test) passes to `LinkEngine`; `Session` advertises the registered
+capabilities, routes only READY frames by namespace, answers unhandled
+requests with `error{unknown-type}`, and `FeatureContext.send` refuses a frame
+whose namespace the handler does not own or whose capability the peer did not
+advertise. `status` is the first such feature (`StatusFeature`). Core frames
+(`hello`, `bye`, `ping`, `pong`, `ok`, `error`, `pair.*`) stay in `Session`.
 
 **Phone app maturity (M1c, 2026-11).** Built and installed as a debug APK;
 the Java codec and pairing math pass all golden vectors, and a JVM loopback

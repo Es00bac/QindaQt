@@ -26,3 +26,9 @@ Unlock the phone, then follow phone/README.md "Live check" (install is already d
 - `phone/engine-tests/run.sh` exit 0: vectors decode=36 stream=1 encode=10 pairing=3 (68 checks), loopback session OK, repair tests OK.
 - Cross-implementation: `phone/engine-tests/run-cross-impl.sh .../qindalink-desktop-core/build/desktop-core/src/services/link_service/qindaqt-link-service` exit 0: TLS 1.3, hello, pairing codes equal, ConfirmPairing, phone pinned desktop, Devices() shows ready + battery 42. Not committed in the integration worktree, as instructed.
 - Still unverified on hardware: Keystore TLS handshake, Android callbacks, live pairing (phone unplugged). The APK was not rebuilt in this round; run build-apk.sh before the next device session.
+
+## Feature plug-in slice (after integration 709e7d423)
+- Added engine/{FeatureHandler,FeatureContext,FeatureRegistry,StatusFeature}.java (android-free); Session dispatches non-core READY frames by namespace, hello.caps come from the registry, send gating (namespace ownership + peer cap) is central in Session.Ctx. Status sender moved into StatusFeature with identical rate limits. LinkEngine now takes (Connector, PinStore, FeatureRegistry, DeviceInfo, EngineState); LinkService builds the registry. Session keeps a convenience constructor taking a StatusSource.
+- `ring` with no registered handler still answers error{unsupported}.
+- Evidence: phone/engine-tests/run.sh exit 0 (vectors 68 checks, loopback, repair tests, FeatureTest: caps, READY-only routing, unknown-type, send gating, onClosed). run-cross-impl.sh against qindalink-m1-integration/build/m1 qindaqt-link-service exit 0. APK rebuild checked (see below).
+- APK rebuild with the registry wiring: build-apk.sh exit 0 (not installed; phone unplugged).
