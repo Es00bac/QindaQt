@@ -55,6 +55,17 @@ Session::Session(QSslSocket *socket, Origin origin, SessionTimings timings, Sess
         send(ping);
     });
     connect(&m_deadTimer, &QTimer::timeout, this, [this] { close(QString()); });
+    // Bounds on unauthenticated connections (protocol page, "Connection lifecycle").
+    m_helloTimer.setSingleShot(true);
+    m_helloTimer.setInterval(m_timings.helloDeadlineMs);
+    m_lifetimeTimer.setSingleShot(true);
+    m_lifetimeTimer.setInterval(m_timings.unpairedLifetimeMs);
+    connect(&m_helloTimer, &QTimer::timeout, this, [this] {
+        if (m_state == SessionState::AwaitHello) close(QString());
+    });
+    connect(&m_lifetimeTimer, &QTimer::timeout, this, [this] {
+        if (m_state != SessionState::Ready) close(QStringLiteral("pair-timeout"));
+    });
     connect(m_socket, &QSslSocket::readyRead, this, &Session::onReadyRead);
     connect(m_socket, &QSslSocket::disconnected, this, [this] { close(QString()); });
     if (m_deviceId.isEmpty()) {
@@ -62,6 +73,8 @@ Session::Session(QSslSocket *socket, Origin origin, SessionTimings timings, Sess
         return;
     }
     m_deadTimer.start();
+    m_helloTimer.start();
+    m_lifetimeTimer.start();
     const PeerHello local = m_policy.localHello();
     Envelope hello;
     hello.t = QStringLiteral("hello");
@@ -136,6 +149,12 @@ void Session::close(const QString &byeReason)
     m_state = SessionState::Closed;
     m_idleTimer.stop();
     m_deadTimer.stop();
+    m_helloTimer.stop();
+    m_lifetimeTimer.stop();
+    if (m_ownsPairingSlot) {
+        m_ownsPairingSlot = false;
+        m_policy.endPairing(this);
+    }
     if (m_pairing != nullptr) {
         m_pairing->disconnect(this);
     }
@@ -268,6 +287,7 @@ void Session::handleHello(const Envelope &e)
     }
     m_peer = h;
     m_state = SessionState::Unpaired;
+    m_helloTimer.stop();
     Q_EMIT helloReceived();
     // READY needs a pin on both sides. A mismatch (stale pin) stays UNPAIRED
     // and keeps whatever pin we hold; the phone UI offers "pair again".
@@ -279,6 +299,7 @@ void Session::handleHello(const Envelope &e)
 void Session::enterReady()
 {
     m_state = SessionState::Ready;
+    m_lifetimeTimer.stop();
     Q_EMIT readyEntered();
 }
 
@@ -309,6 +330,11 @@ void Session::handlePairRequest(const Envelope &e)
         send(makeError(QStringLiteral("busy"), QStringLiteral("pairing in progress"), e.id));
         return;
     }
+    if (!m_policy.beginPairing(this)) {
+        send(makeError(QStringLiteral("busy"), QStringLiteral("another pairing is in progress"), e.id));
+        return;
+    }
+    m_ownsPairingSlot = true;
     delete m_pairing;
     m_pairing = new DesktopPairing(m_socket->localCertificate().isNull() ? QByteArray()
                                                                         : spkiDigest(m_socket->localCertificate()),
@@ -317,6 +343,14 @@ void Session::handlePairRequest(const Envelope &e)
     connect(m_pairing, &DesktopPairing::codeReady, this, &Session::pairingCodeReady);
     connect(m_pairing, &DesktopPairing::aborted, this, [this](const QString &reason) { close(reason); });
     connect(m_pairing, &DesktopPairing::completed, this, [this] {
+        m_ownsPairingSlot = false;
+        m_policy.endPairing(this);
+        // AGENT-GUARD: never enter READY unless the pin is durable, or the
+        // two trust stores disagree after a restart.
+        if (!m_policy.persistPairing(*this)) {
+            close(QStringLiteral("error"));
+            return;
+        }
         Q_EMIT pairingCompleted();
         enterReady();
     });

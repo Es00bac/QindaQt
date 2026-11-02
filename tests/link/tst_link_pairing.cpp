@@ -206,8 +206,11 @@ private Q_SLOTS:
         lan.send(req);
         QVERIFY(lan.waitFor(QStringLiteral("error"), &err));
         QCOMPARE(err.b.value(QStringLiteral("code")).toString(), QStringLiteral("denied"));
-        // With the window open the request proceeds.
+        // With the window open the request proceeds once the first pairing ended.
+        phone.send(makeBye(QStringLiteral("pair-rejected")));
+        QVERIFY(phone.waitClosed());
         f.hub.setPairingWindowOpen(true);
+        QVERIFY(waitUntil([&] { return f.hub.beginPairing(nullptr) && (f.hub.endPairing(nullptr), true); }));
         req.id = 10;
         lan.send(req);
         QVERIFY(lan.waitFor(QStringLiteral("pair.commit")));

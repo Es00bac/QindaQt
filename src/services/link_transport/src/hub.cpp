@@ -39,6 +39,19 @@ void Hub::adopt(QSslSocket *socket, Origin origin)
         connect(session, &Session::closed, session, &QObject::deleteLater);
         return;
     }
+    // Cap unauthenticated connections: refuse right after the handshake.
+    int unauthenticated = 0;
+    for (Session *other : std::as_const(m_sessions)) {
+        if (other != session && other->state() != SessionState::Ready && other->state() != SessionState::Closed
+            && other->deviceId() != id) {
+            ++unauthenticated;
+        }
+    }
+    if (unauthenticated >= m_options.maxUnpaired) {
+        connect(session, &Session::closed, session, &QObject::deleteLater);
+        session->close(QString());
+        return;
+    }
     Session *existing = m_sessions.value(id);
     if (existing != nullptr && existing->state() != SessionState::Closed) {
         // A LAN connection never displaces a live loopback one.
@@ -70,14 +83,7 @@ void Hub::wire(Session *session)
     connect(session, &Session::pairingCodeReady, this, [this, session, id](const QString &code) {
         Q_EMIT pairingRequested(id, session->peer().name, session->peer().model, code);
     });
-    connect(session, &Session::pairingCompleted, this, [this, session, id] {
-        PairedDevice d;
-        d.id = id;
-        d.name = session->peer().name;
-        d.model = session->peer().model;
-        d.pairedAt = d.lastSeen = QDateTime::currentMSecsSinceEpoch();
-        m_store.upsert(d);
-    });
+    connect(session, &Session::pairingCompleted, this, &Hub::devicesChanged);
     connect(session, &Session::closed, this, [this, session, id] {
         if (m_sessions.value(id) == session) {
             m_sessions.remove(id);
@@ -89,6 +95,32 @@ void Hub::wire(Session *session)
         session->deleteLater();
         Q_EMIT devicesChanged();
     });
+}
+
+bool Hub::beginPairing(Session *session)
+{
+    if (m_pairingOwner != nullptr && m_pairingOwner != session) {
+        return false;
+    }
+    m_pairingOwner = session;
+    return true;
+}
+
+void Hub::endPairing(Session *session)
+{
+    if (m_pairingOwner == session) {
+        m_pairingOwner = nullptr;
+    }
+}
+
+bool Hub::persistPairing(Session &session)
+{
+    PairedDevice d;
+    d.id = session.deviceId();
+    d.name = session.peer().name;
+    d.model = session.peer().model;
+    d.pairedAt = d.lastSeen = QDateTime::currentMSecsSinceEpoch();
+    return m_store.upsert(d);
 }
 
 void Hub::confirmPairing(const QString &deviceId, bool accept)

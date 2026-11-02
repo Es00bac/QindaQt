@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/link_transport/identity.h>
 
+#include <qindaqt/services/link_transport/private_dir.h>
+
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QSaveFile>
 
 #include <openssl/bio.h>
@@ -29,17 +33,6 @@ QByteArray bioBytes(BIO *bio)
 }
 
 QString filePath(const QString &dir, const char *name) { return QDir(dir).filePath(QLatin1String(name)); }
-
-bool writeSecure(const QString &path, const QByteArray &bytes, QFileDevice::Permissions perms)
-{
-    QSaveFile f(path);
-    if (!f.open(QIODevice::WriteOnly)) {
-        return false;
-    }
-    f.setPermissions(perms);
-    f.write(bytes);
-    return f.commit();
-}
 
 QByteArray readAll(const QString &path)
 {
@@ -125,14 +118,20 @@ bool IdentityStore::save(const DeviceIdentity &identity, QString *error) const
     if (!identity.isValid()) {
         return fail("identity is not valid");
     }
-    if (!QDir().mkpath(m_directory)) {
+    if (!ensurePrivateDirectory(m_directory)) {
         return fail("cannot create identity directory");
     }
-    QFile::setPermissions(m_directory, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
-    if (!writeSecure(filePath(m_directory, "identity-key.pem"), identity.key.toPem(),
-                     QFileDevice::ReadOwner | QFileDevice::WriteOwner)
-        || !writeSecure(filePath(m_directory, "identity-cert.pem"), identity.certificate.toPem(),
-                        QFileDevice::ReadOwner | QFileDevice::WriteOwner)) {
+    // Both files are staged in QSaveFile temporaries and committed together,
+    // key first, so a failure never leaves a certificate without its key.
+    QSaveFile key(filePath(m_directory, "identity-key.pem"));
+    QSaveFile cert(filePath(m_directory, "identity-cert.pem"));
+    if (!key.open(QIODevice::WriteOnly) || !cert.open(QIODevice::WriteOnly)) {
+        return fail("cannot write identity files");
+    }
+    key.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    cert.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    if (key.write(identity.key.toPem()) < 0 || cert.write(identity.certificate.toPem()) < 0
+        || !key.commit() || !cert.commit()) {
         return fail("cannot write identity files");
     }
     return true;
@@ -140,8 +139,19 @@ bool IdentityStore::save(const DeviceIdentity &identity, QString *error) const
 
 DeviceIdentity IdentityStore::loadOrCreate(const QString &commonName, QString *error) const
 {
+    // AGENT-GUARD: fail closed. If either file exists but cannot be read or
+    // parsed, do NOT regenerate: that would silently replace the device
+    // identity and orphan every paired phone.
+    const bool anyExists = QFileInfo::exists(filePath(m_directory, "identity-key.pem"))
+        || QFileInfo::exists(filePath(m_directory, "identity-cert.pem"));
     if (DeviceIdentity existing = load(); existing.isValid()) {
         return existing;
+    }
+    if (anyExists) {
+        if (error != nullptr) {
+            *error = QStringLiteral("identity files exist but cannot be read; refusing to regenerate");
+        }
+        return {};
     }
     DeviceIdentity fresh = generateIdentity(commonName);
     if (!fresh.isValid()) {

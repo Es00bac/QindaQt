@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/link_transport/trust_store.h>
 
+#include <qindaqt/services/link_transport/private_dir.h>
+
 #include <QtCore/QDir>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
@@ -51,22 +53,38 @@ std::optional<PairedDevice> TrustStore::find(const QString &id) const
 
 bool TrustStore::upsert(const PairedDevice &device)
 {
+    // AGENT-GUARD: roll back the in-memory list when the write fails, so the
+    // hub never trusts a key that is not on disk (protocol page, "Persisting the pin").
+    const QList<PairedDevice> before = m_devices;
+    bool replaced = false;
     for (PairedDevice &d : m_devices) {
         if (d.id == device.id) {
             d = device;
-            return save();
+            replaced = true;
+            break;
         }
     }
-    m_devices.append(device);
-    return save();
+    if (!replaced) {
+        m_devices.append(device);
+    }
+    if (!save()) {
+        m_devices = before;
+        return false;
+    }
+    return true;
 }
 
 bool TrustStore::remove(const QString &id)
 {
     for (qsizetype i = 0; i < m_devices.size(); ++i) {
         if (m_devices[i].id == id) {
+            const QList<PairedDevice> before = m_devices;
             m_devices.removeAt(i);
-            return save();
+            if (!save()) {
+                m_devices = before;
+                return false;
+            }
+            return true;
         }
     }
     return true;
@@ -82,10 +100,9 @@ bool TrustStore::save() const
                                  {QStringLiteral("pairedAt"), double(d.pairedAt)},
                                  {QStringLiteral("lastSeen"), double(d.lastSeen)}});
     }
-    if (!QDir().mkpath(m_directory)) {
+    if (!ensurePrivateDirectory(m_directory)) {
         return false;
     }
-    QFile::setPermissions(m_directory, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
     QSaveFile f(QDir(m_directory).filePath(QStringLiteral("devices.json")));
     if (!f.open(QIODevice::WriteOnly)) {
         return false;

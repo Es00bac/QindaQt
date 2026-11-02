@@ -4,6 +4,7 @@
 #include <qindaqt/services/link_protocol/pairing_math.h>
 
 #include <QtCore/QRandomGenerator>
+#include <QtCore/QRegularExpression>
 
 namespace QindaQt::Link {
 namespace {
@@ -42,10 +43,14 @@ bool DesktopPairing::handle(const Envelope &f)
 {
     if (f.t == QLatin1String("pair.nonce") && m_state == State::AwaitNonce) {
         const QJsonValue v = f.b.value(QStringLiteral("np"));
-        const QByteArray np = QByteArray::fromHex(v.toString().toLatin1());
-        if (!v.isString() || np.size() != 32) {
-            return false;
+        // AGENT-GUARD: exactly 64 lowercase hex characters; QByteArray::fromHex
+        // alone would accept odd lengths, uppercase and junk.
+        static const QRegularExpression hex64(QRegularExpression::anchoredPattern(QStringLiteral("[0-9a-f]{64}")));
+        if (!v.isString() || !hex64.match(v.toString()).hasMatch()) {
+            finishAbort(QStringLiteral("pair-rejected"));
+            return true;
         }
+        const QByteArray np = QByteArray::fromHex(v.toString().toLatin1());
         Envelope reveal;
         reveal.t = QStringLiteral("pair.reveal");
         reveal.b = QJsonObject{{QStringLiteral("nd"), QString::fromLatin1(m_nd.toHex())}};

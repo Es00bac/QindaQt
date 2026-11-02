@@ -72,6 +72,22 @@ the client, the introspection XML and this page together. -->
   `--no-adb` and `--no-notifications` exist so tests never touch the real
   state, port 47160, the adb server or the notification server.
 
+## Known gaps
+
+- `ConfirmPairing` accepts any caller on the session bus. Restricting it to
+  the QindaLink app and the notification path is a later change; until then
+  any same-user process can approve a pending pairing it has seen the code
+  for via `PairingRequested`.
+- The adb server started for tracking is shared with the user's adb
+  sessions; the unit uses `KillMode=process` so a restart does not kill it.
+
+## Bounds on unauthenticated connections
+
+Implemented as the protocol page specifies: 10 s hello deadline, 120 s
+UNPAIRED lifetime (`bye{pair-timeout}`, not extended by `ping`), at most 8
+UNPAIRED connections, one pairing at a time across keys, and no READY when
+the pin cannot be written (`bye{error}`).
+
 ## Client
 
 `src/services/link_client` provides `LinkClient` over a `LinkTransport`

@@ -56,6 +56,35 @@ private Q_SLOTS:
         QCOMPARE(second.spkiDigest(), first.spkiDigest());
     }
 
+    void unreadableIdentityFailsClosed()
+    {
+        QTemporaryDir root;
+        IdentityStore store(root.path());
+        QVERIFY(store.loadOrCreate(QStringLiteral("t")).isValid());
+        QFile key(root.filePath(QStringLiteral("identity-key.pem")));
+        QVERIFY(key.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        key.write("garbage");
+        key.close();
+        QString error;
+        QVERIFY(!store.loadOrCreate(QStringLiteral("t"), &error).isValid());
+        QVERIFY(error.contains(QLatin1String("refusing")));
+        QFile cert(root.filePath(QStringLiteral("identity-cert.pem")));
+        QVERIFY(cert.open(QIODevice::ReadOnly));
+        QVERIFY(cert.readAll().startsWith("-----BEGIN CERTIFICATE"));  // not regenerated
+    }
+
+    void failedTrustStoreWriteRollsBack()
+    {
+        QTemporaryDir root;
+        TrustStore s(root.path());
+        QVERIFY(s.load());
+        PairedDevice d;
+        d.id = QString(64, QLatin1Char('b'));
+        QVERIFY(QDir(root.path()).mkdir(QStringLiteral("devices.json")));  // rename onto a directory fails
+        QVERIFY(!s.upsert(d));
+        QVERIFY(!s.contains(d.id));
+    }
+
     void trustStoreRoundTripIsAtomic()
     {
         QTemporaryDir root;

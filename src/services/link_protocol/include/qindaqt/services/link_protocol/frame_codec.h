@@ -25,10 +25,11 @@ public:
     void append(const QByteArray &bytes);
     // Returns the next complete frame, NeedsMore, or a terminal error.
     [[nodiscard]] DecodeResult next();
-    [[nodiscard]] qsizetype bufferedBytes() const { return m_buffer.size(); }
+    [[nodiscard]] qsizetype bufferedBytes() const { return m_buffer.size() - m_offset; }
 
 private:
     QByteArray m_buffer;
+    qsizetype m_offset = 0;  // consumed prefix; compacted in append()
     DecodeStatus m_failed = DecodeStatus::NeedsMore;
 };
 

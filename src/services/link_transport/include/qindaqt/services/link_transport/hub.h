@@ -20,6 +20,7 @@ namespace QindaQt::Link {
 struct HubOptions {
     PeerHello local;          // name/model/os/app advertised in hello
     SessionTimings timings;   // tests shrink these
+    int maxUnpaired = 8;      // UNPAIRED/AwaitHello connections held at once
 };
 
 // Owns the listeners and live sessions, applies the one-connection-per-device
@@ -57,6 +58,9 @@ public:
     [[nodiscard]] bool pairingWindowOpen() const override { return m_pairingWindow; }
     [[nodiscard]] PeerHello localHello() const override { return m_options.local; }
     [[nodiscard]] FeatureRouter *router() override { return &m_router; }
+    [[nodiscard]] bool beginPairing(Session *session) override;
+    void endPairing(Session *session) override;
+    [[nodiscard]] bool persistPairing(Session &session) override;
 
     // Takes a handshaken socket (also used directly by tests).
     void adopt(QSslSocket *socket, Origin origin);
@@ -79,6 +83,7 @@ private:
     std::vector<std::unique_ptr<TlsListener>> m_listeners;
     QHash<QString, Session *> m_sessions;
     bool m_pairingWindow = false;
+    Session *m_pairingOwner = nullptr;
 };
 
 } // namespace QindaQt::Link

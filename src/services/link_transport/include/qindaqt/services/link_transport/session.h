@@ -25,6 +25,8 @@ struct SessionTimings {
     int deadMs = 90'000;
     int pairTimeoutMs = 120'000;
     int requestTimeoutMs = 10'000;
+    int helloDeadlineMs = 10'000;      // silent close when no hello arrives
+    int unpairedLifetimeMs = 120'000;  // bye pair-timeout; ping does not extend it
 };
 
 struct PeerHello {
@@ -42,6 +44,12 @@ public:
     // name, model, os, app of this desktop.
     [[nodiscard]] virtual PeerHello localHello() const = 0;
     [[nodiscard]] virtual FeatureRouter *router() = 0;
+    // One pairing at a time across all keys. beginPairing() returns false while
+    // another session holds the slot; endPairing() releases it (idempotent).
+    [[nodiscard]] virtual bool beginPairing(Session *session) = 0;
+    virtual void endPairing(Session *session) = 0;
+    // Durably pins the peer. A false return means the session must not enter READY.
+    [[nodiscard]] virtual bool persistPairing(Session &session) = 0;
 };
 
 // Log-safe one-line description of a frame.
@@ -109,6 +117,9 @@ private:
     FrameDecoder m_decoder;
     QTimer m_idleTimer;
     QTimer m_deadTimer;
+    QTimer m_helloTimer;
+    QTimer m_lifetimeTimer;
+    bool m_ownsPairingSlot = false;
     qint64 m_nextId = 1;
     QHash<qint64, std::function<void(const Envelope &)>> m_pending;
     DesktopPairing *m_pairing = nullptr;

@@ -13,6 +13,7 @@ target_sources(
         src/features.cpp
         src/hub.cpp
         src/identity.cpp
+        src/private_dir.cpp
         src/session.cpp
         src/tls_listener.cpp
         src/trust_store.cpp
@@ -24,6 +25,7 @@ target_sources(
             include/qindaqt/services/link_transport/feature.h
             include/qindaqt/services/link_transport/hub.h
             include/qindaqt/services/link_transport/identity.h
+            include/qindaqt/services/link_transport/private_dir.h
             include/qindaqt/services/link_transport/ring_feature.h
             include/qindaqt/services/link_transport/session.h
             include/qindaqt/services/link_transport/status_feature.h

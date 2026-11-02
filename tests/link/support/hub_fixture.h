@@ -13,18 +13,19 @@ namespace QindaQt::Link::Test {
 // A hub with a throwaway identity and trust store in a QTemporaryDir,
 // listening on an ephemeral loopback port.
 struct HubFixture {
-    explicit HubFixture(SessionTimings timings = {})
-        : store(dir.path()), hub(generateIdentity(QStringLiteral("test-desktop")), store, options(timings))
+    explicit HubFixture(SessionTimings timings = {}, int maxUnpaired = 8)
+        : store(dir.path()), hub(generateIdentity(QStringLiteral("test-desktop")), store, options(timings, maxUnpaired))
     {
         store.load();
         listening = hub.listen(QHostAddress::LocalHost, 0);
     }
-    static HubOptions options(SessionTimings t)
+    static HubOptions options(SessionTimings t, int maxUnpaired)
     {
         HubOptions o;
         o.local = {QStringLiteral("desktop"), QStringLiteral("test"), QStringLiteral("QindaQt"),
                    QStringLiteral("Test OS"), QStringLiteral("0.0.0"), {}, false};
         o.timings = t;
+        o.maxUnpaired = maxUnpaired;
         return o;
     }
     [[nodiscard]] quint16 port() const { return hub.port(); }

@@ -7,8 +7,10 @@ namespace QindaQt::Link {
 
 bool isValidFrameType(const QString &t)
 {
-    static const QRegularExpression pattern(
-        QStringLiteral("^[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)*$"));
+    // AGENT-GUARD: anchoredPattern gives \A..\z; a plain "$" would accept a
+    // trailing newline (vector type-trailing-newline).
+    static const QRegularExpression pattern(QRegularExpression::anchoredPattern(
+        QStringLiteral("[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)*")));
     return t.size() >= 1 && t.size() <= 64 && pattern.match(t).hasMatch();
 }
 
