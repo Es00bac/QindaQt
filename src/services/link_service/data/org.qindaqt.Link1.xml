@@ -17,4 +17,22 @@
       <arg name="model" type="s"/><arg name="code" type="s"/>
     </signal>
   </interface>
+  <interface name="org.qindaqt.Link1.Notifications">
+    <method name="ListApps"><arg name="json" type="s" direction="out"/></method>
+    <method name="SetAppMuted">
+      <arg name="pkg" type="s" direction="in"/>
+      <arg name="muted" type="b" direction="in"/>
+    </method>
+    <method name="Reply">
+      <arg name="device" type="s" direction="in"/><arg name="key" type="s" direction="in"/>
+      <arg name="action" type="s" direction="in"/><arg name="text" type="s" direction="in"/>
+      <arg name="error" type="s" direction="out"/>
+    </method>
+    <method name="Current"><arg name="json" type="s" direction="out"/></method>
+    <signal name="CurrentChanged"><arg name="json" type="s"/></signal>
+    <signal name="ReplyFinished">
+      <arg name="device" type="s"/><arg name="key" type="s"/>
+      <arg name="action" type="s"/><arg name="error" type="s"/>
+    </signal>
+  </interface>
 </node>

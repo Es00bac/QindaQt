@@ -51,6 +51,13 @@ bool Link1Service::start(QString *error)
     if (!m_hub->listen(QHostAddress::LocalHost, m_config.port)) {
         return fail(QStringLiteral("cannot listen on 127.0.0.1:%1").arg(m_config.port));
     }
+    if (m_config.phoneNotifications != nullptr) {
+        new NotificationsModule(*m_hub,
+                                {m_config.configDir.isEmpty() ? m_config.dataDir + QStringLiteral("/config") : m_config.configDir,
+                                 m_config.cacheDir.isEmpty() ? m_config.dataDir + QStringLiteral("/cache") : m_config.cacheDir,
+                                 m_config.phoneNotifications, m_config.replyLauncher},
+                                this);
+    }
     connect(m_hub.get(), &Hub::devicesChanged, this, &Link1Service::onDevicesChanged);
     connect(m_hub.get(), &Hub::pairingRequested, this,
             [this](const QString &id, const QString &name, const QString &model, const QString &code) {
@@ -70,7 +77,8 @@ bool Link1Service::start(QString *error)
         m_tunnels->start();
     }
     if (!m_bus.registerObject(QString::fromLatin1(kPath), this,
-                              QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals)) {
+                              QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
+                                  | QDBusConnection::ExportAdaptors)) {
         return fail(QStringLiteral("cannot register %1").arg(QLatin1String(kPath)));
     }
     if (!m_bus.registerService(QString::fromLatin1(kName))) {

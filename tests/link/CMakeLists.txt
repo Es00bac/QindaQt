@@ -73,3 +73,12 @@ target_link_libraries(qindaqt_link_presenter_test PRIVATE QindaQt::LinkService Q
 qindaqt_enable_warnings(qindaqt_link_presenter_test)
 add_test(NAME qindaqt.link-presenter COMMAND qindaqt_link_presenter_test)
 set_tests_properties(qindaqt.link-presenter PROPERTIES LABELS "service;link" TIMEOUT 30)
+
+qt_add_executable(qindaqt_link_notifications_test tst_link_notifications.cpp)
+target_link_libraries(
+    qindaqt_link_notifications_test
+    PRIVATE QindaQt::LinkNotifications QindaQt::LinkTransport Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_link_notifications_test)
+add_test(NAME qindaqt.link-notifications COMMAND qindaqt_link_notifications_test)
+set_tests_properties(qindaqt.link-notifications PROPERTIES LABELS "service;link" TIMEOUT 60)

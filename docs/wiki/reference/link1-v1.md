@@ -27,6 +27,26 @@ wire format is the separate [QindaLink protocol 1](qindalink-protocol-v1.md).
 | `DevicesChanged` | `(s json)` | Any snapshot-visible change; `json` is what `Devices()` would return now. |
 | `PairingRequested` | `(s id, s name, s model, s code)` | The phone and desktop have exchanged nonces. `code` is the raw six digits (`"007123"`); UIs show it as `007 123`. The desktop also posts a notification with Accept and Reject. |
 
+## Notifications interface
+
+`org.qindaqt.Link1.Notifications` is exported on the same object by a separate
+adaptor, only when the service has a phone-notification presenter (so not under
+`--no-notifications` alone). Frame semantics are in the
+[protocol reference](qindalink-protocol-v1.md#notifications-notify).
+
+| Member | Signature | Behavior |
+| --- | --- | --- |
+| `ListApps` | `() → s` | JSON array of `{pkg,label,muted}` for apps seen so far or muted. |
+| `SetAppMuted` | `(s pkg, b muted)` | Persists the choice; muting closes that app's shown notifications. |
+| `Reply` | `(s device, s key, s action, s text) → s` | Sends `notify.action` with `text`. Returns `""` once sent, or `not-found`, `bad-request` or `not-connected`. |
+| `Current` | `() → s` | JSON array of the tracked notifications: `device,key,pkg,app,title,text,when,hasReply,actions`. Personal content, session bus only. |
+| `CurrentChanged` | signal `(s json)` | `Current()` after any change. |
+| `ReplyFinished` | signal `(s device, s key, s action, s error)` | The phone's answer to `Reply`; `error` is empty on success. |
+
+`qindaqt-link-service --recording-notifier FILE` replaces the freedesktop
+presenter with a file recorder for private-bus tests; `--config-dir` and
+`--cache-dir` move the mute file and icon cache.
+
 ## Device snapshot
 
 ```json

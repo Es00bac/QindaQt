@@ -222,8 +222,71 @@ implements it, including any frame that carries user content.
 
 ## Notifications (`notify.*`)
 
-Not specified yet. The notifications lane replaces this paragraph with the
-frame table for capability `notify`.
+Capability `notify`. The phone mirrors its notifications to the desktop and
+the desktop sends dismissals and action requests back.
+
+<!-- AGENT-GUARD: notification titles, texts, and reply texts are personal
+content. Neither side logs them (log the frame type and byte length only), and
+no test or tool may print them. -->
+
+Lengths below count UTF-16 code units (Java `String.length()`, Qt
+`QString::size()`). The sender truncates over-long `title` and `text`; the
+receiver treats any other violation of a bound, a type or a pattern as a bad
+frame: a request gets `error{code:"bad-request"}` and a frame without an `id`
+is dropped. Both sides ignore unknown keys.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `notify.posted` | phone→desktop | A notification (below). A `key` the desktop already shows is an update. | none |
+| `notify.snapshot` | phone→desktop | `items`: array of at most 50 notification objects. Sent once on entering READY. It replaces the desktop's set for this phone: keys that are absent are closed, unchanged keys are left alone. | none |
+| `notify.removed` | phone→desktop | `key` (1–512) | none |
+| `notify.dismiss` | desktop→phone | `key`. The user dismissed it on the desktop. The phone calls `cancelNotification(key)`. | `ok` if `id` is present |
+| `notify.action` | desktop→phone | `key`, `action` (an action `id`, 1–64), optional `text` (0–4096, only for a `reply` action) | `ok`, or `error` (below), if `id` is present |
+| `notify.icon` | desktop→phone | `hash` (64 lowercase hex). Asks for the PNG of an icon the desktop does not have cached. | none |
+| `notify.icon` | phone→desktop | `hash`, `png` (base64, at most 65 536 characters; empty when the phone no longer has it) | none |
+
+A notification object:
+
+```json
+{"key":"0|com.example|7|null|10234","pkg":"com.example","app":"Example",
+ "title":"…","text":"…","when":1767225600000,"icon":"<64 hex>",
+ "actions":[{"id":"0","title":"Archive","reply":false},
+            {"id":"1","title":"Reply","reply":true}]}
+```
+
+| Field | Bound |
+| --- | --- |
+| `key` | string 1–512, the Android notification key; opaque to the desktop |
+| `pkg` | string 1–256, the application package |
+| `app` | string 1–128, the application label |
+| `title` | string 0–256 |
+| `text` | string 0–2048 |
+| `when` | integer, milliseconds since the epoch |
+| `icon` | 64 lowercase hex characters (SHA-256 of the 64 px PNG), or `""` when the phone has no icon |
+| `actions` | array of at most 8 `{id: string 1–64, title: string 1–64, reply: bool}` |
+
+Rules:
+
+- **Which notifications.** The phone sends neither ongoing nor
+  foreground-service nor group-summary notifications, nor QindaLink's own. Text
+  that Android redacts for sensitive content reaches the desktop redacted;
+  nothing works around that.
+- **Icons.** The desktop requests a hash it has not cached and waits up to 10
+  seconds before showing the notification without an icon. It accepts the
+  reply only when the decoded bytes start with the PNG signature, are at most
+  49 152 bytes, and hash to the requested `hash`; it then caches the file
+  under that hash.
+- **Errors for `notify.action` and `notify.dismiss`.** `target-changed` when the
+  key is no longer active on the phone, `bad-request` for an unknown action
+  `id` or `text` sent to a non-reply action, `denied` when the phone has no
+  notification access, and `internal` when Android refuses the action.
+- **Dismissal both ways.** `notify.removed` also follows a `notify.dismiss`,
+  because the phone reports every removal. The desktop closes a notification
+  it no longer shows without sending anything back, so the exchange ends.
+- **Rate and size.** The phone sends at most 20 `notify.posted` or
+  `notify.removed` frames per 500 ms and coalesces updates to one key. The
+  desktop keeps at most 100 notifications per phone and closes the oldest
+  beyond that.
 
 ## Messages (`sms.*`)
 
