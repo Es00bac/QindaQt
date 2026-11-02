@@ -16,6 +16,7 @@ import org.qindaqt.link.engine.EngineState;
 import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.StatusFeature;
+import org.qindaqt.link.sms.SmsFeature;
 import org.qindaqt.link.engine.PinStore;
 import org.qindaqt.link.notify.NotificationFeature;
 
@@ -57,7 +58,8 @@ public final class LinkService extends Service {
                     statusSource.start();
                     EngineState state = new EngineState();
                     FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
-                            .add(new NotificationFeature(NotificationAndroidSource.init(this), state));
+                            .add(new NotificationFeature(NotificationAndroidSource.init(this), state))
+                            .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), new SmsSenderAndroid(this), state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();

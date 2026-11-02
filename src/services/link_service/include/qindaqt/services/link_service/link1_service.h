@@ -3,6 +3,7 @@
 
 #include <qindaqt/services/link_adb/tunnel_manager.h>
 #include <qindaqt/services/link_notifications/notifications_module.h>
+#include <qindaqt/services/link_messages/messages_adaptor.h>
 #include <qindaqt/services/link_service/pairing_presenter.h>
 #include <qindaqt/services/link_transport/hub.h>
 
@@ -77,6 +78,9 @@ private:
     PairingPresenter *m_presenter;
     AdbRunner *m_adb;
     std::unique_ptr<TrustStore> m_store;
+    // AGENT-GUARD: declared before m_hub so it is destroyed after the hub, whose sessions call
+    // sessionClosed() on every registered feature while they shut down.
+    std::unique_ptr<MessagesFeature> m_messages;
     std::unique_ptr<Hub> m_hub;
     std::unique_ptr<TunnelManager> m_tunnels;
     QStringList m_presented;

@@ -20,7 +20,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_link_service
-    PUBLIC QindaQt::LinkTransport QindaQt::LinkAdb QindaQt::LinkNotifications Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::LinkTransport QindaQt::LinkAdb QindaQt::LinkNotifications QindaQt::LinkMessages Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_link_service PUBLIC cxx_std_20)
 set_target_properties(qindaqt_link_service PROPERTIES CXX_EXTENSIONS OFF)

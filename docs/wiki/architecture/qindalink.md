@@ -13,7 +13,7 @@ The durable decisions are
 (transport, identity and pairing). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core integrated (desktop service and phone engine).**
+Current maturity: **M1 link core integrated (desktop service and phone engine); M2 messages data path (`sms`) built on branch `link/sms`, awaiting integration and an on-device read check.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -148,6 +148,30 @@ Capability `notify`; the frames are in the
   its `--port 47160`, pair, then
   `adb -s <serial> shell cmd notification post -t "QindaLink test" qltest hello`
   and look for a `present` line in `/tmp/rec.jsonl`.
+
+## Messages (`sms`)
+
+The `sms` capability is the data path for the later QindaTK Messages UI; it
+has no UI of its own.
+
+- **Phone.** `org.qindaqt.link.sms` holds the pure part (`SmsModel` for
+  paging and bounds, `SmsFeature`, `SendTracker`) behind the `SmsProvider`,
+  `ContactResolver` and `SmsSender` interfaces, so it runs in the JVM tests
+  over fakes. `org.qindaqt.link.android` supplies the real ones:
+  `SmsProviderAndroid` (content://mms-sms, sms, mms with a debounced
+  `ContentObserver`), `ContactsResolver` and `SmsSenderAndroid`
+  (`SmsManager`, multipart). Permissions (READ_SMS, READ_CONTACTS, SEND_SMS)
+  are runtime grants; engine state carries only a `read/send` summary.
+- **Desktop.** `src/services/link_messages`: `MessagesFeature` (a
+  `FeatureHandler` that issues requests and validates every phone reply
+  against the protocol bounds), `UnreadTotals` (the only retained state: counts)
+  and `MessagesAdaptor`, which exports `org.qindaqt.Link1.Messages` at
+  `/org/qindaqt/Link1/Messages` with delayed replies. Link1Service only
+  registers them. Message content is never persisted or logged.
+- **Limits.** RCS is invisible (not in the provider). QindaLink is not the
+  default SMS app, so marking a thread read is attempted and answered
+  `unsupported` when Android refuses, and messages it sends are not recorded
+  in the provider by the platform.
 
 ## Connection and pairing
 
