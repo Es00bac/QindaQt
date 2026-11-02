@@ -28,6 +28,7 @@ public final class LinkService extends Service {
     private static final String TAG = "QindaLink";
     private static final String CHANNEL = "link-status";
     static volatile LinkEngine engine;
+    private static AndroidStatusSource statusSource;
 
     /** Starts the service; safe to call repeatedly. */
     public static void start(Context ctx) {
@@ -48,8 +49,10 @@ public final class LinkService extends Service {
                     File dir = getFilesDir();
                     id.exportCertificatePem(new File(dir, "identity-cert.pem"));
                     DeviceInfo info = new DeviceInfo(Build.MODEL, Build.MODEL, "Android " + Build.VERSION.RELEASE, "0.1.0");
+                    statusSource = new AndroidStatusSource(this);
+                    statusSource.start();
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
-                            new PinStore(new File(dir, "desktop-pin")), new AndroidStatusSource(this), info);
+                            new PinStore(new File(dir, "desktop-pin")), statusSource, info);
                     engine.start();
                     Log.i(TAG, "engine started");
                 } catch (Exception e) {
@@ -64,6 +67,7 @@ public final class LinkService extends Service {
     @Override public void onDestroy() {
         synchronized (LinkService.class) {
             if (engine != null) { engine.stop(); engine = null; }
+            if (statusSource != null) { statusSource.stop(); statusSource = null; }
         }
         super.onDestroy();
     }

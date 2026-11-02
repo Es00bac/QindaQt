@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  */
 public final class Envelope {
     public static final long MAX_ID = 9007199254740991L;
-    private static final Pattern TYPE = Pattern.compile("^[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)*$");
+    private static final Pattern TYPE = Pattern.compile("[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)*");
 
     public final String t;
     /** 0 when absent (valid ids start at 1). */

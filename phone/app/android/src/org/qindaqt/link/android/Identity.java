@@ -43,7 +43,10 @@ final class Identity {
         ks.load(null);
         if (!ks.containsAlias(ALIAS)) {
             KeyPairGenerator g = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
-            g.initialize(new KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+            // AGENT-NOTE: TEE-backed per ADR-0434. StrongBox (setIsStrongBoxBacked) was not adopted: its
+            // ECDSA signing is slow enough to risk the 10 s hello budget on reconnect storms and it was
+            // never measured on the device; revisit with a measured handshake latency.
+            g.initialize(new KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_SIGN)
                     .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
                     // NONE is needed by some TLS 1.3 signature paths in Conscrypt.
                     .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_NONE)

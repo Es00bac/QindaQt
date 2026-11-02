@@ -39,7 +39,7 @@ public final class Pairing {
     public static String code(byte[] spkiD, byte[] spkiP, byte[] nd, byte[] np) {
         byte[] h = sha(ascii("QLINK-SAS-1"), spkiD, spkiP, nd, np);
         long v = ((h[0] & 0xffL) << 24) | ((h[1] & 0xff) << 16) | ((h[2] & 0xff) << 8) | (h[3] & 0xff);
-        return String.format("%06d", v % 1000000L);
+        return String.format(java.util.Locale.ROOT, "%06d", v % 1000000L);
     }
 
     /** "123 456" display form. */
@@ -52,12 +52,14 @@ public final class Pairing {
         return s.toString();
     }
 
-    /** Strict lowercase-or-uppercase hex of exactly {@code bytes} bytes; null if malformed. */
+    private static int nib(char c) { return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1; }
+
+    /** Strict lowercase hex (protocol rule: no uppercase, no non-ASCII digits) of exactly {@code bytes} bytes; null if malformed. */
     public static byte[] unhex(String s, int bytes) {
         if (s == null || s.length() != bytes * 2) return null;
         byte[] o = new byte[bytes];
         for (int i = 0; i < bytes; i++) {
-            int h = Character.digit(s.charAt(2 * i), 16), l = Character.digit(s.charAt(2 * i + 1), 16);
+            int h = nib(s.charAt(2 * i)), l = nib(s.charAt(2 * i + 1));
             if (h < 0 || l < 0) return null;
             o[i] = (byte) (h * 16 + l);
         }

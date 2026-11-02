@@ -17,7 +17,7 @@ public final class VectorTests {
 
     @SuppressWarnings("unchecked")
     static Map<String, Object> load(String dir, String f) throws Exception {
-        return (Map<String, Object>) Json.parse(new String(Files.readAllBytes(Paths.get(dir, f)), "UTF-8"));
+        return (Map<String, Object>) Json.parse(new String(Files.readAllBytes(Paths.get(dir, f)), "UTF-8"), 1024);
     }
 
     static byte[] hexBytes(String h) { return Pairing.unhex(h, h.length() / 2); }

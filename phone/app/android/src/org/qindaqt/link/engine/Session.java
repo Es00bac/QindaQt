@@ -2,11 +2,14 @@ package org.qindaqt.link.engine;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.qindaqt.link.proto.Envelope;
@@ -29,14 +32,24 @@ public final class Session {
     private enum Phase { HELLO, UNPAIRED, REQUESTED, NONCE_SENT, CONFIRM, READY }
 
     private static final long HELLO_TIMEOUT_MS = 10000, PING_AFTER_MS = 30000, DEAD_AFTER_MS = 90000,
-            PAIR_TIMEOUT_MS = 120000, STATUS_MIN_GAP_MS = 2000;
+            PAIR_TIMEOUT_MS = 120000, STATUS_MIN_GAP_MS = 2000,
+            WRITE_STALL_MS = 10000;
+    private static final int EVENT_CAPACITY = 128, WRITE_CAPACITY = 64;
+    private static final Object WAKE = new Object();
 
     private final Link link;
     private final PinStore pins;
     private final StatusSource status;
     private final DeviceInfo info;
     private final EngineState state;
-    private final LinkedBlockingQueue<Object> events = new LinkedBlockingQueue<>();
+    // AGENT-GUARD: both queues are bounded. The reader blocks when events is full (TCP backpressure,
+    // the 90 s silence timer still runs on the main loop); commands and wakeups are dropped when full.
+    private final BlockingQueue<Object> events = new ArrayBlockingQueue<>(EVENT_CAPACITY);
+    private final BlockingQueue<byte[]> outbox = new ArrayBlockingQueue<>(WRITE_CAPACITY);
+    private static final byte[] END = new byte[0];
+    private volatile long writeStartedMs;
+    private volatile boolean done;
+    private Thread writer;
     private final FrameCodec decoder = new FrameCodec();
     private final SecureRandom rng = new SecureRandom();
 
@@ -60,12 +73,14 @@ public final class Session {
     }
 
     /** Thread-safe: queue a UI action. */
-    public void command(Command c) { events.add(c); }
+    public void command(Command c) { events.offer(c); }
 
     /** Runs until the connection ends. Always closes the link. */
     public void run() {
         Thread reader = new Thread(this::readLoop, "qindalink-reader");
         reader.setDaemon(true);
+        writer = new Thread(this::writeLoop, "qindalink-writer");
+        writer.setDaemon(true);
         try {
             String pinned = pins.deviceId();
             pinMatches = peerId.equals(pinned);
@@ -74,14 +89,44 @@ public final class Session {
                 state.set(EngineState.Phase.ERROR, "", "", "A different desktop answered; forget the paired desktop to pair a new one.");
                 return;
             }
+            writer.start();
             reader.start();
+            status.setListener(() -> events.offer(WAKE));
             sendHello();
             loop();
         } catch (IOException e) {
             if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.DISCONNECTED, desktopName, "", "Connection lost");
         } finally {
+            status.setListener(null);
+            done = true;
+            outbox.offer(END); // lets a queued bye flush; the watchdog bounds how long this can take
+            try { writer.join(1500); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             link.close();
         }
+    }
+
+    /** Sole owner of link.out(). A stalled write is detected by onTick's watchdog, which closes the link. */
+    private void writeLoop() {
+        try {
+            OutputStream out = link.out();
+            while (true) {
+                byte[] f = outbox.take();
+                if (f == END) return;
+                writeStartedMs = now();
+                out.write(f);
+                out.flush();
+                writeStartedMs = 0;
+            }
+        } catch (IOException | InterruptedException e) {
+            if (!done) putEvent(e instanceof IOException ? e : new IOException("writer interrupted"));
+        }
+    }
+
+    /** Reader/writer side hand-off with backpressure; gives up once the session is over. */
+    private void putEvent(Object o) {
+        try {
+            while (!done) if (events.offer(o, 200, TimeUnit.MILLISECONDS)) return;
+        } catch (InterruptedException ignored) { /* thread ends */ }
     }
 
     private void readLoop() {
@@ -90,14 +135,14 @@ public final class Session {
             InputStream in = link.in();
             while (true) {
                 int n = in.read(buf);
-                if (n < 0) { events.add(new IOException("eof")); return; }
+                if (n < 0) { putEvent(new IOException("eof")); return; }
                 decoder.feed(buf, 0, n);
                 FrameCodec.Result r;
-                while ((r = decoder.next()).status == FrameCodec.Status.FRAME) events.add(r.envelope);
-                if (r.status != FrameCodec.Status.NEEDS_MORE) { events.add(new IOException("protocol error " + r.status)); return; }
+                while ((r = decoder.next()).status == FrameCodec.Status.FRAME) putEvent(r.envelope);
+                if (r.status != FrameCodec.Status.NEEDS_MORE) { putEvent(new IOException("protocol error " + r.status)); return; }
             }
         } catch (IOException e) {
-            events.add(e);
+            putEvent(e);
         }
     }
 
@@ -120,6 +165,8 @@ public final class Session {
     }
 
     private boolean onTick(long t, long start) throws IOException {
+        long ws = writeStartedMs;
+        if (ws != 0 && t - ws > WRITE_STALL_MS) { link.close(); throw new IOException("write stalled"); }
         if (phase == Phase.HELLO && t - start > HELLO_TIMEOUT_MS) throw new IOException("hello timeout");
         if (t - lastRecvMs > DEAD_AFTER_MS) throw new IOException("peer silent");
         if (t - lastSentMs > PING_AFTER_MS) send(new Envelope("ping", nextId++, 0, null));
@@ -224,7 +271,7 @@ public final class Session {
             case "pair.commit":
                 if (phase != Phase.REQUESTED || e.re != requestId) throw new IOException("unexpected commit");
                 commit = Pairing.unhex(str(e.b.get("c")), 32);
-                if (commit == null) throw new IOException("bad commit");
+                if (commit == null) return rejectMalformed("commit");
                 np = new byte[32];
                 rng.nextBytes(np);
                 phase = Phase.NONCE_SENT;
@@ -233,7 +280,8 @@ public final class Session {
             case "pair.reveal":
                 if (phase != Phase.NONCE_SENT) throw new IOException("unexpected reveal");
                 nd = Pairing.unhex(str(e.b.get("nd")), 32);
-                if (nd == null || !Pairing.verifyCommitment(commit, nd, link.peerSpki(), link.ownSpki())) {
+                if (nd == null) return rejectMalformed("reveal");
+                if (!Pairing.verifyCommitment(commit, nd, link.peerSpki(), link.ownSpki())) {
                     bye("pair-rejected");
                     state.set(EngineState.Phase.ERROR, desktopName, "", "Pairing check failed; possible interception");
                     return false;
@@ -258,9 +306,24 @@ public final class Session {
         }
     }
 
+    /** Protocol: a c/np/nd that is not exactly 64 lowercase hex ends pairing with pair-rejected. */
+    private boolean rejectMalformed(String what) {
+        bye("pair-rejected");
+        state.set(EngineState.Phase.ERROR, desktopName, "", "Desktop sent a malformed pairing " + what);
+        return false;
+    }
+
     private boolean maybeFinish() throws IOException {
         if (!(localAccepted && remoteAccepted)) return true;
-        pins.set(peerId, desktopName.isEmpty() ? "desktop" : desktopName);
+        try {
+            pins.set(peerId, desktopName.isEmpty() ? "desktop" : desktopName);
+        } catch (IOException e) {
+            // Protocol: never enter READY with a pin we could not persist, or the stores disagree after restart.
+            pins.clear();
+            bye("error");
+            state.set(EngineState.Phase.ERROR, desktopName, "", "Could not save the pairing");
+            return false;
+        }
         pinMatches = true;
         state.setPaired(true, desktopName);
         becomeReady();
@@ -323,8 +386,7 @@ public final class Session {
     }
 
     private void send(Envelope e) throws IOException {
-        link.out().write(FrameCodec.encode(e));
-        link.out().flush();
+        if (!outbox.offer(FrameCodec.encode(e))) throw new IOException("write backlog");
         lastSentMs = now();
     }
 

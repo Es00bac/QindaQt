@@ -28,14 +28,19 @@ public final class Json {
         ParseException(String m) { super(m); }
     }
 
-    private static final int MAX_DEPTH = 64;
+    /** Protocol limit: the top-level object is level 1; level 65 is rejected. */
+    public static final int PROTOCOL_MAX_LEVELS = 64;
     private final String s;
+    private final int maxLevels;
     private int i;
 
-    private Json(String s) { this.s = s; }
+    private Json(String s, int maxLevels) { this.s = s; this.maxLevels = maxLevels; }
 
-    public static Object parse(String text) throws ParseException {
-        Json p = new Json(text);
+    public static Object parse(String text) throws ParseException { return parse(text, PROTOCOL_MAX_LEVELS); }
+
+    /** Test fixtures that embed protocol payloads need a deeper limit than the wire does. */
+    public static Object parse(String text, int maxLevels) throws ParseException {
+        Json p = new Json(text, maxLevels);
         p.ws();
         Object v = p.value(0);
         p.ws();
@@ -51,7 +56,6 @@ public final class Json {
     }
 
     private Object value(int depth) throws ParseException {
-        if (depth > MAX_DEPTH) throw new ParseException("too deep");
         if (i >= s.length()) throw new ParseException("eof");
         char c = s.charAt(i);
         switch (c) {
@@ -73,6 +77,7 @@ public final class Json {
     }
 
     private Map<String, Object> object(int depth) throws ParseException {
+        if (depth >= maxLevels) throw new ParseException("too deep");
         Map<String, Object> m = new LinkedHashMap<>();
         i++;
         ws();
@@ -95,6 +100,7 @@ public final class Json {
     }
 
     private List<Object> array(int depth) throws ParseException {
+        if (depth >= maxLevels) throw new ParseException("too deep");
         List<Object> l = new ArrayList<>();
         i++;
         ws();
@@ -244,7 +250,7 @@ public final class Json {
                 case '\b': b.append("\\b"); break;
                 case '\f': b.append("\\f"); break;
                 default:
-                    if (c < 0x20) b.append(String.format("\\u%04x", (int) c)); else b.append(c);
+                    if (c < 0x20) b.append(String.format(java.util.Locale.ROOT, "\\u%04x", (int) c)); else b.append(c);
             }
         }
         b.append('"');

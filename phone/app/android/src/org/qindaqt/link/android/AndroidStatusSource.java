@@ -1,5 +1,6 @@
 package org.qindaqt.link.android;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -21,10 +22,53 @@ import org.qindaqt.link.proto.Json;
  */
 final class AndroidStatusSource implements StatusSource {
     private final Context ctx;
+    private volatile Map<String, Object> cached;
+    private volatile Runnable listener;
+    private volatile String netType = "none";
+    private ConnectivityManager cm;
+    private ConnectivityManager.NetworkCallback netCb;
+    private BroadcastReceiver batteryRx;
 
     AndroidStatusSource(Context ctx) { this.ctx = ctx; }
 
+    /**
+     * Registers battery and default-network callbacks. The snapshot is rebuilt
+     * only when one fires, so the session's tick never touches system services.
+     * Must be paired with {@link #stop()}.
+     */
+    void start() {
+        cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+        netCb = new ConnectivityManager.NetworkCallback() {
+            @Override public void onCapabilitiesChanged(Network n, NetworkCapabilities c) { netType = typeOf(c); refresh(); }
+            @Override public void onLost(Network n) { netType = "none"; refresh(); }
+        };
+        cm.registerDefaultNetworkCallback(netCb);
+        batteryRx = new BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) { refresh(); }
+        };
+        ctx.registerReceiver(batteryRx, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        refresh();
+    }
+
+    void stop() {
+        try { if (cm != null && netCb != null) cm.unregisterNetworkCallback(netCb); } catch (RuntimeException ignored) { /* already gone */ }
+        try { if (batteryRx != null) ctx.unregisterReceiver(batteryRx); } catch (RuntimeException ignored) { /* already gone */ }
+    }
+
+    @Override public void setListener(Runnable r) { listener = r; }
+
+    private void refresh() {
+        cached = build();
+        Runnable r = listener;
+        if (r != null) r.run();
+    }
+
     @Override public Map<String, Object> snapshot() {
+        Map<String, Object> c = cached;
+        return c != null ? c : build();
+    }
+
+    private Map<String, Object> build() {
         Map<String, Object> bat = new LinkedHashMap<>();
         Intent i = ctx.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int level = 0, plug = 0, st = -1;
@@ -43,7 +87,7 @@ final class AndroidStatusSource implements StatusSource {
         bat.put("plugged", plugged);
 
         Map<String, Object> net = new LinkedHashMap<>();
-        net.put("type", networkType());
+        net.put("type", netType);
         net.put("signal", Json.NULL);
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -52,10 +96,7 @@ final class AndroidStatusSource implements StatusSource {
         return body;
     }
 
-    private String networkType() {
-        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        Network n = cm == null ? null : cm.getActiveNetwork();
-        NetworkCapabilities c = n == null ? null : cm.getNetworkCapabilities(n);
+    private static String typeOf(NetworkCapabilities c) {
         if (c == null) return "none";
         if (c.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return "wifi";
         if (c.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) return "cellular";

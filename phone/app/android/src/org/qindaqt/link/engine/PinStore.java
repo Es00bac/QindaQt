@@ -29,7 +29,10 @@ public final class PinStore {
 
     public synchronized void set(String deviceId, String name) throws IOException {
         File tmp = new File(file.getPath() + ".tmp");
-        Files.write(tmp.toPath(), (deviceId + "\n" + name.replace('\n', ' ') + "\n").getBytes(StandardCharsets.UTF_8));
+        try (java.io.FileOutputStream o = new java.io.FileOutputStream(tmp)) {
+            o.write((deviceId + "\n" + name.replace('\n', ' ') + "\n").getBytes(StandardCharsets.UTF_8));
+            o.getFD().sync();
+        }
         Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
