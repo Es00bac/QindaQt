@@ -17,6 +17,8 @@ import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.StatusFeature;
 import org.qindaqt.link.engine.PinStore;
+import org.qindaqt.link.input.InputFeature;
+import org.qindaqt.link.macro.MacroFeature;
 
 /**
  * Foreground service (type connectedDevice) that owns the {@link LinkEngine}.
@@ -32,6 +34,8 @@ public final class LinkService extends Service {
     private static final String CHANNEL = "link-status";
     static volatile LinkEngine engine;
     private static AndroidStatusSource statusSource;
+    static final InputFeature inputFeature = new InputFeature();
+    static final MacroFeature macroFeature = new MacroFeature();
 
     /** Starts the service; safe to call repeatedly. */
     public static void start(Context ctx) {
@@ -55,7 +59,8 @@ public final class LinkService extends Service {
                     statusSource = new AndroidStatusSource(this);
                     statusSource.start();
                     EngineState state = new EngineState();
-                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state));
+                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
+                            .add(inputFeature).add(macroFeature);
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();

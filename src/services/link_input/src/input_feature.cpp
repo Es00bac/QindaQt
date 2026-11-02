@@ -70,6 +70,10 @@ void InputFeature::begin(Session &session, qint64 id)
 {
     if (!m_device.isEmpty() && m_device != session.deviceId()) {
         session.send(makeError(QStringLiteral("busy"), QStringLiteral("another phone controls the desktop"), id));
+        Envelope state; // the reply alone never reaches the phone's UI
+        state.t = QStringLiteral("input.state");
+        state.b = QJsonObject{{QStringLiteral("state"), QStringLiteral("busy")}};
+        session.send(state);
         return;
     }
     m_device = session.deviceId();

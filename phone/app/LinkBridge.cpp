@@ -16,6 +16,8 @@ LinkBridge::LinkBridge(QObject *parent) : QObject(parent)
                                        QNativeInterface::QAndroidApplication::context());
     connect(&m_timer, &QTimer::timeout, this, &LinkBridge::poll);
     m_timer.start(500);
+    m_fast.setInterval(150);
+    connect(&m_fast, &QTimer::timeout, this, &LinkBridge::pollInput);
     pollDevice();
     poll();
     // Returning from a settings page is when permission states change.
@@ -48,6 +50,20 @@ void LinkBridge::poll()
     }
     if (differs || devChanged)
         emit changed();
+    pollInput();
+}
+
+void LinkBridge::pollInput()
+{
+    const QJniObject input = QJniObject::callStaticObjectMethod(kBridge, "inputJson", "()Ljava/lang/String;");
+    const QJniObject macro = QJniObject::callStaticObjectMethod(kBridge, "macroJson", "()Ljava/lang/String;");
+    const QVariantMap i = QJsonDocument::fromJson(input.toString().toUtf8()).object().toVariantMap();
+    const QVariantMap m = QJsonDocument::fromJson(macro.toString().toUtf8()).object().toVariantMap();
+    if (i != m_input || m != m_macro) {
+        m_input = i;
+        m_macro = m;
+        emit inputChanged();
+    }
 }
 
 void LinkBridge::pollDevice()
@@ -87,3 +103,74 @@ void LinkBridge::pairAgain() { call("pairAgain"); }
 void LinkBridge::accept() { call("accept"); }
 void LinkBridge::reject() { call("reject"); }
 void LinkBridge::forget() { call("forget"); }
+
+void LinkBridge::inputBegin()
+{
+    call("inputBegin");
+    m_fast.start();
+    pollInput();
+}
+
+void LinkBridge::inputEnd()
+{
+    m_fast.stop();
+    call("inputEnd");
+    pollInput();
+}
+
+bool LinkBridge::touch(int fingers, double x0, double y0, double x1, double y1)
+{
+    return QJniObject::callStaticMethod<jboolean>(kBridge, "touch", "(IDDDD)Z", fingers, x0, y0, x1, y1);
+}
+
+void LinkBridge::setSensitivity(double value)
+{
+    if (qFuzzyCompare(m_sensitivity, value))
+        return;
+    m_sensitivity = value;
+    QJniObject::callStaticMethod<void>(kBridge, "setSensitivity", "(D)V", value);
+    emit sensitivityChanged();
+}
+
+void LinkBridge::click(const QString &button)
+{
+    QJniObject jb = QJniObject::fromString(button);
+    QJniObject::callStaticMethod<void>(kBridge, "click", "(Ljava/lang/String;)V", jb.object<jstring>());
+}
+
+void LinkBridge::sendKey(const QString &name, int mods)
+{
+    QJniObject jn = QJniObject::fromString(name);
+    QJniObject::callStaticMethod<void>(kBridge, "sendKey", "(Ljava/lang/String;I)V", jn.object<jstring>(), mods);
+}
+
+void LinkBridge::sendChar(int codePoint, int mods)
+{
+    QJniObject::callStaticMethod<void>(kBridge, "sendChar", "(II)V", codePoint, mods);
+}
+
+// AGENT-GUARD: typed text passes through here only to be handed to the engine; it is never logged or kept.
+void LinkBridge::sendText(const QString &text)
+{
+    QJniObject jt = QJniObject::fromString(text);
+    QJniObject::callStaticMethod<void>(kBridge, "sendText", "(Ljava/lang/String;)V", jt.object<jstring>());
+}
+
+void LinkBridge::macroRun(const QString &id)
+{
+    QJniObject jid = QJniObject::fromString(id);
+    QJniObject::callStaticMethod<void>(kBridge, "macroRun", "(Ljava/lang/String;)V", jid.object<jstring>());
+    pollInput();
+}
+
+void LinkBridge::macroCancel()
+{
+    QJniObject::callStaticMethod<void>(kBridge, "macroCancel", "()V");
+    pollInput();
+}
+
+void LinkBridge::haptic()
+{
+    QJniObject::callStaticMethod<void>(kBridge, "haptic", "(Landroid/content/Context;)V",
+                                       QNativeInterface::QAndroidApplication::context());
+}

@@ -15,7 +15,7 @@ The durable decisions are
 (ADR-0427's library, one portal session). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core integrated (desktop service and phone engine).**
+Current maturity: **M1 link core integrated (desktop service and phone engine); M2 input and macros candidate (desktop and phone, fakes only).**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -95,8 +95,9 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. Only the `status` capability is advertised;
-`ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
+through one polled JNI bridge. The `status`, `input` and `macro` capabilities are
+advertised (input and macro from the input-macros lane); `ring` is answered with
+`error{unsupported}`. Wi-Fi/cellular signal is
 reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
 

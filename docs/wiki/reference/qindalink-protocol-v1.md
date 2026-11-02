@@ -246,7 +246,7 @@ reply on success. A frame that has an `id` and fails validation gets
 | --- | --- | --- | --- |
 | `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop is locked (`message` is `locked`). `error{internal}` when the portal is unavailable. |
 | `input.end` | both | phone→desktop: `{}` (an optional `id` is answered `ok`). desktop→phone: `reason`, currently `revoked` | none / `ok` |
-| `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked` | none |
+| `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked`, `busy` (another phone controls input) | none |
 | `input.pointer` | phone→desktop | `dx`, `dy`: numbers, relative, finite, absolute value at most 1000 | none |
 | `input.button` | phone→desktop | `button`: `left`, `right`, `middle`; `state`: `down`, `up`, `click` | none |
 | `input.scroll` | phone→desktop | `mode`: `smooth` or `discrete`; `dx`, `dy`; optional `end` (bool, ends a smooth gesture). Smooth: absolute value at most 500. Discrete: integers, at most 20 detents. Positive `dy` moves the content toward its end (down). | none |
@@ -297,7 +297,7 @@ the phone never receives steps, text or shortcuts.
 | `macro.list` | desktop→phone | `rev` (string), `macros`: array of at most 64 `{id, name}`; `id` matches `[a-zA-Z0-9_-]{1,40}`, `name` is 1–80 characters. Sent on entering READY and whenever the library changes. | none |
 | `macro.list` | phone→desktop, with `id` | `{}`; asks for a fresh list | `ok`, after the desktop sends `macro.list` |
 | `macro.run` | phone→desktop, with `id` | `id` (string, the macro id) | `ok` when the macro finished. Errors: `denied` (the phone is not the input controller, or input is not active: send `input.begin` first), `busy` (a macro is already running), `bad-request` (unknown id), `internal` (could not start, failed or was cancelled; `message` gives the reason) |
-| `macro.state` | desktop→phone | `id`, `state`: `running`, `done`, `cancelled`, `failed`; optional `reason` (`cancelled`, `input-lost`, `input-unavailable`, `text-failed`) | none |
+| `macro.state` | desktop→phone | `id`, `state`: `running`, `done`, `cancelled`, `failed`; optional `reason` (`cancelled`, `input-lost`, `input-unavailable`, `text-failed`, or for a refused run the error code: `denied`, `busy`, `bad-request`, `internal`) | none |
 | `macro.cancel` | phone→desktop | `{}` | `ok` |
 
 Rules:

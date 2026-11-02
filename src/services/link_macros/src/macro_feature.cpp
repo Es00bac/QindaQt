@@ -103,21 +103,33 @@ void MacroFeature::handle(Session &session, const Envelope &e)
 void MacroFeature::run(Session &session, const Envelope &e)
 {
     const QJsonValue idValue = e.b.value(QLatin1String("id"));
+    // The reply alone never reaches the phone's UI (its engine drops ok/error),
+    // so a refusal is also pushed as macro.state{failed}.
+    auto refuse = [&](const QString &code, const QString &why) {
+        reply(session, e.id, code, why);
+        if (idValue.isString()) {
+            Envelope st;
+            st.t = QStringLiteral("macro.state");
+            st.b = QJsonObject{{QStringLiteral("id"), idValue.toString()}, {QStringLiteral("state"), QStringLiteral("failed")},
+                               {QStringLiteral("reason"), code}};
+            session.send(st);
+        }
+    };
     if (!idValue.isString() || idValue.toString().isEmpty() || idValue.toString().size() > 40) {
-        reply(session, e.id, QStringLiteral("bad-request"), QStringLiteral("macro id required"));
+        refuse(QStringLiteral("bad-request"), QStringLiteral("macro id required"));
         return;
     }
     if (m_input.controller() != session.deviceId() || !m_input.flowing()) {
-        reply(session, e.id, QStringLiteral("denied"), QStringLiteral("send input.begin and wait for approval first"));
+        refuse(QStringLiteral("denied"), QStringLiteral("send input.begin and wait for approval first"));
         return;
     }
     if (m_runner.running()) {
-        reply(session, e.id, QStringLiteral("busy"), QStringLiteral("a macro is already running"));
+        refuse(QStringLiteral("busy"), QStringLiteral("a macro is already running"));
         return;
     }
     const auto macro = m_catalog.macro(idValue.toString());
     if (!macro) {
-        reply(session, e.id, QStringLiteral("bad-request"), QStringLiteral("unknown macro"));
+        refuse(QStringLiteral("bad-request"), QStringLiteral("unknown macro"));
         return;
     }
     m_failure.clear();
@@ -128,7 +140,7 @@ void MacroFeature::run(Session &session, const Envelope &e)
     if (!m_runner.start(QStringLiteral("link/") + macro->id, *macro)) {
         m_runRequest = 0;
         m_runDevice.clear();
-        reply(session, e.id, QStringLiteral("internal"), QStringLiteral("macro could not start"));
+        refuse(QStringLiteral("internal"), QStringLiteral("macro could not start"));
         return;
     }
     pushState(QStringLiteral("running"));
