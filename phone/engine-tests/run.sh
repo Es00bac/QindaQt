@@ -6,5 +6,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 out="$root/build/phone/engine-tests"
 rm -rf "$out"; mkdir -p "$out"
-javac -Xlint:all -d "$out" "$root"/phone/app/android/src/org/qindaqt/link/proto/*.java "$here/VectorTests.java"
-exec java -cp "$out" VectorTests "$root/tests/link/vectors"
+javac -Xlint:all -d "$out" "$root"/phone/app/android/src/org/qindaqt/link/proto/*.java \
+    "$root"/phone/app/android/src/org/qindaqt/link/engine/*.java "$here/VectorTests.java" "$here/SessionTest.java"
+java -cp "$out" VectorTests "$root/tests/link/vectors"
+java -cp "$out" SessionTest

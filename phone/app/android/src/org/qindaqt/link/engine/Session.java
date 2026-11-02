@@ -1,0 +1,340 @@
+package org.qindaqt.link.engine;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.qindaqt.link.proto.Envelope;
+import org.qindaqt.link.proto.FrameCodec;
+import org.qindaqt.link.proto.Pairing;
+
+/**
+ * One phone-side connection: hello, pairing, keepalive, status. Android-free.
+ *
+ * AGENT-GUARD: all writes happen on the thread that calls {@link #run()};
+ * UI actions arrive through {@link #command} and are applied on that thread.
+ * Frame bodies are never logged (only types), see the protocol page's
+ * vault redaction rule; this class does not know vault yet but keeps the habit.
+ * Pairing follows docs/wiki/reference/qindalink-protocol-v1.md#pairing.
+ */
+public final class Session {
+    /** UI actions. */
+    public enum Command { PAIR, ACCEPT, REJECT, PAIR_AGAIN, STOP }
+
+    private enum Phase { HELLO, UNPAIRED, REQUESTED, NONCE_SENT, CONFIRM, READY }
+
+    private static final long HELLO_TIMEOUT_MS = 10000, PING_AFTER_MS = 30000, DEAD_AFTER_MS = 90000,
+            PAIR_TIMEOUT_MS = 120000, STATUS_MIN_GAP_MS = 2000;
+
+    private final Link link;
+    private final PinStore pins;
+    private final StatusSource status;
+    private final DeviceInfo info;
+    private final EngineState state;
+    private final LinkedBlockingQueue<Object> events = new LinkedBlockingQueue<>();
+    private final FrameCodec decoder = new FrameCodec();
+    private final SecureRandom rng = new SecureRandom();
+
+    private Phase phase = Phase.HELLO;
+    private String desktopName = "";
+    private List<?> desktopCaps = new ArrayList<>();
+    private boolean desktopTrusted, pinMatches, stale;
+    private long nextId = 1, requestId, lastSentMs, lastRecvMs, pairStartMs, lastStatusMs;
+    private byte[] np, nd, commit;
+    private String code = "", lastStatusJson = "", lastChargeKey = "";
+    private boolean localAccepted, remoteAccepted;
+    private final String peerId;
+
+    public Session(Link link, PinStore pins, StatusSource status, DeviceInfo info, EngineState state) {
+        this.link = link;
+        this.pins = pins;
+        this.status = status;
+        this.info = info;
+        this.state = state;
+        this.peerId = Pairing.hex(link.peerSpki());
+    }
+
+    /** Thread-safe: queue a UI action. */
+    public void command(Command c) { events.add(c); }
+
+    /** Runs until the connection ends. Always closes the link. */
+    public void run() {
+        Thread reader = new Thread(this::readLoop, "qindalink-reader");
+        reader.setDaemon(true);
+        try {
+            String pinned = pins.deviceId();
+            pinMatches = peerId.equals(pinned);
+            if (pinned != null && !pinMatches) {
+                // AGENT-NOTE: a different key than the pinned desktop. Never fall back to pairing here.
+                state.set(EngineState.Phase.ERROR, "", "", "A different desktop answered; forget the paired desktop to pair a new one.");
+                return;
+            }
+            reader.start();
+            sendHello();
+            loop();
+        } catch (IOException e) {
+            if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.DISCONNECTED, desktopName, "", "Connection lost");
+        } finally {
+            link.close();
+        }
+    }
+
+    private void readLoop() {
+        byte[] buf = new byte[8192];
+        try {
+            InputStream in = link.in();
+            while (true) {
+                int n = in.read(buf);
+                if (n < 0) { events.add(new IOException("eof")); return; }
+                decoder.feed(buf, 0, n);
+                FrameCodec.Result r;
+                while ((r = decoder.next()).status == FrameCodec.Status.FRAME) events.add(r.envelope);
+                if (r.status != FrameCodec.Status.NEEDS_MORE) { events.add(new IOException("protocol error " + r.status)); return; }
+            }
+        } catch (IOException e) {
+            events.add(e);
+        }
+    }
+
+    private void loop() throws IOException {
+        long start = now();
+        lastRecvMs = start;
+        while (true) {
+            Object ev;
+            try {
+                ev = events.poll(500, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                return;
+            }
+            long t = now();
+            if (ev instanceof IOException) throw (IOException) ev;
+            if (ev instanceof Envelope) { lastRecvMs = t; if (!onFrame((Envelope) ev)) return; }
+            if (ev instanceof Command && !onCommand((Command) ev)) return;
+            if (!onTick(t, start)) return;
+        }
+    }
+
+    private boolean onTick(long t, long start) throws IOException {
+        if (phase == Phase.HELLO && t - start > HELLO_TIMEOUT_MS) throw new IOException("hello timeout");
+        if (t - lastRecvMs > DEAD_AFTER_MS) throw new IOException("peer silent");
+        if (t - lastSentMs > PING_AFTER_MS) send(new Envelope("ping", nextId++, 0, null));
+        if ((phase == Phase.REQUESTED || phase == Phase.NONCE_SENT || phase == Phase.CONFIRM) && t - pairStartMs > PAIR_TIMEOUT_MS) {
+            bye("pair-timeout");
+            state.set(EngineState.Phase.ERROR, desktopName, "", "Pairing timed out");
+            return false;
+        }
+        if (phase == Phase.READY) sendStatus(t, false);
+        return true;
+    }
+
+    private boolean onFrame(Envelope e) throws IOException {
+        switch (e.t) {
+            case "hello": return onHello(e);
+            case "ping": send(new Envelope("pong", 0, e.id, null)); return true;
+            case "pong": case "ok": return true;
+            case "bye": state.set(EngineState.Phase.DISCONNECTED, desktopName, "", "Desktop closed: " + str(e.b.get("reason"))); return false;
+            case "error": return onError(e);
+            default: break;
+        }
+        if (phase == Phase.HELLO) throw new IOException("frame before hello");
+        if (e.t.startsWith("pair.")) return onPair(e);
+        if (phase != Phase.READY) throw new IOException("frame not allowed unpaired: " + e.t);
+        if (e.id != 0) {
+            // `ring` is advertised nowhere yet; answer honestly instead of ringing the user's phone.
+            Map<String, Object> b = new LinkedHashMap<>();
+            boolean ring = e.t.equals("ring");
+            b.put("code", ring ? "unsupported" : "unknown-type");
+            b.put("message", ring ? "ring is not implemented in this build" : "no handler");
+            send(new Envelope("error", 0, e.id, b));
+        }
+        return true;
+    }
+
+    private boolean onHello(Envelope e) throws IOException {
+        if (phase != Phase.HELLO) throw new IOException("duplicate hello");
+        Object proto = e.b.get("proto");
+        if (!(proto instanceof Long) || (Long) proto != 1L || !"desktop".equals(e.b.get("role"))) {
+            bye("protocol-version");
+            state.set(EngineState.Phase.ERROR, "", "", "Desktop speaks another protocol version");
+            return false;
+        }
+        desktopName = str(e.b.get("name"));
+        desktopCaps = e.b.get("caps") instanceof List ? (List<?>) e.b.get("caps") : new ArrayList<>();
+        desktopTrusted = Boolean.TRUE.equals(e.b.get("trusted"));
+        state.setPaired(pinMatches, pins.name());
+        if (pinMatches && desktopTrusted) { becomeReady(); return true; }
+        phase = Phase.UNPAIRED;
+        stale = pinMatches; // we pinned it but it forgot us
+        state.set(stale ? EngineState.Phase.STALE : EngineState.Phase.CONNECTED, desktopName, "",
+                stale ? "The desktop forgot this phone" : "Desktop found");
+        return true;
+    }
+
+    private boolean onError(Envelope e) {
+        if (phase == Phase.REQUESTED && e.re == requestId) {
+            state.set(EngineState.Phase.ERROR, desktopName, "", "Desktop refused pairing: " + str(e.b.get("code")));
+            return false;
+        }
+        return true;
+    }
+
+    private boolean onCommand(Command c) throws IOException {
+        switch (c) {
+            case STOP: bye("shutdown"); return false;
+            case PAIR_AGAIN:
+                if (phase != Phase.UNPAIRED || !stale) return true;
+                pins.clear();
+                pinMatches = false;
+                state.setPaired(false, null);
+                return startPairing();
+            case PAIR:
+                if (phase != Phase.UNPAIRED || stale) return true;
+                return startPairing();
+            case ACCEPT:
+                if (phase != Phase.CONFIRM) return true;
+                localAccepted = true;
+                send(confirm(true));
+                return maybeFinish();
+            case REJECT:
+                if (phase != Phase.CONFIRM) return true;
+                send(confirm(false));
+                bye("pair-rejected");
+                state.set(EngineState.Phase.ERROR, desktopName, "", "Pairing rejected");
+                return false;
+            default: return true;
+        }
+    }
+
+    private boolean startPairing() throws IOException {
+        phase = Phase.REQUESTED;
+        requestId = nextId++;
+        pairStartMs = now();
+        state.set(EngineState.Phase.PAIRING, desktopName, "", "Starting pairing");
+        send(new Envelope("pair.request", requestId, 0, null));
+        return true;
+    }
+
+    private boolean onPair(Envelope e) throws IOException {
+        switch (e.t) {
+            case "pair.commit":
+                if (phase != Phase.REQUESTED || e.re != requestId) throw new IOException("unexpected commit");
+                commit = Pairing.unhex(str(e.b.get("c")), 32);
+                if (commit == null) throw new IOException("bad commit");
+                np = new byte[32];
+                rng.nextBytes(np);
+                phase = Phase.NONCE_SENT;
+                send(Envelope.of("pair.nonce", map("np", Pairing.hex(np))));
+                return true;
+            case "pair.reveal":
+                if (phase != Phase.NONCE_SENT) throw new IOException("unexpected reveal");
+                nd = Pairing.unhex(str(e.b.get("nd")), 32);
+                if (nd == null || !Pairing.verifyCommitment(commit, nd, link.peerSpki(), link.ownSpki())) {
+                    bye("pair-rejected");
+                    state.set(EngineState.Phase.ERROR, desktopName, "", "Pairing check failed; possible interception");
+                    return false;
+                }
+                code = Pairing.code(link.peerSpki(), link.ownSpki(), nd, np);
+                phase = Phase.CONFIRM;
+                state.set(EngineState.Phase.CONFIRM, desktopName, Pairing.display(code), "Compare the code with the desktop");
+                return true;
+            case "pair.confirm":
+                if (phase != Phase.CONFIRM) throw new IOException("unexpected confirm");
+                if (!(e.b.get("accept") instanceof Boolean)) throw new IOException("bad confirm");
+                if (!(Boolean) e.b.get("accept")) {
+                    bye("pair-rejected");
+                    state.set(EngineState.Phase.ERROR, desktopName, "", "The desktop rejected pairing");
+                    return false;
+                }
+                remoteAccepted = true;
+                return maybeFinish();
+            default:
+                if (e.id != 0) send(new Envelope("error", 0, e.id, map("code", "unknown-type", "message", "no handler")));
+                return true;
+        }
+    }
+
+    private boolean maybeFinish() throws IOException {
+        if (!(localAccepted && remoteAccepted)) return true;
+        pins.set(peerId, desktopName.isEmpty() ? "desktop" : desktopName);
+        pinMatches = true;
+        state.setPaired(true, desktopName);
+        becomeReady();
+        return true;
+    }
+
+    private void becomeReady() throws IOException {
+        phase = Phase.READY;
+        state.set(EngineState.Phase.READY, desktopName, "", "Connected");
+        sendStatus(now(), true);
+    }
+
+    private void sendStatus(long t, boolean force) throws IOException {
+        if (!desktopCaps.contains("status")) return;
+        Map<String, Object> body = status.snapshot();
+        String json = org.qindaqt.link.proto.Json.write(body);
+        if (!force && json.equals(lastStatusJson)) return;
+        String key = chargeKey(body);
+        boolean urgent = !key.equals(lastChargeKey);
+        if (!force && !urgent && t - lastStatusMs < STATUS_MIN_GAP_MS) return;
+        send(Envelope.of("status", body));
+        lastStatusJson = json;
+        lastChargeKey = key;
+        lastStatusMs = t;
+        state.statusSent(System.currentTimeMillis());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String chargeKey(Map<String, Object> body) {
+        Object b = body.get("battery");
+        if (!(b instanceof Map)) return "";
+        Map<String, Object> m = (Map<String, Object>) b;
+        return m.get("charging") + "/" + m.get("plugged");
+    }
+
+    private void sendHello() throws IOException {
+        Map<String, Object> b = new LinkedHashMap<>();
+        b.put("proto", 1L);
+        b.put("role", "phone");
+        b.put("name", info.name);
+        b.put("model", info.model);
+        b.put("os", info.os);
+        b.put("app", info.app);
+        List<Object> caps = new ArrayList<>();
+        caps.add("status"); // `ring` is deliberately absent until it is implemented.
+        b.put("caps", caps);
+        b.put("trusted", pinMatches);
+        send(Envelope.of("hello", b));
+        state.set(EngineState.Phase.CONNECTING, "", "", "Waiting for the desktop");
+    }
+
+    private void bye(String reason) {
+        try { send(Envelope.of("bye", map("reason", reason))); } catch (IOException ignored) { /* closing anyway */ }
+    }
+
+    private Envelope confirm(boolean accept) {
+        Map<String, Object> b = new LinkedHashMap<>();
+        b.put("accept", accept);
+        return Envelope.of("pair.confirm", b);
+    }
+
+    private void send(Envelope e) throws IOException {
+        link.out().write(FrameCodec.encode(e));
+        link.out().flush();
+        lastSentMs = now();
+    }
+
+    private static Map<String, Object> map(String... kv) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i < kv.length; i += 2) m.put(kv[i], kv[i + 1]);
+        return m;
+    }
+
+    private static String str(Object o) { return o instanceof String ? (String) o : ""; }
+
+    private static long now() { return System.nanoTime() / 1000000L; }
+}
