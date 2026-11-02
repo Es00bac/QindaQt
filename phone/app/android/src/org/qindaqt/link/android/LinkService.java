@@ -12,7 +12,10 @@ import android.os.IBinder;
 import android.util.Log;
 import java.io.File;
 import org.qindaqt.link.engine.DeviceInfo;
+import org.qindaqt.link.engine.EngineState;
+import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
+import org.qindaqt.link.engine.StatusFeature;
 import org.qindaqt.link.engine.PinStore;
 
 /**
@@ -51,8 +54,10 @@ public final class LinkService extends Service {
                     DeviceInfo info = new DeviceInfo(Build.MODEL, Build.MODEL, "Android " + Build.VERSION.RELEASE, "0.1.0");
                     statusSource = new AndroidStatusSource(this);
                     statusSource.start();
+                    EngineState state = new EngineState();
+                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
-                            new PinStore(new File(dir, "desktop-pin")), statusSource, info);
+                            new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();
                     Log.i(TAG, "engine started");
                 } catch (Exception e) {
