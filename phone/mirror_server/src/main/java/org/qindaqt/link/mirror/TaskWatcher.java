@@ -9,9 +9,11 @@ import java.util.List;
  * or it finished its last activity) so the desktop can close the window.
  *
  * <p>AGENT-NOTE: polls IActivityTaskManager.getAllRootTaskInfosOnDisplay once a second. The
- * app counts as gone only after it was seen on the display and then two polls in a row find
- * no root task with a top activity, so a slow launch or a task switch is not an exit. When the
- * method is missing the watcher stays off and the session simply streams an empty display.
+ * app counts as gone when two polls in a row find no root task with a top activity, once it
+ * has either been seen on the display or LAUNCH_GRACE_POLLS have passed since launch (an app
+ * closed within its first second is never "seen"; verified on SDK 37 where BACK on the
+ * calculator's root activity removes its task within two polls). When the method is missing
+ * the watcher stays off and the session simply streams an empty display.
  *
  * <p>Threading: its own daemon thread; the callback runs on that thread.
  */
@@ -22,6 +24,7 @@ final class TaskWatcher {
 
     private static final long POLL_MS = 1000;
     private static final int ABSENT_POLLS_FOR_EXIT = 2;
+    private static final int LAUNCH_GRACE_POLLS = 3;
 
     private final HiddenApi api;
     private final int displayId;
@@ -55,6 +58,7 @@ final class TaskWatcher {
     private void loop() {
         boolean seen = false;
         int absent = 0;
+        int polls = 0;
         while (!stopped) {
             try {
                 Thread.sleep(POLL_MS);
@@ -65,10 +69,11 @@ final class TaskWatcher {
             if (live < 0) {
                 return; // the call failed; stay quiet rather than guess
             }
+            polls++;
             if (live > 0) {
                 seen = true;
                 absent = 0;
-            } else if (seen && ++absent >= ABSENT_POLLS_FOR_EXIT && !stopped) {
+            } else if (++absent >= ABSENT_POLLS_FOR_EXIT && (seen || polls >= LAUNCH_GRACE_POLLS) && !stopped) {
                 listener.onAppExited("no-tasks");
                 return;
             }
@@ -88,6 +93,7 @@ final class TaskWatcher {
                     live++;
                 }
             }
+            Ln.d("display " + displayId + ": " + live + " of " + tasks.size() + " root tasks live");
             return live;
         } catch (Exception e) {
             Ln.w("task query failed: " + Ln.describe(e));

@@ -72,13 +72,14 @@ void EvidenceRunner::probeTick()
     const quint64 frames = m_controller.decodedFrames() - m_probeStartFrames;
     const double seconds = static_cast<double>(m_probeClock.elapsed()) / 1000.0;
     const QSize size = m_controller.streamSize();
-    const QString line = QStringLiteral("decoder=%1 resolution=%2x%3 frames=%4 seconds=%5 fps=%6")
+    const QString line = QStringLiteral("decoder=%1 resolution=%2x%3 frames=%4 seconds=%5 fps=%6 dropped=%7")
                              .arg(decoderPathName(m_controller.decoderPath()))
                              .arg(size.width())
                              .arg(size.height())
                              .arg(frames)
                              .arg(seconds, 0, 'f', 1)
-                             .arg(seconds > 0 ? static_cast<double>(frames) / seconds : 0.0, 0, 'f', 1);
+                             .arg(seconds > 0 ? static_cast<double>(frames) / seconds : 0.0, 0, 'f', 1)
+                             .arg(m_controller.droppedPackets());
     print(line);
     if (m_probeTicks >= m_options.probeSeconds) {
         done(frames > 0 ? 0 : 1, frames > 0 ? QString() : QStringLiteral("no frames decoded"));

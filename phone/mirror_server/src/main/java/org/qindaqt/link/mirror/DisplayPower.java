@@ -7,15 +7,17 @@ import android.os.IBinder;
 /**
  * Keeps the mirror display's power group awake while a session streams.
  *
- * <p>AGENT-NOTE: the display is created with OWN_DISPLAY_GROUP, so it has its own wakefulness.
- * When the phone is asleep, a new group starts non-interactive and Android drops input to it
- * (seen on SDK 37: "non-interactive displays={0, N}"). A screen wake lock bound to our display
- * id with ACQUIRE_CAUSES_WAKEUP wakes and holds only that group; the phone's own screen stays
- * as it was.
+ * <p>AGENT-NOTE: the display asks for OWN_DISPLAY_GROUP. Where Android honours it, the display
+ * has its own wakefulness, and a screen wake lock bound to its id with ACQUIRE_CAUSES_WAKEUP
+ * wakes and holds only that group. On SDK 37 (SM-S948U, One UI) the flag is accepted but the
+ * display still lands in display group 0, and the lock is recorded as powerGroupId=0: it would
+ * hold the phone's own screen on and could wake it. So the lock is taken only when
+ * DisplayInfo.displayGroupId is not 0; in group 0 the mirror follows the phone's own power
+ * state and needs the phone awake.
  *
- * <p>AGENT-GUARD: there is deliberately no KEYCODE_WAKEUP or global wakeUp fallback; on some
- * releases those wake the phone's main display. Without the per-display lock the session runs
- * only if the display is already interactive, and otherwise fails with a clear message.
+ * <p>AGENT-GUARD: never acquire a screen lock or inject a wake key that lands in the default
+ * display group, and keep no KEYCODE_WAKEUP or global wakeUp fallback; those act on the phone's
+ * main display. A display that cannot be awake without that fails with a clear message.
  *
  * <p>Lifetime: the wake lock token is a binder owned by this process; system_server drops the
  * lock if the server dies, so a crash never leaves the display awake.
@@ -31,8 +33,19 @@ final class DisplayPower {
         this.api = api;
     }
 
-    /** Returns null when the display is held awake, or the reason it cannot be. */
+    /** Returns null when the display is (or is held) awake, or the reason it cannot be. */
     String keepAwake(int displayId) {
+        int group = displayGroup(displayId);
+        if (group == 0) {
+            // A new display can report non-interactive for a moment after creation; in group 0
+            // its state is the group's, so the phone's own display 0 decides.
+            if ("interactive".equals(interactivity(displayId)) || "interactive".equals(interactivity(0))) {
+                Ln.i("display " + displayId + " shares the phone's power group; no wake lock, it sleeps with the phone");
+                return null;
+            }
+            return "the phone is asleep and this Android build keeps the mirror display in the "
+                    + "phone's own power group; wake the phone and try again";
+        }
         if (api.acquireWakeLock != null) {
             IBinder token = new Binder();
             try {
@@ -64,6 +77,20 @@ final class DisplayPower {
             Ln.w("wake lock release failed: " + Ln.describe(e));
         }
         lock = null;
+    }
+
+    /** The display's DisplayInfo.displayGroupId; 0 (the phone's own group) when unknown. */
+    private int displayGroup(int displayId) {
+        if (api.getDisplayInfo == null) {
+            return 0;
+        }
+        try {
+            Object info = HiddenApi.call(api.getDisplayInfo, api.displayManager, displayId);
+            return info == null ? 0 : info.getClass().getField("displayGroupId").getInt(info);
+        } catch (Exception e) {
+            Ln.w("display group unknown: " + Ln.describe(e));
+            return 0;
+        }
     }
 
     private String interactivity(int displayId) {

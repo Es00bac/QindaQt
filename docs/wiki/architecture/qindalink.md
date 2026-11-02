@@ -192,9 +192,12 @@ qindaqt-link-mirror                                phone (shell uid, app_process
   launcher activity on it and encodes it with MediaCodec (H.264 High, or HEVC
   with `--codec hevc`).
 - **Power and keyboard.** The phone's own screen and keyboard stay out of the
-  way. A per-display wake lock keeps only the mirror display awake, and the
-  display's IME policy hides the phone keyboard because the desktop types
-  instead.
+  way.
+  - A wake lock is held only when the mirror display has its own display
+    group. On the SM-S948U (SDK 37) it stays in group 0, so mirroring
+    follows the phone's own power state and never wakes or holds its screen.
+  - The display's IME policy hides the phone keyboard, because the desktop
+    types instead.
 - **Decode and present.** The desktop decodes with libavcodec
   ([ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md)), VA-API
   first (radeonsi on the RX 5700 XT), falling back to software

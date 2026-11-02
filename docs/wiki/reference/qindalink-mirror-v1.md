@@ -36,7 +36,8 @@ One desktop process mirrors one phone app. It runs these steps in order:
      `/data/local/tmp/qindalink-mirror-<first 16 hex of its SHA-256>.jar`.
      It checks the file with `sha256sum` on the phone before and after the
      push. Two mirror windows never overwrite each other's jar, and an
-     unchanged jar is not pushed again.
+     unchanged jar is not pushed again. Jars from older builds stay until
+     `adb shell rm /data/local/tmp/qindalink-mirror-*.jar` removes them.
    - Otherwise the desktop uses the installed QindaLink APK in place, from
      `adb shell pm path org.qindaqt.link` (the APK compiles the same
      `phone/mirror_server` sources).
@@ -211,7 +212,7 @@ Field rules:
 | `bad-request` | A field has a value outside its contract |
 | `bad-state` | `start` twice, or `resize` before `start` (not fatal) |
 | `bad-message` | A control body is not the expected JSON |
-| `display-asleep` | The phone offers no per-display wake lock and the mirror display is not awake |
+| `display-asleep` | The mirror display cannot be kept awake without waking the phone's own screen, and it is not awake now |
 | `internal` | Anything else; the message carries the exception summary |
 
 ## Video channel (`0x02`)
@@ -239,6 +240,9 @@ Rules:
   screen still delivers about 10 frames per second.
 - The keyframe interval is 10 s. The desktop sends `sync` when it needs a
   keyframe sooner, for example after a decoder fallback.
+- The server asks MediaCodec to prepend SPS/PPS to every IDR frame
+  (`KEY_PREPEND_HEADER_TO_SYNC_FRAMES`). The desktop also replays the
+  generation's config packet into any decoder it opens mid-stream.
 
 ## Inventory channel (`0x03`)
 
@@ -264,13 +268,21 @@ title and icon.
 - **Phone keyboard.** The server sets the display's IME policy to hide.
   Desktop typing replaces the phone keyboard, and a text field on the mirror
   never opens the keyboard on the phone's own screen.
-- **Power.** `OWN_DISPLAY_GROUP` gives the display its own wakefulness. The
-  server holds a screen wake lock bound to the display id with
-  `ACQUIRE_CAUSES_WAKEUP`, which wakes and keeps only that display group.
+- **Power.** The server reads the display's `DisplayInfo.displayGroupId`.
+  - **Own group.** Where `OWN_DISPLAY_GROUP` is honoured and the display has
+    its own group, the server holds a screen wake lock bound to the display id
+    with `ACQUIRE_CAUSES_WAKEUP`. That lock wakes and keeps only that group.
+  - **Group 0.** On the SM-S948U (SDK 37, One UI) the flag is accepted, but
+    the display stays in display group 0, and a lock bound to it is recorded
+    as `powerGroupId=0`. So in group 0 the server takes **no** wake lock, and
+    the mirror follows the phone's own power state. It starts only while the
+    phone is awake, and otherwise fails with `error{display-asleep}`. It
+    pauses when the phone sleeps.
   - There is **no** wake-key or global-wakeUp fallback, because those can
     wake the phone's own screen.
   - Without the per-display lock, the session continues only if the display is
-    already interactive. Otherwise it ends with `error{display-asleep}`.
+    already interactive (in group 0: if the phone's own display is).
+    Otherwise it ends with `error{display-asleep}`.
   - The lock is a binder of the server process, so it ends with the process.
 - **Launch.** The server starts the package's first launcher activity for
   user 0 with `FLAG_ACTIVITY_NEW_TASK` and `setLaunchDisplayId`. If the app
@@ -307,7 +319,8 @@ SM-S948U (Android 17, SDK 37, One UI).
 | Launch | `IPackageManager.queryIntentActivities(Intent, String, long, int)`, else the `int` flags form | yes |
 | Keyboard | `IWindowManager.setDisplayImePolicy(int, int)` | no |
 | App exit | `IActivityTaskManager.getAllRootTaskInfosOnDisplay(int)` | no |
-| Power | `IPowerManager.acquireWakeLock(IBinder, int, String, String, WorkSource, String, int, IWakeLockCallback)`, `releaseWakeLock` | no |
+| Power | `IPowerManager.acquireWakeLock(IBinder, int, String, String, WorkSource, String, int, IWakeLockCallback)`, `releaseWakeLock`, `isDisplayInteractive(int)` | no |
+| Power | `IDisplayManager.getDisplayInfo(int)` → `DisplayInfo.displayGroupId` | no (unknown counts as group 0) |
 | Inventory | `ActivityThread()` with a `ConfigurationController`, then `getSystemContext()` | inventory only |
 
 The callback the display manager needs is a `java.lang.reflect.Proxy` for
@@ -404,6 +417,9 @@ Exit status:
 - The desktop drives a single finger. Multi-touch is in the protocol, but no
   desktop gesture produces it yet.
 - Windows with `FLAG_SECURE` appear black in the stream.
+- **Phone must stay awake.** On builds that keep the mirror display in display
+  group 0 (the SM-S948U on SDK 37), mirroring needs the phone awake. When the
+  phone's screen times out, the mirror pauses until the phone is woken.
 - Audio is not forwarded (M3).
 - Streaming stops when ADB drops. A visible window then shows the reason
   until it is closed; headless runs exit with status 1 and the reason.

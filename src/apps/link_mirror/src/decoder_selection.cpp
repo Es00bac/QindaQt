@@ -48,6 +48,7 @@ QList<DecoderPath> DecoderSelector::candidates() const
 bool DecoderSelector::open(const VideoFormat &format)
 {
     m_format = format;
+    m_config = VideoPacket();
     return openFirst(format);
 }
 
@@ -76,6 +77,9 @@ DecodeResult DecoderSelector::decode(const VideoPacket &packet, QImage *image)
     if (!m_decoder) {
         return DecodeResult::Error;
     }
+    if (packet.config) {
+        m_config = packet;
+    }
     QString error;
     const DecodeResult result = m_decoder->decode(packet, image, &error);
     if (result != DecodeResult::Error) {
@@ -90,6 +94,13 @@ DecodeResult DecoderSelector::decode(const VideoPacket &packet, QImage *image)
         if (openFirst(m_format)) {
             m_keyframeRequested = true;
             m_lastError = hardwareError;
+            if (!m_config.data.isEmpty()) {
+                QImage ignored;
+                QString replayError;
+                // AGENT-GUARD: without the replayed parameter sets the fresh decoder can never
+                // decode this generation, since its later keyframes may carry no SPS/PPS.
+                (void)m_decoder->decode(m_config, &ignored, &replayError);
+            }
         }
     }
     return DecodeResult::Error;

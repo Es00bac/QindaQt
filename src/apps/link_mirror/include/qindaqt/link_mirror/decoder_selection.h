@@ -47,7 +47,9 @@ using DecoderFactory = std::function<std::unique_ptr<VideoDecoder>(DecoderPath)>
 // - Auto tries VA-API, then software. An explicit preference tries only that path.
 // - A path that fails to open is skipped for this generation.
 // - A hardware decode error falls back to software for the rest of the session; the caller
-//   must request a keyframe because the software decoder starts without references.
+//   must request a keyframe because the software decoder starts without references. The
+//   generation's config packet (SPS/PPS/VPS) is replayed into the new decoder, because
+//   MediaCodec sends it only once per generation.
 // - A software decode error is reported and the next packet is still fed: one corrupt packet
 //   must not end the session.
 class DecoderSelector {
@@ -74,6 +76,7 @@ private:
     std::unique_ptr<VideoDecoder> m_decoder;
     DecoderPath m_path = DecoderPath::Software;
     VideoFormat m_format;
+    VideoPacket m_config; // latest config packet of this generation; empty data when none
     bool m_hardwareDisabled = false;
     bool m_keyframeRequested = false;
     QString m_lastError;

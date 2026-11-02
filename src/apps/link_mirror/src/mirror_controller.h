@@ -39,6 +39,7 @@ public:
     [[nodiscard]] DecoderPath decoderPath() const { return m_decoderPath; }
     [[nodiscard]] QSize streamSize() const { return m_streamSize; }
     [[nodiscard]] quint64 decodedFrames() const { return m_worker->decodedFrames(); }
+    [[nodiscard]] quint64 droppedPackets() const { return m_worker->droppedPackets(); }
 
 Q_SIGNALS:
     void displayReady(const qindaqt::link_mirror::DisplayInfo &display);

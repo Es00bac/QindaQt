@@ -34,6 +34,7 @@ final class HiddenApi {
     Method resizeVirtualDisplay;
     Method setVirtualDisplaySurface;
     Method releaseVirtualDisplay;
+    Method getDisplayInfo; // optional: display group of the mirror display (DisplayPower)
 
     Object inputManager;
     Method injectInputEvent;
@@ -133,6 +134,7 @@ final class HiddenApi {
         resizeVirtualDisplay = method(dm, "resizeVirtualDisplay", true, cb, int.class, int.class, int.class);
         setVirtualDisplaySurface = method(dm, "setVirtualDisplaySurface", true, cb, Surface.class);
         releaseVirtualDisplay = method(dm, "releaseVirtualDisplay", true, cb);
+        getDisplayInfo = optional(dm, "getDisplayInfo", int.class);
     }
 
     private void probeInput() {

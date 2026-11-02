@@ -15,6 +15,7 @@ struct FakeBehaviour {
     bool softwareOpens = true;
     bool softwareDecodes = true;
     QList<DecoderPath> created;
+    QList<QByteArray> softwareFed; // packet data the software decoder received, in order
 };
 
 class FakeDecoder final : public VideoDecoder {
@@ -31,6 +32,9 @@ public:
     }
     DecodeResult decode(const VideoPacket &packet, QImage *image, QString *error) override
     {
+        if (m_path == DecoderPath::Software) {
+            m_behaviour.softwareFed.append(packet.data);
+        }
         const bool ok = m_path == DecoderPath::Vaapi ? m_behaviour.vaapiDecodes : m_behaviour.softwareDecodes;
         if (!ok) {
             *error = QStringLiteral("fake decode failure");
@@ -129,6 +133,27 @@ private Q_SLOTS:
         behaviour.created.clear();
         QVERIFY(selector.open(VideoFormat{QStringLiteral("h264"), QSize(640, 1280)}));
         QCOMPARE(behaviour.created, QList<DecoderPath>{DecoderPath::Software});
+    }
+
+    void fallbackReplaysTheGenerationConfig()
+    {
+        FakeBehaviour behaviour;
+        behaviour.vaapiDecodes = false;
+        DecoderSelector selector(DecoderPreference::Auto, factory(behaviour));
+        QVERIFY(selector.open(kFormat));
+        VideoPacket config;
+        config.config = true;
+        config.data = QByteArray("sps-pps");
+        QImage image;
+        QCOMPARE(selector.decode(config, &image), DecodeResult::Error); // VA-API fails on it
+        QCOMPARE(selector.activePath(), DecoderPath::Software);
+        QCOMPARE(behaviour.softwareFed, QList<QByteArray>{QByteArray("sps-pps")});
+        QCOMPARE(selector.decode(keyPacket(), &image), DecodeResult::Frame);
+        // A new generation forgets the old parameter sets.
+        QVERIFY(selector.open(VideoFormat{QStringLiteral("h264"), QSize(640, 1280)}));
+        behaviour.softwareFed.clear();
+        QCOMPARE(selector.decode(keyPacket(), &image), DecodeResult::Frame);
+        QCOMPARE(behaviour.softwareFed, QList<QByteArray>{QByteArray("frame")});
     }
 
     void softwareDecodeErrorKeepsTheDecoder()

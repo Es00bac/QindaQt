@@ -139,6 +139,9 @@ final class ScreenEncoder {
             format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_US);
             format.setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, maxFps);
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            // Every IDR carries SPS/PPS, so a desktop decoder that restarts mid-generation
+            // (fallback, sync) can decode from the next keyframe. Encoders that lack it ignore it.
+            format.setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1);
             if (profile >= 0) {
                 if (!supportsProfile(info, profile)) {
                     continue;
