@@ -50,3 +50,12 @@ on the host belongs to the real link service; do not bind it from tests.
 - Only `status` is advertised; `ring` replies `error{unsupported}`.
 - Signal strength is `null`; the LAN listener, notifications, SMS and input are out of scope.
 - Pairing starts from a button, not automatically, so a stray local listener cannot raise a code.
+
+## Cross-implementation test (real desktop service)
+
+    phone/engine-tests/run-cross-impl.sh <path to qindaqt-link-service>
+
+Drives the real Java `Session` over JSSE TLS 1.3 against the real desktop binary on a private
+`dbus-run-session` bus (`--data-dir <tmp> --port 0 --no-adb --no-notifications`), accepts through
+Link1 `ConfirmPairing`, checks both codes match and that `Devices()` shows the phone ready with its
+status. It touches no real state, port 47160, adb or notifications.

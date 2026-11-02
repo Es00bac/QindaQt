@@ -20,3 +20,9 @@ The phone was locked (isKeyguardShowing=true) for the whole session. `am start` 
 
 ## Requested next action
 Unlock the phone, then follow phone/README.md "Live check" (install is already done; start the activity, run fake-desktop.py --serial R3GL40ABQXM --auto-accept after `adb reverse tcp:47160 tcp:47199`, tap Pair then Accept, record transcript and screencap), and remove the reverse rule.
+
+## Repair round (after review of 97fe02c22; merged main 24e8ce047)
+- Fixed: locale-independent code and JSON escapes (test under ar-SA); strict 64-lowercase-hex for c/nd (else bye pair-rejected); bounded event queue plus writer thread with bounded outbox and 10 s write-stall watchdog (test: non-reading peer ends the session in ~1.5 s); no READY when the pin cannot be persisted (bye error, pin cleared; test); durable pin write (fsync); nesting limit 64 (container levels), `ping\n` type, ids 1.0/1e0/-0 verified by the 36 vectors; status now callback-driven (cached snapshot rebuilt on battery/default-network callbacks, 2 s limit and immediate charging/plugged kept); Keystore key without PURPOSE_VERIFY, TEE kept (AGENT-NOTE: StrongBox unmeasured).
+- `phone/engine-tests/run.sh` exit 0: vectors decode=36 stream=1 encode=10 pairing=3 (68 checks), loopback session OK, repair tests OK.
+- Cross-implementation: `phone/engine-tests/run-cross-impl.sh .../qindalink-desktop-core/build/desktop-core/src/services/link_service/qindaqt-link-service` exit 0: TLS 1.3, hello, pairing codes equal, ConfirmPairing, phone pinned desktop, Devices() shows ready + battery 42. Not committed in the integration worktree, as instructed.
+- Still unverified on hardware: Keystore TLS handshake, Android callbacks, live pairing (phone unplugged). The APK was not rebuilt in this round; run build-apk.sh before the next device session.
