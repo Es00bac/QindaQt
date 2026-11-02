@@ -1,3 +1,23 @@
+## November 2 — PlayStation battery report traced and coarse decoder corrected
+
+The connected DualSense on qinda reports battery step 1 and charging code 1 in
+five CRC-valid Bluetooth reports. Kernel sysfs, UPower and an owner/nonce-checked
+Power1 peripheral receipt agree on 15% Charging. Linux represents the nominal
+10–19% device band by its midpoint; this does not independently measure actual
+battery charge. The user's comparison reading remains unspecified.
+
+Source `cbde24b85` corrects a separate confirmed decoder bug: UPower's coarse
+Normal level was presented as Full, and valid High/Full levels were rejected.
+Supply and peripheral adapters now share the documented ordinal mapping and
+keep explicit Unknown levels unknown even with a percentage placeholder. Numeric
+percentages/charging states pass through unchanged. Two focused private groups
+pass, 35 QtTest results in 1.33 seconds; strict docs and service-boundary checks pass.
+
+No package build/install, controller write or live service restart was performed.
+The installed r47 numeric reading is unchanged. See
+[battery precision](wiki/architecture/power-service.md#battery-precision-and-upstream-enum-translation)
+and [exact handoff](../ops/team/messages/20261102-controller-battery-handoff.md).
+
 ## November 2 — QQ_Term baseline audit and 0.3.1 repairs
 
 QQ_Term 0.3.1 is integrated in QindaQt_Apps (`e8e998a`, tested source
