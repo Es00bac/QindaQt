@@ -130,6 +130,7 @@ add_subdirectory(services/network_secret_agent)
 # contract (docs/monitor.md); these mirror the Network1 client/transport
 # split with no owner/epoch lineage to fence.
 add_subdirectory(services/firewall_protocol)
+add_subdirectory(services/link_protocol)
 add_subdirectory(services/firewall_client)
 add_subdirectory(services/firewall_qt_transport)
 add_subdirectory(services/keyring_protocol)
