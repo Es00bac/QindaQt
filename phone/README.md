@@ -7,10 +7,11 @@ Qt for Android UI plus a Java engine. Architecture and protocol:
 
 | Path | Contents |
 | --- | --- |
-| `app/` | CMake project: `main.cpp`, `LinkBridge` (the only JNI seam), `qml/` screens (one self-contained component each) |
+| `app/` | CMake project: `main.cpp`, `LinkBridge` (the only JNI seam), `qml/` QindaTK screens (one self-contained file each; `qml-files.cmake` is the shared file list) |
+| `preview/` | Desktop preview host `qindalink-preview` (same QML, fake bridge, scripted engine states, `--grab`/`--smoke`) |
 | `app/android/` | `AndroidManifest.xml` and the Java engine (`proto` pure codec, `engine` android-free session logic, `android` Keystore/TLS/service/bridge) |
 | `engine-tests/` | JVM runner for the golden vectors and a loopback session test |
-| `tools/build-apk.sh` | Builds and signs `build/phone/QindaLink-debug.apk` |
+| `tools/build-apk.sh` | Builds QindaTK for Android (if `build/phone/qindatk-stage` is missing), then builds and signs `build/phone/QindaLink-debug.apk` |
 | `tools/fake-desktop.py` | Dev-only desktop peer on port 47199 |
 
 ## Build
@@ -23,6 +24,28 @@ Parallelism is left to the tools' defaults.
     phone/tools/build-apk.sh       # about 3 min cold; APK in build/phone/ (git-ignored)
 
 If `phone/mirror_server/src/main/java` exists its sources are staged into the same APK.
+
+## UI on QindaTK
+
+The screens use `import QindaTK as Tk` (touch density, `sloom-dark`, theme tokens only, Flex/Grid
+layout). `build-apk.sh` clones QindaTK main from `~/git/QindaTK.git` (pinned `QINDATK_REV`, default
+`27da0a0d`) into `build/phone/qindatk-src`, builds it with `qt.toolchain.cmake` into
+`build/phone/qindatk-build`, installs the stage to `build/phone/qindatk-stage`, then configures the app
+with that stage as `CMAKE_PREFIX_PATH` and `CMAKE_FIND_ROOT_PATH` and bundles the QML plugin through
+`QT_QML_IMPORT_PATH` (QindaTK `docs/android.md`). The first run adds about 10 minutes for QindaTK.
+Screens: Home, Pairing (large `123 456` code, equal-weight Accept/Reject, stale-pin "Pair again"),
+Permissions (states from `DeviceFacts.java`; features not built yet show "Coming soon"), Tools and
+the placeholders Touchpad, Keyboard, Macros, Vault (one file each; replace the file to build the feature).
+
+## Desktop preview
+
+    phone/preview/run-smoke.sh                 # builds, loads every scenario x screen, QML warnings are fatal
+    build/phone/preview/qindalink-preview --grab build/phone/shots --size 412x915 --scale 2.625
+
+Use `QT_QPA_PLATFORM=offscreen` (the default for `--grab`/`--smoke`) with `QT_QUICK_BACKEND=software`
+or `rhi`. It uses the installed QindaTK; set `QML_IMPORT_PATH` to a directory containing a newer
+`QindaTK` module to test against a QindaTK build. Scenarios: offline, found, confirm, stale, ready,
+perms-partial (synthetic data only).
 
 ## Install and run on a phone
 

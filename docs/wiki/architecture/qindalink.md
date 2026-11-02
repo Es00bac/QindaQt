@@ -57,7 +57,8 @@ Current maturity: **M1 link core integrated (desktop service and phone engine).*
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge, quick actions |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app |
-| Phone app | `phone/app` | Qt for Android app: QML/QindaTK UI, Java engine under `phone/app/android/` |
+| Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
+| Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
 | Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
 | Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
 | Mirror server | `phone/mirror_server` | Java `app_process` entry point compiled into the APK |

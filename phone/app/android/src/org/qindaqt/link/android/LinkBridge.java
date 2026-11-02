@@ -32,6 +32,11 @@ public final class LinkBridge {
         if (e != null) e.forget();
     }
 
+    /** UI facts (battery, network, permission states) from {@link DeviceFacts}; never blocks. */
+    public static String deviceJson(Context ctx) { return DeviceFacts.json(ctx); }
+
+    public static void openSettings(Context ctx, String key) { DeviceFacts.openSettings(ctx, key); }
+
     private static void cmd(Session.Command c) {
         LinkEngine e = LinkService.engine();
         if (e != null) e.command(c);
