@@ -26,8 +26,29 @@ target_compile_features(qindaqt_link_service PUBLIC cxx_std_20)
 set_target_properties(qindaqt_link_service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_link_service)
 
-qt_add_executable(qindaqt-link-service app/main.cpp)
-target_link_libraries(qindaqt-link-service PRIVATE QindaQt::LinkService Qt6::Core Qt6::DBus)
+# AGENT-NOTE: input and macros are composed in the executable only. Their
+# libraries (and InputActions) are not part of the installed export set.
+qt_add_executable(
+    qindaqt-link-service
+    app/main.cpp
+    app/input_composition.cpp
+    app/input_composition.h
+    app/native_input_gate.cpp
+    app/native_input_gate.h
+)
+target_link_libraries(
+    qindaqt-link-service
+    PRIVATE
+        QindaQt::LinkService
+        QindaQt::LinkInput
+        QindaQt::LinkMacros
+        QindaQt::SessionLockState
+        QindaQt::CompositorAttachment
+        qindaqt_compositor_names
+        Qt6::Core
+        Qt6::DBus
+)
+target_include_directories(qindaqt-link-service PRIVATE app)
 target_compile_definitions(qindaqt-link-service PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}")
 set_target_properties(qindaqt-link-service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-link-service)

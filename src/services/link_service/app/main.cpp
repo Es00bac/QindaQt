@@ -5,6 +5,9 @@
 #include <qindaqt/services/link_service/link1_service.h>
 #include <qindaqt/services/link_service/qt_notification_presenter.h>
 
+#include "input_composition.h"
+#include "native_input_gate.h"
+
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QStandardPaths>
@@ -37,7 +40,11 @@ int main(int argc, char **argv)
     QCommandLineOption noAdb(QStringLiteral("no-adb"), QStringLiteral("Do not track or tunnel ADB devices."));
     QCommandLineOption noNotify(QStringLiteral("no-notifications"),
                                 QStringLiteral("Do not post pairing notifications."));
-    parser.addOptions({dataDir, port, noAdb, noNotify});
+    QCommandLineOption noInput(QStringLiteral("no-input"),
+                               QStringLiteral("Do not offer the input and macro capabilities."));
+    QCommandLineOption stateDir(QStringLiteral("state-dir"), QStringLiteral("State directory for the portal restore token."),
+                                QStringLiteral("dir"));
+    parser.addOptions({dataDir, port, noAdb, noNotify, noInput, stateDir});
     parser.process(app);
 
     ServiceConfig config;
@@ -65,6 +72,23 @@ int main(int argc, char **argv)
     if (!service.start(&error)) {
         qCritical("qindaqt-link-service: %s", qPrintable(error));
         return 1;
+    }
+
+    // Input and macros (ADR-0436). Composed after start() and before the event
+    // loop, so no connection can arrive before the features are registered.
+    // Nothing contacts the RemoteDesktop portal until a phone sends input.begin.
+    std::unique_ptr<NativeInputGate> gate;
+    std::unique_ptr<InputComposition> input;
+    if (!parser.isSet(noInput)) {
+        gate = std::make_unique<NativeInputGate>(bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+                                                 qEnvironmentVariable("WAYLAND_DISPLAY"));
+        InputCompositionOptions options;
+        const QString state = parser.isSet(stateDir)
+            ? parser.value(stateDir)
+            : QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation) + QStringLiteral("/qindalink");
+        options.portal.tokenFile = state + QStringLiteral("/restore-token");
+        options.gate = gate.get();
+        input = std::make_unique<InputComposition>(*service.hub(), bus, std::move(options));
     }
     return app.exec();
 }

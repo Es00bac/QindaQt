@@ -232,13 +232,83 @@ frame table for capability `sms`.
 
 ## Remote input (`input.*`)
 
-Not specified yet. The input and macros lane replaces this paragraph with the
-frame table for capability `input`.
+Capability `input`. The phone controls the desktop pointer and keyboard. All
+input reaches the desktop through one RemoteDesktop portal session that the
+desktop user approves once; the phone must ask for it first.
+
+**Controller.** At most one phone controls input at a time. The desktop drops
+every `input.*` event frame unless the sender is the controller, the portal
+session is active and the desktop screen is unlocked. Event frames get no
+reply on success. A frame that has an `id` and fails validation gets
+`error{bad-request}`.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop is locked (`message` is `locked`). `error{internal}` when the portal is unavailable. |
+| `input.end` | both | phone→desktop: `{}` (an optional `id` is answered `ok`). desktop→phone: `reason`, currently `revoked` | none / `ok` |
+| `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked` | none |
+| `input.pointer` | phone→desktop | `dx`, `dy`: numbers, relative, finite, absolute value at most 1000 | none |
+| `input.button` | phone→desktop | `button`: `left`, `right`, `middle`; `state`: `down`, `up`, `click` | none |
+| `input.scroll` | phone→desktop | `mode`: `smooth` or `discrete`; `dx`, `dy`; optional `end` (bool, ends a smooth gesture). Smooth: absolute value at most 500. Discrete: integers, at most 20 detents. Positive `dy` moves the content toward its end (down). | none |
+| `input.key` | phone→desktop | exactly one of `keysym` (integer) or `name`; `state`: `down`, `up`, `tap` | none |
+| `input.text` | phone→desktop | `text`: 1 to 4096 UTF-8 bytes | none; with an `id`, `ok` once typed. `error{busy}` if another text frame is still being typed |
+
+Rules:
+
+- **State frames carry the UI state.** The phone engine does not route `ok`
+  and `error` replies to its feature handlers, so the desktop also pushes
+  `input.state` on every change. A phone treats `input.state` as the truth and
+  a reply only as confirmation.
+- **Rates.** A phone sends at most 120 `input.pointer` or `input.scroll`
+  frames per second, coalescing movement between sends. The desktop drops
+  pointer and scroll frames above 240 per second with a burst of 60. Keys and
+  buttons are not rate limited. Text is typed in bounded batches (24 symbols
+  every 4 ms), and a second `input.text` while one is typing gets `busy`.
+- **Keys.** A `keysym` is an X11 keysym in one of these ranges: 0x20–0x7E,
+  0xA0–0xFF, 0xFE00–0xFFFF, 0x1008FF00–0x1008FFFF, and Unicode
+  `0x01000000 | codepoint` for U+0100 to U+10FFFF (surrogates excluded). A
+  `name` is one of `Escape`, `Tab`, `Return`, `BackSpace`, `Delete`, `Insert`,
+  `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up`, `Down`, `Space`,
+  `Menu`, `Print`, `CapsLock`, `Shift`, `Ctrl`, `Alt`, `Meta`, `F1` to `F12`.
+  A chord is `down` of each modifier, then the key, then `up` in reverse.
+- **Text.** The desktop types `input.text` as keysyms. Characters from U+0100
+  up use `0x01000000 | codepoint`, a line feed is Return, a tab is Tab, and
+  other control characters are skipped. The text is never logged or stored.
+- **Releasing.** On `input.end`, disconnect, desktop lock, portal revocation
+  or loss of READY, the desktop releases every key and button the phone still
+  holds. A phone still sends `up` for what it pressed.
+- **Revocation.** If the portal session is closed or revoked, the desktop
+  sends `input.end{reason:"revoked"}`, forgets the portal restore token and
+  ends the phone's control. The next `input.begin` starts a new portal
+  session, which the desktop user must approve again; if they decline, the
+  reply is `error{denied}`.
+- **Logging.** Neither side logs the body of an `input.*` frame.
 
 ## Macros (`macro.*`)
 
-Not specified yet. The input and macros lane replaces this paragraph with the
-frame table for capability `macro`.
+Capability `macro`. The phone shows the desktop user's existing macro library
+(Settings → Input → Macros) and runs a macro by id. The library lives only on
+the desktop
+([ADR-0436](../adr/0436-qindalink-macros-reuse-the-input-actions-library.md));
+the phone never receives steps, text or shortcuts.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `macro.list` | desktop→phone | `rev` (string), `macros`: array of at most 64 `{id, name}`; `id` matches `[a-zA-Z0-9_-]{1,40}`, `name` is 1–80 characters. Sent on entering READY and whenever the library changes. | none |
+| `macro.list` | phone→desktop, with `id` | `{}`; asks for a fresh list | `ok`, after the desktop sends `macro.list` |
+| `macro.run` | phone→desktop, with `id` | `id` (string, the macro id) | `ok` when the macro finished. Errors: `denied` (the phone is not the input controller, or input is not active: send `input.begin` first), `busy` (a macro is already running), `bad-request` (unknown id), `internal` (could not start, failed or was cancelled; `message` gives the reason) |
+| `macro.state` | desktop→phone | `id`, `state`: `running`, `done`, `cancelled`, `failed`; optional `reason` (`cancelled`, `input-lost`, `input-unavailable`, `text-failed`) | none |
+| `macro.cancel` | phone→desktop | `{}` | `ok` |
+
+Rules:
+
+- A macro runs only for the phone that controls input, and only while input
+  is active and the desktop is unlocked. A lock, a revocation, `input.end` or
+  a disconnect cancels the run, and the shared runner releases what it holds.
+- Steps that need the compositor rather than the portal (maximize, close
+  window, show desktop) fail the run with reason `input-unavailable`.
+- One macro runs at a time on the desktop.
+- A phone treats `macro.state` as the truth for its UI, as for `input.state`.
 
 ## Desktop facts and secret typing (`desktop.*`, `vault.*`)
 
