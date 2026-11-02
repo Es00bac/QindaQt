@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "description": "QindaLink framing vectors. decode: hex is the raw byte stream; expect.envelope is the decoded envelope (absent 'b' means {}; unknown top-level keys dropped), expect.error is one of bad-length|bad-payload|bad-envelope (connection closes), expect.needsMore means the decoder must wait for more bytes and report nothing. stream: one buffer holding several frames. encode: encoding then decoding must yield an equal value. See docs/wiki/reference/qindalink-protocol-v1.md#framing.",
+  "decode": [
+    {
+      "name": "ping-with-id",
+      "hex": "000000137b2274223a2270696e67222c226964223a317d",
+      "expect": {
+        "envelope": {
+          "t": "ping",
+          "id": 1
+        }
+      }
+    },
+    {
+      "name": "hello-desktop",
+      "hex": "0000009a7b2274223a2268656c6c6f222c2262223a7b2270726f746f223a312c22726f6c65223a226465736b746f70222c226e616d65223a2271696e6461222c226d6f64656c223a2251696e64615174222c226f73223a2247656e746f6f204c696e7578222c22617070223a22302e312e30222c2263617073223a5b22737461747573222c2272696e67225d2c2274727573746564223a66616c73657d7d",
+      "expect": {
+        "envelope": {
+          "t": "hello",
+          "b": {
+            "proto": 1,
+            "role": "desktop",
+            "name": "qinda",
+            "model": "QindaQt",
+            "os": "Gentoo Linux",
+            "app": "0.1.0",
+            "caps": [
+              "status",
+              "ring"
+            ],
+            "trusted": false
+          }
+        }
+      }
+    },
+    {
+      "name": "status-reply-fields",
+      "hex": "000000737b2274223a22737461747573222c2262223a7b2262617474657279223a7b226c6576656c223a38372c226368617267696e67223a747275652c22706c7567676564223a22757362227d2c226e6574776f726b223a7b2274797065223a2277696669222c227369676e616c223a6e756c6c7d7d7d",
+      "expect": {
+        "envelope": {
+          "t": "status",
+          "b": {
+            "battery": {
+              "level": 87,
+              "charging": true,
+              "plugged": "usb"
+            },
+            "network": {
+              "type": "wifi",
+              "signal": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "error-reply",
+      "hex": "000000487b2274223a226572726f72222c227265223a34322c2262223a7b22636f6465223a22756e6b6e6f776e2d74797065222c226d657373616765223a226e6f2068616e646c6572227d7d",
+      "expect": {
+        "envelope": {
+          "t": "error",
+          "re": 42,
+          "b": {
+            "code": "unknown-type",
+            "message": "no handler"
+          }
+        }
+      }
+    },
+    {
+      "name": "max-safe-id",
+      "hex": "000000227b2274223a2270696e67222c226964223a393030373139393235343734303939317d",
+      "expect": {
+        "envelope": {
+          "t": "ping",
+          "id": 9007199254740991
+        }
+      }
+    },
+    {
+      "name": "unknown-top-level-key-ignored",
+      "hex": "000000247b2274223a22706f6e67222c227265223a372c22782d667574757265223a5b312c325d7d",
+      "expect": {
+        "envelope": {
+          "t": "pong",
+          "re": 7
+        }
+      }
+    },
+    {
+      "name": "utf8-body",
+      "hex": "000000957b2274223a2268656c6c6f222c2262223a7b2270726f746f223a312c22726f6c65223a2270686f6e65222c226e616d65223a224a6172726f64e28099732053323620f09f93b1222c226d6f64656c223a22534d2d5339343855222c226f73223a22416e64726f6964203137222c22617070223a22302e312e30222c2263617073223a5b5d2c2274727573746564223a747275657d7d",
+      "expect": {
+        "envelope": {
+          "t": "hello",
+          "b": {
+            "proto": 1,
+            "role": "phone",
+            "name": "Jarrod’s S26 📱",
+            "model": "SM-S948U",
+            "os": "Android 17",
+            "app": "0.1.0",
+            "caps": [],
+            "trusted": true
+          }
+        }
+      }
+    },
+    {
+      "name": "dotted-type-with-dash",
+      "hex": "000000287b2274223a22706169722e636f6e6669726d222c2262223a7b22616363657074223a747275657d7d",
+      "expect": {
+        "envelope": {
+          "t": "pair.confirm",
+          "b": {
+            "accept": true
+          }
+        }
+      }
+    },
+    {
+      "name": "whitespace-json-accepted",
+      "hex": "0000001c7b20227422203a202270696e6722202c0a2022696422203a2033207d",
+      "expect": {
+        "envelope": {
+          "t": "ping",
+          "id": 3
+        }
+      }
+    },
+    {
+      "name": "zero-length",
+      "hex": "00000000",
+      "expect": {
+        "error": "bad-length"
+      }
+    },
+    {
+      "name": "over-limit-length",
+      "hex": "00400001",
+      "expect": {
+        "error": "bad-length"
+      }
+    },
+    {
+      "name": "invalid-json",
+      "hex": "0000000b7b2274223a2270696e6722",
+      "expect": {
+        "error": "bad-payload"
+      }
+    },
+    {
+      "name": "invalid-utf8",
+      "hex": "0000000a7b2274223a22fffe227d",
+      "expect": {
+        "error": "bad-payload"
+      }
+    },
+    {
+      "name": "utf8-bom",
+      "hex": "0000000fefbbbf7b2274223a2270696e67227d",
+      "expect": {
+        "error": "bad-payload"
+      }
+    },
+    {
+      "name": "array-payload",
+      "hex": "000000055b312c325d",
+      "expect": {
+        "error": "bad-payload"
+      }
+    },
+    {
+      "name": "missing-type",
+      "hex": "000000087b226964223a317d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "uppercase-type",
+      "hex": "0000000c7b2274223a2250696e67227d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "empty-type",
+      "hex": "000000087b2274223a22227d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "type-too-long",
+      "hex": "000000497b2274223a226161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161227d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "type-trailing-dot",
+      "hex": "0000000d7b2274223a22706169722e227d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "type-not-string",
+      "hex": "000000077b2274223a357d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "id-zero",
+      "hex": "000000137b2274223a2270696e67222c226964223a307d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "id-negative",
+      "hex": "000000147b2274223a2270696e67222c226964223a2d317d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "id-fraction",
+      "hex": "000000157b2274223a2270696e67222c226964223a312e357d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "id-too-large",
+      "hex": "000000227b2274223a2270696e67222c226964223a393030373139393235343734303939327d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "id-string",
+      "hex": "000000157b2274223a2270696e67222c226964223a2231227d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "re-zero",
+      "hex": "000000137b2274223a22706f6e67222c227265223a307d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "body-not-object",
+      "hex": "000000137b2274223a2270696e67222c2262223a5b5d7d",
+      "expect": {
+        "error": "bad-envelope"
+      }
+    },
+    {
+      "name": "header-only-partial",
+      "hex": "000000",
+      "expect": {
+        "needsMore": true
+      }
+    },
+    {
+      "name": "payload-truncated",
+      "hex": "000000137b2274223a2270696e67222c226964223a",
+      "expect": {
+        "needsMore": true
+      }
+    }
+  ],
+  "stream": [
+    {
+      "name": "two-frames-one-buffer",
+      "hex": "000000137b2274223a2270696e67222c226964223a357d000000137b2274223a22706f6e67222c227265223a357d",
+      "expect": {
+        "envelopes": [
+          {
+            "t": "ping",
+            "id": 5
+          },
+          {
+            "t": "pong",
+            "re": 5
+          }
+        ]
+      }
+    }
+  ],
+  "encode": [
+    {
+      "name": "roundtrip-ping-with-id",
+      "envelope": {
+        "t": "ping",
+        "id": 1
+      }
+    },
+    {
+      "name": "roundtrip-hello-desktop",
+      "envelope": {
+        "t": "hello",
+        "b": {
+          "proto": 1,
+          "role": "desktop",
+          "name": "qinda",
+          "model": "QindaQt",
+          "os": "Gentoo Linux",
+          "app": "0.1.0",
+          "caps": [
+            "status",
+            "ring"
+          ],
+          "trusted": false
+        }
+      }
+    },
+    {
+      "name": "roundtrip-status-reply-fields",
+      "envelope": {
+        "t": "status",
+        "b": {
+          "battery": {
+            "level": 87,
+            "charging": true,
+            "plugged": "usb"
+          },
+          "network": {
+            "type": "wifi",
+            "signal": null
+          }
+        }
+      }
+    },
+    {
+      "name": "roundtrip-error-reply",
+      "envelope": {
+        "t": "error",
+        "re": 42,
+        "b": {
+          "code": "unknown-type",
+          "message": "no handler"
+        }
+      }
+    },
+    {
+      "name": "roundtrip-max-safe-id",
+      "envelope": {
+        "t": "ping",
+        "id": 9007199254740991
+      }
+    },
+    {
+      "name": "roundtrip-unknown-top-level-key-ignored",
+      "envelope": {
+        "t": "pong",
+        "re": 7
+      }
+    },
+    {
+      "name": "roundtrip-utf8-body",
+      "envelope": {
+        "t": "hello",
+        "b": {
+          "proto": 1,
+          "role": "phone",
+          "name": "Jarrod’s S26 📱",
+          "model": "SM-S948U",
+          "os": "Android 17",
+          "app": "0.1.0",
+          "caps": [],
+          "trusted": true
+        }
+      }
+    },
+    {
+      "name": "roundtrip-dotted-type-with-dash",
+      "envelope": {
+        "t": "pair.confirm",
+        "b": {
+          "accept": true
+        }
+      }
+    },
+    {
+      "name": "roundtrip-whitespace-json-accepted",
+      "envelope": {
+        "t": "ping",
+        "id": 3
+      }
+    }
+  ]
+}

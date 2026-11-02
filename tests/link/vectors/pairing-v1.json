@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "description": "QindaLink pairing vectors. commitment = SHA-256('QLINK-COMMIT-1'||nd||spkiD||spkiP); code = uint32_be(SHA-256('QLINK-SAS-1'||spkiD||spkiP||nd||np)[0..3]) mod 1e6, six digits. See docs/wiki/reference/qindalink-protocol-v1.md#pairing.",
+  "cases": [
+    {
+      "name": "counting-nonces",
+      "spkiD": "5b7ad2d123b4cbc97dddc13b75f67df2f68a9150930c9476d059ea53e9b0c915",
+      "spkiP": "ad75ecdda3a53bf1323b6f6ab6c3ba3c74acf0effb7fc6402e521ab36868a837",
+      "nd": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "np": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "commitment": "1f863befa646884ca3f3429ccb74d07f032dfc234a67f4f4f431c60310fc1190",
+      "code": "225635"
+    },
+    {
+      "name": "all-zero-nonces",
+      "spkiD": "5cce7825fe31c4c234090997e2398d1f6bee01743dc9468ffea5597efd44c152",
+      "spkiP": "9d2eacb09eb17cd9f318d1987bf55b2468d56e00a871b647686cd9f11dd16545",
+      "nd": "0000000000000000000000000000000000000000000000000000000000000000",
+      "np": "0000000000000000000000000000000000000000000000000000000000000000",
+      "commitment": "8ecdb834fd9b1cda419ae267c84190b1cd0068410dca4ed934d2d0b440bb43a2",
+      "code": "827362"
+    },
+    {
+      "name": "ff-nonces",
+      "spkiD": "21bfbf10f931ba39aa30a497229114cfa474e99f7eb3399de3471e6a71c1bc49",
+      "spkiP": "383fc61e62758a029f11d3e58e4ea9b3d2478c528bc5401e146b935472c119a4",
+      "nd": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "np": "a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+      "commitment": "f209b24d3ccd9ce9de8576fadcf4277baef5996a355f51d20bfb8bd7590b8842",
+      "code": "730758"
+    }
+  ]
+}

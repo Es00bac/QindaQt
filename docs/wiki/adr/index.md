@@ -454,3 +454,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0429: Give containers and tabs their own identity](0429-container-and-tab-identity.md) — Accepted container names and accents in taskbar/Alt+Tab and durable numbered, renameable pages.
 
 - [ADR-0432: Review keyring requester before credentials](0432-review-keyring-requester-before-credentials.md) — Accepted request review, bounded process context and explicit shared unlock scope.
+
+- [ADR-0433: QindaLink phone companion architecture](0433-qindalink-phone-companion-architecture.md) — Accepted Java engine + QML/QindaTK phone UI, shell-uid mirror server over ADB, `qindaqt-link-service` with `Link1`, portal-only desktop input, phone-only vault.
+- [ADR-0434: QindaLink pinned TLS transport and code-comparison pairing](0434-qindalink-pinned-tls-transport-and-sas-pairing.md) — Accepted TLS 1.3 with SPKI-pinned P-256 keys on every path, committed six-digit code pairing, loopback/USB always on and LAN opt-in.

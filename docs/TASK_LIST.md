@@ -1,3 +1,28 @@
+## November 2 — QindaLink phone companion design accepted
+
+QindaLink is a phone companion written for QindaQt to replace KDE Connect.
+It covers SMS, phone notifications, phone apps as desktop windows,
+phone-as-touchpad/keyboard with macros, and a phone-held password vault that
+types into the desktop. The user chose Qt/QML + QindaTK for the phone UI and
+the name QindaLink.
+
+[ADR-0433](wiki/adr/0433-qindalink-phone-companion-architecture.md) fixes the
+components. The phone engine is Java and its UI is QML/QindaTK. Streaming uses
+a shell-user mirror server over ADB. The desktop runs `qindaqt-link-service`
+with `org.qindaqt.Link1`, sends input only through the RemoteDesktop portal,
+and never holds vault secrets.
+[ADR-0434](wiki/adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md)
+fixes TLS 1.3 with pinned P-256 keys and committed six-digit code pairing.
+The wire contract is
+[QindaLink protocol 1](wiki/reference/qindalink-protocol-v1.md). Golden
+vectors in `tests/link/vectors/` bind the C++ and Java codecs. The
+[plan](wiki/architecture/qindalink.md#delivery-plan) starts with four
+parallel lanes: QindaTK for Android, desktop link core, phone engine, and
+app streaming.
+
+Design only. No QindaLink code is integrated and no feature-completion credit
+changed.
+
 ## November 2 — PlayStation battery report traced and coarse decoder corrected
 
 The connected DualSense on qinda reports battery step 1 and charging code 1 in

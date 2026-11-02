@@ -146,6 +146,7 @@ nav:
       - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
       - Firewall1 protocol 1: reference/firewall1-v1.md
+      - QindaLink protocol 1: reference/qindalink-protocol-v1.md
       - "Removable Media Devices protocol v1": reference/removable-media-protocol-v1.md
       - Removable media client: architecture/removable-media-client.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
@@ -172,6 +173,7 @@ nav:
       - Lock greeter lifecycle: architecture/lock-greeter.md
       - Compositor attachment and idle: architecture/compositor-attachment.md
       - Session resilience: architecture/session-resilience.md
+      - QindaLink phone companion: architecture/qindalink.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
       - Windows Program Runner: apps/windows-program-runner.md
@@ -608,3 +610,5 @@ nav:
       - "0428: Pause controller input only for the focused application": adr/0428-pause-controller-desktop-input-only-for-the-focused-application.md
       - "0429: Container and tab identity": adr/0429-container-and-tab-identity.md
       - "0432: Review keyring requester before credentials": adr/0432-review-keyring-requester-before-credentials.md
+      - "0433: QindaLink phone companion architecture": adr/0433-qindalink-phone-companion-architecture.md
+      - "0434: QindaLink pinned TLS transport and pairing": adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md
