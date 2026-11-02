@@ -30,3 +30,11 @@ Configure: `cmake -S . -B build/desktop-core -G Ninja -DCMAKE_INSTALL_PREFIX=/us
 ## Requested next action
 
 Integrate; wire `QindaQtLink` into packaging when the app/applet lanes land.
+
+## Repair round (review P1/P2)
+
+- Merged main 24e8ce047; repair commit `4dcca0afc09debcdedda046900b01a6976fa8387` (branch head adds only this handoff update).
+- P1: unit (no PrivateDevices, AF_NETLINK, KillMode=process, AGENT-NOTE); unauthenticated bounds (hello 10 s, UNPAIRED 120 s not extended by ping, max 8, one pairing at a time) in `qindaqt.link-bounds`; READY refused with `bye{error}` when the pin cannot be written (test makes the atomic rename fail), trust store rolls back.
+- P2: type regex anchoring, integer-token ids, nesting depth 64, strict hex np, notification sanitising (`qindaqt.link-presenter`), identity fail-closed/atomic/0700-at-creation (`qindaqt.link-identity`), decoder offset compaction.
+- Evidence: `ctest -R qindaqt.link-` 9/9 passed; validate-docs and `mkdocs build --strict` ok.
+- Known gap: ConfirmPairing caller restriction (documented in reference/link1-v1.md).
