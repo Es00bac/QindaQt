@@ -224,6 +224,7 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/network_applet)
     add_subdirectory(shell/agent_usage_applet)
     add_subdirectory(shell/firewall_applet)
+    add_subdirectory(shell/link_applet)
     add_subdirectory(shell/smart_lights_applet)
     # AGENT-GUARD: the applet target only exists inside QINDAQT_BUILD_SHELL
     # (src/CMakeLists.txt). Registered outside this block, the row breaks a

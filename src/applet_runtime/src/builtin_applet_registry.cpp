@@ -35,6 +35,8 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.network"),
         // Firewall over public Firewall1 (ADR-0431), owned by QindaFirewall.
         QStringLiteral("qindaqt.applets.firewall"),
+        // QindaLink phone chip over public Link1 (ADR-0435).
+        QStringLiteral("qindaqt.applets.link"),
         // The gather overview (ADR-0232): the button half of
         // the gesture Meta+G and the upper-left screen corner also reach.
         QStringLiteral("qindaqt.applets.gather-overview"),

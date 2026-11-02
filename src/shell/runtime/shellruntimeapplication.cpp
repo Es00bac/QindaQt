@@ -11,6 +11,8 @@
 #include "networkappletcomposition.h"
 #include "firewall_applet_controller.h"
 #include "firewallappletcomposition.h"
+#include "link_applet_controller.h"
+#include "linkappletcomposition.h"
 #include "agentusageappletcomposition.h"
 #include "agent_usage_applet_controller.h"
 #include "smartlightsappletcomposition.h"
@@ -510,6 +512,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     m_windowFactory->setNetworkAppletAccess(m_networkApplet->access());
     m_windowFactory->setAgentUsageAppletAccess(m_agentUsageApplet->access());
     m_windowFactory->setFirewallAppletAccess(m_firewallApplet->access());
+    m_windowFactory->setLinkAppletAccess(m_linkApplet->access());
     m_windowFactory->setGatherOverviewAccess(m_gatherOverview.get());
     // The panel right-click configuration facade composes over the shared
     // Settings1 client and the Settings route launcher (both owned above).
@@ -656,6 +659,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_networkApplet.reset();
     m_agentUsageApplet.reset();
     m_firewallApplet.reset();
+    m_linkApplet.reset();
     m_smartLightsApplet.reset();
     m_voiceApplet.reset();
     m_powerApplet.reset();

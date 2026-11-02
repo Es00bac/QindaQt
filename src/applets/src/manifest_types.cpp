@@ -62,6 +62,8 @@ constexpr std::array capabilities{
     EnumToken{Capability::NetworkRead, "network.read"},
     EnumToken{Capability::NetworkControl, "network.control"},
     EnumToken{Capability::SecurityRead, "security.read"},
+    EnumToken{Capability::PhoneRead, "phone.read"},
+    EnumToken{Capability::PhoneControl, "phone.control"},
 };
 
 template<typename Enum, std::size_t Size>

@@ -81,6 +81,7 @@ class BluetoothAppletComposition;
 class NetworkAppletComposition;
 class AgentUsageAppletComposition;
 class FirewallAppletComposition;
+class LinkAppletComposition;
 class GlobalMenuAppletComposition;
 class GatherOverviewComposition;
 class GatherOverviewShortcutProducer;
@@ -276,6 +277,7 @@ private:
     std::unique_ptr<NetworkAppletComposition> m_networkApplet;
     std::unique_ptr<AgentUsageAppletComposition> m_agentUsageApplet;
     std::unique_ptr<FirewallAppletComposition> m_firewallApplet;
+    std::unique_ptr<LinkAppletComposition> m_linkApplet;
     std::unique_ptr<SmartLightsAppletComposition> m_smartLightsApplet;
     std::unique_ptr<VoiceAppletComposition> m_voiceApplet;
     std::unique_ptr<ObsAppletComposition> m_obsApplet;
