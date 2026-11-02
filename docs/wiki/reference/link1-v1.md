@@ -27,6 +27,41 @@ wire format is the separate [QindaLink protocol 1](qindalink-protocol-v1.md).
 | `DevicesChanged` | `(s json)` | Any snapshot-visible change; `json` is what `Devices()` would return now. |
 | `PairingRequested` | `(s id, s name, s model, s code)` | The phone and desktop have exchanged nonces. `code` is the raw six digits (`"007123"`); UIs show it as `007 123`. The desktop also posts a notification with Accept and Reject. |
 
+## Messages
+
+`org.qindaqt.Link1.Messages` at `/org/qindaqt/Link1/Messages` on the same bus
+name exposes the phone's SMS/MMS provider over the `sms` capability
+([wire format](qindalink-protocol-v1.md#messages-sms)). `device` is the device
+id from `Devices`. All string results are compact JSON; the JSON bodies are the
+validated `sms.*` reply bodies, restricted to the documented keys. Calls reply
+asynchronously, after the phone answers (10 s limit).
+
+| Method | Signature | Result JSON |
+| --- | --- | --- |
+| `ListThreads` | `(s device, i limit, x before, x beforeId) → s` | `{"threads":[…],"more":b,"unread":n}`. `limit` is clamped to 1–100; `before`/`beforeId` < 0 mean "newest". |
+| `ListMessages` | `(s device, x thread, i limit, x before, x beforeId) → s` | `{"thread":n,"messages":[…],"more":b}`; `limit` clamped to 1–200. |
+| `GetPart` | `(s device, x part, i maxEdge) → s` | `{"part":n,"mime":"…","size":n,"scaled":b,"data":"<base64>"}` |
+| `Send` | `(s device, as addrs, s text, i subscription) → s` | `{"ref":n}`; `subscription` < 0 means the default. Progress arrives as `SendStatus`. |
+| `MarkRead` | `(s device, x thread) → s` | `{"thread":n,"unread":n}` |
+
+| Signal | Signature | Meaning |
+| --- | --- | --- |
+| `ThreadsChanged` | `(s device, s json)` | `{"threads":[ids],"all":b,"unread":n}`. Also sent once when a phone becomes READY. |
+| `SendStatus` | `(s device, x ref, s state, s code)` | `state` is `sent`, `delivered` or `failed`; `code` is non-empty only for `failed`. |
+
+| Property | Type | Meaning |
+| --- | --- | --- |
+| `UnreadCount` | `i` | Unread messages summed over connected phones; changes are announced with `PropertiesChanged`. It is 0 for a disconnected phone. |
+
+Errors are D-Bus errors `org.qindaqt.Link1.Error.<Code>`: `NotConnected`
+(no READY session), `Unsupported` (the phone lacks `sms`, cannot mark read, or
+the part is too large), `Denied` (SMS permission not granted on the phone),
+`BadRequest` (arguments out of bounds), `BadReply` (the phone's data failed
+validation), `Timeout`, `Internal`.
+
+Privacy: the service keeps only unread counts in memory. Message content
+lives in the reply and in the client; nothing is written to disk or logged.
+
 ## Device snapshot
 
 ```json
@@ -105,4 +140,5 @@ and clears its device list when the service name disappears.
 | `qindaqt.link-session` | Replacement, LAN rule, keepalive with injected timings, unpair, error replies, vault log redaction |
 | `qindaqt.link-adb` | Tunnel manager against a fake adb |
 | `qindaqt.link-client` | Parsing and availability gating |
+| `qindaqt.link-messages` | `MessagesFeature` with a scripted phone: limit clamping and cursors, rejected oversized/mistyped replies, error mapping, change events and unread totals, send status mapping, no content in logs |
 | `qindaqt.link-service-smoke` | The real binary on a private `dbus-run-session` bus |

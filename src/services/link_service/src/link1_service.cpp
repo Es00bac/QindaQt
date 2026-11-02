@@ -20,6 +20,7 @@ Link1Service::~Link1Service()
 {
     if (m_bus.isConnected()) {
         m_bus.unregisterObject(QString::fromLatin1(kPath));
+        m_bus.unregisterObject(QStringLiteral("/org/qindaqt/Link1/Messages"));
         m_bus.unregisterService(QString::fromLatin1(kName));
     }
 }
@@ -51,6 +52,9 @@ bool Link1Service::start(QString *error)
     if (!m_hub->listen(QHostAddress::LocalHost, m_config.port)) {
         return fail(QStringLiteral("cannot listen on 127.0.0.1:%1").arg(m_config.port));
     }
+    m_messages = std::make_unique<MessagesFeature>([hub = m_hub.get()](const QString &id) { return hub->session(id); });
+    m_hub->addFeature(m_messages.get());
+    new MessagesAdaptor(m_messages.get(), m_bus); // owned by m_messages; exported below
     connect(m_hub.get(), &Hub::devicesChanged, this, &Link1Service::onDevicesChanged);
     connect(m_hub.get(), &Hub::pairingRequested, this,
             [this](const QString &id, const QString &name, const QString &model, const QString &code) {
@@ -72,6 +76,11 @@ bool Link1Service::start(QString *error)
     if (!m_bus.registerObject(QString::fromLatin1(kPath), this,
                               QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals)) {
         return fail(QStringLiteral("cannot register %1").arg(QLatin1String(kPath)));
+    }
+    if (!m_bus.registerObject(QStringLiteral("/org/qindaqt/Link1/Messages"), m_messages.get(),
+                              QDBusConnection::ExportAdaptors)) {
+        m_bus.unregisterObject(QString::fromLatin1(kPath));
+        return fail(QStringLiteral("cannot register the Messages object"));
     }
     if (!m_bus.registerService(QString::fromLatin1(kName))) {
         m_bus.unregisterObject(QString::fromLatin1(kPath));
