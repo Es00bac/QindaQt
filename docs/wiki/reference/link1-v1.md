@@ -60,7 +60,7 @@ asynchronously, after the phone answers (10 s limit).
 | Method | Signature | Result JSON |
 | --- | --- | --- |
 | `ListThreads` | `(s device, i limit, x before, x beforeId) → s` | `{"threads":[…],"more":b,"unread":n}`. `limit` is clamped to 1–100; `before`/`beforeId` < 0 mean "newest". |
-| `ListMessages` | `(s device, x thread, i limit, x before, x beforeId) → s` | `{"thread":n,"messages":[…],"more":b}`; `limit` clamped to 1–200. |
+| `ListMessages` | `(s device, x thread, i limit, x before, s beforeKind, x beforeId) → s` | `{"thread":n,"messages":[…],"more":b}`; `limit` clamped to 1–200. The cursor is the last row's `date`, `kind` and `id`; `beforeKind` is `sms`, `mms` or empty (`sms`). |
 | `GetPart` | `(s device, x part, i maxEdge) → s` | `{"part":n,"mime":"…","size":n,"scaled":b,"data":"<base64>"}` |
 | `Send` | `(s device, as addrs, s text, i subscription) → s` | `{"ref":n}`; `subscription` < 0 means the default. Progress arrives as `SendStatus`. |
 | `MarkRead` | `(s device, x thread) → s` | `{"thread":n,"unread":n}` |
@@ -68,7 +68,7 @@ asynchronously, after the phone answers (10 s limit).
 | Signal | Signature | Meaning |
 | --- | --- | --- |
 | `ThreadsChanged` | `(s device, s json)` | `{"threads":[ids],"all":b,"unread":n}`. Also sent once when a phone becomes READY. |
-| `SendStatus` | `(s device, x ref, s state, s code)` | `state` is `sent`, `delivered` or `failed`; `code` is non-empty only for `failed`. |
+| `SendStatus` | `(s device, x ref, s state, s code, s detail)` | `state` is `sent`, `delivered` or `failed`; `code` is non-empty only for `failed`. `detail` is empty, or `{"unsent":[i…]}` listing recipient indexes never sent after a partial failure. |
 
 | Property | Type | Meaning |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ Errors are D-Bus errors `org.qindaqt.Link1.Error.<Code>`: `NotConnected`
 (no READY session), `Unsupported` (the phone lacks `sms`, cannot mark read, or
 the part is too large), `Denied` (SMS permission not granted on the phone),
 `BadRequest` (arguments out of bounds), `BadReply` (the phone's data failed
-validation), `Timeout`, `Internal`.
+validation), `Timeout`, `Internal`. A phone error code outside the protocol's list is reported as `Internal`.
 
 Privacy: the service keeps only unread counts in memory. Message content
 lives in the reply and in the client; nothing is written to disk or logged.

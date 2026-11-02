@@ -30,24 +30,61 @@ public final class SmsSenderAndroid implements SmsSender {
 
     public SmsSenderAndroid(Context ctx) {
         this.ctx = ctx.getApplicationContext();
-        this.ctx.registerReceiver(new BroadcastReceiver() {
+        receiver = new BroadcastReceiver() {
             @Override public void onReceive(Context c, Intent i) { onResult(i, getResultCode()); }
-        }, new IntentFilter(ACTION), Context.RECEIVER_NOT_EXPORTED);
+        };
+        this.ctx.registerReceiver(receiver, new IntentFilter(ACTION), Context.RECEIVER_NOT_EXPORTED);
     }
 
     @Override public void send(long ref, List<String> addrs, String text, int sub, Listener listener) {
         SmsManager sm = sub >= 0 ? SmsManager.getSmsManagerForSubscriptionId(sub) : ctx.getSystemService(SmsManager.class);
+        if (sm == null) throw new IllegalStateException("no SmsManager");
         ArrayList<String> parts = sm.divideMessage(text);
-        SendTracker tracker = new SendTracker(ref, parts.size() * addrs.size(), listener);
+        if (parts == null || parts.isEmpty()) throw new IllegalArgumentException("empty message");
+        Listener wrapped = new Listener() {
+            @Override public void onEvent(long r, String state, String code) {
+                if (!"sent".equals(state)) forget(r);
+                listener.onEvent(r, state, code);
+            }
+            @Override public void onUnsent(long r, String code, List<Integer> unsent) {
+                forget(r);
+                listener.onUnsent(r, code, unsent);
+            }
+        };
+        SendTracker tracker = new SendTracker(ref, parts.size() * addrs.size(), wrapped);
         synchronized (this) {
             trackers.put(ref, tracker);
             while (trackers.size() > KEEP) trackers.remove(trackers.keySet().iterator().next());
         }
-        for (String addr : addrs) {
-            ArrayList<PendingIntent> sent = new ArrayList<>(), dlv = new ArrayList<>();
-            for (int p = 0; p < parts.size(); p++) { sent.add(pi(ref, "sent")); dlv.add(pi(ref, "dlv")); }
-            sm.sendMultipartTextMessage(addr, null, parts, sent, dlv);
+        // AGENT-GUARD: if recipient i fails, recipients before i are already on the air. Before the first one
+        // the exception propagates (nothing sent, the caller may retry). After it, the request was accepted, so
+        // report which recipients were never sent instead of throwing, which would invite a duplicate resend.
+        for (int i = 0; i < addrs.size(); i++) {
+            try {
+                ArrayList<PendingIntent> sent = new ArrayList<>(), dlv = new ArrayList<>();
+                for (int p = 0; p < parts.size(); p++) { sent.add(pi(ref, "sent")); dlv.add(pi(ref, "dlv")); }
+                sm.sendMultipartTextMessage(addrs.get(i), null, parts, sent, dlv);
+            } catch (RuntimeException ex) {
+                forget(ref);
+                if (i == 0) throw ex;
+                List<Integer> unsent = new ArrayList<>();
+                for (int j = i; j < addrs.size(); j++) unsent.add(j);
+                listener.onUnsent(ref, ex instanceof SecurityException ? "denied" : "unknown", unsent);
+                return;
+            }
         }
+    }
+
+    private synchronized void forget(long ref) { trackers.remove(ref); }
+
+    private BroadcastReceiver receiver;
+
+    @Override public synchronized void close() {
+        if (receiver != null) {
+            try { ctx.unregisterReceiver(receiver); } catch (IllegalArgumentException e) { /* already gone */ }
+            receiver = null;
+        }
+        trackers.clear();
     }
 
     private synchronized PendingIntent pi(long ref, String kind) {

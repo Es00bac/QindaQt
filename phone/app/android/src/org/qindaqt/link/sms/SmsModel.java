@@ -70,16 +70,27 @@ public final class SmsModel {
         return t;
     }
 
-    public Map<String, Object> messages(long thread, int limit, long before, long beforeId) {
-        List<SmsProvider.MessageRow> merged = new ArrayList<>(provider.smsMessages(thread, limit + 1, before, beforeId));
-        merged.addAll(provider.mmsMessages(thread, limit + 1, before, beforeId));
-        merged.sort((x, y) -> x.date != y.date ? Long.compare(y.date, x.date) : Long.compare(y.id, x.id));
+    /**
+     * Messages are ordered by (date desc, kind desc with mms before sms, id desc) and the cursor is
+     * (before, beforeMms, beforeId), so rows that share a millisecond are neither repeated nor skipped.
+     * Each table is queried with the (date, id) cursor that is equivalent for its kind: after an mms cursor
+     * row, same-date sms rows of any id still follow; after an sms cursor row, same-date mms rows are done.
+     */
+    public Map<String, Object> messages(long thread, int limit, long before, boolean beforeMms, long beforeId) {
+        long smsId = beforeId, mmsId = beforeId;
+        if (before >= 0) {
+            if (beforeMms) smsId = Long.MAX_VALUE; else mmsId = -1;
+        }
+        List<SmsProvider.MessageRow> merged = new ArrayList<>(provider.smsMessages(thread, limit + 1, before, smsId));
+        merged.addAll(provider.mmsMessages(thread, limit + 1, before, mmsId));
+        merged.sort((x, y) -> x.date != y.date ? Long.compare(y.date, x.date)
+                : x.mms != y.mms ? (x.mms ? -1 : 1) : Long.compare(y.id, x.id));
         List<Object> out = new ArrayList<>();
         boolean more = false;
         int budget = 0;
         for (int i = 0; i < merged.size(); i++) {
             if (i >= limit) { more = true; break; }
-            Map<String, Object> m = message(merged.get(i));
+            Map<String, Object> m = message(provider.hydrate(merged.get(i)));
             budget += Json.write(m).length();
             if (budget > BUDGET_BYTES && !out.isEmpty()) { more = true; break; }
             out.add(m);

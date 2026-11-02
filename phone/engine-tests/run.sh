@@ -7,7 +7,7 @@ root=$(cd "$here/../.." && pwd)
 out="$root/build/phone/engine-tests"
 rm -rf "$out"; mkdir -p "$out"
 javac -Xlint:all -d "$out" "$root"/phone/app/android/src/org/qindaqt/link/proto/*.java \
-    "$root"/phone/app/android/src/org/qindaqt/link/engine/*.java "$root"/phone/app/android/src/org/qindaqt/link/notify/*.java "$here/VectorTests.java" "$here/SessionTest.java" "$here/RepairTests.java" "$here/FeatureTest.java" "$here/NotifyTest.java" "$here/SmsTest.java" "$root"/phone/app/android/src/org/qindaqt/link/sms/*.java
+    "$root"/phone/app/android/src/org/qindaqt/link/engine/*.java "$root"/phone/app/android/src/org/qindaqt/link/notify/*.java "$root"/phone/app/android/src/org/qindaqt/link/sms/*.java "$here/VectorTests.java" "$here/SessionTest.java" "$here/RepairTests.java" "$here/FeatureTest.java" "$here/NotifyTest.java" "$here/SmsTest.java"
 java -cp "$out" VectorTests "$root/tests/link/vectors"
 java -cp "$out" SessionTest
 java -cp "$out" RepairTests

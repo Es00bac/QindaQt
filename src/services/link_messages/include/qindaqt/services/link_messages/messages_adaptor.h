@@ -17,7 +17,7 @@ namespace QindaQt::Link {
 // Replies are asynchronous (QDBusMessage::setDelayedReply): the phone answers
 // later. Failures are D-Bus errors named org.qindaqt.Link1.Error.<Code> where
 // <Code> is the CamelCase protocol code (Denied, Unsupported, NotConnected,
-// BadRequest, BadReply, Timeout, Internal, ...). All values are compact JSON text.
+// BadRequest, BadReply, Timeout, Internal, ...; any unlisted phone code becomes Internal). All values are compact JSON text.
 // AGENT-GUARD: never log method arguments or reply bodies here; they are message content.
 class MessagesAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
@@ -29,8 +29,8 @@ public:
 
 public Q_SLOTS:
     QString ListThreads(const QString &device, int limit, qlonglong before, qlonglong beforeId, const QDBusMessage &msg);
-    QString ListMessages(const QString &device, qlonglong thread, int limit, qlonglong before, qlonglong beforeId,
-                         const QDBusMessage &msg);
+    QString ListMessages(const QString &device, qlonglong thread, int limit, qlonglong before, const QString &beforeKind,
+                         qlonglong beforeId, const QDBusMessage &msg);
     QString GetPart(const QString &device, qlonglong part, int maxEdge, const QDBusMessage &msg);
     QString Send(const QString &device, const QStringList &addrs, const QString &text, int subscription,
                  const QDBusMessage &msg);
@@ -38,7 +38,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void ThreadsChanged(const QString &device, const QString &json);
-    void SendStatus(const QString &device, qlonglong ref, const QString &state, const QString &code);
+    void SendStatus(const QString &device, qlonglong ref, const QString &state, const QString &code, const QString &detail);
 
 private:
     [[nodiscard]] MessagesFeature::Reply completer(const QDBusMessage &msg);

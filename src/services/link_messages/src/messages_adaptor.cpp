@@ -7,8 +7,16 @@
 namespace QindaQt::Link {
 namespace {
 
+// AGENT-GUARD: the code comes from the phone (or a local failure). Only known codes may become part of a D-Bus
+// error name: an invalid name makes the bus drop the reply and the caller hangs until its timeout.
 QString errorName(const QString &code)
 {
+    static const QStringList known = {
+        QStringLiteral("unknown-type"), QStringLiteral("bad-request"), QStringLiteral("not-paired"),
+        QStringLiteral("unsupported"), QStringLiteral("busy"), QStringLiteral("denied"),
+        QStringLiteral("target-changed"), QStringLiteral("timeout"), QStringLiteral("internal"),
+        QStringLiteral("not-connected"), QStringLiteral("bad-reply")};
+    if (!known.contains(code)) return QStringLiteral("org.qindaqt.Link1.Error.Internal");
     QString out = QStringLiteral("org.qindaqt.Link1.Error.");
     bool up = true;
     for (const QChar c : code) {
@@ -59,9 +67,9 @@ QString MessagesAdaptor::ListThreads(const QString &device, int limit, qlonglong
 }
 
 QString MessagesAdaptor::ListMessages(const QString &device, qlonglong thread, int limit, qlonglong before,
-                                      qlonglong beforeId, const QDBusMessage &msg)
+                                      const QString &beforeKind, qlonglong beforeId, const QDBusMessage &msg)
 {
-    m_feature->listMessages(device, thread, limit, before, beforeId, completer(msg));
+    m_feature->listMessages(device, thread, limit, before, beforeKind, beforeId, completer(msg));
     return {};
 }
 

@@ -196,6 +196,13 @@ std::optional<QJsonObject> sanitizeSentEvent(const QJsonObject &body)
     if (state == k("failed")) {
         QString code;
         out.insert(k("code"), str(body.value(k("code")), 32, &code) ? code : k("unknown"));
+        // Recipients that were never sent (see the protocol page); malformed values are dropped, not trusted.
+        QJsonArray unsent;
+        const QJsonArray raw = body.value(k("unsent")).toArray();
+        for (const QJsonValue &v : raw) {
+            if (isInt(v, 0, kMaxSendAddrs - 1) && unsent.size() < kMaxSendAddrs) unsent.append(v);
+        }
+        if (!unsent.isEmpty()) out.insert(k("unsent"), unsent);
     }
     return out;
 }
