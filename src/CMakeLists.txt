@@ -235,6 +235,10 @@ endif()
 if(QINDAQT_BUILD_QINDALUTRIS)
     add_subdirectory(apps/qindalutris)
 endif()
+# QindaLink phone-app mirror windows. The pure core always builds (its tests need it); the
+# executable needs FFmpeg (media-video/ffmpeg[vaapi]).
+option(QINDAQT_BUILD_LINK_MIRROR "Build qindaqt-link-mirror (QindaLink phone apps as windows)" ON)
+add_subdirectory(apps/link_mirror)
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     add_subdirectory(session_supervisor)
