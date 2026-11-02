@@ -227,8 +227,88 @@ frame table for capability `notify`.
 
 ## Messages (`sms.*`)
 
-Not specified yet. The SMS lane replaces this paragraph with the
-frame table for capability `sms`.
+Capability `sms`. The phone reads the Android SMS/MMS provider and the
+desktop asks for pages of it; nothing is stored on the desktop disk.
+Requests go desktop to phone; the reply is a frame of the **same type** with
+`re` set to the request `id` (or `error`). Every list is bounded, and the
+phone enforces the bounds even if the desktop asks for more (it clamps
+`limit` rather than failing). Times are integer milliseconds since the epoch.
+All identifiers are provider integers: thread ids, SMS ids, MMS ids and MMS
+part ids. An SMS and an MMS can share a numeric id, so a message is identified
+by the pair (`kind`, `id`).
+
+**Paging.** Lists are newest first, ordered by (`date` descending, `id`
+descending). A request carries `before` and `beforeId` (both optional, both
+integers); the reply holds only rows strictly older than that pair. `more` is
+true when at least one older row exists. The cursor for the next page is the
+`date` and `id` of the last row received. Rows that tie on both `date` and
+`id` across different kinds can be skipped at a page edge; this is accepted.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `sms.threads` | request, desktop→phone | `limit` (int 1–100, default 50), `before`, `beforeId` | `sms.threads`: `threads` (array ≤ 100 of thread), `more` (bool), `unread` (int, total unread messages on the phone) |
+| `sms.messages` | request, desktop→phone | `thread` (int, required), `limit` (int 1–200, default 50), `before`, `beforeId` | `sms.messages`: `thread`, `messages` (array ≤ 200 of message), `more` |
+| `sms.part` | request, desktop→phone | `part` (int, required), `maxEdge` (int 64–2048, default 1280) | `sms.part`: `part`, `mime`, `size` (int, bytes sent), `scaled` (bool), `data` (base64) |
+| `sms.send` | request, desktop→phone | `addrs` (array 1–10 of string ≤ 32), `text` (string 1–1600 chars), `sub` (int, optional subscription id) | `sms.send`: `ref` (int, unique within the connection) |
+| `sms.read` | request, desktop→phone | `thread` (int, required) | `sms.read`: `thread`, `unread` (new total) |
+| `sms.changed` | event, phone→desktop | `threads` (array ≤ 100 of thread id), `all` (bool, true when more than 100 changed or the set is unknown), `unread` (int total) | none |
+| `sms.sent` | event, phone→desktop | `ref`, `state` (`sent`, `failed` or `delivered`), `code` (string, only with `failed`) | none |
+
+**thread:** `id` (int), `addrs` (array ≤ 20 of string ≤ 64), `names`
+(array of string ≤ 128, the same length as `addrs`, `""` where the number is
+not a contact), `snippet` (string ≤ 200 chars), `date`, `unread` (int ≥ 0),
+`count` (int ≥ 0, messages in the thread).
+
+**message:** `id` (int), `kind` (`sms` or `mms`), `box` (`inbox`, `sent`,
+`outbox`, `failed`, `queued` or `draft`), `addr` (string ≤ 64, the sender for
+`inbox`, the first recipient otherwise), `date`, `body` (string ≤ 4000
+chars), `trunc` (bool, true when `body` was cut), `read` (bool), `parts`
+(array ≤ 16 of part, always present, empty for SMS). **part:** `id` (int),
+`mime` (string ≤ 128), `name` (string ≤ 128, may be empty), `size` (int
+bytes, or -1 when unknown). MMS text parts are folded into `body` and not
+listed; every other part is listed.
+
+Rules:
+
+- **Frame size.** A reply stays below 2 MiB. The phone ends a list early
+  and sets `more:true` when the next row would exceed that, so a page can be
+  shorter than `limit`.
+- **`sms.part`.** The payload before base64 is at most 2 MiB. An image larger
+  than that, or with a longest edge above `maxEdge`, is decoded and
+  re-encoded as JPEG phone-side (`scaled:true`, `mime:"image/jpeg"`). A
+  non-image over the cap is answered `error{code:"unsupported"}`.
+- **`sms.send`.** The phone divides long text into SMS parts and sends each
+  to each address through the platform `SmsManager`. The reply only says the
+  request was accepted (`ref`). Then `sms.sent` events report, for the whole
+  request, `sent` once every part has left for every address, `delivered`
+  once every delivery report has arrived (not all carriers send them), and
+  `failed` on the first failure, with `code` one of `generic`, `no-service`,
+  `null-pdu`, `radio-off`, `limit`, `denied`, `unknown`. After `failed` or
+  `delivered` no further event is sent for that `ref`. Invalid input is
+  `error{bad-request}`; without the SEND_SMS permission the phone answers
+  `error{denied}`.
+- **Errors.** Without READ_SMS every request except `sms.send` is answered
+  `error{denied}`. `sms.read` is answered `error{unsupported}` when the
+  phone's SMS role does not allow writing the provider (see below).
+- **`sms.changed`.** Sent once on entering READY (so the desktop learns the
+  unread total) and then after a 500 ms debounce of provider changes. It
+  names the threads whose summary changed; the desktop re-requests what it
+  displays.
+- **Privacy.** Neither side logs the body of any `sms.*` frame, address, name
+  or snippet; logs carry the type, ids and lengths only.
+
+**Limits of the platform.**
+
+- *RCS.* RCS chats are not in the SMS/MMS provider. They never appear in
+  these lists, and the desktop cannot see or answer them.
+- *Marking read.* Since Android 4.4 only the default SMS app may write the
+  provider. QindaLink is not the default SMS app and never asks to be, so
+  `sms.read` is answered `error{unsupported}` unless the platform lets the
+  update through; the phone attempts one provider update and reports
+  `unsupported` when it throws or changes no row.
+- *Sent messages.* A message sent by a non-default app is not written to the
+  provider by the platform, so it appears in the thread list only after
+  the user's own SMS app records it, if ever.
 
 ## Remote input (`input.*`)
 

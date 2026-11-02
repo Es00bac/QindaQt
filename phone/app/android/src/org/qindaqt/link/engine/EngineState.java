@@ -19,6 +19,7 @@ public final class EngineState {
     private String desktopName = "", code = "", message = "", pairedName = "";
     private boolean paired;
     private long lastStatusMs;
+    private String sms = "";
 
     public synchronized void set(Phase p, String desktopName, String code, String message) {
         this.phase = p;
@@ -34,6 +35,9 @@ public final class EngineState {
 
     public synchronized void statusSent(long nowMs) { lastStatusMs = nowMs; }
 
+    /** Permission summary of the sms feature (no content), for example "read,no-send". */
+    public synchronized void setSms(String summary) { sms = summary == null ? "" : summary; }
+
     public synchronized Phase phase() { return phase; }
 
     public synchronized String toJson() {
@@ -44,6 +48,7 @@ public final class EngineState {
         m.put("message", message);
         m.put("paired", paired);
         m.put("pairedName", pairedName);
+        m.put("sms", sms);
         m.put("lastStatusAgeMs", lastStatusMs == 0 ? -1L : System.currentTimeMillis() - lastStatusMs);
         return Json.write(m);
     }
