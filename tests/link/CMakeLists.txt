@@ -98,3 +98,14 @@ if(QINDAQT_DBUS_RUN_SESSION)
     )
     set_tests_properties(qindaqt.link-messages-dbus PROPERTIES LABELS "service;link" TIMEOUT 30)
 endif()
+
+if(QINDAQT_DBUS_RUN_SESSION)
+    qt_add_executable(qindaqt_link_fdo_presenter_test tst_link_fdo_presenter.cpp)
+    target_link_libraries(qindaqt_link_fdo_presenter_test PRIVATE QindaQt::LinkNotifications Qt6::Test)
+    qindaqt_enable_warnings(qindaqt_link_fdo_presenter_test)
+    add_test(
+        NAME qindaqt.link-fdo-presenter
+        COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_fdo_presenter_test>
+    )
+    set_tests_properties(qindaqt.link-fdo-presenter PROPERTIES LABELS "service;link" TIMEOUT 30)
+endif()

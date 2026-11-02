@@ -1,5 +1,6 @@
 package org.qindaqt.link.android;
 
+import android.app.ActivityOptions;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.RemoteInput;
@@ -10,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -79,12 +81,14 @@ final class NotificationAndroidSource implements NotificationSource {
         Listener l = listener;
         if (l == null) return;
         PhoneNotification n = convert(sbn);
-        if (n != null) l.onPosted(n);
+        // A post that is no longer mirrorable (it became ongoing or a foreground-service notification)
+        // retracts the copy the desktop may still show.
+        if (n != null) l.onPosted(n); else l.onRemoved(sbn.getKey());
     }
 
     void removed(StatusBarNotification sbn) {
         Listener l = listener;
-        if (l != null && mirrored(sbn)) l.onRemoved(sbn.getKey());
+        if (l != null) l.onRemoved(sbn.getKey());  // the feature ignores keys it never sent
     }
 
     @Override public void setListener(Listener l) { listener = l; }
@@ -111,7 +115,7 @@ final class NotificationAndroidSource implements NotificationSource {
         return true;
     }
 
-    @Override public String perform(String key, String actionId, String replyText) {
+    @Override public String perform(String key, String actionId, String title, String replyText) {
         NotificationListener s = service;
         if (s == null) return "denied";
         StatusBarNotification sbn = find(s, key);
@@ -121,6 +125,8 @@ final class NotificationAndroidSource implements NotificationSource {
         try { idx = Integer.parseInt(actionId); } catch (NumberFormatException e) { return "bad-request"; }
         if (acts == null || idx < 0 || idx >= acts.length || acts[idx].actionIntent == null) return "bad-request";
         Notification.Action act = acts[idx];
+        // AGENT-GUARD: ids are positions; an app can repost with reordered actions between display and tap.
+        if (act.title == null || !NotifyFrames.clip(act.title.toString(), NotifyFrames.ACTION_TITLE).equals(title)) return "target-changed";
         boolean reply = isReply(act);
         if (reply != (replyText != null)) return "bad-request";
         Intent fill = new Intent();
@@ -131,8 +137,17 @@ final class NotificationAndroidSource implements NotificationSource {
             RemoteInput.addResultsToIntent(inputs, fill, results);
         }
         try {
-            act.actionIntent.send(s, 0, fill);
-            return null;
+            Bundle options = null;
+            if (Build.VERSION.SDK_INT >= 34) {
+                // Asks Android to let the PendingIntent start an activity from the background. It is only
+                // honoured when the system grants the caller that privilege, which a foreground-service app
+                // does not get; hence the "unverified" answer for activity actions below.
+                options = ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                        .toBundle();
+            }
+            act.actionIntent.send(s, 0, fill, null, null, null, options);
+            return act.actionIntent.isActivity() ? "unverified" : null;
         } catch (android.app.PendingIntent.CanceledException e) {
             return "target-changed";
         } catch (RuntimeException e) {

@@ -29,14 +29,18 @@ public Q_SLOTS:
     // the exporting object's, which is Link1Service, not this class.
     QString Reply(const QString &device, const QString &key, const QString &action, const QString &text);
     QString Current() const;
+    // Number of CurrentChanged signals sent; a client that sees a gap re-reads Current().
+    uint Revision() const { return m_revision; }
 
 Q_SIGNALS:
-    void CurrentChanged(const QString &json);
+    // One entry per signal: the changed Current() item, or {device,key,removed:true}. `revision` counts signals.
+    void CurrentChanged(uint revision, const QString &itemJson);
     // error is empty when the phone executed the action, else a protocol error code.
     void ReplyFinished(const QString &device, const QString &key, const QString &action, const QString &error);
 
 private:
     NotificationFeature &m_feature;
+    uint m_revision = 0;
 };
 
 } // namespace QindaQt::Link

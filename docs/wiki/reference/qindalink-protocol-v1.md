@@ -241,7 +241,7 @@ is dropped. Both sides ignore unknown keys.
 | `notify.snapshot` | phone→desktop | `items`: array of at most 50 notification objects. Sent once on entering READY. It replaces the desktop's set for this phone: keys that are absent are closed, unchanged keys are left alone. | none |
 | `notify.removed` | phone→desktop | `key` (1–512) | none |
 | `notify.dismiss` | desktop→phone | `key`. The user dismissed it on the desktop. The phone calls `cancelNotification(key)`. | `ok` if `id` is present |
-| `notify.action` | desktop→phone | `key`, `action` (an action `id`, 1–64), optional `text` (0–4096, only for a `reply` action) | `ok`, or `error` (below), if `id` is present |
+| `notify.action` | desktop→phone | `key`, `action` (an action `id`, 1–64), `title` (the action title shown, 1–64), optional `text` (0–4096, only for a `reply` action) | `ok`, or `error` (below), if `id` is present |
 | `notify.icon` | desktop→phone | `hash` (64 lowercase hex). Asks for the PNG of an icon the desktop does not have cached. | none |
 | `notify.icon` | phone→desktop | `hash`, `png` (base64, at most 65 536 characters; empty when the phone no longer has it) | none |
 
@@ -276,8 +276,21 @@ Rules:
   reply only when the decoded bytes start with the PNG signature, are at most
   49 152 bytes, and hash to the requested `hash`; it then caches the file
   under that hash.
+- **Action ids are positions.** An app may repost a notification with reordered
+  actions between display and tap. The phone therefore compares `title` with
+  the title (clipped to 64) of the action now at that index and answers
+  `target-changed` without firing anything on a mismatch.
+- **Unverified activity actions.** Android does not report whether an action
+  that starts an activity actually ran; a foreground-service app is usually not
+  allowed to start activities from the background. For an activity
+  `PendingIntent` the phone requests background-activity-start permission,
+  sends the intent, and answers `error{code:"unsupported", message:"unverified"}`
+  instead of `ok`. Broadcast, service and reply actions answer `ok`.
+- **Stale copies.** When a notification the desktop may show is reposted as
+  ongoing or foreground-service, or removed, the phone sends `notify.removed`
+  for it if it ever sent that key.
 - **Errors for `notify.action` and `notify.dismiss`.** `target-changed` when the
-  key is no longer active on the phone, `bad-request` for an unknown action
+  key is no longer active on the phone or the action no longer matches, `bad-request` for an unknown action
   `id` or `text` sent to a non-reply action, `denied` when the phone has no
   notification access, and `internal` when Android refuses the action.
 - **Dismissal both ways.** `notify.removed` also follows a `notify.dismiss`,

@@ -21,6 +21,7 @@ struct NotificationFeatureDeps {
     ReplyLauncher *reply = nullptr;              // optional: no launcher, no "Reply…" action
     std::function<Session *(const QString &deviceId)> sessionFor;  // READY session or null
     int iconTimeoutMs = 10'000;
+    int actionGraceMs = 2'000;  // how long a close after an action button is not a user dismissal
 };
 
 // Desktop half of the `notify` capability: shows phone notifications through
@@ -54,7 +55,8 @@ public:
                std::function<void(const QString &error)> done);
 
 Q_SIGNALS:
-    void currentChanged();
+    // One changed notification: its Current() entry, or {device,key,removed:true}. Never the full set.
+    void entryChanged(const QJsonObject &item);
 
 private:
     struct Entry {
@@ -62,6 +64,7 @@ private:
         quint32 handle = 0;
         quint64 gen = 0;
         bool actionTaken = false;
+        quint64 actionToken = 0;
         bool quiet = false;
     };
     struct Waiter {
@@ -75,6 +78,7 @@ private:
     void onIcon(const QString &device, const QJsonObject &body);
     void flushIcon(const QString &device, const QString &hash);
     void show(const QString &device, const QString &key);
+    [[nodiscard]] QJsonObject entryJson(const QString &device, const Entry &e) const;
     void erase(const QString &device, const QString &key, bool closeShown);
     void onUserDismissed(quint32 handle);
     void onActionInvoked(quint32 handle, const QString &actionKey);

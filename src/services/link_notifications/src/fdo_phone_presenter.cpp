@@ -24,6 +24,25 @@ FdoPhoneNotificationPresenter::FdoPhoneNotificationPresenter(QDBusConnection bus
                   QStringLiteral("ActionInvoked"), this, SLOT(onActionInvoked(uint, QString)));
     m_bus.connect(QString::fromLatin1(kService), QString::fromLatin1(kPath), QString::fromLatin1(kService),
                   QStringLiteral("NotificationClosed"), this, SLOT(onClosed(uint, uint)));
+    auto *caps = new QDBusPendingCallWatcher(m_bus.asyncCall(call("GetCapabilities")), this);
+    connect(caps, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *w) {
+        const QDBusPendingReply<QStringList> reply = *w;
+        w->deleteLater();
+        if (reply.isValid()) m_markup = reply.value().contains(QStringLiteral("body-markup"));
+    });
+}
+
+QString FdoPhoneNotificationPresenter::escapeMarkup(const QString &text)
+{
+    QString out;
+    out.reserve(text.size());
+    for (const QChar c : text) {
+        if (c == QLatin1Char('&')) out += QStringLiteral("&amp;");
+        else if (c == QLatin1Char('<')) out += QStringLiteral("&lt;");
+        else if (c == QLatin1Char('>')) out += QStringLiteral("&gt;");
+        else out += c;
+    }
+    return out;
 }
 
 quint32 FdoPhoneNotificationPresenter::present(const PresentedNotification &n, quint32 replaces)
@@ -37,7 +56,9 @@ quint32 FdoPhoneNotificationPresenter::present(const PresentedNotification &n, q
     if (!n.iconPath.isEmpty()) hints.insert(QStringLiteral("image-path"), n.iconPath);
     if (n.quiet) hints.insert(QStringLiteral("suppress-sound"), true);
     QDBusMessage m = call("Notify");
-    m << n.appName << (update ? m_slots.value(handle).serverId : 0u) << n.iconPath << n.summary << n.body << flat
+    const QString summary = m_markup ? escapeMarkup(n.summary) : n.summary;
+    const QString body = m_markup ? escapeMarkup(n.body) : n.body;
+    m << n.appName << (update ? m_slots.value(handle).serverId : 0u) << n.iconPath << summary << body << flat
       << hints << -1;
     auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(m), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, handle](QDBusPendingCallWatcher *w) {

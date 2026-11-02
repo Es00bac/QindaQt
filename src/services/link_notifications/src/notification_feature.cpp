@@ -114,7 +114,7 @@ void NotificationFeature::onPosted(Session &session, const PhoneNotification &n,
     while (m_order[device].size() > kMaxTrackedPerDevice) {
         erase(device, m_order[device].constFirst(), true);  // invalidates `existing`
     }
-    Q_EMIT currentChanged();
+    if (const Entry *changed = find(device, n.key)) Q_EMIT entryChanged(entryJson(device, *changed));
     if (n.icon.isEmpty() || m_deps.icons->has(n.icon)) {
         show(device, n.key);
         return;
@@ -199,7 +199,8 @@ void NotificationFeature::erase(const QString &device, const QString &key, bool 
     }
     m_active[device].remove(key);
     m_order[device].removeAll(key);
-    Q_EMIT currentChanged();
+    Q_EMIT entryChanged(QJsonObject{{QStringLiteral("device"), device}, {QStringLiteral("key"), key},
+                                    {QStringLiteral("removed"), true}});
 }
 
 void NotificationFeature::onUserDismissed(quint32 handle)
@@ -231,6 +232,11 @@ void NotificationFeature::onActionInvoked(quint32 handle, const QString &actionK
     Entry *e = find(device, key);
     if (e == nullptr) return;
     e->actionTaken = true;
+    const quint64 token = e->actionToken = ++m_gen;
+    // The close that follows an action button arrives within moments; a later real dismissal must still count.
+    QTimer::singleShot(m_deps.actionGraceMs, this, [this, device, key, token] {
+        if (Entry *x = find(device, key); x != nullptr && x->actionToken == token) x->actionTaken = false;
+    });
     const QString id = actionKey.mid(2);
     if (actionKey.startsWith(QLatin1String("r:"))) {
         if (m_deps.reply != nullptr) m_deps.reply->launch(device, key, id);
@@ -257,8 +263,13 @@ void NotificationFeature::reply(const QString &deviceId, const QString &key, con
     if (text.size() > NotifyLimits::kReplyText || (!text.isEmpty() && !action->reply)) return done(QStringLiteral("bad-request"));
     Session *s = m_deps.sessionFor ? m_deps.sessionFor(deviceId) : nullptr;
     if (s == nullptr || !s->peerHasCap(QStringLiteral("notify"))) return done(QStringLiteral("not-connected"));
-    s->request(makeAction(key, actionId, text, hasText), [done = std::move(done)](const Envelope &r) {
-        done(r.t == QLatin1String("ok") ? QString() : r.b.value(QStringLiteral("code")).toString(QStringLiteral("internal")));
+    s->request(makeAction(key, actionId, action->title, text, hasText), [done = std::move(done)](const Envelope &r) {
+        if (r.t == QLatin1String("ok")) return done(QString());
+        const QString code = r.b.value(QStringLiteral("code")).toString(QStringLiteral("internal"));
+        // unsupported + "unverified": the action launches an activity and Android may have suppressed it.
+        const bool unverified = code == QLatin1String("unsupported")
+            && r.b.value(QStringLiteral("message")).toString() == QLatin1String("unverified");
+        done(unverified ? QStringLiteral("unverified") : code);
     });
 }
 
@@ -273,6 +284,14 @@ void NotificationFeature::setAppMuted(const QString &pkg, bool muted)
     }
 }
 
+QJsonObject NotificationFeature::entryJson(const QString &device, const Entry &e) const
+{
+    QJsonObject o = e.n.toJson();
+    o.insert(QStringLiteral("device"), device);
+    o.insert(QStringLiteral("hasReply"), e.n.hasReply());
+    return o;
+}
+
 QJsonArray NotificationFeature::current() const
 {
     QJsonArray out;
@@ -280,10 +299,7 @@ QJsonArray NotificationFeature::current() const
         for (const QString &key : m_order.value(d.key())) {
             const auto e = d->constFind(key);
             if (e == d->constEnd()) continue;
-            QJsonObject o = e->n.toJson();
-            o.insert(QStringLiteral("device"), d.key());
-            o.insert(QStringLiteral("hasReply"), e->n.hasReply());
-            out.append(o);
+            out.append(entryJson(d.key(), *e));
         }
     }
     return out;

@@ -14,7 +14,9 @@ QString compact(const QJsonArray &a) { return QString::fromUtf8(QJsonDocument(a)
 NotificationsAdaptor::NotificationsAdaptor(NotificationFeature &feature, QObject *exported)
     : QDBusAbstractAdaptor(exported), m_feature(feature)
 {
-    connect(&feature, &NotificationFeature::currentChanged, this, [this] { Q_EMIT CurrentChanged(Current()); });
+    connect(&feature, &NotificationFeature::entryChanged, this, [this](const QJsonObject &item) {
+        Q_EMIT CurrentChanged(++m_revision, QString::fromUtf8(QJsonDocument(item).toJson(QJsonDocument::Compact)));
+    });
 }
 
 QString NotificationsAdaptor::ListApps() const { return compact(m_feature.listApps()); }

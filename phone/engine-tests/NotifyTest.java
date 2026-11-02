@@ -46,7 +46,7 @@ public final class NotifyTest {
         public boolean accessGranted() { return access; }
         public List<PhoneNotification> active() { return active; }
         public boolean dismiss(String key) { dismissed.add(key); return key.equals("live"); }
-        public String perform(String key, String action, String text) { performed.add(key + "/" + action + "/" + text); return performResult; }
+        public String perform(String key, String action, String title, String text) { performed.add(key + "/" + action + "/" + title + "/" + text); return performResult; }
         public byte[] icon(String hash) { return hash.startsWith("aa") ? new byte[] {1, 2, 3} : null; }
     }
 
@@ -137,6 +137,16 @@ public final class NotifyTest {
         f.onTick(0);
         check(c.sent.size() == 1 && c.sent.get(0).t.equals("notify.snapshot"), "listener reconnect re-sends a snapshot");
 
+        // --- a mirrored notification that becomes ongoing is retracted; unknown keys stay silent
+        c.sent.clear();
+        src.l.onPosted(n("flip", "A", "1", 5));
+        f.onTick(0);
+        c.sent.clear();
+        src.l.onRemoved("flip");   // what the Android source does for a post that is now filtered
+        src.l.onRemoved("never-sent");
+        f.onTick(0);
+        check(c.sent.size() == 1 && c.sent.get(0).t.equals("notify.removed") && c.sent.get(0).b.get("key").equals("flip"), "became ongoing: sent copy retracted, never-sent key silent");
+
         // --- desktop requests
         c.sent.clear();
         check(f.onFrame(req("notify.dismiss", 3, "key", "live")) && c.replies.contains("3:ok") && src.dismissed.contains("live"), "dismiss: cancels and replies ok");
@@ -146,20 +156,26 @@ public final class NotifyTest {
         check(c.replies.contains("5:bad-request"), "dismiss: missing key is bad-request");
         f.onFrame(req("notify.dismiss", 0, "key", "live"));
         check(c.replies.size() == 3, "dismiss without id sends no reply");
-        f.onFrame(req("notify.action", 6, "key", "k1", "action", "1", "text", "hi there"));
-        check(src.performed.contains("k1/1/hi there") && c.replies.contains("6:ok"), "action: reply text reaches the source");
-        f.onFrame(req("notify.action", 7, "key", "k1", "action", "0"));
-        check(src.performed.contains("k1/0/null"), "action: no text for a plain action");
+        f.onFrame(req("notify.action", 6, "key", "k1", "action", "1", "title", "Reply", "text", "hi there"));
+        check(src.performed.contains("k1/1/Reply/hi there") && c.replies.contains("6:ok"), "action: reply text reaches the source");
+        f.onFrame(req("notify.action", 7, "key", "k1", "action", "0", "title", "Archive"));
+        check(src.performed.contains("k1/0/Archive/null"), "action: no text for a plain action");
         src.performResult = "target-changed";
-        f.onFrame(req("notify.action", 8, "key", "k1", "action", "0"));
+        f.onFrame(req("notify.action", 8, "key", "k1", "action", "0", "title", "Archive"));
         check(c.replies.contains("8:target-changed"), "action: source error code is returned");
         src.performResult = null;
-        f.onFrame(req("notify.action", 9, "key", "k1", "action", "1", "text", "z".repeat(4097)));
+        f.onFrame(req("notify.action", 9, "key", "k1", "action", "1", "title", "Reply", "text", "z".repeat(4097)));
         check(c.replies.contains("9:bad-request") && src.performed.size() == 3, "action: reply text over 4096 refused");
-        f.onFrame(req("notify.action", 10, "key", "k1", "action", "1", "text", 5L));
+        f.onFrame(req("notify.action", 10, "key", "k1", "action", "1", "title", "Reply", "text", 5L));
         check(c.replies.contains("10:bad-request"), "action: non-string text refused");
+        f.onFrame(req("notify.action", 20, "key", "k1", "action", "0"));
+        check(c.replies.contains("20:bad-request"), "action: title is required");
+        src.performResult = "unverified";
+        f.onFrame(req("notify.action", 21, "key", "k1", "action", "0", "title", "Archive"));
+        check(c.replies.contains("21:unsupported"), "action: activity launch is answered unsupported/unverified, not ok");
+        src.performResult = null;
         src.access = false;
-        f.onFrame(req("notify.action", 11, "key", "k1", "action", "0"));
+        f.onFrame(req("notify.action", 11, "key", "k1", "action", "0", "title", "Archive"));
         check(c.replies.contains("11:denied"), "action: no notification access is denied");
         src.access = true;
         f.onFrame(req("notify.icon", 0, "hash", "aa".repeat(32)));
