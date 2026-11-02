@@ -110,6 +110,12 @@ has no UI of its own.
   and `MessagesAdaptor`, which exports `org.qindaqt.Link1.Messages` at
   `/org/qindaqt/Link1/Messages` with delayed replies. Link1Service only
   registers them. Message content is never persisted or logged.
+- **Vendor providers.** Thread queries use capability probing (`FallbackChain`):
+  `?simple=true` with the full projection first, then the plain conversations URI
+  enriched from each thread's newest message. This matters on the Samsung
+  SM-S948U (Android 17), where the plain URI lacks `message_count`,
+  `recipient_ids` and `snippet`. MMS rows are fetched as headers and hydrated
+  (parts, address) only when they make the page.
 - **Limits.** RCS is invisible (not in the provider). QindaLink is not the
   default SMS app, so marking a thread read is attempted and answered
   `unsupported` when Android refuses, and messages it sends are not recorded

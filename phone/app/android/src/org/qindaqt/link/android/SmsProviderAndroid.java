@@ -12,6 +12,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,14 +21,17 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import org.qindaqt.link.sms.FallbackChain;
 import org.qindaqt.link.sms.SmsProvider;
+import org.qindaqt.link.sms.SmsQueries;
 
 /**
  * SmsProvider over content://mms-sms, content://sms and content://mms (needs READ_SMS).
  *
  * AGENT-GUARD: never log a cursor value, address, snippet or body; this class handles the user's real messages.
  * AGENT-NOTE: written for the AOSP/Samsung provider schema: sms.date and mms-sms conversation dates are ms,
- * mms.date is seconds. Failures (missing permission, vendor quirks) degrade to empty results, never a crash.
+ * mms.date is seconds. Optional enrichments degrade (logged by exception class); a failed list query throws ProviderException so the desktop gets error{internal}, never a silent empty list.
  */
 public final class SmsProviderAndroid implements SmsProvider {
     private static final Uri CONVERSATIONS = Uri.parse("content://mms-sms/conversations?simple=true");
@@ -36,6 +40,7 @@ public final class SmsProviderAndroid implements SmsProvider {
     private static final Uri OBSERVED = Uri.parse("content://mms-sms/");
     private static final int READ_CAP = 24 * 1024 * 1024;
 
+    private static final String TAG = "QindaLink";
     private final Context ctx;
     private final ContentResolver cr;
     private final Map<Long, String> canonical = new HashMap<>();
@@ -64,25 +69,65 @@ public final class SmsProviderAndroid implements SmsProvider {
     private void count(Map<Long, Integer> m, Uri uri, String where) {
         try (Cursor c = cr.query(uri, new String[] {"thread_id"}, where, null, null)) {
             while (c != null && c.moveToNext()) m.merge(c.getLong(0), 1, Integer::sum);
-        } catch (RuntimeException e) { /* degrade to zero */ }
+        } catch (RuntimeException e) { warn("unread", e); }
+    }
+
+    /** Logs the operation and exception class only; never values. */
+    private static void warn(String op, RuntimeException e) { Log.w(TAG, "sms provider " + op + ": " + e.getClass().getSimpleName()); }
+
+    private static SmsProvider.ProviderException fail(String op, RuntimeException e) {
+        warn(op, e);
+        return new SmsProvider.ProviderException(op + " failed: " + e.getClass().getSimpleName());
     }
 
     private static final class Conv {
-        long id, date; String recipients, snippet; int count;
+        long id, date; String recipients, snippet, address; int count = -1;
+    }
+
+    // AGENT-NOTE: capability probing. Verified on a Samsung SM-S948U (Android 17): ?simple=true accepts
+    // _id,date,message_count,recipient_ids,snippet, while the plain conversations URI only accepts _id,date,read
+    // (no such column: message_count/recipient_ids/snippet). AOSP behaves the other way round in places, so try
+    // simple first, then the plain URI enriched from the newest message of each returned thread.
+    private final FallbackChain<List<Conv>> convChain = new FallbackChain<>(java.util.Arrays.<Callable<List<Conv>>>asList(
+            () -> queryConversations(CONVERSATIONS, new String[] {"_id", "date", "message_count", "recipient_ids", "snippet"}),
+            () -> queryConversations(Uri.parse("content://mms-sms/conversations"), new String[] {"_id", "date"})));
+
+    private List<Conv> queryConversations(Uri uri, String[] cols) {
+        List<Conv> out = new ArrayList<>();
+        try (Cursor c = cr.query(uri, cols, null, null, "date DESC")) {
+            if (c == null) throw new IllegalStateException("null cursor");
+            while (c.moveToNext()) {
+                Conv v = new Conv();
+                v.id = c.getLong(0); v.date = c.getLong(1);
+                if (cols.length > 2) { v.count = c.getInt(2); v.recipients = c.getString(3); v.snippet = c.getString(4); }
+                out.add(v);
+            }
+        }
+        out.sort((a, b) -> a.date != b.date ? Long.compare(b.date, a.date) : Long.compare(b.id, a.id));
+        return out;
     }
 
     private List<Conv> conversations() {
-        List<Conv> out = new ArrayList<>();
-        try (Cursor c = cr.query(CONVERSATIONS, new String[] {"_id", "date", "message_count", "recipient_ids", "snippet"}, null, null, "date DESC")) {
-            while (c != null && c.moveToNext()) {
-                Conv v = new Conv();
-                v.id = c.getLong(0); v.date = c.getLong(1); v.count = c.getInt(2);
-                v.recipients = c.getString(3); v.snippet = c.getString(4);
-                out.add(v);
-            }
-        } catch (RuntimeException e) { /* degrade to empty */ }
-        out.sort((a, b) -> a.date != b.date ? Long.compare(b.date, a.date) : Long.compare(b.id, a.id));
-        return out;
+        try {
+            return convChain.call("conversations");
+        } catch (SmsProvider.ProviderException e) {
+            Log.w(TAG, "sms provider " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /** Fills snippet, address and count of a fallback row from its newest messages (counts and text stay in memory). */
+    private void enrich(Conv v) {
+        if (v.count >= 0) return;
+        int n = 0;
+        try (Cursor c = cr.query(SMS, new String[] {"address", "body"}, "thread_id=CAST(? AS INTEGER)",
+                new String[] {Long.toString(v.id)}, "date DESC, _id DESC")) {
+            if (c != null) { n += c.getCount(); if (c.moveToFirst()) { v.address = c.getString(0); v.snippet = c.getString(1); } }
+        } catch (RuntimeException e) { warn("enrich-sms", e); }
+        try (Cursor c = cr.query(MMS, new String[] {"_id"}, "thread_id=CAST(? AS INTEGER)", new String[] {Long.toString(v.id)}, null)) {
+            if (c != null) n += c.getCount();
+        } catch (RuntimeException e) { warn("enrich-mms", e); }
+        v.count = n;
     }
 
     private List<String> addresses(String recipientIds) {
@@ -96,7 +141,7 @@ public final class SmsProviderAndroid implements SmsProvider {
             if (a == null) {
                 try (Cursor c = cr.query(CANONICAL, new String[] {"address"}, "_id=?", new String[] {s}, null)) {
                     if (c != null && c.moveToFirst()) a = c.getString(0);
-                } catch (RuntimeException e) { a = null; }
+                } catch (RuntimeException e) { a = null; warn("canonical", e); }
                 if (a != null) canonical.put(id, a);
             }
             if (a != null) out.add(a);
@@ -111,7 +156,10 @@ public final class SmsProviderAndroid implements SmsProvider {
         for (Conv v : conversations()) {
             if (out.size() >= limit) break;
             if (!after(v.date, v.id, before, beforeId)) continue;
-            out.add(new ThreadRow(v.id, v.date, addresses(v.recipients), v.snippet, unread.getOrDefault(v.id, 0), v.count));
+            enrich(v);
+            List<String> addrs = v.recipients != null ? addresses(v.recipients) : new ArrayList<String>();
+            if (addrs.isEmpty() && v.address != null) addrs.add(v.address);
+            out.add(new ThreadRow(v.id, v.date, addrs, v.snippet, unread.getOrDefault(v.id, 0), v.count));
         }
         return out;
     }
@@ -155,40 +203,36 @@ public final class SmsProviderAndroid implements SmsProvider {
     @Override public List<MessageRow> smsMessages(long thread, int limit, long before, long beforeId) {
         List<MessageRow> out = new ArrayList<>();
         if (!canRead()) return out;
-        String where = "thread_id=?";
-        String[] args = {String.valueOf(thread)};
-        if (before >= 0) {
-            where += " AND (date < ? OR (date = ? AND _id < ?))";
-            args = new String[] {args[0], String.valueOf(before), String.valueOf(before), String.valueOf(beforeId)};
-        }
-        try (Cursor c = cr.query(SMS, new String[] {"_id", "address", "date", "body", "read", "type"}, where, args, "date DESC, _id DESC")) {
+        String[] q = SmsQueries.messageSelection(false, thread, before, beforeId);
+        try (Cursor c = cr.query(SMS, new String[] {"_id", "address", "date", "body", "read", "type"}, q[0],
+                java.util.Arrays.copyOfRange(q, 1, q.length), "date DESC, _id DESC")) {
             while (c != null && out.size() < limit && c.moveToNext()) {
                 out.add(new MessageRow(c.getLong(0), false, smsBox(c.getInt(5)), c.getString(1), c.getLong(2), c.getString(3),
                         c.getInt(4) != 0, null));
             }
-        } catch (RuntimeException e) { /* degrade to what we have */ }
+        } catch (RuntimeException e) { throw fail("sms-messages", e); }
         return out;
     }
 
     @Override public List<MessageRow> mmsMessages(long thread, int limit, long before, long beforeId) {
         List<MessageRow> out = new ArrayList<>();
         if (!canRead()) return out;
-        String where = "thread_id=?";
-        String[] args = {String.valueOf(thread)};
-        if (before >= 0) {
-            where += " AND (date*1000 < ? OR (date*1000 = ? AND _id < ?))";
-            args = new String[] {args[0], String.valueOf(before), String.valueOf(before), String.valueOf(beforeId)};
-        }
-        try (Cursor c = cr.query(MMS, new String[] {"_id", "date", "msg_box", "read"}, where, args, "date DESC, _id DESC")) {
+        String[] q = SmsQueries.messageSelection(true, thread, before, beforeId);
+        try (Cursor c = cr.query(MMS, new String[] {"_id", "date", "msg_box", "read"}, q[0],
+                java.util.Arrays.copyOfRange(q, 1, q.length), "date DESC, _id DESC")) {
             while (c != null && out.size() < limit && c.moveToNext()) {
-                long id = c.getLong(0);
-                int box = c.getInt(2);
-                List<PartRow> parts = new ArrayList<>();
-                String body = readParts(id, parts);
-                out.add(new MessageRow(id, true, mmsBox(box), mmsAddress(id, box == 1), c.getLong(1) * 1000L, body, c.getInt(3) != 0, parts));
+                // Header only: the model hydrates the rows that make the page (parts and address cost queries).
+                out.add(new MessageRow(c.getLong(0), true, mmsBox(c.getInt(2)), null, c.getLong(1) * 1000L, null, c.getInt(3) != 0, null));
             }
-        } catch (RuntimeException e) { /* degrade to what we have */ }
+        } catch (RuntimeException e) { throw fail("mms-messages", e); }
         return out;
+    }
+
+    @Override public MessageRow hydrate(MessageRow h) {
+        if (!h.mms) return h;
+        List<PartRow> parts = new ArrayList<>();
+        String body = readParts(h.id, parts);
+        return new MessageRow(h.id, true, h.box, mmsAddress(h.id, "inbox".equals(h.box)), h.date, body, h.read, parts);
     }
 
     private String mmsAddress(long id, boolean inbox) {
@@ -199,7 +243,7 @@ public final class SmsProviderAndroid implements SmsProvider {
                 String a = c.getString(0);
                 if (a != null && !a.startsWith("insert-address")) return a;
             }
-        } catch (RuntimeException e) { /* fall through */ }
+        } catch (RuntimeException e) { warn("mms-addr", e); }
         return "";
     }
 
@@ -218,9 +262,10 @@ public final class SmsProviderAndroid implements SmsProvider {
                     continue;
                 }
                 String name = c.getString(2) != null ? c.getString(2) : c.getString(3);
-                parts.add(new PartRow(pid, ct, name, partSize(pid)));
+                // size needs an fd per part; only the first MAX listed parts are described (protocol caps at 16)
+                if (parts.size() < 16) parts.add(new PartRow(pid, ct, name, partSize(pid)));
             }
-        } catch (RuntimeException e) { /* degrade */ }
+        } catch (RuntimeException e) { warn("mms-parts", e); }
         return text.toString();
     }
 

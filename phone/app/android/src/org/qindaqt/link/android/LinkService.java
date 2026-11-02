@@ -33,6 +33,7 @@ public final class LinkService extends Service {
     private static final String CHANNEL = "link-status";
     static volatile LinkEngine engine;
     private static AndroidStatusSource statusSource;
+    private static SmsSenderAndroid smsSender;
 
     /** Starts the service; safe to call repeatedly. */
     public static void start(Context ctx) {
@@ -57,7 +58,7 @@ public final class LinkService extends Service {
                     statusSource.start();
                     EngineState state = new EngineState();
                     FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
-                            .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), new SmsSenderAndroid(this), state));
+                            .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), smsSender = new SmsSenderAndroid(this), state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();
@@ -75,6 +76,7 @@ public final class LinkService extends Service {
         synchronized (LinkService.class) {
             if (engine != null) { engine.stop(); engine = null; }
             if (statusSource != null) { statusSource.stop(); statusSource = null; }
+            if (smsSender != null) { smsSender.close(); smsSender = null; }
         }
         super.onDestroy();
     }

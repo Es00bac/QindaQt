@@ -18,7 +18,7 @@ import org.qindaqt.link.sms.SmsSender;
 public final class SmsTest {
     static void expect(boolean ok, String what) { SessionTest.expect(ok, what); }
 
-    static final class FakeProvider implements SmsProvider {
+    static class FakeProvider implements SmsProvider {
         final List<ThreadRow> threads = new ArrayList<>();
         final List<MessageRow> sms = new ArrayList<>(), mms = new ArrayList<>();
         boolean read = true, send = true, markOk = false;
@@ -67,7 +67,7 @@ public final class SmsTest {
         Envelope last() { return sent.get(sent.size() - 1); }
     }
 
-    static final class FakeSender implements SmsSender {
+    static class FakeSender implements SmsSender {
         Listener l; long ref; List<String> addrs; String text; int sub;
         public void send(long r, List<String> a, String t, int s, Listener li) {
             if (t.equals("explode")) throw new IllegalArgumentException("x");
@@ -76,6 +76,41 @@ public final class SmsTest {
     }
 
     static Envelope req(String t, long id, Object... kv) { return new Envelope(t, id, 0, SessionTest.m(kv)); }
+
+    /** Runs the real selection clauses through sqlite3 with TEXT-bound values, like ContentResolver. */
+    static void sqliteCheck() throws Exception {
+        java.io.File exe = new java.io.File("/usr/bin/sqlite3");
+        for (String dir : System.getenv("PATH").split(":")) if (!exe.canExecute() && new java.io.File(dir, "sqlite3").canExecute()) exe = new java.io.File(dir, "sqlite3");
+        if (!exe.canExecute()) { System.out.println("SKIP sqlite3 selection check (no sqlite3)"); return; }
+        for (boolean mms : new boolean[] {false, true}) {
+            // rows: date unit is ms for sms, seconds for mms; ids overlap on purpose
+            StringBuilder sql = new StringBuilder("create table t(_id integer, thread_id integer, date integer);");
+            long unit = mms ? 1 : 1;
+            long[][] rows = mms ? new long[][] {{1, 1, 100}, {2, 1, 101}, {3, 1, 101}, {4, 1, 102}, {5, 2, 101}}
+                                : new long[][] {{1, 1, 100500}, {2, 1, 101000}, {3, 1, 101000}, {4, 1, 102000}, {5, 2, 101000}};
+            for (long[] r : rows) sql.append("insert into t values(" + r[0] + "," + r[1] + "," + r[2] + ");");
+            // cursor: the row (id 3, date 101 s / 101000 ms) -> expect older rows of thread 1 only: ids 2 and 1 (sms: 2,1)
+            long before = 101000;
+            String[] q = org.qindaqt.link.sms.SmsQueries.messageSelection(mms, 1, before, 3);
+            String where = q[0];
+            for (int i = 1; i < q.length; i++) where = where.replaceFirst("\\?", "'" + q[i] + "'"); // TEXT literal
+            sql.append("select group_concat(_id) from (select _id from t where " + where + " order by date desc, _id desc);");
+            Process pr = new ProcessBuilder(exe.getPath(), ":memory:", sql.toString()).redirectErrorStream(true).start();
+            String out = new String(pr.getInputStream().readAllBytes()).trim();
+            pr.waitFor();
+            expect(out.equals("2,1"), (mms ? "mms" : "sms") + " clause with TEXT binds selects the older rows: " + out);
+            // a non-whole-second cursor must still exclude rows at/after it
+            if (mms) {
+                q = org.qindaqt.link.sms.SmsQueries.messageSelection(true, 1, 101500, 99);
+                where = q[0];
+                for (int i = 1; i < q.length; i++) where = where.replaceFirst("\\?", "'" + q[i] + "'");
+                pr = new ProcessBuilder(exe.getPath(), ":memory:", sql.substring(0, sql.lastIndexOf("select group_concat")) + "select group_concat(_id) from (select _id from t where " + where + " order by date desc, _id desc);").redirectErrorStream(true).start();
+                out = new String(pr.getInputStream().readAllBytes()).trim();
+                pr.waitFor();
+                expect(out.equals("3,2,1"), "mms cursor inside a second keeps that second's row: " + out);
+            }
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public static void main(String[] a) throws Exception {
@@ -126,10 +161,88 @@ public final class SmsTest {
         for (Map<String, Object> m : ms) if ("mms".equals(m.get("kind"))) { sawMms = true; expect(((List<?>) m.get("parts")).size() == 1, "mms part descriptor present"); }
         expect(sawMms, "mms interleaved");
         Map<String, Object> lm = ms.get(ms.size() - 1);
-        f.onFrame(req("sms.messages", 8, "thread", 1L, "limit", 200L, "before", lm.get("date"), "beforeId", lm.get("id")));
+        f.onFrame(req("sms.messages", 8, "thread", 1L, "limit", 200L, "before", lm.get("date"), "beforeKind", lm.get("kind"), "beforeId", lm.get("id")));
         expect(c.last().b.get("messages") != null && ((List<?>) c.last().b.get("messages")).size() == 60 && Boolean.FALSE.equals(c.last().b.get("more")), "paged to the end: 260 total");
         f.onFrame(req("sms.messages", 9));
         expect("bad-request".equals(c.last().b.get("code")), "thread required");
+
+        // A zero cursor (what a D-Bus client passes for "unset") means newest, not "older than 1970".
+        f.onFrame(req("sms.threads", 50, "limit", 5L, "before", 0L, "beforeId", 0L));
+        expect(c.last().t.equals("sms.threads") && ((List<?>) c.last().b.get("threads")).size() == 5, "before=0 means from the newest");
+
+        // Provider failures reach the desktop as errors, never as an empty list.
+        FakeProvider broken = new FakeProvider() {
+            public List<ThreadRow> threads(int l, long b, long bi) { throw new ProviderException("conversations failed: SQLiteException"); }
+            public List<MessageRow> smsMessages(long th, int l, long b, long bi) { throw new IllegalStateException("x"); }
+            public Map<Long, String> fingerprints() { throw new IllegalStateException("x"); }
+        };
+        SmsFeature fx = new SmsFeature(broken, names, sender, new EngineState());
+        Ctx cx = new Ctx();
+        fx.onReady(cx);
+        expect(cx.last().t.equals("sms.changed"), "a failing fingerprint query does not break READY");
+        fx.onFrame(req("sms.threads", 60));
+        expect(cx.last().t.equals("error") && "internal".equals(cx.last().b.get("code")), "ProviderException -> error{internal}");
+        fx.onFrame(req("sms.messages", 61, "thread", 1L));
+        expect("internal".equals(cx.last().b.get("code")), "any RuntimeException from the provider -> error{internal}");
+
+        // Capability probing: the first strategy throws for unsupported columns, the second works and is remembered.
+        final int[] calls = {0, 0};
+        org.qindaqt.link.sms.FallbackChain<String> chain = new org.qindaqt.link.sms.FallbackChain<>(Arrays.<java.util.concurrent.Callable<String>>asList(
+                () -> { calls[0]++; throw new IllegalStateException("no such column: message_count"); },
+                () -> { calls[1]++; return "ok"; }));
+        expect("ok".equals(chain.call("t")) && "ok".equals(chain.call("t")), "fallback strategy used");
+        expect(calls[0] == 1 && calls[1] == 2, "working strategy is tried first next time: " + calls[0] + "/" + calls[1]);
+        try {
+            new org.qindaqt.link.sms.FallbackChain<String>(Arrays.<java.util.concurrent.Callable<String>>asList(
+                    () -> { throw new IllegalStateException("secret-value"); },
+                    () -> { throw new UnsupportedOperationException("secret-value"); })).call("conversations");
+            expect(false, "all strategies failing must throw");
+        } catch (SmsProvider.ProviderException ex) {
+            expect(ex.getMessage().equals("conversations failed: IllegalStateException,UnsupportedOperationException"), "reason has class names only: " + ex.getMessage());
+        }
+
+        // hydrate runs only for rows that make the page.
+        final int[] hyd = {0};
+        FakeProvider hp = new FakeProvider() { public MessageRow hydrate(MessageRow r) { hyd[0]++; return r; } };
+        for (int i = 1; i <= 30; i++) hp.mms.add(new SmsProvider.MessageRow(i, true, "inbox", null, 100 + i, null, true, null));
+        SmsFeature fh = new SmsFeature(hp, names, sender, new EngineState());
+        Ctx ch2 = new Ctx();
+        fh.onReady(ch2);
+        fh.onFrame(req("sms.messages", 70, "thread", 1L, "limit", 5L));
+        expect(hyd[0] == 5 && ((List<?>) ch2.last().b.get("messages")).size() == 5, "only the 5 kept rows were hydrated: " + hyd[0]);
+
+        // Same-millisecond sms and mms rows with overlapping ids: paging one row at a time sees each exactly once.
+        FakeProvider tie = new FakeProvider();
+        for (int i = 1; i <= 3; i++) {
+            tie.sms.add(new SmsProvider.MessageRow(i, false, "inbox", "+1", 9000, "s", true, null));
+            tie.mms.add(new SmsProvider.MessageRow(i, true, "inbox", "+1", 9000, "m", true, null));
+        }
+        tie.sms.add(new SmsProvider.MessageRow(7, false, "inbox", "+1", 8000, "s", true, null));
+        SmsFeature ft = new SmsFeature(tie, names, sender, new EngineState());
+        Ctx ct = new Ctx();
+        ft.onReady(ct);
+        java.util.Set<String> seenRows = new java.util.HashSet<>();
+        Object[] cur = null;
+        for (int guard = 0; guard < 20; guard++) {
+            Envelope q = cur == null ? req("sms.messages", 40 + guard, "thread", 1L, "limit", 1L)
+                    : req("sms.messages", 40 + guard, "thread", 1L, "limit", 1L, "before", cur[0], "beforeKind", cur[1], "beforeId", cur[2]);
+            ft.onFrame(q);
+            List<Map<String, Object>> page = (List<Map<String, Object>>) ct.last().b.get("messages");
+            if (page.isEmpty()) break;
+            Map<String, Object> row = page.get(0);
+            expect(seenRows.add(row.get("kind") + ":" + row.get("id")), "no row repeated across pages");
+            cur = new Object[] {row.get("date"), row.get("kind"), row.get("id")};
+            if (Boolean.FALSE.equals(ct.last().b.get("more"))) break;
+        }
+        expect(seenRows.size() == 7, "all 7 rows seen exactly once: " + seenRows.size());
+        ft.onFrame(req("sms.messages", 90, "thread", 1L, "beforeKind", "xyz"));
+        expect("bad-request".equals(ct.last().b.get("code")), "bad beforeKind rejected");
+        f.onFrame(req("sms.messages", 91, "thread", "7"));
+        expect("bad-request".equals(c.last().b.get("code")), "non-integer thread -> bad-request");
+        f.onFrame(req("sms.part", 92, "part", 1.5));
+        expect("bad-request".equals(c.last().b.get("code")), "non-integer part -> bad-request");
+        f.onFrame(req("sms.read", 93, "thread", "7"));
+        expect("bad-request".equals(c.last().b.get("code")), "non-integer read thread -> bad-request");
 
         // Body cap, parts cap, reply budget.
         StringBuilder big = new StringBuilder();
@@ -176,7 +289,7 @@ public final class SmsTest {
         expect(c.sent.size() == before + 2 && c.sent.get(before).t.equals("sms.sent") && "sent".equals(c.sent.get(before).b.get("state"))
                 && "no-service".equals(c.last().b.get("code")), "sent/failed events forwarded");
         for (Object[] bad : new Object[][] {{new ArrayList<Object>(), "x"}, {new ArrayList<Object>(Arrays.asList("1")), ""},
-                {new ArrayList<Object>(Arrays.asList(7L)), "x"}, {new ArrayList<Object>(Arrays.asList("1")), "explode"}}) {
+                {new ArrayList<Object>(Arrays.asList(7L)), "x"}, {new ArrayList<Object>(Arrays.asList("+15550001")), "explode"}}) {
             f.onFrame(req("sms.send", 16, "addrs", bad[0], "text", bad[1]));
             expect("bad-request".equals(c.last().b.get("code")), "invalid send rejected");
         }
@@ -184,6 +297,34 @@ public final class SmsTest {
         for (int i = 0; i < 1601; i++) longText.append('a');
         f.onFrame(req("sms.send", 17, "addrs", new ArrayList<Object>(Arrays.asList("1")), "text", longText.toString()));
         expect("bad-request".equals(c.last().b.get("code")), "text over 1600 chars rejected");
+        // Destinations: only dialable numbers; one bad recipient sends nothing.
+        sender.l = null;
+        for (String badAddr : new String[] {"12345", "MyBank", "+1555", "555-12", "1234567x", ""}) {
+            f.onFrame(req("sms.send", 30, "addrs", new ArrayList<Object>(Arrays.asList("+15550001", badAddr)), "text", "x"));
+            expect("denied".equals(c.last().b.get("code")) || "bad-request".equals(c.last().b.get("code")), "non-dialable recipient refused: " + badAddr);
+            expect(sender.l == null, "nothing handed to the sender when a recipient is refused: " + badAddr);
+        }
+        expect("+15551234567".equals(org.qindaqt.link.sms.Dialable.normalize(" +1 (555) 123-4567 ")), "formatting stripped");
+        expect(org.qindaqt.link.sms.Dialable.normalize("1234567") != null && org.qindaqt.link.sms.Dialable.normalize("123456") == null, "7 digit minimum");
+        List<Object> eleven = new ArrayList<>();
+        for (int i = 0; i < 11; i++) eleven.add("+1555000" + (1000 + i));
+        f.onFrame(req("sms.send", 31, "addrs", eleven, "text", "x"));
+        expect("bad-request".equals(c.last().b.get("code")) && sender.l == null, "more than 10 recipients rejected");
+        // A platform failure before anything was sent is an error reply; after the first recipient it is an unsent event.
+        FakeSender boom = new FakeSender() { public void send(long r, List<String> a2, String t2, int s2, Listener li) { throw new IllegalStateException("x"); } };
+        SmsFeature fb = new SmsFeature(p, names, boom, new EngineState());
+        Ctx cb = new Ctx();
+        fb.onReady(cb);
+        fb.onFrame(req("sms.send", 32, "addrs", new ArrayList<Object>(Arrays.asList("+15550001")), "text", "x"));
+        expect("internal".equals(cb.last().b.get("code")), "RuntimeException from the sender becomes error{internal}");
+        FakeSender partial = new FakeSender() { public void send(long r, List<String> a2, String t2, int s2, Listener li) { li.onUnsent(r, "unknown", Arrays.asList(1)); } };
+        SmsFeature fp = new SmsFeature(p, names, partial, new EngineState());
+        Ctx cp = new Ctx();
+        fp.onReady(cp);
+        fp.onFrame(req("sms.send", 33, "addrs", new ArrayList<Object>(Arrays.asList("+15550001", "+15550002")), "text", "x"));
+        fp.onTick(System.currentTimeMillis());
+        expect(cp.last().t.equals("sms.sent") && "failed".equals(cp.last().b.get("state")) && Arrays.asList(1).equals(cp.last().b.get("unsent")), "partial send reports the unsent recipients");
+
         p.send = false;
         f.onFrame(req("sms.send", 18, "addrs", new ArrayList<Object>(Arrays.asList("1")), "text", "x"));
         expect("denied".equals(c.last().b.get("code")), "send without permission is denied");
@@ -232,6 +373,7 @@ public final class SmsTest {
         tr = new SendTracker(6, 2, (ref, state, code) -> ev.add(ref + state + code));
         tr.partSent("radio-off"); tr.partSent(null); tr.partSent(null); tr.partDelivered(true);
         expect(ev.equals(Arrays.asList("6failedradio-off")), "failure is terminal");
+        sqliteCheck();
         System.out.println("SmsTest OK");
     }
 }

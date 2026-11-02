@@ -97,12 +97,24 @@ private Q_SLOTS:
         QVERIFY(br.isError());
         QCOMPARE(br.error().name(), s("org.qindaqt.Link1.Error.Denied"));
 
-        QDBusPendingCall none = callMethod(cli, "ListMessages", {s("nobody"), qlonglong(1), 5, qlonglong(-1), qlonglong(-1)});
+        QDBusPendingCall none = callMethod(cli, "ListMessages", {s("nobody"), qlonglong(1), 5, qlonglong(-1), s(""), qlonglong(-1)});
         QDBusPendingCallWatcher w3(none);
         bool done3 = false;
         connect(&w3, &QDBusPendingCallWatcher::finished, this, [&] { done3 = true; });
         QVERIFY(waitUntil([&] { return done3; }));
         QCOMPARE(QDBusPendingReply<QString>(none).error().name(), s("org.qindaqt.Link1.Error.NotConnected"));
+
+        // An error code the phone invented must still produce a valid error name (not a hang).
+        QDBusPendingCall odd = callMethod(cli, "MarkRead", {phone.deviceId(), qlonglong(2)});
+        QDBusPendingCallWatcher w4(odd);
+        bool done4 = false;
+        connect(&w4, &QDBusPendingCallWatcher::finished, this, [&] { done4 = true; });
+        QVERIFY(phone.waitFor(s("sms.read"), &req));
+        err.re = req.id;
+        err.b = QJsonObject{{s("code"), s("x y/!")}};
+        phone.send(err);
+        QVERIFY(waitUntil([&] { return done4; }));
+        QCOMPARE(QDBusPendingReply<QString>(odd).error().name(), s("org.qindaqt.Link1.Error.Internal"));
 
         // Signal from a phone event.
         QStringList seen;

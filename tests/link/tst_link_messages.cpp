@@ -122,7 +122,7 @@ private Q_SLOTS:
         QVERIFY(big.body.isEmpty());
 
         Result wrong;
-        r.feature.listMessages(r.id, 4, 500, -1, -1, wrong.cb());
+        r.feature.listMessages(r.id, 4, 500, -1, QString(), -1, wrong.cb());
         QVERIFY(r.phone.waitFor(s("sms.messages"), &req));
         QCOMPARE(req.b.value(s("limit")).toInt(), 200);
         QJsonObject m = message(1, s("x"));
@@ -132,10 +132,11 @@ private Q_SLOTS:
         QCOMPARE(wrong.error, s("bad-reply"));
 
         Result ok;
-        r.feature.listMessages(r.id, 4, 10, -1, -1, ok.cb());
+        r.feature.listMessages(r.id, 4, 10, 7000, s("mms"), 3, ok.cb());
         QVERIFY(r.phone.waitFor(s("sms.messages"), &req));
         QJsonObject good = message(2, s("body"));
         good.insert(s("extra"), 1);
+        QCOMPARE(req.b.value(s("beforeKind")).toString(), s("mms"));
         r.phone.send(typedReply(req, QJsonObject{{s("thread"), 4}, {s("more"), true}, {s("messages"), QJsonArray{good}}}));
         QVERIFY(waitUntil([&] { return ok.done; }));
         QVERIFY(ok.error.isEmpty());
@@ -154,6 +155,22 @@ private Q_SLOTS:
         r.phone.send(errorReply(req, "denied"));
         QVERIFY(waitUntil([&] { return denied.done; }));
         QCOMPARE(denied.error, s("denied"));
+
+        // A reply of the wrong type is not trusted even when its shape fits.
+        Result wrongType;
+        r.feature.listThreads(r.id, 5, -1, -1, wrongType.cb());
+        QVERIFY(r.phone.waitFor(s("sms.threads"), &req));
+        Envelope confused = typedReply(req, threadsBody(1, 1));
+        confused.t = s("sms.read");
+        confused.b = QJsonObject{{s("thread"), 1}, {s("unread"), 0}};
+        r.phone.send(confused);
+        QVERIFY(waitUntil([&] { return wrongType.done; }));
+        QCOMPARE(wrongType.error, s("bad-reply"));
+
+        Result badKind;
+        r.feature.listMessages(r.id, 1, 5, 1, s("xyz"), 1, badKind.cb());
+        QVERIFY(badKind.done);
+        QCOMPARE(badKind.error, s("bad-request"));
 
         Result gone;
         r.feature.markRead(s("nobody"), 1, gone.cb());
@@ -242,6 +259,15 @@ private Q_SLOTS:
         QCOMPARE(status.at(0).at(2).toString(), s("sent"));
         QCOMPARE(status.at(1).at(2).toString(), s("failed"));
         QCOMPARE(status.at(1).at(3).toString(), s("no-service"));
+        QCOMPARE(status.at(1).at(4).toString(), QString());
+        event(3, "failed", "unknown");
+        QVERIFY(waitUntil([&] { return status.count() == 3; }));
+        Envelope part;
+        part.t = s("sms.sent");
+        part.b = QJsonObject{{s("ref"), 3}, {s("state"), s("failed")}, {s("code"), s("unknown")}, {s("unsent"), QJsonArray{1, 2, 99}}};
+        r.phone.send(part);
+        QVERIFY(waitUntil([&] { return status.count() == 4; }));
+        QCOMPARE(status.at(3).at(4).toString(), s("{\"unsent\":[1,2]}"));
     }
 
     void logsCarryNoMessageContent()
@@ -253,7 +279,7 @@ private Q_SLOTS:
             Rig r;
             QVERIFY(r.ok);
             Result res;
-            r.feature.listMessages(r.id, 1, 5, -1, -1, res.cb());
+            r.feature.listMessages(r.id, 1, 5, -1, QString(), -1, res.cb());
             Envelope req;
             QVERIFY(r.phone.waitFor(s("sms.messages"), &req));
             QJsonObject m = message(1, s("CANARY-BODY-7f3a"));

@@ -15,7 +15,7 @@ QString k(const char *s) { return QString::fromLatin1(s); }
 
 void cursor(QJsonObject *b, qint64 before, qint64 beforeId)
 {
-    if (before >= 0) {
+    if (before > 0) { // 0 and below mean "newest"; a real date is never 0
         b->insert(k("before"), before);
         b->insert(k("beforeId"), qMax<qint64>(beforeId, 0));
     }
@@ -45,12 +45,14 @@ void MessagesFeature::ask(const QString &deviceId, const QString &type, const QJ
     e.t = type;
     e.b = body;
     QPointer<MessagesFeature> self(this);
-    s->request(e, [self, validate = std::move(validate), onOk = std::move(onOk), done = std::move(done)](const Envelope &r) {
+    const QString requestType = e.t;
+    s->request(e, [self, requestType, validate = std::move(validate), onOk = std::move(onOk), done = std::move(done)](const Envelope &r) {
         if (r.t == QLatin1String("error")) {
             done({}, r.b.value(QStringLiteral("code")).toString(QStringLiteral("internal")));
             return;
         }
-        const auto clean = validate(r.b);
+        // A reply must be the request's own type; anything else is a confused or hostile phone.
+        const auto clean = r.t == requestType ? validate(r.b) : std::nullopt;
         if (!clean) {
             qWarning("link sms: reply failed validation (%.32s)", qPrintable(r.t));
             done({}, QStringLiteral("bad-reply"));
@@ -75,11 +77,16 @@ void MessagesFeature::listThreads(const QString &deviceId, int limit, qint64 bef
         std::move(done));
 }
 
-void MessagesFeature::listMessages(const QString &deviceId, qint64 thread, int limit, qint64 before, qint64 beforeId,
-                                   Reply done)
+void MessagesFeature::listMessages(const QString &deviceId, qint64 thread, int limit, qint64 before,
+                                   const QString &beforeKind, qint64 beforeId, Reply done)
 {
+    if (!beforeKind.isEmpty() && beforeKind != k("sms") && beforeKind != k("mms")) {
+        done({}, QStringLiteral("bad-request"));
+        return;
+    }
     QJsonObject b{{k("thread"), thread}, {k("limit"), qBound(1, limit, kMaxMessages)}};
     cursor(&b, before, beforeId);
+    if (before > 0 && !beforeKind.isEmpty()) b.insert(k("beforeKind"), beforeKind);
     ask(deviceId, k("sms.messages"), b, sanitizeMessagesReply, [](const QJsonObject &) {}, std::move(done));
 }
 
@@ -137,7 +144,10 @@ void MessagesFeature::handle(Session &session, const Envelope &e)
         const auto clean = sanitizeSentEvent(e.b);
         const qint64 ref = clean ? qint64(clean->value(k("ref")).toDouble()) : 0;
         if (!clean || !m_sendRefs.value(id).contains(ref)) return;
-        Q_EMIT sendStatus(id, ref, clean->value(k("state")).toString(), clean->value(k("code")).toString());
+        const QJsonArray unsent = clean->value(k("unsent")).toArray();
+        const QString detail = unsent.isEmpty() ? QString()
+            : QString::fromUtf8(QJsonDocument(QJsonObject{{k("unsent"), unsent}}).toJson(QJsonDocument::Compact));
+        Q_EMIT sendStatus(id, ref, clean->value(k("state")).toString(), clean->value(k("code")).toString(), detail);
         return;
     }
     if (e.id != 0) {

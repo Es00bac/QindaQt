@@ -41,7 +41,9 @@ public:
 
     // `before`/`beforeId` < 0 mean "from the newest". Limits are clamped to the protocol maxima.
     void listThreads(const QString &deviceId, int limit, qint64 before, qint64 beforeId, Reply done);
-    void listMessages(const QString &deviceId, qint64 thread, int limit, qint64 before, qint64 beforeId, Reply done);
+    // The cursor is the (date, kind, id) of the last row received; `beforeKind` is "sms" or "mms" (empty = "sms").
+    void listMessages(const QString &deviceId, qint64 thread, int limit, qint64 before, const QString &beforeKind,
+                      qint64 beforeId, Reply done);
     void getPart(const QString &deviceId, qint64 part, int maxEdge, Reply done);
     void send(const QString &deviceId, const QStringList &addrs, const QString &text, int subscription, Reply done);
     void markRead(const QString &deviceId, qint64 thread, Reply done);
@@ -51,7 +53,8 @@ public:
 Q_SIGNALS:
     // `json`: {"threads":[ids],"all":bool,"unread":n}
     void threadsChanged(const QString &deviceId, const QString &json);
-    void sendStatus(const QString &deviceId, qint64 ref, const QString &state, const QString &code);
+    // `detail` is "" or {"unsent":[recipient indexes never sent]} for a failure after earlier recipients went out.
+    void sendStatus(const QString &deviceId, qint64 ref, const QString &state, const QString &code, const QString &detail);
     void unreadTotalChanged(int total);
 
 private:

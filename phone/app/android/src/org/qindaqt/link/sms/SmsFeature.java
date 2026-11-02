@@ -50,7 +50,7 @@ public final class SmsFeature implements FeatureHandler {
     @Override public void onReady(FeatureContext c) throws IOException {
         ctx = c;
         sentEvents.clear();
-        known = provider.canRead() ? provider.fingerprints() : new HashMap<Long, String>();
+        known = safeFingerprints();
         dirtyAtMs = 0;
         provider.setChangeListener(() -> {
             if (dirtyAtMs == 0) dirtyAtMs = System.currentTimeMillis();
@@ -68,6 +68,7 @@ public final class SmsFeature implements FeatureHandler {
             b.put("ref", e[0]);
             b.put("state", e[1]);
             if (e[2] != null) b.put("code", e[2]);
+            if (e[3] != null) b.put("unsent", e[3]);
             ctx.send(Envelope.of("sms.sent", b));
         }
         long d = dirtyAtMs;
@@ -81,7 +82,8 @@ public final class SmsFeature implements FeatureHandler {
 
     private void diffAndNotify() throws IOException {
         if (!provider.canRead()) return;
-        Map<Long, String> now = provider.fingerprints();
+        Map<Long, String> now = safeFingerprints();
+        if (now == null) return; // provider failed; the next change retries and the failure is logged by the provider
         List<Long> changed = new ArrayList<>();
         for (Map.Entry<Long, String> en : now.entrySet()) {
             if (!en.getValue().equals(known.get(en.getKey()))) changed.add(en.getKey());
@@ -89,6 +91,11 @@ public final class SmsFeature implements FeatureHandler {
         for (Long id : known.keySet()) if (!now.containsKey(id)) changed.add(id);
         known = now;
         if (!changed.isEmpty()) sendChanged(changed, false);
+    }
+
+    private Map<Long, String> safeFingerprints() {
+        if (!provider.canRead()) return new HashMap<Long, String>();
+        try { return provider.fingerprints(); } catch (RuntimeException ex) { return null; }
     }
 
     private void sendChanged(List<Long> ids, boolean all) throws IOException {
@@ -106,6 +113,17 @@ public final class SmsFeature implements FeatureHandler {
     @Override public boolean onFrame(Envelope e) throws IOException {
         if (e.id == 0) return false;
         report();
+        try {
+            return dispatch(e);
+        } catch (SmsProvider.ProviderException ex) {
+            ctx.replyError(e.id, "internal", ex.getMessage()); // reason holds class names only
+        } catch (RuntimeException ex) {
+            ctx.replyError(e.id, "internal", "provider failure: " + ex.getClass().getSimpleName());
+        }
+        return true;
+    }
+
+    private boolean dispatch(Envelope e) throws IOException {
         switch (e.t) {
             case "sms.threads": return threads(e);
             case "sms.messages": return messages(e);
@@ -120,22 +138,25 @@ public final class SmsFeature implements FeatureHandler {
         if (!denyUnlessRead(e)) return true;
         Long limit = optInt(e, "limit"), before = optInt(e, "before"), beforeId = optInt(e, "beforeId");
         if (bad(e, limit, before, beforeId)) return true;
-        reply(e, model.threads(SmsModel.clamp(limit == null ? -1 : limit, SmsModel.MAX_THREADS), cursor(before), cursor(beforeId)));
+        reply(e, model.threads(SmsModel.clamp(limit == null ? -1 : limit, SmsModel.MAX_THREADS), cursorDate(before), cursor(beforeId)));
         return true;
     }
 
     private boolean messages(Envelope e) throws IOException {
         if (!denyUnlessRead(e)) return true;
         Long thread = optInt(e, "thread"), limit = optInt(e, "limit"), before = optInt(e, "before"), beforeId = optInt(e, "beforeId");
-        if (thread == null || bad(e, limit, before, beforeId)) { if (thread == null) ctx.replyError(e.id, "bad-request", "thread required"); return true; }
-        reply(e, model.messages(thread, SmsModel.clamp(limit == null ? -1 : limit, SmsModel.MAX_MESSAGES), cursor(before), cursor(beforeId)));
+        Object kind = e.b.get("beforeKind");
+        if (bad(e, thread, limit, before, beforeId)) return true;
+        if (thread == null || (kind != null && !"sms".equals(kind) && !"mms".equals(kind))) { ctx.replyError(e.id, "bad-request", "thread required or bad beforeKind"); return true; }
+        reply(e, model.messages(thread, SmsModel.clamp(limit == null ? -1 : limit, SmsModel.MAX_MESSAGES), cursorDate(before), "mms".equals(kind), cursor(beforeId)));
         return true;
     }
 
     private boolean part(Envelope e) throws IOException {
         if (!denyUnlessRead(e)) return true;
         Long part = optInt(e, "part"), edge = optInt(e, "maxEdge");
-        if (part == null || bad(e, edge)) { if (part == null) ctx.replyError(e.id, "bad-request", "part required"); return true; }
+        if (bad(e, part, edge)) return true;
+        if (part == null) { ctx.replyError(e.id, "bad-request", "part required"); return true; }
         int maxEdge = (int) Math.max(64, Math.min(2048, edge == null ? 1280 : edge));
         try {
             SmsProvider.PartData d = provider.part(part, maxEdge, MAX_PART_BYTES);
@@ -164,19 +185,29 @@ public final class SmsFeature implements FeatureHandler {
         List<String> addrs = new ArrayList<>();
         boolean ok = !raw.isEmpty() && raw.size() <= MAX_SEND_ADDRS && !text.isEmpty() && text.length() <= MAX_TEXT;
         for (Object o : raw) {
-            if (!(o instanceof String) || ((String) o).trim().isEmpty() || ((String) o).length() > 32) { ok = false; break; }
-            addrs.add(((String) o).trim());
+            if (!(o instanceof String) || ((String) o).length() > 32) { ok = false; break; }
         }
         if (!ok) { ctx.replyError(e.id, "bad-request", "invalid addrs or text"); return true; }
+        // AGENT-NOTE: every recipient is validated before any is sent, so a bad one never leaves a partial send.
+        for (Object o : raw) {
+            String n = Dialable.normalize((String) o);
+            if (n == null) { ctx.replyError(e.id, "denied", "recipient is not a dialable number"); return true; }
+            addrs.add(n);
+        }
         long ref = refs.incrementAndGet();
         try {
-            sender.send(ref, addrs, text, sub == null ? -1 : (int) (long) sub, (r, st, code) -> {
-                sentEvents.add(new Object[] {r, st, code});
-                FeatureContext x = ctx;
-                if (x != null) x.wake();
+            sender.send(ref, addrs, text, sub == null ? -1 : (int) (long) sub, new SmsSender.Listener() {
+                @Override public void onEvent(long r, String st, String code) { push(r, st, code, null); }
+                @Override public void onUnsent(long r, String code, List<Integer> unsent) { push(r, "failed", code, new ArrayList<Object>(unsent)); }
             });
-        } catch (IllegalArgumentException | SecurityException ex) {
-            ctx.replyError(e.id, ex instanceof SecurityException ? "denied" : "bad-request", "cannot send");
+        } catch (SecurityException ex) {
+            ctx.replyError(e.id, "denied", "cannot send");
+            return true;
+        } catch (IllegalArgumentException ex) {
+            ctx.replyError(e.id, "bad-request", "cannot send");
+            return true;
+        } catch (RuntimeException ex) {
+            ctx.replyError(e.id, "internal", "cannot send"); // nothing was sent: the sender throws only before the first recipient
             return true;
         }
         Map<String, Object> b = new LinkedHashMap<>();
@@ -185,9 +216,16 @@ public final class SmsFeature implements FeatureHandler {
         return true;
     }
 
+    private void push(long ref, String state, String code, List<Object> unsent) {
+        sentEvents.add(new Object[] {ref, state, code, unsent});
+        FeatureContext x = ctx;
+        if (x != null) x.wake();
+    }
+
     private boolean read(Envelope e) throws IOException {
         if (!denyUnlessRead(e)) return true;
         Long thread = optInt(e, "thread");
+        if (bad(e, thread)) return true;
         if (thread == null) { ctx.replyError(e.id, "bad-request", "thread required"); return true; }
         boolean done;
         try { done = provider.markRead(thread); } catch (SecurityException ex) { done = false; }
@@ -224,6 +262,8 @@ public final class SmsFeature implements FeatureHandler {
         return false;
     }
 
+    /** Absent, zero or negative means "from the newest": a real date is never 0, and clients pass 0 for unset. */
+    private static long cursorDate(Long v) { return v == null || v <= 0 ? -1 : v; }
     private static long cursor(Long v) { return v == null ? -1 : v; }
 
     @Override public void onClosed() {

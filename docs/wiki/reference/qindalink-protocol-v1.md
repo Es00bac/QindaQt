@@ -239,20 +239,24 @@ by the pair (`kind`, `id`).
 
 **Paging.** Lists are newest first, ordered by (`date` descending, `id`
 descending). A request carries `before` and `beforeId` (both optional, both
-integers); the reply holds only rows strictly older than that pair. `more` is
+integers; `before` of 0 or less, or absent, means "from the newest"); the reply holds only rows strictly older than that pair. `more` is
 true when at least one older row exists. The cursor for the next page is the
-`date` and `id` of the last row received. Rows that tie on both `date` and
-`id` across different kinds can be skipped at a page edge; this is accepted.
+`date` and `id` of the last row received. For `sms.messages` the order is
+(`date` descending, `kind` with `mms` before `sms`, `id` descending) and the
+cursor also carries `beforeKind` (`sms` or `mms`, default `sms`; anything
+else is `bad-request`), so rows that share a millisecond are never repeated or
+skipped even though SMS and MMS ids overlap. MMS dates are stored in seconds
+on the phone and reported as `seconds * 1000`.
 
 | Type | Direction | Body | Reply |
 | --- | --- | --- | --- |
 | `sms.threads` | request, desktop→phone | `limit` (int 1–100, default 50), `before`, `beforeId` | `sms.threads`: `threads` (array ≤ 100 of thread), `more` (bool), `unread` (int, total unread messages on the phone) |
-| `sms.messages` | request, desktop→phone | `thread` (int, required), `limit` (int 1–200, default 50), `before`, `beforeId` | `sms.messages`: `thread`, `messages` (array ≤ 200 of message), `more` |
+| `sms.messages` | request, desktop→phone | `thread` (int, required), `limit` (int 1–200, default 50), `before`, `beforeKind`, `beforeId` | `sms.messages`: `thread`, `messages` (array ≤ 200 of message), `more` |
 | `sms.part` | request, desktop→phone | `part` (int, required), `maxEdge` (int 64–2048, default 1280) | `sms.part`: `part`, `mime`, `size` (int, bytes sent), `scaled` (bool), `data` (base64) |
 | `sms.send` | request, desktop→phone | `addrs` (array 1–10 of string ≤ 32), `text` (string 1–1600 chars), `sub` (int, optional subscription id) | `sms.send`: `ref` (int, unique within the connection) |
 | `sms.read` | request, desktop→phone | `thread` (int, required) | `sms.read`: `thread`, `unread` (new total) |
 | `sms.changed` | event, phone→desktop | `threads` (array ≤ 100 of thread id), `all` (bool, true when more than 100 changed or the set is unknown), `unread` (int total) | none |
-| `sms.sent` | event, phone→desktop | `ref`, `state` (`sent`, `failed` or `delivered`), `code` (string, only with `failed`) | none |
+| `sms.sent` | event, phone→desktop | `ref`, `state` (`sent`, `failed` or `delivered`), `code` (string, only with `failed`), `unsent` (array of int, optional, only with `failed`) | none |
 
 **thread:** `id` (int), `addrs` (array ≤ 20 of string ≤ 64), `names`
 (array of string ≤ 128, the same length as `addrs`, `""` where the number is
@@ -277,6 +281,12 @@ Rules:
   than that, or with a longest edge above `maxEdge`, is decoded and
   re-encoded as JPEG phone-side (`scaled:true`, `mime:"image/jpeg"`). A
   non-image over the cap is answered `error{code:"unsupported"}`.
+- **`sms.send` destinations.** Every address is checked before anything is
+  sent. Spaces, dashes, dots and parentheses are stripped; what remains must be
+  ASCII digits with an optional leading `+` and 7 to 20 digits. Anything else
+  (premium short codes, alphanumeric sender ids, empty strings) is answered
+  `error{denied}` and **nothing** is sent, even to the valid recipients. More
+  than 10 addresses or more than 1600 characters of text is `bad-request`.
 - **`sms.send`.** The phone divides long text into SMS parts and sends each
   to each address through the platform `SmsManager`. The reply only says the
   request was accepted (`ref`). Then `sms.sent` events report, for the whole
@@ -284,9 +294,18 @@ Rules:
   once every delivery report has arrived (not all carriers send them), and
   `failed` on the first failure, with `code` one of `generic`, `no-service`,
   `null-pdu`, `radio-off`, `limit`, `denied`, `unknown`. After `failed` or
-  `delivered` no further event is sent for that `ref`. Invalid input is
+  `delivered` no further event is sent for that `ref`. If the platform refuses a
+  recipient after earlier recipients were already handed to the radio, the
+  request has been accepted, so the phone sends `failed` with `unsent` listing
+  the 0-based indexes of the addresses that were never sent (the desktop must
+  not blindly resend the others). A platform failure before the first
+  recipient is `error{internal}` and nothing was sent. Invalid input is
   `error{bad-request}`; without the SEND_SMS permission the phone answers
   `error{denied}`.
+- **Provider failures.** If the phone's SMS provider throws (a vendor rejecting a
+  column, a revoked permission mid-request), the phone answers
+  `error{internal}` with a `message` that names the operation and exception
+  class only. A failure is never reported as an empty list.
 - **Errors.** Without READ_SMS every request except `sms.send` is answered
   `error{denied}`. `sms.read` is answered `error{unsupported}` when the
   phone's SMS role does not allow writing the provider (see below).

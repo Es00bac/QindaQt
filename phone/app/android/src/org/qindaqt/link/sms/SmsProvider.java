@@ -8,7 +8,7 @@ import java.util.List;
  *
  * AGENT-CONTRACT: every list method returns rows newest first, ordered by (date desc, id desc),
  * strictly older than the cursor (before, beforeId) when before >= 0, and at most {@code limit}
- * rows. Dates are milliseconds. Implementations never log row contents.
+ * rows. Dates are milliseconds. Implementations never log row contents. On a provider failure they throw {@link ProviderException}; an empty list means no rows.
  */
 public interface SmsProvider {
     /** Thread summary. {@code addrs} are raw addresses; names are resolved by {@link SmsModel}. */
@@ -52,6 +52,21 @@ public interface SmsProvider {
         public final boolean scaled;
         public PartData(String mime, byte[] bytes, boolean scaled) { this.mime = mime; this.bytes = bytes; this.scaled = scaled; }
     }
+
+    /**
+     * A provider failure that must reach the desktop as an error, never as an empty list. The message is a
+     * non-content reason (operation and exception class names only).
+     */
+    final class ProviderException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        public ProviderException(String reason) { super(reason); }
+    }
+
+    /**
+     * Fills in the expensive parts (MMS body, address, part descriptors) of a row returned by
+     * smsMessages/mmsMessages. The model calls it only for rows that make the page. Default: identity.
+     */
+    default MessageRow hydrate(MessageRow header) { return header; }
 
     boolean canRead();
     boolean canSend();
