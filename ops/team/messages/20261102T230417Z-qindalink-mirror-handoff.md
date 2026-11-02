@@ -1,10 +1,13 @@
-# QindaLink mirror lane (M1d) — handoff, live desktop check pending
+# QindaLink mirror lane (M1d) — handoff (repair round and live checks appended)
 
 - Time: 2026-11-02T23:04:17Z
 - Lane: mirror (QindaLink M1d, phone apps as desktop windows), Claude Opus 5.5
 - Branch: `link/mirror`, base `f6c27bc90`
-- Candidate code commit: `91fd1f528931d11be16adb99272dc9ea38d53d03` (this handoff
-  commit adds only this file on top)
+- First candidate: `91fd1f528931d11be16adb99272dc9ea38d53d03`. It was
+  reviewed as ACCEPT-WITH-P1s.
+- **Current candidate:** `cc1e878145317af82199a7d40c35822324601970`. It
+  includes the merge of main `be31feb83` and the repair round. The final
+  handoff commit adds only this file's update on top.
 
 ## Outcome state
 
@@ -129,3 +132,165 @@ Confirm three things:
 
 Finally, clear the calculator with a tap on C. If the wake lock signature
 differs on SDK 37, `Server probe` names it in its notes.
+
+
+## Repair round (2026-11-02T23:57Z), review of 034709d51
+
+### Merge
+
+- `git merge main` (be31feb83) became `5f646c549`.
+- Conflicts were only in `mkdocs.yml` and
+  `docs/wiki/architecture/qindalink.md`. Both sides were kept: main's
+  phone-UI rows plus the mirror rows.
+- `phone/tools/build-apk.sh` stages `phone/mirror_server/src/main/java`.
+- The APK it builds (`build/phone/QindaLink-debug.apk`, final sources)
+  contains all 17 `org.qindaqt.link.mirror.*` classes, including the public
+  `Server` and the final `DisplayPower`. Checked with dexdump and strings.
+
+### P1
+
+1. **Server lifetime** (`ListenPolicy`, `Server`, `Session`).
+   - A peer gets 5 s to complete hello (socket read timeout).
+   - The server exits after 3 failed greetings (exit 5).
+   - The accept-deadline watchdog calls `System.exit(4)` when no desktop
+     completed hello. That also covers a stdin that never delivers the
+     secret.
+   - After hello, 30 s without a frame ends the session.
+2. **Secret** (`SessionSecret`, `adb_session.cpp`, `mirror_controller.cpp`).
+   - The 32-hex secret goes only to the server's stdin via `adb shell -T`,
+     so there is no pty echo, and inside hello, compared in constant time.
+   - argv, the abstract socket name and the forward spec carry only a 16-hex
+     suffix. With the fake rig, a scan of every logged adb argv found no
+     32-hex string.
+   - The AGENT-GUARD wording is corrected. The reference page now has a
+     "Threat model" section: single-user desktop; what a same-uid process can
+     still do.
+3. **ADR-0435** (`docs/wiki/adr/0435-decode-qindalink-streams-with-ffmpeg.md`).
+   - It records the licence, VA-API with software fallback, untrusted parsing
+     confined to the mirror process, the caps, and the packaging obligation:
+     `gui-wm/qindaqt-desktop` must DEPEND on `media-video/ffmpeg[vaapi]` or
+     pass `-DQINDAQT_BUILD_LINK_MIRROR=OFF`. That overlay edit is not made
+     here.
+   - It is in `docs/wiki/adr/index.md` and `mkdocs.yml`.
+   - With FFmpeg missing, configure fails with a message naming the option.
+     Proven by configuring `src/apps/link_mirror` with an empty
+     `PKG_CONFIG_LIBDIR`.
+4. **Backlog** (`BacklogGate` in `qindaqt_link_mirror_core`, `DecodeWorker`).
+   - Past 8 in-flight packets, non-key packets are dropped until a keyframe,
+     and one `sync` is sent. Config and key packets always pass.
+   - The gate has unit tests.
+
+### P2
+
+- **Caps.** A display or format size beyond 8192 per side or 64 MP is
+  rejected, as is any decoded picture beyond them. The `QImage` allocation is
+  checked.
+- **adb output.** stdout and stderr are separate, and the forward port is
+  read from the last non-empty stdout line. The fake rig printed a notice line
+  first.
+- **Keepalive.** The desktop sends `ping` (0x0B) every 5 s, and the server
+  times out after 30 s idle.
+- **Phone input.** Coordinates are clamped and NaN becomes 0. Buttons are
+  masked. Keys pass only an allowlist that excludes POWER, SLEEP, WAKEUP,
+  HOME, ASSIST, APP_SWITCH, volume, call, camera, brightness and META
+  (`InputPolicy` and `InputCommands`).
+- **Wake fallback removed.** `DisplayPower` has no KEYCODE_WAKEUP fallback.
+  Live finding: see below.
+- **Dev jar.** It is pushed to the content-addressed path
+  `/data/local/tmp/qindalink-mirror-<sha16>.jar` and verified with
+  `sha256sum` before and after. An unchanged jar is not re-pushed.
+- **App exit.** `TaskWatcher` polls `getAllRootTaskInfosOnDisplay`, and the
+  server sends `app-exited` (0x84). The window shows "App closed on phone" and
+  closes after 2 s with exit 0; headless runs exit 3.
+  - Fake rig: windowed (offscreen platform) exit 0 after 4.5 s; headless
+    exit 3.
+  - Two races were fixed so the server's close after app-exited is not
+    reported as an ADB loss.
+
+### Defects the live checks found, fixed in cc1e87814
+
+- **Power group.** On SDK 37 the mirror display reports `displayGroupId 0`
+  even with `FLAG_OWN_DISPLAY_GROUP`, and `dumpsys power` recorded the
+  "per-display" lock as `powerGroupId=0`. That lock held the phone's own
+  power group.
+  - Fix: the lock is taken only for a non-default group. In group 0 the
+    mirror follows the phone's own power state: it needs the phone awake,
+    and otherwise fails with `display-asleep`.
+- **App exit.** BACK closed the calculator before the first task poll, so
+  the app was never "seen" and no exit was reported.
+  - Fix: a 3-poll launch grace.
+- **Decoder fallback.** After a VA-API→software fallback, the new decoder
+  never received SPS/PPS.
+  - Fix: the selector replays the generation's config packet (new test), and
+    the encoder sets `KEY_PREPEND_HEADER_TO_SYNC_FRAMES`.
+
+### Tests and checks (final tree)
+
+- `ctest -R '^qindaqt\.link-mirror-'`: 3/3 passed (framing,
+  input-mapping, decoder-selection).
+- `phone/mirror_server/tests/run.sh` (new host-JVM tests for Frames,
+  SessionSecret, InputPolicy, ListenPolicy): 78 passed, 0 failed.
+- Fake rig, offscreen:
+  - `--grab … --input tap/scroll/text/key/resize --grab-after-input`: exit 0,
+    vaapi.
+  - `--probe`: 30.4 fps, 0 dropped.
+- `python3 tools/validate-docs`: 590 documents, exit 0.
+- `mkdocs build --strict`: exit 0.
+
+## Live checks on R3GL40ABQXM (SDK 37), final jar
+
+Only the calculator was used. Only mirrored-display frames were captured,
+all under `build/mirror/live/`, all inspected: calculator UI only, no
+personal content. The phone was never locked, and `org.qindaqt.link` was
+not installed or removed.
+
+1. **Tap, scroll, text and keys.**
+   - Before-grab showed "0". The run sent tap 7, text "45", Backspace and a
+     scroll. The after-grab showed "74".
+   - Server log: 6 KeyEvents and 3 MotionEvents (tap down/up and the
+     scroll), all on the mirror display, all `-> true`.
+   - Files: `final-input-{before,after}.png`.
+2. **Resize to 600x600.**
+   - One `resize` produced one encoder restart (`c2.qti.avc.encoder h264
+     600x600`) and one `display` message at 600x600.
+   - The decoder reopened and the after-frame is 600x600. The calculator
+     re-laid out into the square (`final-resize-after.png`).
+3. **App exit.**
+   - BACK on the calculator: the task polls went "0 of 1" then "0 of 0
+     live", the server sent `app-exited (no-tasks)`, and the headless run
+     exited 3.
+   - The windowed close-after-2 s path was proven on the fake rig.
+4. **The phone's own screen.**
+   - `dumpsys power | grep mWakefulness` showed `mWakefulness=Awake` and
+     `dumpsys display | grep mScreenState` showed `mScreenState=ON`, both
+     before the first run, during a session and after the last run.
+   - `Display Power Controllers: size=1` before and after; `size=2` only
+     while a mirror display existed.
+   - With the final jar, no `qindalink-mirror` wake lock was held during a
+     session.
+   - Earlier jar (before cc1e87814): the lock was held as `powerGroupId=0`.
+     That is the defect fixed above. The phone was awake throughout, so the
+     asleep case was not exercised.
+5. **Cleanup.** All `qindalink-mirror*.jar` files were removed from
+   `/data/local/tmp`, and no mirror `app_process` was left running.
+
+## Remaining bounded caveats
+
+- **The phone must stay awake** on this device (display group 0). When its
+  screen times out, the mirror pauses. Keeping the phone screen on while
+  mirroring would need a deliberate group-0 wake lock, which is a product
+  decision for the PM and user.
+- **Host load.** During the live runs the host load average was about 84
+  (other lanes compiling), and the GPU was idle. Some runs had a slow VA-API
+  open (3–6 s) and early backlog drops (`dropped=12`, then recovery through
+  `sync`). Two probe runs (one on the phone, one on the fake) decoded no
+  frames, because the decoder had not opened within their 2–3 s windows.
+- **Not exercised:** the asleep-phone path and a mid-stream VA-API failure.
+  The second is covered by unit tests only.
+- **Packaging.** The FFmpeg DEPEND for the overlay ebuild is still to do
+  (ADR-0435).
+
+## Requested next action
+
+Re-review the repair (c2b95b168 + cc1e87814) and integrate. Then decide
+whether mirroring should hold the phone's screen on, as noted above.
