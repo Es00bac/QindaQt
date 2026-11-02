@@ -103,11 +103,13 @@ Envelope makeDismiss(const QString &key)
     return e;
 }
 
-Envelope makeAction(const QString &key, const QString &actionId, const QString &replyText, bool hasText)
+Envelope makeAction(const QString &key, const QString &actionId, const QString &title, const QString &replyText,
+                    bool hasText)
 {
     Envelope e;
     e.t = QStringLiteral("notify.action");
-    e.b = QJsonObject{{QStringLiteral("key"), key}, {QStringLiteral("action"), actionId}};
+    e.b = QJsonObject{{QStringLiteral("key"), key}, {QStringLiteral("action"), actionId},
+                  {QStringLiteral("title"), title.left(NotifyLimits::kActionTitle)}};
     if (hasText) e.b.insert(QStringLiteral("text"), replyText);
     return e;
 }

@@ -110,8 +110,8 @@ public final class NotificationFeature implements FeatureHandler {
                 n = queue.remove(key);
             }
             if (n == null) {
-                sent.remove(key);
-                ctx.send(NotifyFrames.removed(key));
+                // A removal for a key the desktop never saw (filtered, or coalesced with its post) is silent.
+                if (sent.remove(key) != null) ctx.send(NotifyFrames.removed(key));
                 continue;
             }
             String json = Json.write(NotifyFrames.postedBody(n));
@@ -143,11 +143,16 @@ public final class NotificationFeature implements FeatureHandler {
     private void action(Envelope e) throws IOException {
         String key = NotifyFrames.field(e.b, "key", NotifyFrames.KEY);
         String action = NotifyFrames.field(e.b, "action", NotifyFrames.ACTION_ID);
+        String title = NotifyFrames.field(e.b, "title", NotifyFrames.ACTION_TITLE);
         boolean[] ok = new boolean[1];
         String text = NotifyFrames.replyText(e.b, ok);
-        if (key == null || action == null || !ok[0]) { fail(e, "bad-request"); return; }
+        if (key == null || action == null || title == null || !ok[0]) { fail(e, "bad-request"); return; }
         if (!source.accessGranted()) { fail(e, "denied"); return; }
-        String err = source.perform(key, action, text);
+        String err = source.perform(key, action, title, text);
+        if ("unverified".equals(err)) {
+            if (e.id != 0) ctx.replyError(e.id, "unsupported", "unverified");
+            return;
+        }
         if (err != null) { fail(e, err); return; }
         if (e.id != 0) ctx.replyOk(e.id);
     }

@@ -6,6 +6,7 @@
 #include <qindaqt/services/link_notifications/app_settings.h>
 #include <qindaqt/services/link_notifications/icon_cache.h>
 #include <qindaqt/services/link_notifications/notification_feature.h>
+#include <qindaqt/services/link_notifications/process_reply_launcher.h>
 
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QJsonArray>
@@ -80,11 +81,11 @@ void captureLog(QtMsgType, const QMessageLogContext &, const QString &msg) { g_l
 class LinkNotificationsTest : public QObject {
     Q_OBJECT
     struct Rig {
-        explicit Rig(int iconTimeoutMs = 10'000)
+        explicit Rig(int iconTimeoutMs = 10'000, int actionGraceMs = 2'000)
             : icons(dir.path() + "/icons"), apps(dir.path() + "/notifications.json"),
               feature(NotificationFeatureDeps{&presenter, &icons, &apps, &launcher,
                                               [this](const QString &id) { return fixture.hub.session(id); },
-                                              iconTimeoutMs})
+                                              iconTimeoutMs, actionGraceMs})
         {
             fixture.hub.addFeature(&feature);
         }
@@ -168,6 +169,7 @@ private Q_SLOTS:
         QVERIFY(r.phone.waitFor("notify.action", &a));
         QCOMPARE(a.b.value("key").toString(), QStringLiteral("k1"));
         QCOMPARE(a.b.value("action").toString(), QStringLiteral("0"));
+        QCOMPARE(a.b.value("title").toString(), QStringLiteral("Archive"));  // the phone checks it against its current action
         QVERIFY(!a.b.contains("text"));
         QVERIFY(a.id != 0);
         // the server closes it after the click (reason 2): not a dismissal
@@ -334,6 +336,101 @@ private Q_SLOTS:
         r.phone.send(frame("notify.posted", note("k1", "com.chat", hashOf(testPng()))));
         QVERIFY(waitUntil([&] { return r.presenter.shown.size() == 1; }));
         QVERIFY(r.presenter.shown[0].n.iconPath.isEmpty());
+    }
+
+    void unverifiedActivityLaunchIsReportedNotSuccess()
+    {
+        Rig r;
+        QVERIFY(r.connectPhone());
+        r.phone.send(frame("notify.posted", note("k1")));
+        QVERIFY(waitUntil([&] { return r.presenter.shown.size() == 1; }));
+        QString result = QStringLiteral("pending");
+        r.feature.reply(r.phone.deviceId(), "k1", "0", {}, [&](const QString &e) { result = e; });
+        Envelope a;
+        QVERIFY(r.phone.waitFor("notify.action", &a));
+        r.phone.send(makeError("unsupported", "unverified", a.id));
+        QVERIFY(waitUntil([&] { return result != QLatin1String("pending"); }));
+        QCOMPARE(result, QStringLiteral("unverified"));
+    }
+
+    void closeAfterActionIsIgnoredOnlyBrieflyThenDismissalCounts()
+    {
+        Rig r(10'000, 150);
+        QVERIFY(r.connectPhone());
+        r.phone.send(frame("notify.posted", note("k1")));
+        QVERIFY(waitUntil([&] { return r.presenter.shown.size() == 1; }));
+        const quint32 h = r.presenter.shown[0].handle;
+        Q_EMIT r.presenter.actionInvoked(h, QStringLiteral("a:0"));
+        QTest::qWait(400);  // the server never closed it; the grace period lapses
+        Q_EMIT r.presenter.userDismissed(h);
+        Envelope d;
+        QVERIFY(r.phone.waitFor("notify.dismiss", &d));
+        QCOMPARE(d.b.value("key").toString(), QStringLiteral("k1"));
+    }
+
+    void changesAreAnnouncedPerEntryNotAsTheWholeSet()
+    {
+        Rig r;
+        QVERIFY(r.connectPhone());
+        QList<QJsonObject> items;
+        connect(&r.feature, &NotificationFeature::entryChanged, this, [&](const QJsonObject &o) { items.append(o); });
+        for (int i = 0; i < 5; ++i) r.phone.send(frame("notify.posted", note(QString("k%1").arg(i))));
+        QVERIFY(waitUntil([&] { return items.size() == 5; }));
+        items.clear();
+        r.phone.send(frame("notify.removed", {{"key", "k2"}}));
+        QVERIFY(waitUntil([&] { return !items.isEmpty(); }));
+        QCOMPARE(items.size(), 1);
+        QVERIFY(items[0].value("removed").toBool());
+        QCOMPARE(items[0].value("key").toString(), QStringLiteral("k2"));
+        QVERIFY(!items[0].contains("title"));
+        items.clear();
+        QJsonObject changed = note("k3");
+        changed["text"] = "other";
+        r.phone.send(frame("notify.posted", changed));
+        QVERIFY(waitUntil([&] { return !items.isEmpty(); }));
+        QCOMPARE(items.size(), 1);
+        QCOMPARE(items[0].value("key").toString(), QStringLiteral("k3"));
+    }
+
+    void iconCacheKeepsAtMostMaxEntriesEvictingLeastRecentlyUsed()
+    {
+        QTemporaryDir dir;
+        IconCache c(dir.path() + "/icons", 3);
+        QList<QByteArray> pngs;
+        QStringList hashes;
+        for (int i = 0; i < 5; ++i) {
+            pngs.append(testPng() + QByteArray::number(i));
+            hashes.append(hashOf(pngs.last()));
+        }
+        QVERIFY(c.store(hashes[0], pngs[0]));
+        QTest::qWait(1100);  // mtime granularity
+        QVERIFY(c.store(hashes[1], pngs[1]));
+        QTest::qWait(1100);
+        QVERIFY(c.store(hashes[2], pngs[2]));
+        QTest::qWait(1100);
+        QVERIFY(c.has(hashes[0]));  // refreshes 0: now 1 is the least recently used
+        QVERIFY(c.store(hashes[3], pngs[3]));
+        QVERIFY(!c.has(hashes[1]));
+        QVERIFY(c.has(hashes[0]) && c.has(hashes[2]) && c.has(hashes[3]));
+        QCOMPARE(QDir(dir.path() + "/icons").entryList({"*.png"}).size(), 3);
+    }
+
+    void replyLauncherSeparatesPhoneControlledArgumentsWithDoubleDash()
+    {
+        QTemporaryDir dir;
+        const QString script = dir.path() + "/fake-link.sh";
+        QFile f(script);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(QString("#!/bin/sh\nfor a in \"$@\"; do echo \"$a\"; done > '%1/args'\n").arg(dir.path()).toUtf8());
+        f.close();
+        f.setPermissions(f.permissions() | QFileDevice::ExeOwner);
+        ProcessReplyLauncher launcher(script);
+        launcher.launch("dev", "-x--evil", "1");
+        QVERIFY(waitUntil([&] { return QFile::exists(dir.path() + "/args") && QFileInfo(dir.path() + "/args").size() > 0; }));
+        QFile args(dir.path() + "/args");
+        QVERIFY(args.open(QIODevice::ReadOnly));
+        QCOMPARE(QString::fromUtf8(args.readAll()).split('\n', Qt::SkipEmptyParts),
+                 (QStringList{"--reply", "--", "dev", "-x--evil", "1"}));
     }
 
     void iconCacheRejectsTraversalAndNonPng()

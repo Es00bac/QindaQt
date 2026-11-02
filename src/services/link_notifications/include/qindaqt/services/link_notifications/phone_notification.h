@@ -59,8 +59,9 @@ struct PhoneNotification {
 [[nodiscard]] bool parseSnapshot(const QJsonObject &b, QList<PhoneNotification> *out);
 
 [[nodiscard]] Envelope makeDismiss(const QString &key);
-[[nodiscard]] Envelope makeAction(const QString &key, const QString &actionId, const QString &replyText,
-                                  bool hasText);
+// `title` is the action title the user saw; the phone refuses the action if the app reordered its actions since.
+[[nodiscard]] Envelope makeAction(const QString &key, const QString &actionId, const QString &title,
+                                  const QString &replyText, bool hasText);
 [[nodiscard]] Envelope makeIconRequest(const QString &hash);
 
 } // namespace QindaQt::Link

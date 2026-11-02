@@ -13,7 +13,8 @@ bool ProcessReplyLauncher::available() const
 
 void ProcessReplyLauncher::launch(const QString &deviceId, const QString &key, const QString &actionId)
 {
-    QProcess::startDetached(m_program, {QStringLiteral("--reply"), deviceId, key, actionId});
+    // AGENT-GUARD: key is phone-controlled; `--` keeps a key such as "-x" from being parsed as an option.
+    QProcess::startDetached(m_program, {QStringLiteral("--reply"), QStringLiteral("--"), deviceId, key, actionId});
 }
 
 } // namespace QindaQt::Link

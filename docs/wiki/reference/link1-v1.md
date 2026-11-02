@@ -40,8 +40,9 @@ adaptor, only when the service has a phone-notification presenter (so not under
 | `SetAppMuted` | `(s pkg, b muted)` | Persists the choice; muting closes that app's shown notifications. |
 | `Reply` | `(s device, s key, s action, s text) → s` | Sends `notify.action` with `text`. Returns `""` once sent, or `not-found`, `bad-request` or `not-connected`. |
 | `Current` | `() → s` | JSON array of the tracked notifications: `device,key,pkg,app,title,text,when,hasReply,actions`. Personal content, session bus only. |
-| `CurrentChanged` | signal `(s json)` | `Current()` after any change. |
-| `ReplyFinished` | signal `(s device, s key, s action, s error)` | The phone's answer to `Reply`; `error` is empty on success. |
+| `Revision` | `() → u` | Number of `CurrentChanged` signals sent since the service started. |
+| `CurrentChanged` | signal `(u revision, s item)` | One changed entry per signal: its `Current()` object, or `{device,key,removed:true}`. A client that sees a gap in `revision` re-reads `Current()`. |
+| `ReplyFinished` | signal `(s device, s key, s action, s error)` | The phone's answer to `Reply`; `error` is empty on success, or a protocol code; `unverified` means the action launches an activity and Android may have suppressed it. |
 
 `qindaqt-link-service --recording-notifier FILE` replaces the freedesktop
 presenter with a file recorder for private-bus tests; `--config-dir` and

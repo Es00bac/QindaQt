@@ -47,3 +47,19 @@
 ## Requested next action
 
 Integrate; sign a build with the installed key and run the live recipe when the phone is available.
+
+## Repair round (review of 71a322a46)
+
+Fixed on `link/notifications`; the same-user bus caller policy (P1) is left to the shared slice.
+
+1. A post that is no longer mirrorable, or any removal, now sends `onRemoved`; the feature emits `notify.removed` only for keys it sent.
+2. `notify.action` carries the displayed `title`; the phone refuses with `target-changed` when the action at that index changed.
+3. Activity PendingIntents are sent with background-activity-start allowed (API 34+) and answered `error{unsupported,"unverified"}` (desktop: `unverified`); limit documented.
+4. `FdoPhoneNotificationPresenter` reads `GetCapabilities`; title and body are escaped when `body-markup` is advertised or not yet known.
+5. Icon cache keeps at most 256 files (LRU by mtime).
+6. The post-action dismissal exemption lapses after 2 s.
+7. Reply launcher runs `qindaqt-link --reply -- <device> <key> <action>`.
+8. `CurrentChanged(u revision, s item)` carries one entry; `Revision()` added; `Current()` unchanged.
+
+Evidence: `ctest -R qindaqt.link` 11/11 (new row `qindaqt.link-fdo-presenter` with a fake server on a private bus; notifications test extended); `phone/engine-tests/run.sh` OK; `run-cross-notify.sh` and `run-cross-impl.sh` OK; `tools/validate-docs` and `mkdocs build --strict` pass; Java compiles against android-36.
+Caveat: the QindaLink app's `--reply` parser must accept `--` before the positionals. Still no live phone run.

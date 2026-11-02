@@ -119,13 +119,16 @@ Capability `notify`; the frames are in the
   name is `<label> (phone)`, the cached PNG
   (`$XDG_CACHE_HOME/qindalink/icons/<sha256>.png`, verified against its hash)
   is passed as both `app_icon` and the `image-path` hint, and actions are
-  `(key, label)` pairs. Only a `NotificationClosed` with reason 2 (dismissed by
+  `(key, label)` pairs. When the server advertises `body-markup` in
+  `GetCapabilities` (and until that answer arrives) title and text are escaped.
+  The icon cache keeps at most 256 files, evicting the least recently used. Only a `NotificationClosed` with reason 2 (dismissed by
   the user) sends `notify.dismiss`; closing because the phone removed the
   notification, or because the server closed it after an action button, never
-  does.
+  does. Only the two seconds after an action button count as that case.
 - **Reply.** QindaQt's notification server has no inline reply, so a reply
   action appears as a "Reply…" button, and only when `org.qindaqt.Link.desktop`
-  is installed. It runs `qindaqt-link --reply <device> <key> <action>`; the
+  is installed. It runs `qindaqt-link --reply -- <device> <key> <action>` (the
+  `--` keeps a phone-controlled key from being read as an option); the
   reply window itself belongs to the QindaLink app. Until then the same
   request is available as `Link1.Notifications.Reply`. Inline reply in QindaQt's
   own notification server is a follow-up.

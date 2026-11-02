@@ -57,7 +57,7 @@ public final class CrossNotifyTest {
         public boolean accessGranted() { return true; }
         public List<PhoneNotification> active() { return active; }
         public boolean dismiss(String key) { dismissed.add(key); return true; }
-        public String perform(String key, String action, String text) { performed.add(key + "/" + action + "/" + (text == null ? "-" : text)); return null; }
+        public String perform(String key, String action, String title, String text) { performed.add(key + "/" + action + "/" + (text == null ? "-" : text)); return null; }
         public byte[] icon(String hash) { return hash.equals(iconHash) ? PNG : null; }
     }
 
