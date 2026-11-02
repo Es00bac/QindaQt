@@ -71,6 +71,8 @@ private:
     DecoderPath m_decoderPath = DecoderPath::Software;
     bool m_started = false;
     bool m_finished = false;
+    bool m_waitingForClose = false;
+    int m_exitCode = 0;
 };
 
 } // namespace qindaqt::link_mirror

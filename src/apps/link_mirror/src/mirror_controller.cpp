@@ -91,6 +91,7 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
     });
     connect(&m_window, &MirrorWindow::viewResized, this, &MirrorController::handleViewResized);
     connect(&m_window, &MirrorWindow::closeRequested, this, [this] { finish(0); });
+    // finish(0) after a shown failure keeps that failure's exit code (see finish()).
 }
 
 MirrorController::~MirrorController()
@@ -204,9 +205,15 @@ int MirrorController::densityFor(qreal devicePixelRatio) const
 void MirrorController::finish(int exitCode, const QString &reason)
 {
     if (m_finished) {
+        // A second call (window closed, Ctrl+C) while a failure is on screen ends the process.
+        if (m_waitingForClose) {
+            m_waitingForClose = false;
+            Q_EMIT finished(m_exitCode);
+        }
         return;
     }
     m_finished = true;
+    m_exitCode = exitCode;
     m_resizeDebounce.stop();
     if (!reason.isEmpty()) {
         report(reason);
@@ -218,6 +225,14 @@ void MirrorController::finish(int exitCode, const QString &reason)
     }
     m_connection.close();
     m_adb.stop();
+    // AGENT-NOTE: ADR-0433 requires the UI to say why streaming stopped (for example ADB
+    // unplugged) instead of vanishing; a visible window keeps the reason until it is closed.
+    if (exitCode != 0 && !reason.isEmpty() && !m_options.headless() && m_window.isVisible()) {
+        m_window.setFrame(QImage());
+        m_window.setStatusText(reason);
+        m_waitingForClose = true;
+        return;
+    }
     Q_EMIT finished(exitCode);
 }
 

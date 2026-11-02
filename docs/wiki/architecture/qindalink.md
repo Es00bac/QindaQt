@@ -40,9 +40,9 @@ Current maturity: **design accepted; no implementation integrated.**
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge, quick actions |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
-| Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app |
+| Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
 | Phone app | `phone/app` | Qt for Android app: QML/QindaTK UI, Java engine under `phone/app/android/` |
-| Mirror server | `phone/mirror_server` | Java `app_process` entry point compiled into the APK |
+| Mirror server | `phone/mirror_server` | Java `app_process` entry point `org.qindaqt.link.mirror.Server`, compiled into the APK, with no dependency on the phone app's code. `build-dev-jar.sh` builds a standalone development jar |
 | Shared vectors | `tests/link/vectors` | Golden frame and pairing vectors used by both codecs |
 
 Feature modules (`link_notifications`, `link_messages`, `link_input`,
@@ -117,20 +117,57 @@ work around that.
 
 ## Phone apps on the desktop
 
-- `qindaqt-link-mirror` starts the mirror server on the phone with
-  `app_process` as the `shell` user, using the installed APK as its class
-  path.
-- For each app it creates a virtual display sized to the desktop window,
-  launches the app on that display and encodes it with MediaCodec.
-- The desktop decodes the H.264/HEVC stream with VA-API (the RX 5700 XT
-  decodes both) and presents it in an ordinary QindaQt window titled with the
-  app's label and icon.
-- Pointer, wheel, keyboard and text input on that window are injected on the
-  phone's virtual display.
-- Resizing the window resizes the virtual display. Closing it releases the
-  display and stops the app.
-- Streaming needs ADB and stops when ADB drops. The mirror lane owns the
-  sub-protocol and documents it as `reference/qindalink-mirror-v1.md`.
+`qindaqt-link-mirror --serial <serial> --package <package>` shows one phone app
+in one ordinary desktop window. The wire contract, the server command line and
+the verified hidden-API shapes are in
+[QindaLink mirror protocol 1](../reference/qindalink-mirror-v1.md).
+
+```
+qindaqt-link-mirror                                phone (shell uid, app_process)
+┌──────────────────────────────────────┐          ┌──────────────────────────────────┐
+│ AdbSession: push jar / pm path,      │── adb ──►│ Server: probe hidden API, listen │
+│   start server, forward tcp:0        │          │   localabstract:qindalink-mirror-│
+│ MirrorConnection: hello, demux ◄─────┼─ frames ─┤   <token>                        │
+│ DecodeWorker: libavcodec VA-API      │          │ VirtualDisplayHost ─ MediaCodec  │
+│   (software fallback), newest frame  │          │ AppLauncher (launch on display)  │
+│ MirrorWindow: letterboxed presenter, │─ input ─►│ InputInjector (display id)       │
+│   InputTranslator / ViewportMapper   │          │ DisplayPower (per-display lock)  │
+│ MirrorController: resize debounce,   │          │ AppInventory (labels, PNG icons) │
+│   cleanup                            │          └──────────────────────────────────┘
+└──────────────────────────────────────┘
+```
+
+- **Start.** The desktop starts the mirror server on the phone with
+  `app_process` as the `shell` user. The class path is the installed
+  QindaLink APK, or a development jar passed with `--server-jar`. The socket
+  name carries a random per-session token.
+- **Display.** The server creates a trusted virtual display that owns its
+  content, accepts touch, has its own display group and destroys its content
+  when removed. It is sized to the window in device pixels at
+  160 dpi × the window's device pixel ratio. The server launches the app's
+  launcher activity on it and encodes it with MediaCodec (H.264 High, or HEVC
+  with `--codec hevc`).
+- **Power and keyboard.** The phone's own screen and keyboard stay out of the
+  way. A per-display wake lock keeps only the mirror display awake, and the
+  display's IME policy hides the phone keyboard because the desktop types
+  instead.
+- **Decode and present.** The desktop decodes with libavcodec, VA-API first
+  (radeonsi on the RX 5700 XT), falling back to software automatically. It
+  presents the newest frame letterboxed in a window titled with the app's
+  label and icon, with the app id `org.qindaqt.link.mirror.<package>`.
+- **Input.** The primary button is a finger. The secondary button is Back.
+  The wheel scrolls, typing is sent as text, and chords and special keys are
+  sent as Android key events. All of it is injected with the mirror display's
+  id, so it never reaches the phone's own screen.
+- **Resize and close.** Resizing the window resizes the virtual display after
+  a 250 ms debounce, and the encoder restarts as a new stream generation.
+  Closing the window, or Ctrl+C, ends the session. The server then releases
+  the display, which ends the app's task on it. The desktop removes its ADB
+  forward.
+- **ADB loss.** Streaming needs ADB and stops when ADB drops. A visible window
+  then shows the reason until it is closed.
+- **Evidence modes.** `--grab`, `--probe` and `--list` run on the offscreen
+  Qt platform and never map a window. They are the evidence path for agents.
 
 ## Known limits
 
