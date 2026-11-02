@@ -28,8 +28,13 @@ Current maturity: **M1 link core integrated (desktop service and phone engine).*
     on a private bus.
   - Pairing on the physical phone over USB, and the Keystore-backed
     handshake on the device, are **not yet recorded**.
-- **Not implemented yet:** notifications, SMS, input, macros, vault, LAN
-  mode, the applet, the app and streaming.
+- **Notifications (M2, 2026-11).** Phone notifications appear on the desktop
+  with dismissal, action buttons and reply requests working both ways; see
+  [Notifications](#notifications). Verified on the JVM, in an in-process
+  desktop test and by a JVM phone against the real service on a private bus;
+  the physical-phone check is **not yet recorded** (see the live check recipe below).
+- **Not implemented yet:** SMS, input, macros, vault, LAN mode, the applet,
+  the app and streaming.
 
 ## Components
 
@@ -52,6 +57,7 @@ Current maturity: **M1 link core integrated (desktop service and phone engine).*
 | Transport | `src/services/link_transport` | Desktop identity (libcrypto key/cert), `QSslServer` listeners, peer pin checks, connection state machine, keepalive |
 | Trust store | inside `link_transport` (`trust_store.h`; implemented) | Paired devices in `$XDG_DATA_HOME/qindalink/devices.json`, written atomically |
 | ADB tunnels | `src/services/link_adb` | Track devices with `adb track-devices`, check that the app is installed, keep `adb reverse tcp:47160`, run setup grants |
+| Notifications | `src/services/link_notifications` | `notify` capability: presenter interface, icon cache, mute list, `org.qindaqt.Link1.Notifications` adaptor |
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge, quick actions |
@@ -86,10 +92,61 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. Only the `status` capability is advertised;
-`ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
+through one polled JNI bridge. The `status` and `notify` capabilities are
+advertised; `ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
 reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
+
+## Notifications
+
+Capability `notify`; the frames are in the
+[protocol reference](../reference/qindalink-protocol-v1.md#notifications-notify).
+
+- **Phone.** `NotificationListener` (a `NotificationListenerService`) feeds
+  `NotificationAndroidSource`, which turns each notification into a
+  `PhoneNotification`: ongoing, foreground-service, group-summary and
+  QindaLink's own notifications are dropped, and the app icon is rendered to a
+  64 px PNG and hashed. The pure-Java `NotificationFeature` coalesces events,
+  sends a snapshot (at most 50) on READY and executes `notify.dismiss` and
+  `notify.action` (`cancelNotification`, `PendingIntent.send`, replies through
+  `RemoteInput.addResultsToIntent`). Without notification access the engine
+  state key `notifyAccess` is `missing` so the UI can say "notification access
+  needed". Text that Android redacts (Android 15+, sensitive content such as
+  one-time codes) is forwarded as received.
+- **Desktop.** `NotificationFeature` shows each notification through an
+  injected `NotificationPresenter`. Production is
+  `FdoPhoneNotificationPresenter` on `org.freedesktop.Notifications`: the app
+  name is `<label> (phone)`, the cached PNG
+  (`$XDG_CACHE_HOME/qindalink/icons/<sha256>.png`, verified against its hash)
+  is passed as both `app_icon` and the `image-path` hint, and actions are
+  `(key, label)` pairs. Only a `NotificationClosed` with reason 2 (dismissed by
+  the user) sends `notify.dismiss`; closing because the phone removed the
+  notification, or because the server closed it after an action button, never
+  does.
+- **Reply.** QindaQt's notification server has no inline reply, so a reply
+  action appears as a "Reply…" button, and only when `org.qindaqt.Link.desktop`
+  is installed. It runs `qindaqt-link --reply <device> <key> <action>`; the
+  reply window itself belongs to the QindaLink app. Until then the same
+  request is available as `Link1.Notifications.Reply`. Inline reply in QindaQt's
+  own notification server is a follow-up.
+- **Mute.** `$XDG_CONFIG_HOME/qindalink/notifications.json`, written
+  atomically, holds muted packages and the apps seen. Muting closes what that
+  app currently shows. Muted apps are not tracked, so unmuting does not bring
+  old notifications back.
+- **Privacy.** Titles, texts and reply texts are never logged on either side
+  (frame type and size only). The recording presenter used by tests stores
+  lengths and a hash of the title, not text. Because the desktop keeps phone
+  notifications across a reconnect and reconciles them with the next snapshot,
+  restarting the link service shows the current set once more.
+- **Live check recipe** (needs the phone plugged in and unlocked, and an APK signed
+  with the same key as the installed one, because `adb install -r` refuses a
+  signature change). Install the APK, then:
+  `adb -s <serial> shell cmd notification allow_listener org.qindaqt.link/org.qindaqt.link.android.NotificationListener`;
+  start `qindaqt-link-service --recording-notifier /tmp/rec.jsonl --no-adb` on a
+  private `dbus-run-session` bus with `adb reverse tcp:47160 tcp:47160` pointing at
+  its `--port 47160`, pair, then
+  `adb -s <serial> shell cmd notification post -t "QindaLink test" qltest hello`
+  and look for a `present` line in `/tmp/rec.jsonl`.
 
 ## Connection and pairing
 

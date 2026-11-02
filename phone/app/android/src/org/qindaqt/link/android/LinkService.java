@@ -17,6 +17,7 @@ import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.StatusFeature;
 import org.qindaqt.link.engine.PinStore;
+import org.qindaqt.link.notify.NotificationFeature;
 
 /**
  * Foreground service (type connectedDevice) that owns the {@link LinkEngine}.
@@ -55,7 +56,8 @@ public final class LinkService extends Service {
                     statusSource = new AndroidStatusSource(this);
                     statusSource.start();
                     EngineState state = new EngineState();
-                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state));
+                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
+                            .add(new NotificationFeature(NotificationAndroidSource.init(this), state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();

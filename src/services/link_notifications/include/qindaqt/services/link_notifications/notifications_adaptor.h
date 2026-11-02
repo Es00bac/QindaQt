@@ -4,7 +4,6 @@
 #include <qindaqt/services/link_notifications/notification_feature.h>
 
 #include <QtDBus/QDBusAbstractAdaptor>
-#include <QtDBus/QDBusContext>
 
 namespace QindaQt::Link {
 
@@ -15,7 +14,7 @@ namespace QindaQt::Link {
 // AGENT-CONTRACT: Current/CurrentChanged carry titles and texts, like the
 // freedesktop notifications bus does; they are session-bus, same-user only.
 // docs/wiki/reference/link1-v1.md, "Notifications".
-class NotificationsAdaptor final : public QDBusAbstractAdaptor, protected QDBusContext {
+class NotificationsAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Link1.Notifications")
 public:
@@ -24,12 +23,17 @@ public:
 public Q_SLOTS:
     QString ListApps() const;
     void SetAppMuted(const QString &pkg, bool muted);
-    // Returns "" on success or an error code; replies when the phone answers.
+    // Returns "" once the request was sent, or an error code when it could not be
+    // (not-found, bad-request, not-connected). The phone's own answer follows as
+    // ReplyFinished. AGENT-NOTE: no delayed D-Bus reply: an adaptor's QDBusContext is
+    // the exporting object's, which is Link1Service, not this class.
     QString Reply(const QString &device, const QString &key, const QString &action, const QString &text);
     QString Current() const;
 
 Q_SIGNALS:
     void CurrentChanged(const QString &json);
+    // error is empty when the phone executed the action, else a protocol error code.
+    void ReplyFinished(const QString &device, const QString &key, const QString &action, const QString &error);
 
 private:
     NotificationFeature &m_feature;
