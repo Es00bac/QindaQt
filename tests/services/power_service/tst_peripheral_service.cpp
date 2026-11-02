@@ -10,6 +10,62 @@ using namespace QindaQt::Tests;
 class PeripheralServiceTest : public QObject {
  Q_OBJECT
 private Q_SLOTS:
+ void documentedUpowerBatteryLevels_data() {
+    QTest::addColumn<uint>("raw");
+    QTest::addColumn<uint>("expected");
+    QTest::newRow("unknown") << uint(0) << uint(BatteryLevel::Unknown);
+    QTest::newRow("percentage") << uint(1) << uint(BatteryLevel::None);
+    QTest::newRow("low") << uint(3) << uint(BatteryLevel::Low);
+    QTest::newRow("critical") << uint(4) << uint(BatteryLevel::Critical);
+    QTest::newRow("normal") << uint(6) << uint(BatteryLevel::Normal);
+    QTest::newRow("high") << uint(7) << uint(BatteryLevel::High);
+    QTest::newRow("full") << uint(8) << uint(BatteryLevel::Full);
+ }
+ void documentedUpowerBatteryLevels() {
+    QFETCH(uint,raw); QFETCH(uint,expected);
+    QVariantMap props{{"Type",uint(12)},{"PowerSupply",false},
+        {"Model",QStringLiteral("Controller")},{"BatteryLevel",raw},{"State",uint(2)}};
+    props["Percentage"] = 55.0; // Coarse/Unknown levels must override this placeholder.
+    PeripheralBattery row;
+    QCOMPARE(decodePeripheral(QStringLiteral("/controller"),props,row),PeripheralDecode::Accepted);
+    QCOMPARE(uint(row.level),expected);
+    QCOMPARE(row.percentageKnown,raw == 1);
+    QCOMPARE(row.percentage,raw == 1 ? 55.0 : 0.0);
+    props["Type"] = uint(2); props["PowerSupply"] = true; props["IsPresent"] = true;
+    UpowerDeviceTruth supply;
+    QVERIFY(decodeUpowerDevice(QStringLiteral("/battery"),props,supply));
+    QVERIFY(supply.hasSupply);
+    QCOMPARE(uint(supply.supply.level),expected);
+    QCOMPARE(supply.supply.percentageKnown,raw == 1);
+ }
+ void warningOnlyAndUnknownOrdinalsAreRejected_data() {
+    QTest::addColumn<uint>("raw");
+    QTest::newRow("discharging-warning") << uint(2);
+    QTest::newRow("action-warning") << uint(5);
+    QTest::newRow("outside-upower-enum") << uint(9);
+ }
+ void warningOnlyAndUnknownOrdinalsAreRejected() {
+    QFETCH(uint,raw);
+    QVariantMap props{{"Type",uint(12)},{"PowerSupply",false},{"BatteryLevel",raw}};
+    PeripheralBattery row; row.model = QStringLiteral("retained");
+    QCOMPARE(decodePeripheral(QStringLiteral("/controller"),props,row),PeripheralDecode::Malformed);
+    QCOMPARE(row.model,QStringLiteral("retained"));
+    props["Type"] = uint(2); props["PowerSupply"] = true; props["IsPresent"] = true;
+    UpowerDeviceTruth supply;
+    QVERIFY(!decodeUpowerDevice(QStringLiteral("/battery"),props,supply));
+ }
+ void dualSensePercentageAndChargingPassThrough() {
+    // Sanitized live UPower properties: Linux has already converted the
+    // controller's 10%-wide step to its midpoint. Never rescale it again.
+    const QVariantMap props{{"Type",uint(12)},{"PowerSupply",false},
+        {"Model",QStringLiteral("DualSense Wireless Controller")},
+        {"BatteryLevel",uint(1)},{"Percentage",15.0},{"State",uint(1)}};
+    PeripheralBattery row;
+    QCOMPARE(decodePeripheral(QStringLiteral("/controller"),props,row),PeripheralDecode::Accepted);
+    QCOMPARE(row.kind,PeripheralKind::Controller);
+    QVERIFY(row.percentageKnown); QCOMPARE(row.percentage,15.0);
+    QCOMPARE(row.state,ChargeState::Charging);
+ }
  void speakerControllerAndMalformedIsolation() {
     QVariantMap props{{"Type",uint(18)},{"PowerSupply",false},{"Model",QStringLiteral("JLab GO Party")},{"Percentage",50.0},{"State",uint(2)}};
     PeripheralBattery row; UpowerDeviceTruth supply;
@@ -23,7 +79,7 @@ private Q_SLOTS:
     props["Percentage"]=QStringLiteral("bad");
     QCOMPARE(decodePeripheral(QStringLiteral("/controller"),props,row),PeripheralDecode::Malformed);
     QVERIFY(decodeUpowerDevice(QStringLiteral("/controller"),props,supply));
-    props["Type"]=uint(999); props.remove("Percentage"); props["BatteryLevel"]=uint(2);
+    props["Type"]=uint(999); props.remove("Percentage"); props["BatteryLevel"]=uint(3);
     QCOMPARE(decodePeripheral(QStringLiteral("/future"),props,row),PeripheralDecode::Accepted);
     QCOMPARE(row.kind,PeripheralKind::Other); QVERIFY(!row.percentageKnown); QCOMPARE(row.level,BatteryLevel::Low);
     props["PowerSupply"]=true;

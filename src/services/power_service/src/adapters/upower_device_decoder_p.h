@@ -9,6 +9,10 @@
 
 namespace QindaQt::Power::Upstream {
 
+// Private adapter conversion shared by supply and peripheral decoding.
+// Only the documented BatteryLevel ordinals are accepted; failure leaves level unchanged.
+[[nodiscard]] bool decodeUpowerBatteryLevel(uint raw, BatteryLevel &level);
+
 struct UpowerDeviceTruth {
     bool acPresent = false;
     bool hasSupply = false;

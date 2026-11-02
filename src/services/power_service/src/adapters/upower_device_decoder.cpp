@@ -43,20 +43,6 @@ bool mapChargeState(const uint raw, ChargeState &state)
     }
 }
 
-bool mapBatteryLevel(const uint raw, BatteryLevel &level)
-{
-    switch (raw) {
-    case 0: level = BatteryLevel::Unknown; return true;
-    case 1: level = BatteryLevel::None; return true;
-    case 2: level = BatteryLevel::Low; return true;
-    case 3: level = BatteryLevel::Critical; return true;
-    case 4: level = BatteryLevel::Normal; return true;
-    case 5: level = BatteryLevel::High; return true;
-    case 6: level = BatteryLevel::Full; return true;
-    default: return false;
-    }
-}
-
 bool mapWarningLevel(const uint raw, WarningLevel &warning)
 {
     switch (raw) {
@@ -78,6 +64,23 @@ bool decodeText(const QVariantMap &properties, const QString &name, QString &val
 }
 
 } // namespace
+
+bool decodeUpowerBatteryLevel(const uint raw, BatteryLevel &level)
+{
+    // AGENT-CONTRACT: UPower BatteryLevel uses UpDeviceLevel, whose gaps
+    // belong to WarningLevel. It is not the compact Power1 enum. See the
+    // Device BatteryLevel property in docs/wiki/architecture/power-service.md.
+    switch (raw) {
+    case 0: level = BatteryLevel::Unknown; return true;
+    case 1: level = BatteryLevel::None; return true;
+    case 3: level = BatteryLevel::Low; return true;
+    case 4: level = BatteryLevel::Critical; return true;
+    case 6: level = BatteryLevel::Normal; return true;
+    case 7: level = BatteryLevel::High; return true;
+    case 8: level = BatteryLevel::Full; return true;
+    default: return false;
+    }
+}
 
 bool decodeUpowerDevice(const QString &objectPath, const QVariantMap &properties,
                         UpowerDeviceTruth &truth)
@@ -164,7 +167,7 @@ bool decodeUpowerDevice(const QString &objectPath, const QVariantMap &properties
     BatteryLevel level = BatteryLevel::Unknown;
     if (!optionalExact(properties, QStringLiteral("BatteryLevel"),
                        QMetaType::fromType<uint>(), rawLevel, hasLevel)
-        || (hasLevel && !mapBatteryLevel(rawLevel, level))) {
+        || (hasLevel && !decodeUpowerBatteryLevel(rawLevel, level))) {
         return false;
     }
 
@@ -174,7 +177,7 @@ bool decodeUpowerDevice(const QString &objectPath, const QVariantMap &properties
                        QMetaType::fromType<double>(), percentage, hasPercentage)) {
         return false;
     }
-    if (hasPercentage && (!hasLevel || rawLevel <= 1)) {
+    if (hasPercentage && (!hasLevel || rawLevel == 1)) {
         supply.percentageKnown = true;
         supply.percentage = percentage;
         supply.level = BatteryLevel::None;

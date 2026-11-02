@@ -623,6 +623,37 @@ exact/coarse levels, charge state and only reported estimates in a scrollable
 surface. Unknown upstream kinds remain visible as Other; omissions and the
 independent 64-row truncation bound are visible.
 
+### Battery precision and upstream enum translation
+
+The private UPower decoder translates `BatteryLevel` explicitly using the
+[documented Device property](https://upower.freedesktop.org/docs/Device.html):
+raw values 0/1/3/4/6/7/8 mean Unknown/None/Low/Critical/Normal/High/Full.
+They do not match Power1's compact enum. Raw 2 (Discharging) and 5 (Action)
+are warning-only values and cannot be accepted as coarse battery levels.
+Supply and peripheral decoding share this conversion. A normal device must
+not become full, and valid high/full devices must not disappear.
+
+A percentage is used only when `BatteryLevel` is None (1), or the optional
+level property is absent. An explicit Unknown (0) stays unknown even when the
+upstream property map includes a placeholder percentage. A known percentage
+passes through unchanged; Power1 does not convert a
+coarse level into a percentage or independently rescale a controller value.
+For DualSense and DualShock 4, Linux's
+[`hid-playstation` driver](https://raw.githubusercontent.com/gregkh/linux/v6.18.57/drivers/hid/hid-playstation.c)
+converts ten-percent device steps into midpoints (5%, 15%, …, 95%) and handles
+full/error states separately. For example, a DualSense report with battery
+step 1 and charging code 1 becomes 15% Charging; the reported charge band is
+10–19%, not a one-percent measurement. Charging is its own device-reported
+state and does not imply that the battery is already full.
+
+The November 2 read-only observation on qinda matched all layers: five
+CRC-valid 78-byte Bluetooth reports contained battery step 1 / charging code 1;
+kernel sysfs, UPower and an owner/nonce-checked live Power1 peripheral receipt
+all reported 15% Charging. This establishes faithful transport of that reading,
+not independent battery calibration or a claim about every controller. No
+controller writes or desktop service restart were used. The separate coarse-level
+mapping repair does not change this numeric reading.
+
 The sibling transport reuses Power1's targeted nonce receipt authority pattern.
 It borrows current owner/epoch from the existing public PowerClient; no new
 owner watcher, shell UPower connection or native receiver is introduced.

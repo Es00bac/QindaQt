@@ -184,7 +184,7 @@ void PowerUpowerAdapterTests::publishesSuppliesAcAndOnBatteryTruth()
 void PowerUpowerAdapterTests::coarseBatteryLevelSuppressesPercentage()
 {
     QVariantMap properties = batteryProperties();
-    properties.insert(QStringLiteral("BatteryLevel"), QVariant(uint(3)));
+    properties.insert(QStringLiteral("BatteryLevel"), QVariant(uint(4)));
     properties.remove(QStringLiteral("TimeToEmpty"));
     UpowerRow row;
     QVERIFY(row.start({{kBatteryPath, properties}}, false));

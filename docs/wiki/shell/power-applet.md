@@ -222,7 +222,11 @@ The optional public `PeripheralClient` supplies a separate read-only device
 inventory ([ADR-0365](../adr/0365-publish-peripheral-batteries-through-power1-receipts.md)).
 The facade presents model/vendor identity, device kind for accessibility,
 reported percentage or coarse level, charge state and reported time estimates.
-Unknown values remain explicit. Laptop summary and mutation controls continue
+Unknown values remain explicit. The percentage is the upstream-reported value;
+it can be an estimate from a coarse hardware step. In particular, PlayStation
+controllers can yield 5%, 15%, … from Linux's midpoint conversion of ten-percent
+steps. See [battery precision and upstream enum translation](../architecture/power-service.md#battery-precision-and-upstream-enum-translation).
+Laptop summary and mutation controls continue
 through the original PowerClient. No shell platform lookup is added.
 
 The popup is capped at 600 pixels and the available output height; its content

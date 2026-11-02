@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "peripheral_decoder_p.h"
 #include "upstream_identity.h"
+#include "upower_device_decoder_p.h"
 #include <qindaqt/services/power_protocol/power_validation.h>
 namespace QindaQt::Power::Upstream {
 namespace {
@@ -51,12 +52,12 @@ PeripheralDecode decodePeripheral(const QString &path, const QVariantMap &p,
         || !read(p,"Model",row.model) || !read(p,"State",state)
         || !read(p,"BatteryLevel",level) || !read(p,"Percentage",percentage)
         || !read(p,"TimeToEmpty",empty) || !read(p,"TimeToFull",full)
-        || state > 6 || level > 6) return PeripheralDecode::Malformed;
+        || state > 6 || !decodeUpowerBatteryLevel(level, row.level)) return PeripheralDecode::Malformed;
     row.vendor = sanitizeText(row.vendor,256);
     row.model = sanitizeText(row.model,256);
     row.state = static_cast<ChargeState>(state);
-    row.level = static_cast<BatteryLevel>(level);
-    if (p.contains(QStringLiteral("Percentage")) && level <= 1) {
+    if (p.contains(QStringLiteral("Percentage"))
+        && (!p.contains(QStringLiteral("BatteryLevel")) || level == 1)) {
         row.percentageKnown = true; row.percentage = percentage; row.level = BatteryLevel::None;
     }
     row.timeToEmptyKnown = empty != 0; row.timeToEmptySeconds = empty;
