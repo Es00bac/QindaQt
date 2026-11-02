@@ -13,7 +13,23 @@ The durable decisions are
 (transport, identity and pairing). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **design accepted; no implementation integrated.**
+Current maturity: **M1 link core integrated (desktop service and phone engine).**
+
+- **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
+  unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
+  `org.qindaqt.Link1` and the typed client are integrated. See
+  [Link1 protocol 1](../reference/link1-v1.md).
+- **Phone.** The Java engine and a plain-QtQuick debug APK are integrated.
+  The UI moves onto QindaTK once QindaTK builds for Android.
+- **Evidence.**
+  - Both codecs pass every golden vector.
+  - A cross-implementation test (`phone/engine-tests/run-cross-impl.sh`)
+    pairs the real Java session with the real desktop service over TLS 1.3
+    on a private bus.
+  - Pairing on the physical phone over USB, and the Keystore-backed
+    handshake on the device, are **not yet recorded**.
+- **Not implemented yet:** notifications, SMS, input, macros, vault, LAN
+  mode, the applet, the app and streaming.
 
 ## Components
 
@@ -34,14 +50,17 @@ Current maturity: **design accepted; no implementation integrated.**
 | --- | --- | --- |
 | Protocol codec | `src/services/link_protocol` | Pure framing, envelope and frame value types; pairing math. No sockets. |
 | Transport | `src/services/link_transport` | Desktop identity (libcrypto key/cert), `QSslServer` listeners, peer pin checks, connection state machine, keepalive |
-| Trust store | inside `link_transport` until it grows | Paired devices in `$XDG_DATA_HOME/qindalink/devices.json`, written atomically |
+| Trust store | inside `link_transport` (`trust_store.h`; implemented) | Paired devices in `$XDG_DATA_HOME/qindalink/devices.json`, written atomically |
 | ADB tunnels | `src/services/link_adb` | Track devices with `adb track-devices`, check that the app is installed, keep `adb reverse tcp:47160`, run setup grants |
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge, quick actions |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
-| Phone app | `phone/app` | Qt for Android app: QML/QindaTK UI, Java engine under `phone/app/android/` |
+| Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
+| Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
+| Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
+| Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
 | Mirror server | `phone/mirror_server` | Java `app_process` entry point `org.qindaqt.link.mirror.Server`, compiled into the APK, with no dependency on the phone app's code. `build-dev-jar.sh` builds a standalone development jar |
 | Shared vectors | `tests/link/vectors` | Golden frame and pairing vectors used by both codecs |
 
@@ -49,6 +68,29 @@ Feature modules (`link_notifications`, `link_messages`, `link_input`,
 `link_macros`) are added under `src/services/` as each feature lands. Each
 one depends only on `link_protocol` and the narrow routing interface of
 `link_service`.
+
+**Adding a feature.** A feature owns one capability string and its frame
+namespaces, and plugs in without editing the session state machine. Desktop:
+subclass `FeatureHandler` (`src/services/link_transport/.../feature.h`) and
+`add()` it to the `FeatureRouter`; the router supplies the hello caps and the
+service calls `handle()` for READY sessions. Phone: implement
+`engine/FeatureHandler` (`capability()`, `namespaces()`, `onReady`, `onTick`,
+`onFrame`, `onClosed`) and add it to the `FeatureRegistry` that `LinkService`
+(or a test) passes to `LinkEngine`; `Session` advertises the registered
+capabilities, routes only READY frames by namespace, answers unhandled
+requests with `error{unknown-type}`, and `FeatureContext.send` refuses a frame
+whose namespace the handler does not own or whose capability the peer did not
+advertise. `status` is the first such feature (`StatusFeature`). Core frames
+(`hello`, `bye`, `ping`, `pong`, `ok`, `error`, `pair.*`) stay in `Session`.
+
+**Phone app maturity (M1c, 2026-11).** Built and installed as a debug APK;
+the Java codec and pairing math pass all golden vectors, and a JVM loopback
+test drives the whole phone session (pairing, pin, status, `ring` refused).
+The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
+through one polled JNI bridge. Only the `status` capability is advertised;
+`ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
+reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
+test; on-device pairing over USB is not yet recorded.
 
 ## Connection and pairing
 

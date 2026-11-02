@@ -38,9 +38,11 @@ many bytes of payload.
 - **Length.** It must be between 1 and 4 194 304 (4 MiB). A length of 0 or
   anything larger is a protocol error: the receiver closes the connection
   without replying.
-- **Payload.** It is one UTF-8 JSON object with no byte-order mark. Anything
-  else (invalid UTF-8, invalid JSON, a non-object, or an object that breaks
-  the envelope rules) is a protocol error and closes the connection.
+- **Payload.** It is one UTF-8 JSON object with no byte-order mark, nested
+  at most 64 levels deep. The top-level object is level 1, and each nested
+  object or array adds one level. Anything else (invalid UTF-8, invalid JSON,
+  a non-object, deeper nesting, or an object that breaks the envelope rules)
+  is a protocol error and closes the connection.
 - **Decoder outcomes.** The golden vectors name the outcomes `bad-length`,
   `bad-payload` (UTF-8, BOM, JSON or non-object) and `bad-envelope`. A frame
   whose bytes have not all arrived yet is `needsMore`, which is not an error.
@@ -50,8 +52,8 @@ many bytes of payload.
 
 | Key | Type | Rule |
 | --- | --- | --- |
-| `t` | string | Required. Frame type: 1–64 characters matching `^[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)*$` |
-| `id` | integer | Optional. Request id, 1 ≤ id ≤ 2⁵³−1, chosen by the sender. A frame with an `id` expects exactly one reply frame. |
+| `t` | string | Required. Frame type: 1–64 characters. The **whole** string must match `[a-z][a-z0-9]*(\.[a-z][a-z0-9-]*)*`, so a trailing newline is invalid. |
+| `id` | integer | Optional. Request id, 1 ≤ id ≤ 2⁵³−1, chosen by the sender, written as a plain JSON integer token with no sign, fraction or exponent (`1.0`, `1e0` and `-0` are invalid). A frame with an `id` expects exactly one reply frame. |
 | `re` | integer | Optional. The `id` of the request this frame answers. Same range. |
 | `b` | object | Optional body. Absent means `{}`. |
 
@@ -63,8 +65,10 @@ Rules:
   `error{code:"unknown-type"}`. An unknown `t` without `id` is ignored.
 - Encoders write compact JSON. Key order carries no meaning, so tests compare
   parsed values, not bytes.
-- Binary values (keys, nonces, digests) are lowercase hex strings. Images are
-  base64 in a `png` string.
+- Binary values (keys, nonces, digests) are lowercase hex strings of the
+  exact length the field defines: 64 characters for every 32-byte value in
+  this page. Any other length or character is invalid for that field. Images
+  are base64 in a `png` string.
 
 ## Connection lifecycle
 
@@ -82,6 +86,16 @@ TLS 1.3 handshake (both certificates) ──► both send hello
   and closes.
 - In UNPAIRED state, any frame type outside the allowed set closes the
   connection.
+- **Bounds on unpaired connections.**
+  - A peer that has not sent `hello` within 10 seconds of the handshake is
+    closed without a reply.
+  - An UNPAIRED connection is closed with `bye{reason:"pair-timeout"}` 120
+    seconds after the handshake, whether or not pairing started. `ping`
+    does not extend this.
+  - The desktop holds at most 8 UNPAIRED connections. It refuses more by
+    closing them right after the handshake.
+  - The desktop runs at most one pairing at a time. A `pair.request` from any
+    key while another pairing is in progress gets `error{code:"busy"}`.
 - **Keepalive.** A side that has sent nothing for 30 seconds sends `ping`
   (with an `id`), and the peer answers `pong` (with `re`). A side that has
   received nothing for 90 seconds closes the connection.
@@ -158,6 +172,14 @@ Rules:
 - **Completion.** Pairing succeeds when a side has its own user's acceptance
   and has received `pair.confirm{accept:true}`. Each side then pins the
   peer's key and the connection enters READY. No further frame is needed.
+- **Persisting the pin.** A side that cannot store the pin durably must not
+  enter READY. It sends `bye{reason:"error"}` and closes, so the two trust
+  stores never disagree after a restart.
+- **Malformed pairing fields.** A pairing frame whose `c`, `np` or `nd` is not
+  exactly 64 lowercase hex characters ends pairing with
+  `bye{reason:"pair-rejected"}`.
+- **Locale.** The six digits are always ASCII `0`–`9`, whatever the locale,
+  for example `String.format(Locale.ROOT, ...)` in Java.
 - **Rejection.** A `pair.confirm{accept:false}` from either side ends pairing:
   both send `bye{reason:"pair-rejected"}` and close.
 - **Timeout.** Pairing that is not complete 120 seconds after `pair.request`
@@ -166,8 +188,8 @@ Rules:
   `error{code:"denied"}` when the request arrived on the LAN listener while
   no pairing window is open
   ([ADR-0434](../adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md)).
-  It answers `error{code:"busy"}` while another pairing with the same key is
-  in progress.
+  It answers `error{code:"busy"}` while any other pairing is in progress
+  (see the bounds in [Connection lifecycle](#connection-lifecycle)).
 - **Stale pins.** A peer whose `hello.trusted` is false while the local side
   has it pinned has forgotten this side. The local side keeps the pin, stays
   UNPAIRED, and its UI offers "pair again", which deletes the stale pin
@@ -197,6 +219,36 @@ implements it, including any frame that carries user content.
 | `desktop.` | `vault` or `input` | Focused desktop window facts for confirmation |
 | `vault.` | `vault` | Secret typing requests. Bodies are never logged by either side. |
 | `apps.` | `apps` | Phone app inventory used by the desktop launcher (streaming itself runs over ADB, not this link) |
+
+## Notifications (`notify.*`)
+
+Not specified yet. The notifications lane replaces this paragraph with the
+frame table for capability `notify`.
+
+## Messages (`sms.*`)
+
+Not specified yet. The SMS lane replaces this paragraph with the
+frame table for capability `sms`.
+
+## Remote input (`input.*`)
+
+Not specified yet. The input and macros lane replaces this paragraph with the
+frame table for capability `input`.
+
+## Macros (`macro.*`)
+
+Not specified yet. The input and macros lane replaces this paragraph with the
+frame table for capability `macro`.
+
+## Desktop facts and secret typing (`desktop.*`, `vault.*`)
+
+Not specified yet. The vault lane replaces this paragraph with the
+frame table for capability `vault`.
+
+## Phone apps (`apps.*`)
+
+Not specified yet. The phone apps lane replaces this paragraph with the
+frame table for capability `apps`.
 
 <!-- AGENT-GUARD: any logging of frames must redact the body of every vault.*
 frame (log the type and length only). A debug flag must not lift this. -->

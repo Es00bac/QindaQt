@@ -1,0 +1,43 @@
+[Unit]
+Description=QindaLink phone companion service
+Documentation=https://qindaqt.org/
+
+[Service]
+Type=dbus
+BusName=org.qindaqt.Link1
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-link-service
+Restart=on-failure
+# AGENT-NOTE: the service auto-starts an adb server for `adb track-devices`.
+# That server must see /dev/bus/usb and udev hotplug (so no PrivateDevices=
+# and AF_NETLINK is allowed), and it must survive a service restart because
+# it is shared with the user's own adb sessions (so KillMode=process, not the
+# default control-group, which would kill it on every restart).
+KillMode=process
+RestartSec=2s
+# AGENT-NOTE: Type=dbus on the QindaQt private session bus waits out
+# TimeoutStartSec before D-Bus activation takes over; see
+# qindaqt-bluetooth-service.service and ADR-0170. Same bound here.
+TimeoutStartSec=20
+# AGENT-NOTE: no ProtectHome/ProtectSystem/PrivateTmp. The service writes its
+# identity and trust store under $XDG_DATA_HOME/qindalink, which may not exist
+# yet, and the session bus socket lives under /tmp (see the Bluetooth unit).
+NoNewPrivileges=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+TasksMax=64
+UMask=0077
+
+[Install]
+# AGENT-GUARD: never WantedBy=graphical-session.target; QindaQt does not
+# activate it, so the unit would silently never start.
+WantedBy=default.target
