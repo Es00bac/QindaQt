@@ -1,3 +1,38 @@
+## November 2 — QindaLink link core integrated (desktop service + phone engine)
+
+The QindaLink desktop core (`922695b60`) and the phone engine (`e52aae6c2`)
+are merged on main. An independent cross-review accepted both with P1s, and
+the same implementers repaired them. The review also tightened the
+[protocol 1 contract](wiki/reference/qindalink-protocol-v1.md), adding
+edge-case vectors and bounds on unpaired connections.
+
+**Desktop.** `qindaqt-link-service` exports
+[`org.qindaqt.Link1`](wiki/reference/link1-v1.md) over:
+- TLS 1.3 with pinned P-256 keys;
+- code-comparison pairing;
+- a 10 s hello deadline, a 120 s unpaired lifetime, at most 8 unpaired
+  connections and one pairing at a time;
+- durable-pin-or-abort, and a fail-closed identity;
+- ADB reverse tunnels (the unit keeps USB/hotplug visible and does not kill a
+  shared adb server).
+
+**Phone.** A Java engine in a debug APK, with a plain-QtQuick UI. Its writes
+are bounded, it uses a write watchdog, and its pairing code uses
+locale-independent digits.
+
+Integration evidence on the merged tree:
+- 9/9 `qindaqt.link-*` CTest rows pass.
+- The JVM runner passes 68/68 vector checks plus the session tests.
+- `phone/engine-tests/run-cross-impl.sh` pairs the real Java session with the
+  real service over TLS 1.3 on a private bus: equal codes, pin stored, phone
+  status in `Devices()`.
+- validate-docs, mkdocs --strict and source shape (no QindaLink issues) pass.
+
+**Not yet recorded:** on-device pairing over USB, and the Keystore handshake
+on the phone. The phone was unplugged during integration. Not installed; no
+package revision. Next are the QindaTK Android build and the app-streaming
+lanes (running), then the M2 features.
+
 ## November 2 — QindaLink phone companion design accepted
 
 QindaLink is a phone companion written for QindaQt to replace KDE Connect.
