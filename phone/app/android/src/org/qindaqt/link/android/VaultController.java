@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.crypto.Cipher;
+import org.qindaqt.link.vault.KeyPresence;
 import org.qindaqt.link.vault.VaultEntry;
 import org.qindaqt.link.vault.VaultException;
 import org.qindaqt.link.vault.VaultLifecycle;
@@ -54,6 +55,7 @@ final class VaultController {
     private static final String TAG = "QindaLinkVault";
     static final long BACKGROUND_LOCK_MS = 30_000L, TICK_MS = 10_000L;
     private static final String RETRY = "Authentication failed. Try again.";
+    private static final String KEYSTORE_RETRY = "The key store is unavailable right now. Try again.";
 
     private static VaultController instance;
 
@@ -98,13 +100,17 @@ final class VaultController {
         KeyguardManager km = (KeyguardManager) app.getSystemService(Context.KEYGUARD_SERVICE);
         if (!file.exists()) { to(km.isDeviceSecure() ? State.NONE : State.NOLOCK); return; }
         int slot = fileSlot(null);
-        boolean keyOk = slot >= 0 ? VaultKeys.exists(slot) : VaultKeys.exists(0) || VaultKeys.exists(1);
-        if (prefs.getBoolean("invalidated", false) || !keyOk) { markInvalidated(); return; }
-        to(State.LOCKED);
+        KeyPresence p = slot >= 0 ? VaultKeys.presence(slot) : KeyPresence.any(VaultKeys.presence(0), VaultKeys.presence(1));
+        switch (VaultLifecycle.decideLocked(slot, p, prefs.getInt("invalidatedSlot", VaultLifecycle.NO_SLOT))) {
+            case INVALIDATED: markInvalidated(slot); break;
+            case KEY_STORE_RETRY: to(State.LOCKED); message = KEYSTORE_RETRY; break;   // transient: never persisted
+            default: to(State.LOCKED);
+        }
     }
 
-    private void markInvalidated() {
-        prefs.edit().putBoolean("invalidated", true).apply();
+    /** Persists "this slot's key is gone" (only for a definite loss) so the stale key cannot flip the state back. */
+    private void markInvalidated(int slot) {
+        prefs.edit().putInt("invalidatedSlot", slot).commit();
         to(State.INVALIDATED);
         message = "The vault key is gone (the screen lock was removed or reset). This vault can no longer be opened "
             + "on this phone. Restore it from a backup, or erase it and start over.";
@@ -171,13 +177,16 @@ final class VaultController {
             int slot = (VaultSession.flagsOf(bytes) & VaultSession.FLAG_KEY_B) != 0 ? 1 : 0;
             Cipher c = VaultKeys.decryptCipher(slot, VaultSession.wrappedKeyOf(bytes));
             to(State.AUTHENTICATING); message = "";
-            authenticate(ctx, c, "Unlock vault", authed -> openWith(bytes, authed));
+            authenticate(ctx, c, "Unlock vault", authed -> openWith(bytes, slot, authed));
         } catch (KeyPermanentlyInvalidatedException e) {
-            markInvalidated();
+            markInvalidated(fileSlot(null));
         } catch (UnrecoverableKeyException e) {
-            // "No key": gone for good only when the Keystore really has no entry; otherwise retry.
+            // "No key": gone for good only when the Keystore definitely has no entry for the file's slot;
+            // a Keystore error is a retry, never a persisted loss.
             int slot = fileSlot(null);
-            if (slot >= 0 && !VaultKeys.exists(slot)) markInvalidated(); else retryLater();
+            KeyPresence p = slot >= 0 ? VaultKeys.presence(slot) : KeyPresence.ERROR;
+            if (p == KeyPresence.ABSENT) markInvalidated(slot);
+            else { to(State.LOCKED); message = p == KeyPresence.ERROR ? KEYSTORE_RETRY : RETRY; }
         } catch (VaultException e) {
             failIntegrity(e.reason());
         } catch (GeneralSecurityException | IOException | RuntimeException e) {
@@ -197,7 +206,7 @@ final class VaultController {
             : "The vault file failed its integrity check and was not opened. Restore it from a backup.";
     }
 
-    private synchronized void openWith(byte[] bytes, Cipher authed) {
+    private synchronized void openWith(byte[] bytes, int slot, Cipher authed) {
         try {
             session = VaultSession.open(bytes, new VaultKeys.Authorized(authed), System::currentTimeMillis, prefs.getLong("gen", 0));
             prefs.edit().putLong("gen", Math.max(prefs.getLong("gen", 0), session.generation())).commit();
@@ -205,7 +214,7 @@ final class VaultController {
         } catch (VaultException e) {
             session = null;
             State next = VaultLifecycle.afterOpenFailure(e.reason());
-            if (next == State.INVALIDATED) markInvalidated();
+            if (next == State.INVALIDATED) markInvalidated(slot);
             else if (next == State.LOCKED) retryLater();
             else failIntegrity(e.reason());
             Log.w(TAG, "open failed: " + e.reason());
@@ -217,7 +226,8 @@ final class VaultController {
     synchronized void createVault(Context ctx) {
         if (!VaultLifecycle.canCreate(state)) return;
         int existing = file.exists() ? fileSlot(null) : -1;
-        int slot = VaultLifecycle.nextKeySlot(existing, VaultKeys.exists(0));
+        // Anything but a definite ABSENT counts as "slot 0 may exist": never overwrite a key we cannot see.
+        int slot = VaultLifecycle.nextKeySlot(existing, VaultKeys.presence(0) != KeyPresence.ABSENT);
         State before = state;
         try {
             boolean sb = VaultKeys.generate(slot);
@@ -237,21 +247,27 @@ final class VaultController {
 
     private synchronized void finishCreate(Cipher authed, boolean strongBox, int slot) {
         pendingCreateSlot = -1;
+        VaultSession s = null;
+        boolean written = false;
         try {
             int flags = (strongBox ? VaultSession.FLAG_STRONGBOX : 0) | (slot == 1 ? VaultSession.FLAG_KEY_B : 0);
-            VaultSession s = VaultSession.create(new VaultKeys.Authorized(authed), flags, System::currentTimeMillis);
+            s = VaultSession.create(new VaultKeys.Authorized(authed), flags, System::currentTimeMillis);
             if (pendingRestore != null) s.importRecords(pendingRestore, true);
             writeFile(s.serialize());
-            // The new file is on disk: only now is the old key and the old state expendable.
+            written = true;
+            // Order matters (crash safety): the file now names the new slot; record that in prefs FIRST, and
+            // only then delete the old key. The invalidated marker is slot-bound, so even a crash right here
+            // cannot make a stale marker strand the new vault.
             session = s;
-            VaultKeys.delete(1 - slot);
-            prefs.edit().putBoolean("invalidated", false).putLong("gen", s.generation()).commit();
+            boolean saved = prefs.edit().putInt("invalidatedSlot", VaultLifecycle.NO_SLOT).putLong("gen", s.generation()).commit();
+            if (saved) VaultKeys.delete(1 - slot);   // if prefs failed keep the old key; it is harmless
             if (pendingRestore != null) { wipeAll(pendingRestore); pendingRestore = null; }
             to(State.UNLOCKED); message = ""; touch();
-        } catch (VaultException | IOException e) {
-            VaultKeys.delete(slot);
-            State back = pendingRestore != null ? State.RESTORE_READY : null;
-            if (back != null) { to(back); message = "The vault could not be created. Your existing vault was not changed."; }
+        } catch (VaultException | IOException | RuntimeException e) {
+            if (s != null) s.lock();                 // zero the new DEK
+            session = null;
+            if (!written) VaultKeys.delete(slot);    // never delete a key the file on disk already names
+            if (pendingRestore != null) { to(State.RESTORE_READY); message = "The vault could not be created. Your existing vault was not changed."; }
             else { recompute(); message = "The vault could not be created."; }
             Log.w(TAG, "create failed: " + e.getClass().getSimpleName());
         }
@@ -264,7 +280,7 @@ final class VaultController {
         file.delete();
         VaultKeys.delete(0);
         VaultKeys.delete(1);
-        prefs.edit().putBoolean("invalidated", false).putLong("gen", 0).commit();
+        prefs.edit().putInt("invalidatedSlot", VaultLifecycle.NO_SLOT).putLong("gen", 0).commit();
         message = "";
         recompute();
         rev++;

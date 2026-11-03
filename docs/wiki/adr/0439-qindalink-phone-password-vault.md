@@ -37,8 +37,14 @@ the `vault.*` and `desktop.*` frames.
   tampered. A key that cannot be used right now (not authenticated, device
   locked, Keystore busy) is `KEY_UNAVAILABLE`: the vault returns to locked with
   "Authentication failed. Try again." and no recovery buttons. A permanently
-  invalidated key sets a persisted `invalidated` flag (the stale key can still
-  exist) and offers restore or erase. Rules live in `VaultLifecycle` and are
+  invalidated key (a definite `KeyPermanentlyInvalidatedException`, or a key
+  definitely absent for the slot the file names) persists an invalidated marker
+  bound to that slot (the stale key can still exist) and offers restore or
+  erase. Asking the Keystore is tri-state (present, absent, error): an error
+  is a retry ("The key store is unavailable right now") and is never persisted,
+  so a transient hiccup cannot strand a healthy vault. Because the marker is
+  slot-bound, one left over from an older vault cannot affect a newly created
+  one; creation commits prefs before it deletes the old key. Rules live in `VaultLifecycle` and are
   unit tested.
 - **Rollback.** The header carries a u64 generation (covered by the index
   AAD). The phone remembers the highest generation it has opened and refuses an

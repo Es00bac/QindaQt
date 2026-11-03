@@ -215,6 +215,35 @@ public final class VaultTests {
         check(t.size() == 1, "discarded stage is a no-op");
     }
 
+
+    static void keyPresence() throws Exception {
+        check(KeyPresence.probe(() -> true) == KeyPresence.PRESENT, "present");
+        check(KeyPresence.probe(() -> false) == KeyPresence.ABSENT, "absent");
+        java.util.concurrent.Callable<Boolean>[] failures = new java.util.concurrent.Callable[] {
+            (java.util.concurrent.Callable<Boolean>) () -> { throw new GeneralSecurityException("keystore"); },
+            (java.util.concurrent.Callable<Boolean>) () -> { throw new java.io.IOException("io"); },
+            (java.util.concurrent.Callable<Boolean>) () -> { throw new java.security.ProviderException("busy"); },
+            (java.util.concurrent.Callable<Boolean>) () -> { throw new IllegalStateException("boot"); },
+            (java.util.concurrent.Callable<Boolean>) () -> { throw new java.security.KeyStoreException("ks"); } };
+        for (java.util.concurrent.Callable<Boolean> f : failures)
+            check(KeyPresence.probe(f) == KeyPresence.ERROR, "any exception is ERROR, never ABSENT");
+        check(KeyPresence.any(KeyPresence.ABSENT, KeyPresence.ERROR) == KeyPresence.ERROR, "unknown slot: error wins over absent");
+        check(KeyPresence.any(KeyPresence.ERROR, KeyPresence.PRESENT) == KeyPresence.PRESENT, "unknown slot: present wins");
+        check(KeyPresence.any(KeyPresence.ABSENT, KeyPresence.ABSENT) == KeyPresence.ABSENT, "unknown slot: both absent");
+
+        int none = VaultLifecycle.NO_SLOT;
+        for (int slot = 0; slot <= 1; slot++) {
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.ERROR, none) == VaultLifecycle.Decision.KEY_STORE_RETRY, "keystore error is a retry");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.PRESENT, none) == VaultLifecycle.Decision.LOCKED, "present is locked");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.ABSENT, none) == VaultLifecycle.Decision.INVALIDATED, "definitely absent is invalidated");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.PRESENT, slot) == VaultLifecycle.Decision.INVALIDATED, "persisted loss for the file's slot holds");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.ERROR, slot) == VaultLifecycle.Decision.INVALIDATED, "persisted definite loss survives a later keystore error");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.PRESENT, 1 - slot) == VaultLifecycle.Decision.LOCKED, "stale marker for the other slot is ignored (crash during replace)");
+            check(VaultLifecycle.decideLocked(slot, KeyPresence.ERROR, 1 - slot) == VaultLifecycle.Decision.KEY_STORE_RETRY, "stale marker plus error is still just a retry");
+        }
+        check(VaultLifecycle.decideLocked(-1, KeyPresence.ERROR, none) == VaultLifecycle.Decision.KEY_STORE_RETRY, "unreadable header plus error is a retry");
+    }
+
     static void sessionRules() throws Exception {
         VaultSession s = fresh();
         String id = s.put(rec("x", "u", "p"));
@@ -367,7 +396,7 @@ public final class VaultTests {
     }
 
     public static void main(String[] a) throws Exception {
-        formatAndTamper(); swapFixture(); lifecycle(); rollbackAndTransactions(); sessionRules(); backup(); strength(); generator(); autotype(); typingSource();
+        formatAndTamper(); swapFixture(); lifecycle(); keyPresence(); rollbackAndTransactions(); sessionRules(); backup(); strength(); generator(); autotype(); typingSource();
         System.out.println("VaultTests ok: " + checks + " checks");
     }
 }

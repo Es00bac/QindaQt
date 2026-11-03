@@ -24,6 +24,31 @@ public final class VaultLifecycle {
         }
     }
 
+    /** Sentinel for "no slot has been marked invalidated". */
+    public static final int NO_SLOT = -9;
+
+    /** What the controller does for an existing vault file at rest. */
+    public enum Decision { LOCKED, INVALIDATED, KEY_STORE_RETRY }
+
+    /**
+     * Decides the resting state of an existing vault file.
+     * @param fileSlot slot named by the file header, -1 if unreadable
+     * @param presence presence of the key for that slot (any slot when unknown)
+     * @param invalidatedSlot slot persisted as invalidated, or {@link #NO_SLOT}
+     *
+     * AGENT-GUARD: a stored flag only counts for the slot it was recorded for, so a flag left over from a
+     * previous vault (crash between writing a new file and clearing the flag) cannot strand the new one;
+     * KeyPresence.ERROR never invalidates, it is a retry.
+     */
+    public static Decision decideLocked(int fileSlot, KeyPresence presence, int invalidatedSlot) {
+        if (invalidatedSlot != NO_SLOT && invalidatedSlot == fileSlot) return Decision.INVALIDATED;
+        switch (presence) {
+            case ABSENT: return Decision.INVALIDATED;
+            case ERROR: return Decision.KEY_STORE_RETRY;
+            default: return Decision.LOCKED;
+        }
+    }
+
     /** A backup may only be restored over a vault that is absent or known unusable. */
     public static boolean canRestore(State s) { return s == State.NONE || s == State.INVALIDATED || s == State.ERROR; }
 

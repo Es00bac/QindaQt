@@ -24,17 +24,24 @@ final class VaultClipboard {
 
     private VaultClipboard() {}
 
-    static synchronized void copy(Context ctx, String text) {
+    /** Returns false when the clipboard service is missing or refused the clip; nothing is left pending then. */
+    static synchronized boolean copy(Context ctx, String text) {
         Context app = ctx.getApplicationContext();
         ClipboardManager cm = (ClipboardManager) app.getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("qindalink-vault", text);
-        PersistableBundle extras = new PersistableBundle();
-        extras.putBoolean("android.content.extra.IS_SENSITIVE", true);   // ClipDescription.EXTRA_IS_SENSITIVE
-        clip.getDescription().setExtras(extras);
-        cm.setPrimaryClip(clip);
+        if (cm == null) return false;
+        try {
+            ClipData clip = ClipData.newPlainText("qindalink-vault", text);
+            PersistableBundle extras = new PersistableBundle();
+            extras.putBoolean("android.content.extra.IS_SENSITIVE", true);   // ClipDescription.EXTRA_IS_SENSITIVE
+            clip.getDescription().setExtras(extras);
+            cm.setPrimaryClip(clip);
+        } catch (RuntimeException e) {
+            return false;
+        }
         pending = true;
         final int mine = ++generation;
         MAIN.postDelayed(() -> expire(app, mine), CLEAR_MS);
+        return true;
     }
 
     private static synchronized void expire(Context app, int mine) {
@@ -47,7 +54,8 @@ final class VaultClipboard {
         pending = false;
         generation++;
         try {
-            ((ClipboardManager) ctx.getApplicationContext().getSystemService(Context.CLIPBOARD_SERVICE)).clearPrimaryClip();
+            ClipboardManager cm = (ClipboardManager) ctx.getApplicationContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) cm.clearPrimaryClip();
         } catch (RuntimeException ignored) { /* nothing more we can do */ }
     }
 }

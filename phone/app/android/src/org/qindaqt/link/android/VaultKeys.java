@@ -11,6 +11,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import org.qindaqt.link.vault.DekWrapper;
+import org.qindaqt.link.vault.KeyPresence;
 
 /**
  * The AndroidKeyStore key-encryption key (KEK) that wraps the vault data key.
@@ -35,8 +36,9 @@ final class VaultKeys {
 
     private VaultKeys() {}
 
-    static boolean exists(int slot) {
-        try { return keyStore().containsAlias(ALIASES[slot]); } catch (Exception e) { return false; }
+    /** Tri-state: a Keystore error is ERROR, never ABSENT (see {@link KeyPresence}). */
+    static KeyPresence presence(int slot) {
+        return KeyPresence.probe(() -> keyStore().containsAlias(ALIASES[slot]));
     }
 
     static void delete(int slot) {

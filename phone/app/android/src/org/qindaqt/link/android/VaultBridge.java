@@ -175,8 +175,7 @@ public final class VaultBridge {
             VaultSession s = v.session();
             if (s == null) return false;
             r = s.get(id);
-            VaultClipboard.copy(ctx, r.passwordString());
-            return true;
+            return VaultClipboard.copy(ctx, r.passwordString());
         } catch (VaultException e) { return false; }
         finally { if (r != null) r.wipe(); }
     }

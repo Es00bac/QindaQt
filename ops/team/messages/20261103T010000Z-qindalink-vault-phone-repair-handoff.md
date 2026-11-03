@@ -40,3 +40,20 @@ title, URL and search.
   device only by the user; keystore exception types on Android 17 are unverified.
 - Preview cannot simulate app-inactive; the unload-on-inactive path is untested offscreen.
 - Rollback memory resets when app data is cleared.
+
+## Re-review round (P1-2 residual and P2s)
+- Key existence is tri-state (`KeyPresence` PRESENT/ABSENT/ERROR). A Keystore error is a retryable
+  "The key store is unavailable right now. Try again." state and is never persisted. Only a definite
+  `KeyPermanentlyInvalidatedException`, or a key definitely ABSENT for the slot the file names, marks the vault
+  invalidated. The decision is pure (`VaultLifecycle.decideLocked`) and tested.
+- The invalidated marker is bound to a slot (`invalidatedSlot` pref), so a stale marker from an older vault is
+  ignored for a new file in the other slot.
+- Crash window: `finishCreate` now commits prefs (marker cleared, generation) BEFORE deleting the old key; if
+  the prefs commit fails the old key is kept. A key the written file names is never deleted on a later failure.
+- `finishCreate` failure locks the new session (zeroes its DEK).
+- `VaultClipboard.copy` guards a null clipboard service and a failing `setPrimaryClip`; returns false and
+  leaves nothing pending.
+- Evidence: `phone/engine-tests/run.sh` exit 0, `VaultTests ok: 197 checks` (probe with GSE/IO/Provider/
+  IllegalState/KeyStore exceptions all ERROR; decision table incl. stale marker for the other slot);
+  preview smoke 0 failures, 0 QML warnings; `build-apk.sh` built (not installed); `mkdocs build --strict` clean.
+  No device interaction.
