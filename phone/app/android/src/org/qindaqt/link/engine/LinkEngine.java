@@ -14,20 +14,37 @@ public final class LinkEngine {
     /** Opens a handshaken Link or throws. Blocking. */
     public interface Connector {
         Link connect() throws IOException;
+        /** "usb", "lan" or "none" for the link last returned by connect(). */
+        default String transport() { return "usb"; }
+        /** While on a non-USB link: true when USB can take over (the engine then ends the session). Blocking. */
+        default boolean upgradeAvailable() { return false; }
+        /** The session ended or no connection exists. */
+        default void disconnected() { }
     }
 
     private static final long[] BACKOFF_MS = {1000, 2000, 4000, 8000, 15000};
+    private static final long UPGRADE_CHECK_MS = 15000;
 
     private final Connector connector;
     private final PinStore pins;
     private final FeatureRegistry features;
     private final DeviceInfo info;
     private final EngineState state;
+    private final Backoff backoff;
+    private final long upgradeCheckMs;
     private volatile Session session;
     private volatile boolean running;
     private Thread thread;
 
     public LinkEngine(Connector c, PinStore pins, FeatureRegistry features, DeviceInfo info, EngineState state) {
+        this(c, pins, features, info, state, new Backoff(BACKOFF_MS, new java.util.Random()), UPGRADE_CHECK_MS);
+    }
+
+    /** Tests inject the backoff and a short USB-upgrade interval. */
+    public LinkEngine(Connector c, PinStore pins, FeatureRegistry features, DeviceInfo info, EngineState state,
+                      Backoff backoff, long upgradeCheckMs) {
+        this.backoff = backoff;
+        this.upgradeCheckMs = upgradeCheckMs;
         this.connector = c;
         this.pins = pins;
         this.features = features;
@@ -75,14 +92,23 @@ public final class LinkEngine {
             try {
                 if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.CONNECTING, "", "", "Connecting");
                 link = connector.connect();
+                state.setTransport(connector.transport());
                 Session s = new Session(link, pins, features, info, state);
                 session = s;
                 long t0 = System.currentTimeMillis();
-                s.run();
+                Thread upgrade = watchForUsb(s);
+                try {
+                    s.run();
+                } finally {
+                    if (upgrade != null) upgrade.interrupt();
+                    connector.disconnected();
+                    state.setTransport("none");
+                }
                 session = null;
                 failures = System.currentTimeMillis() - t0 > 20000 ? 0 : failures + 1;
             } catch (IOException e) {
                 session = null;
+                state.setTransport("none");
                 if (state.phase() != EngineState.Phase.ERROR) state.set(EngineState.Phase.DISCONNECTED, "", "", "No desktop reachable");
                 failures++;
             } catch (RuntimeException e) {
@@ -91,10 +117,32 @@ public final class LinkEngine {
                 failures++;
             }
             try {
-                Thread.sleep(BACKOFF_MS[Math.min(Math.max(failures - 1, 0), BACKOFF_MS.length - 1)]);
+                Thread.sleep(backoff.delayMs(failures));
             } catch (InterruptedException e) {
                 return;
             }
         }
+    }
+
+    /**
+     * While on LAN, checks periodically whether USB answers and then ends the session so the next
+     * connect() takes USB (a cable beats Wi-Fi). Null when the link is already USB.
+     */
+    private Thread watchForUsb(Session s) {
+        if (!"lan".equals(state.transport())) return null;
+        Thread t = new Thread(() -> {
+            try {
+                while (running) {
+                    Thread.sleep(upgradeCheckMs);
+                    if (connector.upgradeAvailable()) {
+                        s.command(Session.Command.STOP);
+                        return;
+                    }
+                }
+            } catch (InterruptedException ignored) { /* session ended */ }
+        }, "qindalink-usb-watch");
+        t.setDaemon(true);
+        t.start();
+        return t;
     }
 }

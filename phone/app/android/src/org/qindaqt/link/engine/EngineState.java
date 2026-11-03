@@ -9,7 +9,7 @@ import org.qindaqt.link.proto.Json;
  *
  * AGENT-CONTRACT: the JSON from {@link #toJson()} is parsed by the C++ bridge
  * (phone/app/LinkBridge.cpp) and read by the QML screens; keep keys stable:
- * phase, desktopName, code, message, paired, pairedName, lastStatusAgeMs, notifyAccess
+ * phase, desktopName, code, message, transport ("usb", "lan" or "none"), paired, pairedName, lastStatusAgeMs, notifyAccess
  * ("unknown" until the notify feature reports, then "granted" or "missing").
  */
 public final class EngineState {
@@ -22,6 +22,7 @@ public final class EngineState {
     private long lastStatusMs;
     private String notifyAccess = "unknown";
     private String sms = "";
+    private String transport = "none";
 
     public synchronized void set(Phase p, String desktopName, String code, String message) {
         this.phase = p;
@@ -43,6 +44,11 @@ public final class EngineState {
     /** Permission summary of the sms feature (no content), for example "read,no-send". */
     public synchronized void setSms(String summary) { sms = summary == null ? "" : summary; }
 
+    /** "usb", "lan" or "none". Truthful: set from the endpoint that actually connected. */
+    public synchronized void setTransport(String t) { transport = t == null ? "none" : t; }
+
+    public synchronized String transport() { return transport; }
+
     public synchronized Phase phase() { return phase; }
 
     public synchronized String toJson() {
@@ -51,6 +57,7 @@ public final class EngineState {
         m.put("desktopName", desktopName);
         m.put("code", code);
         m.put("message", message);
+        m.put("transport", transport);
         m.put("paired", paired);
         m.put("pairedName", pairedName);
         m.put("sms", sms);

@@ -229,7 +229,11 @@ public final class Session {
 
     private boolean onError(Envelope e) {
         if (phase == Phase.REQUESTED && e.re == requestId) {
-            state.set(EngineState.Phase.ERROR, desktopName, "", "Desktop refused pairing: " + str(e.b.get("code")));
+            // AGENT-NOTE: over LAN the desktop answers "denied" until the user opens its pairing window (ADR-0434 item 5).
+            String code = str(e.b.get("code"));
+            state.set(EngineState.Phase.ERROR, desktopName, "", "denied".equals(code)
+                    ? "The desktop is not accepting Wi-Fi pairing. Open the pairing window on the desktop and try again."
+                    : "Desktop refused pairing: " + code);
             return false;
         }
         return true;
