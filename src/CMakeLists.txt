@@ -130,14 +130,24 @@ add_subdirectory(services/network_secret_agent)
 # contract (docs/monitor.md); these mirror the Network1 client/transport
 # split with no owner/epoch lineage to fence.
 add_subdirectory(services/firewall_protocol)
-add_subdirectory(services/link_protocol)
-add_subdirectory(services/link_transport)
-add_subdirectory(services/link_adb)
-add_subdirectory(services/link_notifications)
-add_subdirectory(services/link_messages)
-add_subdirectory(services/link_input)
-add_subdirectory(services/link_macros)
-add_subdirectory(services/link_service)
+# AGENT-CONTRACT: QindaLink ships as its own package, gui-apps/qindalink (docs/wiki/development/
+# gentoo-desktop.md). gui-wm/qindaqt-desktop configures -DQINDAQT_BUILD_LINK_SERVICE=OFF
+# -DQINDAQT_BUILD_LINK_APP=OFF -DQINDAQT_BUILD_LINK_MIRROR=OFF so the two packages never own the
+# same file, yet still builds the panel applet. link_client is the only Link library the applet
+# needs; it stays a private static dependency and installs only when a Link program is built.
+option(QINDAQT_BUILD_LINK_MIRROR "Build qindaqt-link-mirror (QindaLink phone apps as windows)" ON)
+option(QINDAQT_BUILD_LINK_APP "Build qindaqt-link (the QindaLink companion app)" ON)
+option(QINDAQT_BUILD_LINK_SERVICE "Build qindaqt-link-service and its transport/feature libraries" ON)
+if(QINDAQT_BUILD_LINK_SERVICE)
+    add_subdirectory(services/link_protocol)
+    add_subdirectory(services/link_transport)
+    add_subdirectory(services/link_adb)
+    add_subdirectory(services/link_notifications)
+    add_subdirectory(services/link_messages)
+    add_subdirectory(services/link_input)
+    add_subdirectory(services/link_macros)
+    add_subdirectory(services/link_service)
+endif()
 add_subdirectory(services/link_client)
 add_subdirectory(services/firewall_client)
 add_subdirectory(services/firewall_qt_transport)
@@ -246,10 +256,8 @@ if(QINDAQT_BUILD_QINDALUTRIS)
 endif()
 # QindaLink phone-app mirror windows. The pure core always builds (its tests need it); the
 # executable needs FFmpeg (media-video/ffmpeg[vaapi]).
-option(QINDAQT_BUILD_LINK_MIRROR "Build qindaqt-link-mirror (QindaLink phone apps as windows)" ON)
 add_subdirectory(apps/link_mirror)
 # The QindaLink QindaTK companion app (docs/wiki/apps/qindalink.md). QML on QindaTK, like the System Monitor.
-option(QINDAQT_BUILD_LINK_APP "Build qindaqt-link (the QindaLink companion app)" ON)
 if(QINDAQT_BUILD_LINK_APP)
     add_subdirectory(apps/link)
 endif()

@@ -7,35 +7,21 @@ inherit cmake xdg
 
 DESCRIPTION="QindaQt Wayland desktop, services and bundled applications"
 HOMEPAGE="https://github.com/Es00bac/QindaQt"
-# Prepared r44 audio-stability source plus keyring activation ownership
-# (container-wm a40cb9f6, ADR-0430): lingering timers can no longer start the
-# prompt-only keyring before login and pre-empt the trusted PAM owner.
-# r46: the polkit agent no longer frees a Session inside its own completed()
-# signal (container-wm 54110fa5a + b6da2d610); it segfaulted after every
-# password entry and polkitd answered pkexec callers "Not authorized".
-# r47 (package/firewall-applet-r47-20261031 @ 2e00b187e): the installed r44
-# source plus the Firewall panel applet (qindaqt.applets.firewall, read-only
-# client of QindaFirewall's org.qindaqt.Firewall1, capability security.read)
-# and the notification host advertising the actions/persistence it already
-# implements (ADR-0430). The r40/r42/r45/r46 patches still apply on top.
-# Verified: shell + 13 focused suites pass on that branch.
-# r48 adds the reviewed request/identity/scope screen before keyring password
-# entry, with QMP2 daemon/helper metadata and a bounded first-party review wait.
-# Its source patch is tied to the product commit in the patch header.
-# r49 adds QindaLink (ADR-0433/0435/0438; docs/wiki/architecture/qindalink.md):
-# qindaqt-link-service (D-Bus activated, systemd user unit, login start through
-# an XDG autostart entry), the qindaqt-link companion app, qindaqt-link-mirror
-# (FFmpeg + VA-API decode) and the shell link applet. It is cut from a main
-# commit at or after 42edc40cb. The r40/r42/r46/r48 changes are already in main,
-# so those patches are gone (re-applying them fails). The r45 keyring-activation
-# fix lives only on fix/keyring-activation-ownership-20261030 (a40cb9f60), not in
-# main, so r45 stays a patch: re-check `git apply --check` of it against the
-# pinned commit at cut time.
+# Snapshot versioning (docs/wiki/development/gentoo-desktop.md): a new source snapshot gets a
+# new _preYYYYMMDD version; -rN is only for ebuild-only changes. Source cut from container-wm main;
+# the r40/r42/r46/r48 fixes are in main. The r45 keyring-activation fix lives only on
+# fix/keyring-activation-ownership-20261030 (a40cb9f60), so it stays a patch; the cut script
+# refuses a commit it does not apply to.
+# QindaLink is its own package (gui-apps/qindalink). This package still builds the shell's link
+# panel applet, but passes -DQINDAQT_BUILD_LINK_{SERVICE,APP,MIRROR}=OFF so it installs no Link file.
 # Full coherent image: core, SDK headers, QML and native plugin share one source.
 # @@QINDAQT_COMMIT@@ is replaced by cut-package.sh (it pins the full sha).
+# AGENT-GUARD: archive prefix and S are the fixed name QindaQt, never contain the commit. The
+# compile commands carry source paths; a stable path keeps ccache hits across snapshots
+# (see the ccache section of gentoo-desktop.md).
 QINDAQT_COMMIT="@@QINDAQT_COMMIT@@"
 SRC_URI="https://github.com/Es00bac/QindaQt/archive/${QINDAQT_COMMIT}.tar.gz -> ${PF}.tar.gz"
-S="${WORKDIR}/QindaQt-${QINDAQT_COMMIT}"
+S="${WORKDIR}/QindaQt"
 PATCHES=( "${FILESDIR}/qindaqt-desktop-r45-keyring-activation.patch" )
 # SDL3 controller input is an independent plugin over the installed compositor SDK.
 
@@ -44,11 +30,6 @@ SLOT="0"
 KEYWORDS="~amd64"
 RESTRICT="fetch"
 
-# QindaLink: ffmpeg[vaapi] is the mirror decoder (ADR-0435); android-tools
-# provides /usr/bin/adb for the USB tunnel and device tracking. OpenSSL (libcrypto
-# >= 3.2, already below) backs the pinned-TLS transport. Avahi is NOT a dependency
-# yet: add net-dns/avahi to RDEPEND only when the LAN-discovery lane lands (it talks
-# to avahi-daemon over D-Bus, so no build-time link).
 # Candidate native cutover: own fork/lock/nightlight/shortcuts, Power1,
 # polkit agent, screenshot and portal helpers. The physical login keeps native
 # power exclusivity off until its receipt barrier passes on the laptop.
@@ -82,8 +63,6 @@ RDEPEND="
 	>=kde-frameworks/syntax-highlighting-6.0:6=
 	kde-misc/kio-fuse
 	=x11-libs/qtermwidget-2.4*:0=
-	media-video/ffmpeg:=[vaapi]
-	dev-util/android-tools
 	x11-libs/libxcb
 	>=media-video/wireplumber-0.5
 	>=net-misc/networkmanager-1.44
@@ -127,7 +106,7 @@ BDEPEND="
 
 pkg_nofetch() {
 	eerror "Create ${PF}.tar.gz from Git commit ${QINDAQT_COMMIT} using git archive"
-	eerror "with prefix QindaQt-${QINDAQT_COMMIT}/, then place it in DISTDIR."
+	eerror "with prefix QindaQt/, then place it in DISTDIR."
 }
 
 src_configure() {
@@ -138,10 +117,10 @@ src_configure() {
 		-DQINDAQT_BUILD_PRODUCTION_SHELL=ON
 		-DQINDAQT_BUILD_VIEWER=ON
 		-DQINDAQT_BUILD_SYSTEM_MONITOR=OFF
-		# QindaLink ships whole: service, companion app and the VA-API mirror
-		# (ADR-0435 packaging obligation: media-video/ffmpeg[vaapi]).
-		-DQINDAQT_BUILD_LINK_APP=ON
-		-DQINDAQT_BUILD_LINK_MIRROR=ON
+		# gui-apps/qindalink owns the service, app, mirror, unit and autostart entry.
+		-DQINDAQT_BUILD_LINK_SERVICE=OFF
+		-DQINDAQT_BUILD_LINK_APP=OFF
+		-DQINDAQT_BUILD_LINK_MIRROR=OFF
 		-DQINDAQT_BUILD_REMOVABLE_MEDIA=OFF
 		-DQINDAQT_BUILD_OBS_BRIDGE=OFF
 		# gui-apps/qindaqt-windows-runner and gui-apps/qindaqt-android-applications
