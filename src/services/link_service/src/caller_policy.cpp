@@ -7,6 +7,7 @@
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusReply>
 
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace QindaQt::Link {
@@ -48,6 +49,38 @@ qulonglong DBusProcessInspector::startTimeOf(uint pid)
     return fields.size() > 19 ? fields.at(19).toULongLong() : 0;  // overall field 22
 }
 
+bool DBusProcessInspector::executableFileId(uint pid, quint64 *dev, quint64 *ino)
+{
+    struct stat st {};
+    if (::stat(QFile::encodeName(QStringLiteral("/proc/%1/exe").arg(pid)).constData(), &st) != 0) {
+        return false;
+    }
+    *dev = quint64(st.st_dev);
+    *ino = quint64(st.st_ino);
+    return true;
+}
+
+bool DBusProcessInspector::fileIdOfPath(const QString &path, quint64 *dev, quint64 *ino)
+{
+    struct stat st {};
+    if (::stat(QFile::encodeName(path).constData(), &st) != 0) {
+        return false;
+    }
+    *dev = quint64(st.st_dev);
+    *ino = quint64(st.st_ino);
+    return true;
+}
+
+static QString readNs(const QString &link)
+{
+    char buffer[256];
+    const ssize_t n = ::readlink(QFile::encodeName(link).constData(), buffer, sizeof buffer - 1);
+    return n > 0 ? QString::fromLatin1(buffer, int(n)) : QString();
+}
+
+QString DBusProcessInspector::mountNamespaceOf(uint pid) { return readNs(QStringLiteral("/proc/%1/ns/mnt").arg(pid)); }
+QString DBusProcessInspector::ownMountNamespace() { return readNs(QStringLiteral("/proc/self/ns/mnt")); }
+
 CallerPolicy::CallerPolicy(QDBusConnection bus, std::unique_ptr<ProcessInspector> inspector,
                            QStringList trustedExecutables)
     : m_bus(std::move(bus)), m_inspector(std::move(inspector))
@@ -73,11 +106,33 @@ bool CallerPolicy::isTrusted(const QString &busName, QString *exeBasename)
     if (before == 0 || before != after || exe.isEmpty() || exe.endsWith(QLatin1String(" (deleted)"))) {
         return false;
     }
-    if (!m_trusted.contains(exe)) {
+    // AGENT-GUARD: compare inode identity, not the path string. The caller must also live in the service's mount
+    // namespace; in another one the same inode could still be a different view of the filesystem.
+    const QString ownNs = m_inspector->ownMountNamespace();
+    if (ownNs.isEmpty() || m_inspector->mountNamespaceOf(pid) != ownNs) {
+        return false;
+    }
+    quint64 dev = 0, ino = 0;
+    if (!m_inspector->executableFileId(pid, &dev, &ino)) {
+        return false;
+    }
+    QString matched;
+    for (const QString &trusted : std::as_const(m_trusted)) {  // looked up each time: survives package upgrades
+        quint64 tdev = 0, tino = 0;
+        if (m_inspector->fileIdOfPath(trusted, &tdev, &tino) && tdev == dev && tino == ino) {
+            matched = trusted;
+            break;
+        }
+    }
+    if (matched.isEmpty()) {
+        return false;
+    }
+    // Re-check that the process incarnation did not change while we looked.
+    if (m_inspector->startTimeOf(pid) != before) {
         return false;
     }
     if (exeBasename != nullptr) {
-        *exeBasename = QFileInfo(exe).fileName();
+        *exeBasename = QFileInfo(matched).fileName();
     }
     return true;
 }

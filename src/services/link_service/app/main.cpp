@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     QCommandLineOption stateDir(QStringLiteral("state-dir"), QStringLiteral("State directory for the portal restore token."),
                                 QStringLiteral("dir"));
     QCommandLineOption trustedCaller(QStringLiteral("trusted-caller"),
-                                     QStringLiteral("Extra executable allowed to use protected Link1 members (repeatable)."),
+                                     QStringLiteral("TEST/DEVELOPMENT ONLY: extra executable allowed to use protected Link1 members (repeatable). Never use in an installed session."),
                                      QStringLiteral("exe"));
     parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
     parser.process(app);
@@ -125,7 +125,11 @@ int main(int argc, char **argv)
     // AGENT-GUARD (ADR-0438): the trusted set is fixed here, from the installed QindaLink clients plus
     // --trusted-caller (tests). Never read it from the environment or a D-Bus call.
     QStringList trusted{QStringLiteral(QINDAQT_BINDIR "/qindaqt-link"), QStringLiteral(QINDAQT_BINDIR "/qindaqt-shell")};
-    trusted += parser.values(trustedCaller);
+    for (const QString &extra : parser.values(trustedCaller)) {
+        // Stderr is the journal under the systemd user unit.
+        qWarning("qindaqt-link-service: WARNING --trusted-caller %s is a test/development override; it widens who may read messages and act as the user", qPrintable(extra));
+        trusted += extra;
+    }
     CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted);
     config.callerAuthority = &callerPolicy;
     Link1Service service(config, bus, presenter.get(), adb.get());

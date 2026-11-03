@@ -158,4 +158,21 @@ if(QINDAQT_DBUS_RUN_SESSION)
         COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_caller_dbus_test>
     )
     set_tests_properties(qindaqt.link-caller-dbus PROPERTIES LABELS "service;link" TIMEOUT 40)
+
+    qt_add_executable(qindaqt_link_caller_coverage_test tst_link_caller_coverage.cpp)
+    target_link_libraries(
+        qindaqt_link_caller_coverage_test
+        PRIVATE QindaQt::LinkTransport Qt6::DBus Qt6::Test
+    )
+    target_compile_definitions(
+        qindaqt_link_caller_coverage_test
+        PRIVATE QINDAQT_LINK_SERVICE_BINARY="$<TARGET_FILE:qindaqt-link-service>"
+    )
+    add_dependencies(qindaqt_link_caller_coverage_test qindaqt-link-service)
+    qindaqt_enable_warnings(qindaqt_link_caller_coverage_test)
+    add_test(
+        NAME qindaqt.link-caller-coverage
+        COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_caller_coverage_test>
+    )
+    set_tests_properties(qindaqt.link-caller-coverage PROPERTIES LABELS "service;link" TIMEOUT 60)
 endif()

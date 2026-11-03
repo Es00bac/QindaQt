@@ -20,6 +20,14 @@ public:
     [[nodiscard]] virtual QString executableOf(uint pid) = 0;
     // Field 22 of /proc/<pid>/stat; 0 on failure.
     [[nodiscard]] virtual qulonglong startTimeOf(uint pid) = 0;
+    // Inode identity of the file behind /proc/<pid>/exe (stat follows the magic link to the real inode, so a
+    // bind mount in the caller's own mount namespace cannot fake it). False on failure.
+    [[nodiscard]] virtual bool executableFileId(uint pid, quint64 *dev, quint64 *ino) = 0;
+    // Inode identity of a path in the service's own namespace. False when it does not exist.
+    [[nodiscard]] virtual bool fileIdOfPath(const QString &path, quint64 *dev, quint64 *ino) = 0;
+    // Mount namespace names ("mnt:[4026531841]"); empty on failure.
+    [[nodiscard]] virtual QString mountNamespaceOf(uint pid) = 0;
+    [[nodiscard]] virtual QString ownMountNamespace() = 0;
 };
 
 class DBusProcessInspector final : public ProcessInspector {
@@ -28,6 +36,10 @@ public:
     bool pidOf(const QString &busName, uint *pid) override;
     QString executableOf(uint pid) override;
     qulonglong startTimeOf(uint pid) override;
+    bool executableFileId(uint pid, quint64 *dev, quint64 *ino) override;
+    bool fileIdOfPath(const QString &path, quint64 *dev, quint64 *ino) override;
+    QString mountNamespaceOf(uint pid) override;
+    QString ownMountNamespace() override;
 
 private:
     QDBusConnection m_bus;
@@ -35,8 +47,15 @@ private:
 
 // The single caller policy for every Link1.* adaptor (ADR-0438).
 //
-// A caller is trusted when the executable behind its bus connection is in the
-// trusted set. The set comes only from the service's command line.
+// A caller is trusted when the file behind its bus connection's executable has
+// the same device and inode as a trusted file, looked up in the service's own
+// mount namespace, and the caller shares the service's mount namespace. The
+// set comes only from the service's command line. Identities are compared,
+// never path strings: a process in a private mount namespace can bind-mount
+// any file over a trusted path and make /proc/<pid>/exe read as that path.
+//
+// AGENT-NOTE: this raises the bar for other same-uid programs, it is not a
+// boundary against same-uid code (see ADR-0438, "What this does not stop").
 // AGENT-GUARD: never extend the trusted set from a D-Bus method, a file or an
 // environment variable the caller can influence; that would let the very
 // clients this policy exists to stop promote themselves.
@@ -51,7 +70,7 @@ public:
 private:
     QDBusConnection m_bus;
     std::unique_ptr<ProcessInspector> m_inspector;
-    QStringList m_trusted;  // canonical absolute paths
+    QStringList m_trusted;  // canonical absolute paths; their inode identity is looked up on every check
 };
 
 } // namespace QindaQt::Link

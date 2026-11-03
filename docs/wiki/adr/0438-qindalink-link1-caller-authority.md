@@ -26,13 +26,20 @@ never from anything the peer claims. See the
    one and calls `authorize(message)` first. A missing authority denies; the
    service refuses to start without one.
 2. **Identity.** The sender's unique name is resolved to a PID with
-   `GetConnectionUnixProcessID`, then `/proc/<pid>/exe` is read. The start time
-   (`/proc/<pid>/stat` field 22) is read before and after the exe link; a
-   difference, a missing value, or an exe that ends in ` (deleted)` denies.
+   `GetConnectionUnixProcessID`. Identity is compared, never a path string:
+   `stat("/proc/<pid>/exe")` follows the magic link to the real inode, and its
+   device and inode must equal those of a trusted file, `stat`ed in the
+   service's own namespace on every check (so a package upgrade is picked up).
+   The caller's `/proc/<pid>/ns/mnt` must equal the service's own, which
+   defeats `unshare -Urm` plus a bind mount over a trusted path (that makes
+   `readlink` report the trusted path for a different file). The process start
+   time (`/proc/<pid>/stat` field 22) is read before and after, and a change,
+   a missing value, or an exe that reads ` (deleted)` denies.
 3. **Trusted set.** `<bindir>/qindaqt-link` (the app) and
    `<bindir>/qindaqt-shell` (hosts the panel applet), plus any
-   `--trusted-caller <exe>` on the service command line (repeatable, for tests
-   and development builds). The set is never taken from a D-Bus method, a file
+   `--trusted-caller <exe>` on the service command line (repeatable). The
+   option is test and development only: `--help` says so and the service logs
+   a warning to stderr (the journal under the user unit) for every use. The set is never taken from a D-Bus method, a file
    or an environment variable.
 4. **Classification.** Public metadata stays open: `Devices` (including `caps`),
    `PendingPairings`, `ListenPort`, `DevicesChanged`, `PairingRequested`,
@@ -50,6 +57,40 @@ never from anything the peer claims. See the
    "QindaLink sent a text to N recipient(s)" with the requester's executable
    name, through the existing `NotificationPresenter`. The rate limit applies
    even when no presenter is configured.
+
+## What this does not stop
+
+The policy raises the bar; it is not a boundary against code running as the
+same user. A same-uid process can still:
+
+- `ptrace` or otherwise inject into a running trusted client (subject to the
+  platform's Yama setting), or edit a trusted binary it can write;
+- start a trusted executable itself with `LD_PRELOAD`, `QT_PLUGIN_PATH`,
+  `QML_IMPORT_PATH` or similar environment so that attacker code runs inside
+  the trusted process;
+- use file descriptors a trusted client leaks to a child;
+- claim `org.freedesktop.Notifications` when no notification server is running,
+  and so observe or fake the send notice and the pairing notification; and
+- read the pairing code from the open `PendingPairings` method.
+
+What it does stop is the casual case the reviews found: an unrelated program,
+script or compromised web-facing helper calling Link1 as itself, including one
+that tries a mount-namespace path trick.
+
+## Coverage by default
+
+`qindaqt.link-caller-coverage` introspects the running service and requires
+`Error.Denied` for an untrusted caller on every method of every
+`org.qindaqt.Link1*` interface that is not on its explicit open allowlist
+(`Devices`, `PendingPairings`, `ListenPort`, `Revision`). A new member such as
+`Link1.Setup` is covered automatically; adding to the allowlist is a review
+decision.
+
+## Send admission details
+
+`Messages.Send` refuses ids that are not a known device (`Error.NotPaired`)
+before any rate bucket exists, so the bucket table is bounded by the number of
+real devices.
 
 ## Consequences
 

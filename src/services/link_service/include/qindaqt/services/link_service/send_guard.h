@@ -17,8 +17,13 @@ namespace QindaQt::Link {
 class SendGuard final : public SendGate {
 public:
     using Clock = std::function<qint64()>;  // milliseconds, monotonic
-    explicit SendGuard(NotificationPresenter *presenter, Clock clock = {});
+    using KnownDevice = std::function<bool(const QString &)>;
+    // `known` decides which device ids may have a bucket; unknown ids are refused as "not-paired", which
+    // also bounds the bucket map by the number of real devices.
+    explicit SendGuard(NotificationPresenter *presenter, Clock clock = {}, KnownDevice known = {});
     [[nodiscard]] QString admit(const QString &deviceId, int recipients, const QString &requestedBy) override;
+
+    [[nodiscard]] int bucketCount() const { return int(m_sent.size()); }
 
     static constexpr int kPerMinute = 5;
     static constexpr int kPerHour = 30;
@@ -26,6 +31,7 @@ public:
 private:
     NotificationPresenter *m_presenter;
     Clock m_clock;
+    KnownDevice m_known;
     QHash<QString, std::deque<qint64>> m_sent;
     quint32 m_lastHandle = 0;
 };

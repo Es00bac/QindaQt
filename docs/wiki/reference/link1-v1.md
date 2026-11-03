@@ -16,7 +16,7 @@ Every member is either **open** (public metadata, any bus client) or **trusted**
 (content or an action as the user). A trusted member called by anything else
 fails with `org.qindaqt.Link1.Error.Denied`. The trusted callers are the installed
 `qindaqt-link` and `qindaqt-shell` executables plus any `--trusted-caller <exe>`
-given to the service ([ADR-0438](../adr/0438-qindalink-link1-caller-authority.md)).
+given to the service (test/development only; logged as a warning) ([ADR-0438](../adr/0438-qindalink-link1-caller-authority.md)).
 The **Access** column below uses these words.
 
 ## Methods
@@ -172,5 +172,6 @@ and clears its device list when the service name disappears.
 | `qindaqt.link-client` | Parsing and availability gating |
 | `qindaqt.link-messages` | `MessagesFeature` with a scripted phone: limit clamping and cursors, rejected oversized/mistyped replies, error mapping, change events and unread totals, send status mapping, no content in logs |
 | `qindaqt.link-caller-policy` | Caller decisions with fake process facts (trusted, untrusted, deleted exe, unknown pid, PID reuse), Send rate limit and notice |
+| `qindaqt.link-caller-coverage` | Introspects the live service and requires `Denied` for every method outside the open allowlist, so new `Link1.*` members are covered automatically |
 | `qindaqt.link-caller-dbus` | The real service on a private bus: untrusted `gdbus` denied for every protected member, open members work, trusted test binary succeeds, `caps`, `PendingPairings`, rate limit and notices |
 | `qindaqt.link-service-smoke` | The real binary on a private `dbus-run-session` bus |
