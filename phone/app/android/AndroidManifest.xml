@@ -41,6 +41,13 @@
             <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --" />
             <meta-data android:name="android.app.arguments" android:value="-- %%INSERT_APP_ARGUMENTS%% --" />
         </activity>
+        <!-- Hosts the Storage Access Framework picker for encrypted vault backups (VaultBackupActivity). -->
+        <activity
+            android:name="org.qindaqt.link.android.VaultBackupActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <service
             android:name="org.qindaqt.link.android.LinkService"
             android:exported="false"
