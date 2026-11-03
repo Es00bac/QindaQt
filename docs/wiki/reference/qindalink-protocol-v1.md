@@ -419,9 +419,9 @@ reply on success. A frame that has an `id` and fails validation gets
 
 | Type | Direction | Body | Reply |
 | --- | --- | --- | --- |
-| `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop is locked (`message` is `locked`; the phone is not made controller and asks again after unlocking). `error{internal}` when the portal is unavailable. |
+| `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop gate is closed (`message` is `locked`, `inactive` or `unverified`; the phone is not made controller and asks again after unlocking). `error{internal}` when the portal is unavailable. |
 | `input.end` | both | phone→desktop: `{}` (an optional `id` is answered `ok`). desktop→phone: `reason`, currently `revoked` | none / `ok` |
-| `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked`, `busy` (another phone controls input) | none |
+| `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked` (the lock-state source reports the screen locked), `inactive` (the session is not in front), `unverified` (the desktop cannot confirm the screen is unlocked because its lock-state source is unavailable), `busy` (another phone controls input) | none |
 | `input.pointer` | phone→desktop | `dx`, `dy`: numbers, relative, finite, absolute value at most 1000 | none |
 | `input.button` | phone→desktop | `button`: `left`, `right`, `middle`; `state`: `down`, `up`, `click` | none |
 | `input.scroll` | phone→desktop | `mode`: `smooth` or `discrete`; `dx`, `dy`; optional `end` (bool, ends a smooth gesture). Smooth: absolute value at most 500. Discrete: integers, at most 20 detents. Positive `dy` moves the content toward its end (down). | none |
@@ -430,6 +430,10 @@ reply on success. A frame that has an `id` and fails validation gets
 
 Rules:
 
+- **Gate reasons are truthful.** The desktop sends `locked` only when its authenticated lock-state source says
+  Locking or Locked. When it has no such source (the session service, compositor or attachment is missing) it
+  sends `unverified`, never `locked`. Input is refused in all three cases and resumes, with `active`, only when
+  the source reports Unlocked.
 - **State frames carry the UI state.** The phone engine does not route `ok`
   and `error` replies to its feature handlers, so the desktop also pushes
   `input.state` on every change. A phone treats `input.state` as the truth and

@@ -25,7 +25,7 @@ import org.qindaqt.link.proto.Json;
  */
 public final class InputFeature implements FeatureHandler {
     /** What the UI shows. */
-    public enum State { OFF, OFFLINE, PENDING, ACTIVE, DENIED, UNAVAILABLE, LOCKED, BUSY, REVOKED }
+    public enum State { OFF, OFFLINE, PENDING, ACTIVE, DENIED, UNAVAILABLE, LOCKED, INACTIVE, UNVERIFIED, BUSY, REVOKED }
 
     static final int QUEUE_LIMIT = 512;
     /** Hard bound; past it a new press is refused, a release is still queued by dropping nothing but is bounded by the UI rate. */
@@ -91,7 +91,8 @@ public final class InputFeature implements FeatureHandler {
         synchronized (lock) {
             wantInput = false;
             sendBegin = false;
-            if (state == State.ACTIVE || state == State.PENDING || state == State.LOCKED) sendEnd = true;
+            if (state == State.ACTIVE || state == State.PENDING || state == State.LOCKED || state == State.INACTIVE
+                    || state == State.UNVERIFIED) sendEnd = true;
             if (state != State.OFFLINE) state = connected ? State.OFF : State.OFFLINE;
             texts.clear();
         }
@@ -228,6 +229,8 @@ public final class InputFeature implements FeatureHandler {
             case "denied": return State.DENIED;
             case "unavailable": return State.UNAVAILABLE;
             case "locked": return State.LOCKED;
+            case "inactive": return State.INACTIVE;
+            case "unverified": return State.UNVERIFIED;
             case "busy": return State.BUSY;
             default: return null;
         }

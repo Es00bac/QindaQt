@@ -26,7 +26,7 @@ class LinkBridge : public QObject
     Q_PROPERTY(QString network READ network NOTIFY changed)
     Q_PROPERTY(QVariantMap perm READ perm NOTIFY changed)
     // Input and macros (org.qindaqt.link.input / .macro; FakeBridge mirrors these). inputState is one of
-    // off, offline, pending, active, denied, unavailable, locked, busy, revoked. macros is [{id, name}].
+    // off, offline, pending, active, denied, unavailable, locked, inactive, unverified, busy, revoked. macros is [{id, name}].
     Q_PROPERTY(QString inputState READ inputState NOTIFY inputChanged)
     Q_PROPERTY(QVariantList macros READ macros NOTIFY inputChanged)
     Q_PROPERTY(QString macroRunning READ macroRunning NOTIFY inputChanged)

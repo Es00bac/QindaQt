@@ -17,10 +17,12 @@ class NativeLockStateMonitor;
 
 namespace QindaQt::Link {
 
-// Production InputGate: open only while an authenticated native compositor
+// Production InputGate: reason() is Open only while an authenticated native compositor
 // receipt says the session is Unlocked (ADR-0320's pattern, as used by the
 // clipboard host). Anything else is closed: no compositor, no Session1,
-// Locking, Locked, Unknown, or an attachment that cannot be proven.
+// Locking, Locked, Unknown, or an attachment that cannot be proven. Locked is
+// reported only when the authenticated monitor says Locking or Locked; every
+// missing prerequisite is Unverified, so the phone is never told a false "locked".
 //
 // AGENT-NOTE: the expected compositor PID here is the kernel peer of the
 // Wayland socket, checked against the bus owner of the compositor name; the
@@ -33,17 +35,20 @@ class NativeInputGate final : public InputGate {
 public:
     NativeInputGate(QDBusConnection bus, QString runtimeDirectory, QString socketBasename, QObject *parent = nullptr);
     ~NativeInputGate() override;
-    [[nodiscard]] bool open() const override;
+    [[nodiscard]] Reason reason() const override;
 
 private:
     void rebind();
     void teardown();
+    // Logs the missing or current fact once per transition (never any content).
+    void note(const QString &fact);
 
     QDBusConnection m_bus;
     QString m_runtime, m_socket;
     QDBusServiceWatcher m_watcher;
     QTimer m_retry;
     int m_attempts = 0;
+    QString m_fact;
     std::unique_ptr<Platform::Compositor::CompositorAttachment> m_attachment;
     std::unique_ptr<Services::SessionLockState::QtNativeLockTransport> m_transport;
     std::unique_ptr<Services::SessionLockState::NativeLockStateMonitor> m_monitor;

@@ -58,7 +58,24 @@ NativeInputGate::NativeInputGate(QDBusConnection bus, QString runtimeDirectory, 
 
 NativeInputGate::~NativeInputGate() { teardown(); }
 
-bool NativeInputGate::open() const { return m_monitor && m_attachment && m_attachment->live() && m_monitor->contentMayBeShown(); }
+InputGate::Reason NativeInputGate::reason() const
+{
+    if (!m_monitor || !m_attachment || !m_attachment->live()) return Reason::Unverified;
+    switch (m_monitor->state()) {
+    case Services::SessionLockState::LockState::Unlocked: return Reason::Open;
+    case Services::SessionLockState::LockState::Locking:
+    case Services::SessionLockState::LockState::Locked: return Reason::Locked;
+    case Services::SessionLockState::LockState::Unknown: break;
+    }
+    return Reason::Unverified;
+}
+
+void NativeInputGate::note(const QString &fact)
+{
+    if (fact == m_fact) return;
+    m_fact = fact;
+    qInfo("qindaqt-link-service: input gate: %s", qPrintable(fact));
+}
 
 void NativeInputGate::teardown()
 {
@@ -71,14 +88,18 @@ void NativeInputGate::teardown()
 
 void NativeInputGate::rebind()
 {
-    const bool wasOpen = open();
+    const Reason before = reason();
     teardown();
-    auto finish = [this, wasOpen] { if (wasOpen) Q_EMIT changed(); };
-    if (!m_bus.isConnected() || !m_bus.interface() || m_runtime.isEmpty() || m_socket.isEmpty()) return finish();
+    auto finish = [this, before] { if (before != reason()) Q_EMIT changed(); };
+    if (!m_bus.isConnected() || !m_bus.interface()) { note(QStringLiteral("unverified: session bus unavailable")); return finish(); }
+    if (m_runtime.isEmpty() || m_socket.isEmpty()) { note(QStringLiteral("unverified: no Wayland display in the environment")); return finish(); }
     const auto session = m_bus.interface()->serviceOwner(QString::fromLatin1(kSession1));
     const auto compositor = m_bus.interface()->serviceOwner(QString(CompositorNames::service));
     if (!session.isValid() || !compositor.isValid() || session.value().isEmpty() || compositor.value().isEmpty()) {
         // Not published yet: bounded retries; the owner watcher covers later publication.
+        note(!session.isValid() || session.value().isEmpty()
+                 ? QStringLiteral("unverified: org.qindaqt.Session1 has no owner on the session bus")
+                 : QStringLiteral("unverified: org.qindaqt.KWin has no owner on the session bus"));
         static constexpr int delays[] = {250, 500, 1000, 2000, 4000, 8000};
         if (m_attempts < int(std::size(delays))) m_retry.start(delays[m_attempts++]);
         return finish();
@@ -90,6 +111,8 @@ void NativeInputGate::rebind()
         return owner == sessionOwner;
     });
     if (pid == 0 || !m_attachment->attach(sessionOwner, m_socket, PeerExpectation{compositorOwner, pid})) {
+        note(pid == 0 ? QStringLiteral("unverified: cannot read the Wayland socket peer")
+                      : QStringLiteral("unverified: compositor attachment refused"));
         teardown();
         return finish();
     }
@@ -100,9 +123,19 @@ void NativeInputGate::rebind()
         return identity && attachment->sameBus(m_bus) && identity->compositorOwner == owner
             && identity->compositorPid == daemonPid && daemonPid == pid;
     });
-    connect(m_monitor.get(), &NativeLockStateMonitor::contentMayBeShownChanged, this, [this] { Q_EMIT changed(); });
-    connect(attachment, &CompositorAttachment::revoked, this, [this] { Q_EMIT changed(); });
-    if (!m_monitor->start()) teardown();
+    connect(m_monitor.get(), &NativeLockStateMonitor::stateChanged, this, [this] {
+        const Reason r = reason();
+        note(r == Reason::Open ? QStringLiteral("open: native lock receipt says unlocked")
+             : r == Reason::Locked ? QStringLiteral("closed: native lock receipt says locked")
+                                   : QStringLiteral("unverified: no authenticated native lock receipt"));
+        Q_EMIT changed();
+    });
+    connect(attachment, &CompositorAttachment::revoked, this, [this] {
+        note(QStringLiteral("unverified: compositor attachment revoked"));
+        Q_EMIT changed();
+    });
+    if (!m_monitor->start()) { note(QStringLiteral("unverified: lock monitor failed to start")); teardown(); }
+    else note(QStringLiteral("unverified: waiting for a native lock receipt"));
     Q_EMIT changed();
 }
 

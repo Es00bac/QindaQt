@@ -82,6 +82,26 @@ ScreenFrame {
         onClicked: root.openPage("pairing")
     }
 
+    // Tile subtitle from engine state. AGENT-NOTE: inputState is only refreshed while a controller screen is open (Main.qml
+    // starts remote input there), so before that it is "off" and the tile says Ready when connected.
+    function tileStatus(page) {
+        if (page === "vault") return qsTr("Coming soon")
+        if (link.phase !== "ready") return qsTr("Not connected")
+        switch (link.inputState) {
+        case "pending": return qsTr("Desktop must approve")
+        case "denied": return qsTr("Not approved on the desktop")
+        case "unverified": return qsTr("Can't confirm unlocked")
+        case "locked": return qsTr("Desktop is locked")
+        case "inactive": return qsTr("Desktop session not active")
+        case "busy": return qsTr("Another phone is in use")
+        case "unavailable": return qsTr("Not available on the desktop")
+        case "revoked": return qsTr("Turned off on the desktop")
+        case "offline": return qsTr("Not connected")
+        default: return page === "macros" && link.macros.length > 0
+                 ? qsTr("%1 macros").arg(link.macros.length) : qsTr("Ready")
+        }
+    }
+
     Tk.SectionHeader { title: qsTr("Phone as a controller") }
     Tk.Grid {
         columns: "1fr 1fr"
@@ -107,7 +127,7 @@ ScreenFrame {
                     gap: Tk.Theme.space.xs
                     Tk.Icon { name: modelData.icon; size: Tk.Theme.size.iconLg }
                     Tk.Label { text: modelData.title }
-                    Tk.Caption { text: qsTr("Coming soon"); muted: true }
+                    Tk.Caption { text: root.tileStatus(modelData.page); muted: true; wrapMode: Text.Wrap; Tk.Flex.alignSelf: Tk.Flex.Stretch }
                 }
             }
         }

@@ -210,6 +210,10 @@ public final class InputTest {
         f.click("left");
         f.onTick(0);
         expect(c.sent.isEmpty(), "nothing sent while locked");
+        f.onFrame(Envelope.of("input.state", m("state", "unverified")));
+        expect(f.state() == InputFeature.State.UNVERIFIED && f.json().contains("unverified"), "unverified state parsed");
+        f.onFrame(Envelope.of("input.state", m("state", "inactive")));
+        expect(f.state() == InputFeature.State.INACTIVE, "inactive state parsed");
         f.onFrame(Envelope.of("input.state", m("state", "active")));
         // end(): a held drag is released first, then input.end.
         now[0] = 3000;
