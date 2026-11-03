@@ -21,10 +21,13 @@ namespace QindaQt::Link {
 // The `vault` capability: `desktop.focus` and `vault.type` (protocol page, "Desktop facts and
 // secret typing"; ADR-0440, architecture page "Secret typing").
 //
+// The target is the WHOLE focus fact (uuid, revision, application id and title): a tab or document switch
+// inside one window changes the title and so aborts the job.
+//
 // Flow: the phone asks `desktop.focus`, gets an opaque token bound to (uuid, revision) of the focused
 // window for at most 60 s, shows app and title to the user, and after confirmation sends `vault.type`
 // with the token. The desktop types only if the focus still matches, re-checks before every step and
-// before every 24-symbol batch, and aborts with `target-changed` (after releasing every key) on any
+// before every tick, and aborts with `target-changed` (after releasing every key) on any
 // change.
 //
 // Ownership: borrows the portal session, the gate and the focus source; they outlive it. Threading:
@@ -40,6 +43,11 @@ class VaultTypingFeature final : public QObject, public FeatureHandler {
     Q_OBJECT
 public:
     static constexpr int kTokenLifetimeMs = 60'000;
+    // Secret cadence: at most this many symbols per tick, one tick per kTickMs, with the gate and focus
+    // re-checked before every tick (about 250 symbols/s). Slower than input.text on purpose: the focus
+    // fact reaches the service up to a relay hop late, and each tick is the exposure window (ADR-0440).
+    static constexpr int kSymbolsPerTick = 2;
+    static constexpr int kTickMs = 8;
 
     VaultTypingFeature(PortalInputSession &portal, InputGate &gate, FocusSource &focus, QObject *parent = nullptr);
     ~VaultTypingFeature() override;
@@ -62,7 +70,7 @@ Q_SIGNALS:
 
 private:
     struct Token {
-        QString value, uuid;
+        QString value, uuid, appId, title;
         quint64 revision = 0;
         QElapsedTimer age;
     };
@@ -70,7 +78,7 @@ private:
         Session *session = nullptr; // null once the phone's session closed
         QString device;
         qint64 id = 0;
-        QString uuid;
+        QString uuid, appId, title;
         quint64 revision = 0;
         SecretPlan plan;
         qsizetype next = 0;

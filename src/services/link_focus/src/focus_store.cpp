@@ -65,8 +65,16 @@ FocusStore::Result FocusStore::publish(const QByteArray &json)
     const bool same = m_fact && m_fact->uuid == fact.uuid && m_fact->appId == fact.appId
         && m_fact->title == fact.title && m_fact->revision == fact.revision;
     m_fact = std::move(fact);
+    m_publishedAt = now();
     if (!same) Q_EMIT changed();
     return Result::Accepted;
+}
+
+std::optional<FocusFact> FocusStore::current() const
+{
+    // AGENT-GUARD: a stale fact is unknown, never "last known" (fail closed when the shell hangs).
+    if (!m_fact || now() - m_publishedAt > kStaleMs) return std::nullopt;
+    return m_fact;
 }
 
 void FocusStore::clear()

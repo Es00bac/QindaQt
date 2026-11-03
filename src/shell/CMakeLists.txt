@@ -276,6 +276,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/kwinscreenshotpreviewport.cpp
         runtime/kwinscreenshotpreviewport.h
         runtime/tasklistappletcomposition.cpp
+        runtime/taskwindowfacts.cpp
+        runtime/taskwindowfacts.h
         runtime/taskorderpersistence.cpp
         runtime/panelquickconfig.cpp
         runtime/livecustomizationcontroller.cpp

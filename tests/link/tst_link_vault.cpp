@@ -29,6 +29,10 @@ private slots:
     void focusChangeBetweenConfirmAndTypeIsTargetChanged();
     void focusChangeMidTypingAbortsAndReleases();
     void lockMidTypingAbortsWithLocked();
+    void titleChangeMidJobAborts();
+    void staleFocusIsUnknown();
+    void secretCadenceIsSlow();
+    void focusRequestNeedsTheVaultCapability();
     void oneJobAtATimeAndBoundsAreEnforced();
     void capabilityIsRequired();
     void portalApprovalIsRequestedAndClosedAfterwards();
@@ -262,11 +266,25 @@ void TstLinkVault::focusChangeBetweenConfirmAndTypeIsTargetChanged()
     phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(s("q"))}), 4));
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
-    // ...but a title change alone (same uuid and revision) does not.
+    // A title change alone (a tab switch inside one window) is a different target too: the whole fact counts.
     QVERIFY(f.publish(s("{w}"), 5, s("Old title")));
     token = VaultFixture::askFocus(phone, 5);
     QVERIFY(f.publish(s("{w}"), 5, s("New title")));
     phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(s("q"))}), 6));
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
+    // So is another application id.
+    QVERIFY(f.publish(s("{w}"), 5, s("T"), s("org.a")));
+    token = VaultFixture::askFocus(phone, 7);
+    QVERIFY(f.publish(s("{w}"), 5, s("T"), s("org.b")));
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(s("q"))}), 8));
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
+    // The same fact republished (the relay heartbeat) is still the same target.
+    QVERIFY(f.publish(s("{w}"), 5, s("T"), s("org.b")));
+    token = VaultFixture::askFocus(phone, 9);
+    QVERIFY(f.publish(s("{w}"), 5, s("T"), s("org.b")));
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(s("q"))}), 10));
     QVERIFY(phone.waitFor(s("ok"), &e));
     QVERIFY(f.nothingHeld());
 }
@@ -327,7 +345,7 @@ void TstLinkVault::oneJobAtATimeAndBoundsAreEnforced()
     QVERIFY(f.pairPhone(phone));
     QVERIFY(f.publish(s("{w}"), 1));
     QString token = VaultFixture::askFocus(phone, 1);
-    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(QString(1024, QLatin1Char('k'))),
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(QString(100, QLatin1Char('k'))),
                                                                      VaultFixture::delay(200)}), 2));
     QVERIFY(waitUntil([&] { return f.vault.typing(); }));
     const QString token2 = VaultFixture::askFocus(phone, 3);
@@ -487,6 +505,90 @@ void TstLinkVault::typerWipesSecretSymbols()
     TextTyper::wipe(shared);
     QCOMPARE(copy, (QList<qint32>{1, 2, 3})); // wiping a shared list never touches the other owner
     QVERIFY(shared.isEmpty());
+}
+
+void TstLinkVault::titleChangeMidJobAborts()
+{
+    VaultFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    QVERIFY(f.publish(s("{w}"), 1, s("Mail")));
+    const QString token = VaultFixture::askFocus(phone, 1);
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(QString(1024, QLatin1Char('k')))}), 2));
+    QVERIFY(waitUntil([&] { return f.pressed().size() >= 10; }));
+    QVERIFY(f.publish(s("{w}"), 1, s("Bank - Sign in"))); // same window, same revision, another page
+    Envelope e;
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
+    QVERIFY(f.nothingHeld());
+}
+
+void TstLinkVault::staleFocusIsUnknown()
+{
+    VaultFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    QVERIFY(f.publish(s("{w}"), 1));
+    QVERIFY(f.focus.current());
+    f.clockMs += FocusStore::kStaleMs; // exactly at the limit: still fresh
+    QVERIFY(f.focus.current());
+    f.clockMs += 1;
+    QVERIFY(!f.focus.current()); // the shell went quiet: unknown, not last known
+    Envelope e;
+    phone.send(VaultFixture::frame(s("desktop.focus"), {}, 1));
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.b.value(s("code")).toString(), s("unverified"));
+    // A heartbeat (identical republish) makes it fresh again.
+    QVERIFY(f.publish(s("{w}"), 1));
+    const QString token = VaultFixture::askFocus(phone, 2);
+    QVERIFY(!token.isEmpty());
+    // Mid-job: the fact goes stale between ticks and typing stops as unverified.
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(QString(1024, QLatin1Char('k')))}), 3));
+    QVERIFY(waitUntil([&] { return f.pressed().size() >= 6; }));
+    f.clockMs += FocusStore::kStaleMs + 1;
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.re, 3);
+    QCOMPARE(e.b.value(s("code")).toString(), s("unverified"));
+    QVERIFY(f.nothingHeld());
+}
+
+void TstLinkVault::secretCadenceIsSlow()
+{
+    VaultFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    QVERIFY(f.publish(s("{w}"), 1));
+    const QString token = VaultFixture::askFocus(phone, 1);
+    phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(QString(1024, QLatin1Char('k')))}), 2));
+    QVERIFY(waitUntil([&] { return !f.pressed().isEmpty(); }));
+    QElapsedTimer t;
+    t.start();
+    const qsizetype start = f.pressed().size();
+    QTest::qWait(400);
+    const qsizetype typed = f.pressed().size() - start;
+    // At most kSymbolsPerTick per kTickMs: about 100 in 400 ms (with slack for call batching), never the 24/4 ms of input.text.
+    const qint64 ticks = t.elapsed() / VaultTypingFeature::kTickMs + 4;
+    QVERIFY2(typed <= ticks * VaultTypingFeature::kSymbolsPerTick + 8, qPrintable(QString::number(typed)));
+    QVERIFY(typed > 0);
+    QVERIFY(f.publish(s("{other}"), 2)); // stop the long job
+    Envelope e;
+    QVERIFY(phone.waitFor(s("error"), &e));
+}
+
+void TstLinkVault::focusRequestNeedsTheVaultCapability()
+{
+    VaultFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone, {QStringLiteral("input")}));
+    QVERIFY(f.publish(s("{w}"), 1));
+    Envelope e;
+    phone.send(VaultFixture::frame(s("desktop.focus"), {}, 1));
+    QVERIFY(phone.waitFor(s("error"), &e));
+    QCOMPARE(e.b.value(s("code")).toString(), s("denied"));
 }
 
 QTEST_GUILESS_MAIN(TstLinkVault)

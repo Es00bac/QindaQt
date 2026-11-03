@@ -67,6 +67,7 @@ class TstLinkFocusRelay : public QObject
 private Q_SLOTS:
     void factJoinsIdentityWithTaskFacts();
     void publishesOnChangeOnlyAndSurvivesServiceRestart();
+    void unchangedFactIsRepublishedAsHeartbeat();
     void unknownFocusPublishesNone();
     void deniedIsRetriedButWarnedOnce();
 };
@@ -124,6 +125,18 @@ void TstLinkFocusRelay::publishesOnChangeOnlyAndSurvivesServiceRestart()
     QVERIFY(fake.up());
     QTRY_COMPARE(fake.received.size(), 3);
     QCOMPARE(fake.received.last(), current);
+    fake.down();
+}
+
+void TstLinkFocusRelay::unchangedFactIsRepublishedAsHeartbeat()
+{
+    QDBusConnection serviceBus = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("fake-link1-h"));
+    FakeLink1 fake(serviceBus);
+    QVERIFY(fake.up());
+    LinkFocusRelay relay(QDBusConnection::sessionBus(), [] { return QStringLiteral("{\"uuid\":\"a\"}"); });
+    relay.start();
+    QTRY_VERIFY_WITH_TIMEOUT(fake.received.size() >= 3, 4000); // the service drops a fact older than 3 s, so it must keep coming
+    QCOMPARE(fake.received.first(), fake.received.last());
     fake.down();
 }
 

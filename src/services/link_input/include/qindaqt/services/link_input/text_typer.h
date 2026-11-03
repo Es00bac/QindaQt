@@ -39,6 +39,8 @@ public:
     // finished(token, false)), so a caller can abort between batches when its precondition no longer holds.
     void setBatchGuard(std::function<bool()> guard) { m_guard = std::move(guard); }
     // Zeroes a symbol buffer in a way the optimizer cannot remove.
+    // Symbols per timer tick and tick interval; the default is kBatch every 4 ms. Secret typing slows it down.
+    void setPacing(int symbolsPerTick, int tickMs) { m_batch = symbolsPerTick; m_timer.setInterval(tickMs); }
     static void wipe(QList<qint32> &symbols);
     // Zeroes in place and keeps the size (what wipe() does before it clears the list).
     static void zero(QList<qint32> &symbols);
@@ -61,6 +63,7 @@ private:
     void record(const QString &token, State state);
 
     std::function<bool()> m_guard;
+    int m_batch = kBatch;
     HeldInput m_held; // so a half-typed key is released, never left down
     QTimer m_timer;
     std::deque<Job> m_jobs;

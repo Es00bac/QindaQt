@@ -66,6 +66,14 @@ target_link_libraries(
         Qt6::Core
         Qt6::DBus
 )
+# AGENT-GUARD (ADR-0440): the test-only command-line options (--trusted-caller, --trusted-shell-caller,
+# --test-portal, --test-open-gate, --lan-port, --lan-test-address, --pairing-window-ms) are compiled in only
+# when this is ON. It defaults to BUILD_TESTING, which the Portage build turns OFF; the link tests and
+# phone/engine-tests/run-cross-*.sh need the ON build.
+option(QINDAQT_LINK_TEST_HOOKS "Compile the qindaqt-link-service test-only options" ${BUILD_TESTING})
+if(QINDAQT_LINK_TEST_HOOKS)
+    target_compile_definitions(qindaqt-link-service PRIVATE QINDAQT_LINK_TEST_HOOKS)
+endif()
 target_include_directories(qindaqt-link-service PRIVATE app)
 target_compile_definitions(
     qindaqt-link-service

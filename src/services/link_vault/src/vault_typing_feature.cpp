@@ -15,6 +15,11 @@ QString newToken()
         QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
 }
 
+bool same(const FocusFact &f, const QString &uuid, const QString &appId, const QString &title, quint64 revision)
+{
+    return f.uuid == uuid && f.revision == revision && f.appId == appId && f.title == title;
+}
+
 bool hasVaultCap(const Session &session)
 {
     return session.peer().caps.contains(QStringLiteral("vault"));
@@ -26,6 +31,7 @@ VaultTypingFeature::VaultTypingFeature(PortalInputSession &portal, InputGate &ga
                                        QObject *parent)
     : QObject(parent), m_portal(portal), m_gate(gate), m_focus(focus), m_held(portal), m_text(portal)
 {
+    m_text.setPacing(kSymbolsPerTick, kTickMs);
     m_delay.setSingleShot(true);
     connect(&m_delay, &QTimer::timeout, this, &VaultTypingFeature::advance);
     // AGENT-GUARD: checked by the typer before every batch, so a focus change is noticed within one
@@ -105,7 +111,7 @@ QString VaultTypingFeature::problem() const
     const std::optional<FocusFact> focus = m_focus.current();
     if (!focus) return QStringLiteral("unverified");
     if (!m_job) return {};
-    if (focus->uuid != m_job->uuid || focus->revision != m_job->revision) return QStringLiteral("target-changed");
+    if (!same(*focus, m_job->uuid, m_job->appId, m_job->title, m_job->revision)) return QStringLiteral("target-changed");
     if (!m_job->waitingForPortal && !m_portal.active()) return QStringLiteral("internal");
     return {};
 }
@@ -113,7 +119,7 @@ QString VaultTypingFeature::problem() const
 void VaultTypingFeature::focusRequest(Session &session, const Envelope &e)
 {
     if (e.id == 0) return; // a request; nothing to answer
-    if (!hasVaultCap(session) && !session.peer().caps.contains(QStringLiteral("input"))) {
+    if (!hasVaultCap(session)) {
         return sendError(session, e.id, QStringLiteral("denied"), QStringLiteral("capability not advertised"));
     }
     if (!m_gate.open()) {
@@ -126,6 +132,8 @@ void VaultTypingFeature::focusRequest(Session &session, const Envelope &e)
     Token t;
     t.value = newToken();
     t.uuid = focus->uuid;
+    t.appId = focus->appId;
+    t.title = focus->title;
     t.revision = focus->revision;
     t.age.start();
     m_tokens.insert(session.deviceId(), t);
@@ -165,7 +173,7 @@ void VaultTypingFeature::typeRequest(Session &session, const Envelope &e)
     }
     const std::optional<FocusFact> focus = m_focus.current();
     if (!focus) return sendError(session, e.id, QStringLiteral("unverified"), QStringLiteral("focus unknown"));
-    if (focus->uuid != token->uuid || focus->revision != token->revision) {
+    if (!same(*focus, token->uuid, token->appId, token->title, token->revision)) {
         return sendError(session, e.id, QStringLiteral("target-changed"), QStringLiteral("focus changed"));
     }
     Job job;
@@ -173,6 +181,8 @@ void VaultTypingFeature::typeRequest(Session &session, const Envelope &e)
     job.device = session.deviceId();
     job.id = e.id;
     job.uuid = token->uuid;
+    job.appId = token->appId;
+    job.title = token->title;
     job.revision = token->revision;
     job.plan = std::move(*plan);
     m_job = std::move(job);

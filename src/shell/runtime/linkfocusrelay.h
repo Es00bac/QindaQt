@@ -39,10 +39,12 @@ public:
 
     LinkFocusRelay(QDBusConnection bus, Provider provider, QObject *parent = nullptr);
 
-    // Starts watching the service name and refreshes once a second so a title change is noticed.
+    // Starts watching the service name and publishes once a second (heartbeat; also notices title changes).
     void start();
     // Call on every focus change; publishes when the fact differs from the last one the service accepted.
-    void refresh();
+    // With `heartbeat` it republishes an unchanged fact too: the service treats a fact older than
+    // about 3 s as unknown (FocusStore::kStaleMs), so a hung shell stops being a focus authority.
+    void refresh(bool heartbeat = false);
 
     [[nodiscard]] static QString factJson(
         const std::optional<Compositor::ShellWindowIdentitySnapshot> &identity,

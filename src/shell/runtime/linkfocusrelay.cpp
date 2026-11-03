@@ -22,7 +22,7 @@ LinkFocusRelay::LinkFocusRelay(QDBusConnection bus, Provider provider, QObject *
     , m_watcher(QString::fromLatin1(kService), m_bus, QDBusServiceWatcher::WatchForOwnerChange, this)
 {
     m_timer.setInterval(1000);
-    connect(&m_timer, &QTimer::timeout, this, &LinkFocusRelay::refresh);
+    connect(&m_timer, &QTimer::timeout, this, [this] { refresh(true); });
     connect(&m_watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
             [this](const QString &, const QString &, const QString &newOwner) {
                 m_serviceUp = !newOwner.isEmpty();
@@ -64,13 +64,13 @@ QString LinkFocusRelay::factJson(
                                  .toJson(QJsonDocument::Compact));
 }
 
-void LinkFocusRelay::refresh()
+void LinkFocusRelay::refresh(bool heartbeat)
 {
     if (!m_serviceUp || !m_provider) {
         return;
     }
     const QString json = m_provider();
-    if (json == m_lastAccepted || json == m_inFlight) {
+    if ((!heartbeat && json == m_lastAccepted) || json == m_inFlight) {
         return;
     }
     publish(json);

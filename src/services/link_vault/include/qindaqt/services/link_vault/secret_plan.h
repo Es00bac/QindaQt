@@ -12,7 +12,7 @@ namespace QindaQt::Link {
 // The validated steps of one `vault.type` request (protocol page, "Secret typing").
 //
 // Ownership: a plan owns keysym buffers that may hold a secret; wipe() (also run by the
-// destructor) zeroes them. Move-only so there is never a second copy to forget.
+// destructor) zeroes only those buffers. Move-only so there is never a second copy to forget.
 // AGENT-GUARD: nothing here logs, formats or stores step contents. Text is converted to
 // keysyms on parse and only the keysym buffer is kept; the QString inside the incoming
 // JSON body cannot be zeroed (Qt shares and reallocates it), which the ADR records.

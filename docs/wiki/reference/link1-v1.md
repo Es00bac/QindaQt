@@ -78,7 +78,7 @@ can tell the service which window has focus for secret typing ([ADR-0440](../adr
 
 | Member | Signature | Behavior |
 | --- | --- | --- |
-| `Publish` | `(s json)` | Shell only (`CallerRole::Shell`): any other caller gets `org.qindaqt.Link1.Error.Denied`. `json` is at most 2048 bytes: `{"uuid","appId","title","revision"}`, or `{}` for "none". Malformed input gets `org.qindaqt.Link1.Error.BadRequest` and changes nothing. The fact is cleared when the publishing connection leaves the bus. |
+| `Publish` | `(s json)` | Shell only (`CallerRole::Shell`): any other caller gets `org.qindaqt.Link1.Error.Denied`. `json` is at most 2048 bytes: `{"uuid","appId","title","revision"}`, or `{}` for "none". Malformed input gets `org.qindaqt.Link1.Error.BadRequest` and changes nothing. The fact is cleared when the publishing connection leaves the bus, and counts as unknown when it is older than 3 s (the shell republishes every second). |
 
 ## Setup interface
 

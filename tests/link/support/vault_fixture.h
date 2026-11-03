@@ -24,6 +24,7 @@ struct VaultFixture {
           fakePortal(portalName), portal(QDBusConnection::sessionBus(), options()),
           input(portal, gate), vault(portal, gate, focus)
     {
+        focus.setClock([this] { return clockMs; }); // tests move time themselves; the fact never goes stale on its own
         vault.setInputInUse([this] { return !input.controller().isEmpty(); });
         QObject::connect(&vault, &VaultTypingFeature::portalBorrowedChanged, &input, &InputFeature::setPortalBorrowed);
         hub.hub.addFeature(&input);
@@ -119,6 +120,7 @@ struct VaultFixture {
         return true;
     }
 
+    qint64 clockMs = 0;
     QTemporaryDir tokens;
     QString portalName;
     FakePortal fakePortal;

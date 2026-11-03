@@ -259,7 +259,7 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
     });
     connect(m_windowActionsClient.get(),
             &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
-            m_linkFocusRelay.get(), &LinkFocusRelay::refresh);
+            m_linkFocusRelay.get(), [this] { m_linkFocusRelay->refresh(); });
     m_linkFocusRelay->start();
     // Borrowed settings/controller wiring for the persisted user task order;
     // both collaborators are owned above and outlive this helper.

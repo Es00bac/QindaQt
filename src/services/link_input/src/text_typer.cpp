@@ -108,7 +108,7 @@ void TextTyper::pump()
         cancel();
         return;
     }
-    int budget = kBatch;
+    int budget = m_batch;
     while (budget > 0 && !m_jobs.empty()) {
         Job &job = m_jobs.front();
         bool ok = true;

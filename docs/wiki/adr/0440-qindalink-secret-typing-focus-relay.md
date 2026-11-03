@@ -22,7 +22,7 @@ active-window identity only to the panel owner, which is the shell process; the 
    (window uuid and the identity `revision`) with the task-list facts (application id and title) and calls
    `org.qindaqt.Link1.Focus.Publish(s json)` on every focus change, and with `{}` ("none") when the facts are
    unavailable. The JSON is at most 2048 bytes; titles are display text only, sanitized and cut to 200 code
-   points, and never compared. Identity is `(uuid, revision)`.
+   points. Identity is `(uuid, revision)`.
 2. **Per-member roles.** `CallerAuthority` gains `authorizeRole(message, role)`. `Focus.Publish` needs
    `CallerRole::Shell`, which is `<bindir>/qindaqt-shell` plus the test-only `--trusted-shell-caller`; the app
    (`qindaqt-link`) is a client but not a shell. Every other member keeps the client role. The coverage test
@@ -34,10 +34,10 @@ active-window identity only to the panel owner, which is the shell process; the 
    [protocol page](../reference/qindalink-protocol-v1.md#desktop-facts-and-secret-typing-desktop-vault).
    Control characters inside text are skipped, never typed as keys: only a `{key}` step presses Tab or Enter.
 4. **Typing.** The `VaultTypingFeature` uses the input lane's portal session and typer. The gate must be open.
-   Focus `(uuid, revision)` is compared with the token before the job, before every step, before every 24-symbol
-   batch (a batch guard in the typer) and on every focus or gate change; a mismatch aborts with
-   `target-changed` after releasing held keys. One job at a time (`busy`). Keysym buffers are zeroed after use
-   (`explicit_bzero`), and the plan is move-only. The JSON body's `QString`s cannot be zeroed; the guarantee
+   The whole focus fact is compared with the token before the job, before every step, before every tick
+   (a guard in the typer; at most 2 symbols per 8 ms, about 250 symbols/s) and on every focus or gate change; a mismatch aborts with
+   `target-changed` after releasing held keys. One job at a time (`busy`). Only the keysym buffers are zeroed after use
+   (`explicit_bzero`), and the plan is move-only. The JSON body's `QString`s, and the phone's Java `String`s, cannot be zeroed; the guarantee
    is no persistence and no logging, as in the architecture page. If no portal session is active the job starts
    one exactly as `input.begin` does (the one-time desktop approval) and closes it afterwards unless an input
    controller is using it; `InputFeature::setPortalBorrowed` keeps the input feature from closing a session it
@@ -48,6 +48,14 @@ active-window identity only to the panel owner, which is the shell process; the 
    `vault.type`. A secret is never sent without that confirmation.
 6. **Logging.** `vault.*` bodies are never logged on either side; the frame log prints type and key count only.
 
+7. **Stale facts.** The relay republishes the unchanged fact every second. `FocusStore::current()` returns
+   nothing (so `unverified`) once the last publish is older than 3 s, so a hung shell stops being a focus
+   authority even while it still owns its bus name; a running job aborts the same way.
+8. **Test hooks.** `--trusted-caller`, `--trusted-shell-caller`, `--test-portal`, `--test-open-gate` and the LAN
+   test options exist only when `QINDAQT_LINK_TEST_HOOKS` is set, which defaults to `BUILD_TESTING`. The Portage
+   build (`-DBUILD_TESTING=OFF`) has neither the options nor their strings.
+9. **Capability.** `desktop.focus` needs the `vault` capability only.
+
 ## Consequences
 
 - The shell gains a small relay and depends on the link service only through a D-Bus call; with no shell
@@ -55,8 +63,11 @@ active-window identity only to the panel owner, which is the shell process; the 
 - The focus fact is trusted exactly as far as the shell is; a same-uid process that injects into the shell is
   out of scope (ADR-0438, "What this does not stop"). The phone's confirmation shows the shell-reported title,
   which a hostile window can influence, so the user confirms an application and window they chose.
-- A short race remains between the last check and the portal delivering a batch of at most 24 symbols.
-- Test-only service options `--trusted-shell-caller`, `--test-portal` and `--test-open-gate` warn on stderr.
+- Residual race: focus is checked before every tick of at most 2 symbols, but the fact itself reaches the service
+  after the relay hop (compositor to shell to D-Bus). The exposure is relay latency times the typing rate, a few
+  symbols for a latency of tens of milliseconds, and up to one second of symbols when the shell is slow to notice
+  a change. A long secret takes seconds to type (1024 symbols about 4 s).
+- Test-only service options warn on stderr and are compiled out of the installed package (decision 8).
 
 ## Revisit when
 

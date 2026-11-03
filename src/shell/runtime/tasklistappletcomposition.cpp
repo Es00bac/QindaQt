@@ -2,6 +2,8 @@
 
 #include "tasklistappletcomposition.h"
 
+#include "taskwindowfacts.h"
+
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/applet_host/host_selection.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
@@ -526,27 +528,7 @@ TaskListAppletComposition::desktopEntryResolver() const
 bool TaskListAppletComposition::windowFacts(const QString &windowId, QString *applicationId,
                                             QString *title) const
 {
-    if (m_source == nullptr) {
-        return false;
-    }
-    for (const ShellTaskList::TaskEntry &entry : m_source->generation().entries) {
-        if (entry.members.isEmpty()) {
-            if (entry.taskId == windowId) {
-                *applicationId = entry.applicationId;
-                *title = entry.title;
-                return true;
-            }
-            continue;
-        }
-        for (const ShellTaskList::TaskContainerMember &member : entry.members) {
-            if (member.windowId == windowId) {
-                *applicationId = member.applicationId;
-                *title = member.title;
-                return true;
-            }
-        }
-    }
-    return false;
+    return m_source != nullptr && taskWindowFacts(*m_source, windowId, applicationId, title);
 }
 
 void TaskListAppletComposition::setIconThemes(const QStringList &roots, const QStringList &themes)

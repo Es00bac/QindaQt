@@ -498,7 +498,7 @@ Rules:
 
 ## Desktop facts and secret typing (`desktop.*`, `vault.*`)
 
-Capability `vault` (`desktop.focus` is also accepted from a phone advertising `input`). The vault exists only
+Capability `vault`. The vault exists only
 on the phone; the desktop types, and never stores, logs or shows, what it is sent
 ([ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md)).
 
@@ -512,7 +512,7 @@ Bounds: `text` is 1-1024 UTF-8 bytes per step; `key` is one of `Tab`, `Enter`, `
 DEL, U+0080-U+009F) inside `text` are skipped and are never typed as keys.
 
 `vault.type` errors: `target-changed` (the token is unknown, expired, already used or another phone's, or the
-focused window's `(uuid, revision)` differs, at the start or between steps), `locked`, `unverified`, `busy`
+focused window (id, revision, application id or title) differs, at the start or between steps), `locked`, `unverified`, `busy`
 (a typing job is running), `denied` (capability not advertised, or the desktop user did not approve the
 remote-input prompt), `bad-request` (violates a bound; the token is kept), `internal` (portal unavailable or
 revoked, the session closed, or delivery failed).
@@ -523,8 +523,8 @@ Rules:
   one per phone (a newer `desktop.focus` replaces it). A phone shows `app` and `title` as plain text and sends
   `vault.type` only after the user confirms, within 30 s.
 - **Checks.** The desktop requires the input gate to be open (unlocked, verified). It compares the current
-  focus with the token before the job, before every step, before every batch of at most 24 symbols and on any
-  focus or lock change. A change aborts with `target-changed` (or `locked`) after releasing every key it
+  focus with the token before the job, before every step, before every tick (at most 2 symbols per 8 ms) and on any
+  focus or lock change. The target is the whole focus fact: window, revision, application id and title. A change aborts with `target-changed` (or `locked`) after releasing every key it
   pressed. Steps already typed stay typed.
 - **Portal.** Typing uses the RemoteDesktop portal session as keysyms and never the clipboard. If no session is
   active the desktop starts one exactly as for `input.begin` (the user approves once) and closes it when the
