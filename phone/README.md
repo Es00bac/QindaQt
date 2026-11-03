@@ -35,7 +35,7 @@ with that stage as `CMAKE_PREFIX_PATH` and `CMAKE_FIND_ROOT_PATH` and bundles th
 `QT_QML_IMPORT_PATH` (QindaTK `docs/android.md`). The first run adds about 10 minutes for QindaTK.
 Screens: Home, Pairing (large `123 456` code, equal-weight Accept/Reject, stale-pin "Pair again"),
 Permissions (states from `DeviceFacts.java`; features not built yet show "Coming soon"), Tools and
-the placeholders Touchpad, Keyboard, Macros, Vault (one file each; replace the file to build the feature).
+the placeholders Touchpad, Keyboard, Macros (one file each; replace the file to build the feature) and the Vault (`Vault*.qml`, see the architecture page).
 
 ## Desktop preview
 
