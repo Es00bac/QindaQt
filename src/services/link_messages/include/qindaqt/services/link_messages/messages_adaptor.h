@@ -2,6 +2,8 @@
 #pragma once
 
 #include <qindaqt/services/link_messages/messages_feature.h>
+#include <qindaqt/services/link_messages/send_gate.h>
+#include <qindaqt/services/link_transport/caller_authority.h>
 
 #include <QtCore/QStringList>
 #include <QtDBus/QDBusAbstractAdaptor>
@@ -18,13 +20,17 @@ namespace QindaQt::Link {
 // later. Failures are D-Bus errors named org.qindaqt.Link1.Error.<Code> where
 // <Code> is the CamelCase protocol code (Denied, Unsupported, NotConnected,
 // BadRequest, BadReply, Timeout, Internal, ...; any unlisted phone code becomes Internal). All values are compact JSON text.
+// Access (ADR-0438): ListThreads, ListMessages, GetPart, Send and MarkRead need a trusted caller
+// (CallerAuthority) and fail with Error.Denied otherwise; the UnreadCount property and the
+// ThreadsChanged / SendStatus signals carry ids and counts only and stay open.
 // AGENT-GUARD: never log method arguments or reply bodies here; they are message content.
 class MessagesAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Link1.Messages")
     Q_PROPERTY(int UnreadCount READ unreadCount)
 public:
-    MessagesAdaptor(MessagesFeature *feature, QDBusConnection bus);
+    // `authority` is required (a null one denies everything); `gate` may be null (no extra admission control).
+    MessagesAdaptor(MessagesFeature *feature, QDBusConnection bus, CallerAuthority *authority, SendGate *gate = nullptr);
     [[nodiscard]] int unreadCount() const { return m_feature->unreadTotal(); }
 
 public Q_SLOTS:
@@ -42,9 +48,12 @@ Q_SIGNALS:
 
 private:
     [[nodiscard]] MessagesFeature::Reply completer(const QDBusMessage &msg);
+    void deny(const QDBusMessage &msg);  // fail-closed reply when no authority was injected
 
     MessagesFeature *m_feature;
     QDBusConnection m_bus;
+    CallerAuthority *m_authority;
+    SendGate *m_gate;
 };
 
 } // namespace QindaQt::Link

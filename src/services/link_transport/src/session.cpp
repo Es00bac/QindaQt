@@ -95,6 +95,10 @@ Session::Session(QSslSocket *socket, Origin origin, SessionTimings timings, Sess
 Session::~Session() = default;
 
 bool Session::pairingPending() const { return m_pairing != nullptr && m_pairing->active(); }
+bool Session::awaitingLocalDecision() const
+{
+    return m_state != SessionState::Closed && m_pairing != nullptr && m_pairing->awaitingLocalDecision() && !m_code.isEmpty();
+}
 
 bool Session::send(const Envelope &envelope)
 {
@@ -343,7 +347,10 @@ void Session::handlePairRequest(const Envelope &e)
                                                                         : spkiDigest(m_socket->localCertificate()),
                                    spkiDigest(m_socket->peerCertificate()), m_timings.pairTimeoutMs, this);
     connect(m_pairing, &DesktopPairing::frame, this, [this](const Envelope &f) { send(f); });
-    connect(m_pairing, &DesktopPairing::codeReady, this, &Session::pairingCodeReady);
+    connect(m_pairing, &DesktopPairing::codeReady, this, [this](const QString &code) {
+        m_code = code;
+        Q_EMIT pairingCodeReady(code);
+    });
     connect(m_pairing, &DesktopPairing::aborted, this, [this](const QString &reason) { close(reason); });
     connect(m_pairing, &DesktopPairing::completed, this, [this] {
         m_ownsPairingSlot = false;

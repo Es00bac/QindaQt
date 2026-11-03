@@ -12,7 +12,7 @@ NotificationsModule::NotificationsModule(Hub &hub, NotificationsConfig config, Q
                 this)
 {
     hub.addFeature(&m_feature);
-    new NotificationsAdaptor(m_feature, exported);
+    new NotificationsAdaptor(m_feature, exported, config.authority, config.bus);
 }
 
 } // namespace QindaQt::Link

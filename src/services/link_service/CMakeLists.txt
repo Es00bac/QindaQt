@@ -8,15 +8,19 @@ add_library(QindaQt::LinkService ALIAS qindaqt_link_service)
 target_sources(
     qindaqt_link_service
     PRIVATE
+        src/caller_policy.cpp
         src/link1_service.cpp
         src/qt_notification_presenter.cpp
+        src/send_guard.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_service/caller_policy.h
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
             include/qindaqt/services/link_service/qt_notification_presenter.h
+            include/qindaqt/services/link_service/send_guard.h
 )
 target_link_libraries(
     qindaqt_link_service
@@ -28,7 +32,10 @@ qindaqt_enable_warnings(qindaqt_link_service)
 
 qt_add_executable(qindaqt-link-service app/main.cpp)
 target_link_libraries(qindaqt-link-service PRIVATE QindaQt::LinkService Qt6::Core Qt6::DBus)
-target_compile_definitions(qindaqt-link-service PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(
+    qindaqt-link-service
+    PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}" QINDAQT_BINDIR="${KDE_INSTALL_FULL_BINDIR}"
+)
 set_target_properties(qindaqt-link-service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-link-service)
 

@@ -21,6 +21,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_transport/caller_authority.h
             include/qindaqt/services/link_transport/desktop_pairing.h
             include/qindaqt/services/link_transport/feature.h
             include/qindaqt/services/link_transport/hub.h

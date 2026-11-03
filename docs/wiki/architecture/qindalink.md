@@ -195,6 +195,18 @@ has no UI of its own.
   `unsupported` when Android refuses, and messages it sends are not recorded
   in the provider by the platform.
 
+## Who may call Link1
+
+The session bus is shared by every process of the user, so `qindaqt-link-service`
+authorizes callers itself ([ADR-0438](../adr/0438-qindalink-link1-caller-authority.md)).
+Device metadata (`Devices`, `PendingPairings`, change signals) is open.
+Reading messages or notifications, sending, replying, muting and
+pairing decisions need a caller whose executable is `qindaqt-link`,
+`qindaqt-shell` or given with `--trusted-caller`; others get
+`org.qindaqt.Link1.Error.Denied`. Broadcast signals never carry message or
+notification text, and every accepted text send raises a desktop notice and
+counts against a per-device rate limit.
+
 ## Connection and pairing
 
 - The phone engine always tries `127.0.0.1:47160` first. That address works
