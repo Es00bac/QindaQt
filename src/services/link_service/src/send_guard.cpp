@@ -4,13 +4,16 @@
 
 #include <QtCore/QElapsedTimer>
 
+#include <memory>
+
 namespace QindaQt::Link {
 namespace {
 constexpr qint64 kMinuteMs = 60'000;
 constexpr qint64 kHourMs = 3'600'000;
 }
 
-SendGuard::SendGuard(NotificationPresenter *presenter, Clock clock) : m_presenter(presenter), m_clock(std::move(clock))
+SendGuard::SendGuard(NotificationPresenter *presenter, Clock clock, KnownDevice known)
+    : m_presenter(presenter), m_clock(std::move(clock)), m_known(std::move(known))
 {
     if (!m_clock) {
         auto timer = std::make_shared<QElapsedTimer>();
@@ -21,6 +24,9 @@ SendGuard::SendGuard(NotificationPresenter *presenter, Clock clock) : m_presente
 
 QString SendGuard::admit(const QString &deviceId, int recipients, const QString &requestedBy)
 {
+    if (m_known && !m_known(deviceId)) {
+        return QStringLiteral("not-paired");
+    }
     const qint64 now = m_clock();
     std::deque<qint64> &times = m_sent[deviceId];
     while (!times.empty() && now - times.front() >= kHourMs) {

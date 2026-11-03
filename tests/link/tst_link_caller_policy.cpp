@@ -23,7 +23,26 @@ struct FakeInspector final : ProcessInspector {
         if (flipStart) return t + (++calls);  // a different incarnation on each read
         return t;
     }
+    bool executableFileId(uint pid, quint64 *dev, quint64 *ino) override
+    {
+        if (!exeIds.contains(pid)) return false;
+        *dev = 1;
+        *ino = exeIds.value(pid);
+        return true;
+    }
+    bool fileIdOfPath(const QString &path, quint64 *dev, quint64 *ino) override
+    {
+        if (!pathIds.contains(path)) return false;
+        *dev = 1;
+        *ino = pathIds.value(path);
+        return true;
+    }
+    QString mountNamespaceOf(uint pid) override { return namespaces.value(pid, QStringLiteral("mnt:[1]")); }
+    QString ownMountNamespace() override { return QStringLiteral("mnt:[1]"); }
     QHash<QString, uint> pids;
+    QHash<uint, quint64> exeIds;                 // inode behind /proc/<pid>/exe
+    QHash<QString, quint64> pathIds;             // inode of a path in the service namespace
+    QHash<uint, QString> namespaces;
     QHash<uint, QString> exes;
     QHash<uint, qulonglong> starts;
     bool flipStart = false;
@@ -57,10 +76,12 @@ private Q_SLOTS:
     {
         FakeInspector *f = nullptr;
         CallerPolicy policy = makePolicy(&f, {QStringLiteral("/opt/qindaqt/bin/qindaqt-link")});
+        f->pathIds = {{QStringLiteral("/opt/qindaqt/bin/qindaqt-link"), 10}};
         f->pids = {{QStringLiteral(":1.1"), 100}, {QStringLiteral(":1.2"), 200}, {QStringLiteral(":1.3"), 300}};
         f->exes = {{100, QStringLiteral("/opt/qindaqt/bin/qindaqt-link")},
                    {200, QStringLiteral("/usr/bin/evil")},
                    {300, QStringLiteral("/opt/qindaqt/bin/qindaqt-link (deleted)")}};
+        f->exeIds = {{100, 10}, {200, 20}, {300, 10}};
         f->starts = {{100, 5}, {200, 6}, {300, 7}};
         QString name;
         QVERIFY(policy.isTrusted(QStringLiteral(":1.1"), &name));
@@ -71,10 +92,46 @@ private Q_SLOTS:
         QVERIFY(!policy.isTrusted(QString()));                  // no sender
     }
 
+    void bindMountedPathStringDoesNotMatter()
+    {
+        // unshare -Urm plus a bind mount makes readlink(/proc/pid/exe) read the trusted path while the inode
+        // (and the mount namespace) differ. Identity decides, not the string.
+        FakeInspector *f = nullptr;
+        CallerPolicy policy = makePolicy(&f, {QStringLiteral("/usr/bin/qindaqt-link")});
+        f->pathIds = {{QStringLiteral("/usr/bin/qindaqt-link"), 10}};
+        f->pids = {{QStringLiteral(":1.1"), 100}, {QStringLiteral(":1.2"), 200}};
+        f->exes = {{100, QStringLiteral("/usr/bin/qindaqt-link")}, {200, QStringLiteral("/usr/bin/qindaqt-link")}};
+        f->starts = {{100, 5}, {200, 6}};
+        f->exeIds = {{100, 666}, {200, 10}};          // 100 runs an attacker file; 200 has the right inode...
+        f->namespaces = {{200, QStringLiteral("mnt:[999]")}};  // ...but from another mount namespace
+        QVERIFY(!policy.isTrusted(QStringLiteral(":1.1")));
+        QVERIFY(!policy.isTrusted(QStringLiteral(":1.2")));
+        f->namespaces.clear();
+        QVERIFY(policy.isTrusted(QStringLiteral(":1.2")));  // same inode, same namespace: trusted
+    }
+
+    void packageUpgradeIsPickedUpOnTheNextCheck()
+    {
+        FakeInspector *f = nullptr;
+        CallerPolicy policy = makePolicy(&f, {QStringLiteral("/usr/bin/qindaqt-link")});
+        f->pathIds = {{QStringLiteral("/usr/bin/qindaqt-link"), 10}};
+        f->pids = {{QStringLiteral(":1.1"), 100}};
+        f->exes = {{100, QStringLiteral("/usr/bin/qindaqt-link")}};
+        f->exeIds = {{100, 10}};
+        f->starts = {{100, 5}};
+        QVERIFY(policy.isTrusted(QStringLiteral(":1.1")));
+        f->pathIds[QStringLiteral("/usr/bin/qindaqt-link")] = 11;  // the file was replaced
+        QVERIFY(!policy.isTrusted(QStringLiteral(":1.1")));
+        f->exeIds[100] = 11;
+        QVERIFY(policy.isTrusted(QStringLiteral(":1.1")));
+    }
+
     void unreadableProcessFailsClosed()
     {
         FakeInspector *f = nullptr;
         CallerPolicy policy = makePolicy(&f, {QStringLiteral("/opt/x/app")});
+        f->pathIds = {{QStringLiteral("/opt/x/app"), 1}};
+        f->exeIds = {{100, 1}};
         f->pids = {{QStringLiteral(":1.1"), 100}};
         f->exes = {{100, QStringLiteral("/opt/x/app")}};
         // No start time (process gone): refuse even though the exe matched.
@@ -88,6 +145,8 @@ private Q_SLOTS:
     {
         FakeInspector *f = nullptr;
         CallerPolicy policy = makePolicy(&f, {QStringLiteral("/opt/x/app")});
+        f->pathIds = {{QStringLiteral("/opt/x/app"), 1}};
+        f->exeIds = {{100, 1}};
         f->pids = {{QStringLiteral(":1.1"), 100}};
         f->exes = {{100, QStringLiteral("/opt/x/app")}};
         f->starts = {{100, 5}};
@@ -122,6 +181,19 @@ private Q_SLOTS:
         QCOMPARE(guard.admit(QStringLiteral("dev"), 1, QStringLiteral("a")), QStringLiteral("rate-limited"));
         now += 3'600'000;
         QCOMPARE(guard.admit(QStringLiteral("dev"), 1, QStringLiteral("a")), QString());
+    }
+
+    void unknownDevicesAreRefusedAndDoNotGrowTheTable()
+    {
+        FakePresenter presenter;
+        SendGuard guard(&presenter, [] { return qint64(0); }, [](const QString &id) { return id == QLatin1String("known"); });
+        for (int i = 0; i < 1000; ++i) {
+            QCOMPARE(guard.admit(QStringLiteral("bogus%1").arg(i), 1, QStringLiteral("x")), QStringLiteral("not-paired"));
+        }
+        QCOMPARE(guard.bucketCount(), 0);
+        QCOMPARE(presenter.shown.size(), 0);
+        QCOMPARE(guard.admit(QStringLiteral("known"), 1, QStringLiteral("x")), QString());
+        QCOMPARE(guard.bucketCount(), 1);
     }
 
     void everyAcceptedSendIsAnnounced()

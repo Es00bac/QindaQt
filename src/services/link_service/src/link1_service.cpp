@@ -64,7 +64,8 @@ bool Link1Service::start(QString *error)
     }
     m_messages = std::make_unique<MessagesFeature>([hub = m_hub.get()](const QString &id) { return hub->session(id); });
     m_hub->addFeature(m_messages.get());
-    m_sendGuard = std::make_unique<SendGuard>(m_config.phoneNotifications);
+    m_sendGuard = std::make_unique<SendGuard>(m_config.phoneNotifications, SendGuard::Clock{},
+                                              [this](const QString &id) { return m_hub->session(id) != nullptr || m_store->contains(id); });
     new MessagesAdaptor(m_messages.get(), m_bus, m_config.callerAuthority, m_sendGuard.get()); // owned by m_messages; exported below
     connect(m_hub.get(), &Hub::devicesChanged, this, &Link1Service::onDevicesChanged);
     connect(m_hub.get(), &Hub::pairingRequested, this,
