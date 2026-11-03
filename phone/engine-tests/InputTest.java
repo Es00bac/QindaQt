@@ -128,6 +128,10 @@ public final class InputTest {
         expect(((Double) s.b.get("dy")) == 500.0 && Boolean.TRUE.equals(s.b.get("end")), "smooth scroll clamped with end");
         expect(((Long) InputFrames.scrollDiscrete(0, 99).b.get("dy")) == 20L, "discrete clamped to 20");
         expect(InputFrames.key("Bogus", "tap") == null && InputFrames.key("Escape", "tap") != null, "closed key-name set");
+        expect(InputFrames.keysym(0x1008ff2aL, "tap") == null && InputFrames.keysym(0x1008ff2fL, "tap") == null
+                && InputFrames.keysym(0x1008ffa7L, "tap") == null && InputFrames.keysym(0x1008ff61L, "tap") == null,
+                "session-control XF86 keysyms refused");
+        expect(InputFrames.keysym(0x1008ff13L, "tap") != null, "volume keysym allowed");
         expect(InputFrames.keysym(7, "down") == null && InputFrames.keysym(0x01000000L | 0x20ac, "tap") != null, "keysym ranges");
         expect(InputFrames.text("") == null && InputFrames.text("hi") != null, "text non-empty");
         StringBuilder big = new StringBuilder();
@@ -218,6 +222,24 @@ public final class InputTest {
         expect(ty.size() == 3 && ty.get(0).equals("input.button") && "down".equals(c.sent.get(0).b.get("state"))
                 && "up".equals(c.sent.get(1).b.get("state")) && ty.get(2).equals("input.end"),
                 "drag released before input.end: " + ty);
+        // Queue pressure never evicts an up/click: 700 pointer frames on each side of a key-up and a click.
+        f.begin();
+        f.onFrame(Envelope.of("input.state", m("state", "active")));
+        f.onTick(0);
+        c.sent.clear();
+        for (int i = 0; i < 700; i++) f.pointerForTest(1, 0);
+        f.click("left");
+        for (int i = 0; i < 700; i++) f.pointerForTest(1, 0);
+        f.sendKeyFrameForTest("Shift", "up");
+        for (int i = 0; i < 700; i++) f.pointerForTest(1, 0);
+        f.onTick(0);
+        boolean sawClick = false, sawUp = false;
+        for (Envelope e : c.sent) {
+            if (e.t.equals("input.button")) sawClick = true;
+            if (e.t.equals("input.key") && "up".equals(e.b.get("state"))) sawUp = true;
+        }
+        expect(sawClick && sawUp, "click and key-up survive a full queue");
+        expect(c.sent.size() <= 512, "queue bounded: " + c.sent.size());
         // Revocation from the desktop.
         f.begin();
         f.onTick(0);

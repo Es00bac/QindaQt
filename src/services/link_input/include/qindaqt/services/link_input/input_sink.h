@@ -2,7 +2,8 @@
 #pragma once
 
 #include <QtCore/QObject>
-#include <QtCore/QSet>
+#include <QtCore/QElapsedTimer>
+#include <QtCore/QHash>
 #include <QtCore/QtGlobal>
 
 namespace QindaQt::Link {
@@ -61,37 +62,54 @@ private:
 // Wraps a sink and remembers what this owner holds down, so that releaseAll()
 // can never leave a key or button stuck.
 //
+// A press is remembered only when the sink accepted it, and a release forgets
+// it only when the sink accepted that: a failed key-up stays in the ledger so
+// the watchdog or the next releaseAll() retries it.
 // AGENT-GUARD: every feature that presses something must press it through a
-// HeldInput of its own. A disconnect, lock or cancel calls releaseAll().
+// HeldInput of its own. A disconnect, lock, cancel or begin calls releaseAll();
+// a missed path leaves a key or button stuck down on the desktop.
 class HeldInput final : public InputSink {
 public:
-    explicit HeldInput(InputSink &sink) : m_sink(sink) {}
+    explicit HeldInput(InputSink &sink) : m_sink(sink) { m_clock.start(); }
     [[nodiscard]] bool active() const override { return m_sink.active(); }
     bool pointerMotion(double dx, double dy) override { return m_sink.pointerMotion(dx, dy); }
     bool pointerButton(qint32 code, bool down) override
     {
-        if (down) m_buttons.insert(code); else m_buttons.remove(code);
-        return m_sink.pointerButton(code, down);
+        const bool ok = m_sink.pointerButton(code, down);
+        if (down && ok) m_buttons.insert(code, m_clock.elapsed());
+        else if (!down && ok) m_buttons.remove(code);
+        return ok;
     }
     bool pointerAxis(double dx, double dy, bool finish) override { return m_sink.pointerAxis(dx, dy, finish); }
     bool pointerAxisDiscrete(quint32 axis, qint32 steps) override { return m_sink.pointerAxisDiscrete(axis, steps); }
     bool keysym(qint32 sym, bool down) override
     {
-        if (down) m_keys.insert(sym); else m_keys.remove(sym);
-        return m_sink.keysym(sym, down);
+        const bool ok = m_sink.keysym(sym, down);
+        if (down && ok) m_keys.insert(sym, m_clock.elapsed());
+        else if (!down && ok) m_keys.remove(sym);
+        return ok;
     }
     [[nodiscard]] bool holding() const { return !m_keys.isEmpty() || !m_buttons.isEmpty(); }
-    void releaseAll()
+    // Releases everything this owner holds (failures stay for a retry).
+    void releaseAll() { releaseOlderThan(-1); }
+    // Releases what has been held for more than `ms` without being pressed again.
+    void releaseOlderThan(qint64 ms)
     {
-        const QSet<qint32> keys = std::exchange(m_keys, {});
-        const QSet<qint32> buttons = std::exchange(m_buttons, {});
-        for (qint32 b : buttons) m_sink.pointerButton(b, false);
-        for (qint32 k : keys) m_sink.keysym(k, false);
+        const qint64 now = m_clock.elapsed();
+        const auto buttons = m_buttons.keys();
+        for (qint32 b : buttons) {
+            if (ms < 0 || now - m_buttons.value(b) > ms) pointerButton(b, false);
+        }
+        const auto keys = m_keys.keys();
+        for (qint32 k : keys) {
+            if (ms < 0 || now - m_keys.value(k) > ms) keysym(k, false);
+        }
     }
 
 private:
     InputSink &m_sink;
-    QSet<qint32> m_keys, m_buttons;
+    QElapsedTimer m_clock;
+    QHash<qint32, qint64> m_keys, m_buttons; // value: elapsed ms at the last press
 };
 
 } // namespace QindaQt::Link

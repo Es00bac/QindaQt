@@ -23,7 +23,7 @@ class FakePortal : public QObject, protected QDBusContext {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.portal.RemoteDesktop")
 public:
-    enum class Mode { Approve, DenyAtStart, HoldAtStart, FailCreate };
+    enum class Mode { Approve, DenyAtStart, HoldAtStart, FailCreate, RefuseSelect };
 
     static QDBusConnection connect()
     {
@@ -139,7 +139,7 @@ inline QDBusObjectPath FakePortal::SelectDevices(const QDBusObjectPath &, const 
                  .arg(options.value(QStringLiteral("persist_mode")).toUInt());
     lastSelect = options;
     const QDBusObjectPath req = requestPath(options);
-    respond(req, 0, {});
+    respond(req, mode == Mode::RefuseSelect ? 2u : 0u, {});
     return req;
 }
 

@@ -28,11 +28,20 @@ public final class InputFeature implements FeatureHandler {
     public enum State { OFF, OFFLINE, PENDING, ACTIVE, DENIED, UNAVAILABLE, LOCKED, BUSY, REVOKED }
 
     static final int QUEUE_LIMIT = 512;
+    /** Hard bound; past it a new press is refused, a release is still queued by dropping nothing but is bounded by the UI rate. */
+    static final int HARD_LIMIT = 2048;
     static final long PENDING_TIMEOUT_MS = 150_000;
     static final int TEXT_CHUNK_BYTES = 1024;
 
     private final Object lock = new Object();
-    private final ArrayDeque<Envelope> queue = new ArrayDeque<>();
+    /** A queued frame; movement and scroll are droppable, everything else (presses, releases, clicks) is not. */
+    private static final class Item {
+        final Envelope e;
+        final boolean droppable;
+        Item(Envelope e, boolean droppable) { this.e = e; this.droppable = droppable; }
+    }
+
+    private final ArrayDeque<Item> queue = new ArrayDeque<>();
     private final ArrayDeque<String> texts = new ArrayDeque<>();
     private final TouchGestures gestures;
     private final Clock clock;
@@ -126,6 +135,13 @@ public final class InputFeature implements FeatureHandler {
         wake();
     }
 
+    /** Test hooks: queue a movement frame / a raw named-key frame as the UI would. */
+    public void pointerForTest(double dx, double dy) { enqueue(InputFrames.pointer(dx, dy), true); }
+    public void sendKeyFrameForTest(String name, String st) { enqueue(InputFrames.key(name, st), false); }
+
+    /** Number of queued frames (tests). */
+    public int queued() { synchronized (lock) { return queue.size(); } }
+
     public State state() { synchronized (lock) { return state; } }
 
     /** {@code {"state":"active"}} for the bridge; keys are stable. */
@@ -161,7 +177,13 @@ public final class InputFeature implements FeatureHandler {
             sendBegin = sendEnd = false;
             if (state == State.PENDING && clock.nowMs() - pendingSince > PENDING_TIMEOUT_MS) state = State.UNAVAILABLE;
             // AGENT-GUARD: frames queued before end() (the release of a held drag) still go out ahead of input.end.
-            frames = state == State.ACTIVE || end ? queue.toArray(new Envelope[0]) : new Envelope[0];
+            if (state == State.ACTIVE || end) {
+                frames = new Envelope[queue.size()];
+                int i = 0;
+                for (Item it : queue) frames[i++] = it.e;
+            } else {
+                frames = new Envelope[0];
+            }
             queue.clear();
             if (state == State.ACTIVE && !texts.isEmpty()) text = texts.poll();
         }
@@ -211,17 +233,36 @@ public final class InputFeature implements FeatureHandler {
         }
     }
 
+    /**
+     * AGENT-GUARD: a key-up, button-up or click is never evicted. When the queue is full the oldest droppable
+     * frame (movement or scroll) goes first; if none is left a new droppable frame is refused. Only past
+     * HARD_LIMIT is a new non-droppable press refused, and a release (state "up") is queued regardless,
+     * so the desktop never keeps a key or button the phone released. The desktop's hold watchdog and
+     * input.begin reset are the second line of defence.
+     */
     private void enqueue(Envelope e, boolean droppable) {
         if (e == null) return;
         synchronized (lock) {
             if (state != State.ACTIVE) return;
             if (queue.size() >= QUEUE_LIMIT) {
-                if (droppable) return;
-                queue.pollFirst(); // keep releases and clicks over stale movement
+                if (droppable) {
+                    if (!evictOldestDroppable()) return;
+                } else if (queue.size() >= HARD_LIMIT && !"up".equals(e.b.get("state"))) {
+                    return;
+                } else {
+                    evictOldestDroppable();
+                }
             }
-            queue.add(e);
+            queue.add(new Item(e, droppable));
         }
         wake();
+    }
+
+    private boolean evictOldestDroppable() {
+        for (java.util.Iterator<Item> it = queue.iterator(); it.hasNext(); ) {
+            if (it.next().droppable) { it.remove(); return true; }
+        }
+        return false;
     }
 
     private void wake() {

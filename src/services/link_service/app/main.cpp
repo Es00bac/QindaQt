@@ -13,11 +13,22 @@
 #include <QtCore/QStandardPaths>
 #include <QtDBus/QDBusConnection>
 
+#include <QtCore/QSocketNotifier>
+
 #include <sys/prctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <csignal>
 
 #include <memory>
 
 using namespace QindaQt::Link;
+
+namespace {
+int g_signalPipe[2] = {-1, -1};
+// Async-signal-safe: only writes one byte; the real shutdown runs on the event loop.
+void onTerminate(int) { const char c = 1; const ssize_t r = ::write(g_signalPipe[1], &c, 1); (void)r; }
+}
 
 int main(int argc, char **argv)
 {
@@ -53,6 +64,19 @@ int main(int argc, char **argv)
         : QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/qindalink");
     config.port = quint16(parser.value(port).toUInt());
     config.version = QStringLiteral(QINDAQT_VERSION);
+
+    // SIGTERM/SIGINT end the event loop so input state is released in an orderly way
+    // (held keys up, portal session closed) instead of dying with a key held.
+    std::unique_ptr<QSocketNotifier> signalNotifier;
+    if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, g_signalPipe) == 0) {
+        signalNotifier = std::make_unique<QSocketNotifier>(g_signalPipe[0], QSocketNotifier::Read);
+        QObject::connect(signalNotifier.get(), &QSocketNotifier::activated, &app, [&app] { app.quit(); });
+        struct sigaction sa{};
+        sa.sa_handler = onTerminate;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGTERM, &sa, nullptr);
+        sigaction(SIGINT, &sa, nullptr);
+    }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     // Exit when the constructing bus goes away; reconnecting would resume with stale state.
@@ -90,5 +114,8 @@ int main(int argc, char **argv)
         options.gate = gate.get();
         input = std::make_unique<InputComposition>(*service.hub(), bus, std::move(options));
     }
-    return app.exec();
+    const int rc = app.exec();
+    // AGENT-GUARD: release before the composition is destroyed so the portal session is still open for the key-ups.
+    if (input) input->shutdown();
+    return rc;
 }

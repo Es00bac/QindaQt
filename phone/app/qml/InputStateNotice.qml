@@ -12,7 +12,7 @@ Tk.Notice {
 
     readonly property string inputState: link.inputState
     readonly property bool needsRetry: inputState === "denied" || inputState === "unavailable"
-        || inputState === "revoked" || inputState === "busy"
+        || inputState === "revoked" || inputState === "busy" || inputState === "locked"
 
     visible: inputState !== "active"
     Tk.Flex.alignSelf: Tk.Flex.Stretch

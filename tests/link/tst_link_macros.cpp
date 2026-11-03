@@ -71,6 +71,7 @@ private slots:
     void lockCancelsRunAndReleases();
     void compositorOnlyActionFailsTheRun();
     void outputIsNotAllowedWhileLockedOrInactive();
+    void inputEndReleasesMacroBeforeClosingThePortal();
 };
 
 static bool beginAndWait(InputFixture &f, ScriptedPhone &phone)
@@ -279,6 +280,26 @@ void TstLinkMacros::outputIsNotAllowedWhileLockedOrInactive()
     QVERIFY(f.output.allowed());
     f.fakePortal.revoke();
     QVERIFY(waitUntil([&] { return !f.output.allowed(); }));
+}
+
+void TstLinkMacros::inputEndReleasesMacroBeforeClosingThePortal()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    f.fakeActions.setMacros({macro(s("hold"), s("Hold"),
+                                   {step(s("press"), combo({s("Alt")}, {}), 40, 0), step(s("wait"), {}, 5000),
+                                    step(s("release"), {}, 40, 0)})});
+    QVERIFY(waitUntil([&] { return !f.catalog.macros().isEmpty(); }));
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    QVERIFY(beginAndWait(f, phone));
+    phone.send(InputFixture::frame(s("macro.run"), QJsonObject{{s("id"), s("hold")}}, 51));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65513:1")); }));
+    phone.send(InputFixture::frame(s("input.end"), {}));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("Close")); }));
+    const qsizetype up = f.fakePortal.calls.indexOf(s("NotifyKeyboardKeysym:65513:0"));
+    QVERIFY(up >= 0);
+    QVERIFY(up < f.fakePortal.calls.indexOf(s("Close")));
 }
 
 QTEST_GUILESS_MAIN(TstLinkMacros)

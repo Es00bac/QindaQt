@@ -5,6 +5,7 @@
 
 #include <qindaqt/services/link_input/input_frames.h>
 
+#include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtTest/QTest>
 
@@ -36,6 +37,13 @@ private slots:
     void invalidFramesAreRejectedOrDropped();
     void textIsBatchedAndNeverLogged();
     void frameBeforeBeginIsDropped();
+    void lockMidTextReplyAndNextTextWorks();
+    void watchdogAndBeginReleaseStuckKeys();
+    void keyPressesAreRateLimitedButReleasesAreNot();
+    void sessionControlKeysymsAndC1TextAreRefused();
+    void lockedBeginDoesNotClaimTheController();
+    void refusedSelectDevicesClearsTheToken();
+    void shutdownReleasesBeforeClosing();
 };
 
 void TstLinkInput::parsesAndBoundsFrames()
@@ -333,6 +341,150 @@ void TstLinkInput::frameBeforeBeginIsDropped()
     QTest::qWait(150);
     // No portal traffic at all: nothing may raise a prompt without input.begin.
     QVERIFY(f.fakePortal.calls.isEmpty());
+}
+
+void TstLinkInput::lockMidTextReplyAndNextTextWorks()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    QVERIFY(phone.waitFor(s("ok")));
+    phone.send(InputFixture::frame(s("input.text"), o({{s("text"), QString(3000, QLatin1Char('q'))}}), 40));
+    QVERIFY(waitUntil([&] { return f.callCount(s("NotifyKeyboardKeysym")) >= 10; }));
+    f.gate.setOpen(false);
+    Envelope err;
+    QVERIFY(phone.waitFor(s("error"), &err)); // the cancelled text is answered, not left hanging
+    QCOMPARE(err.re, 40);
+    f.gate.setOpen(true);
+    QVERIFY(waitUntil([&] { return phone.all().last().b.value(s("state")).toString() == s("active"); }));
+    f.fakePortal.calls.clear();
+    phone.send(InputFixture::frame(s("input.text"), o({{s("text"), s("ok")}}), 41));
+    Envelope ok;
+    QVERIFY(phone.waitFor(s("ok"), &ok));
+    QCOMPARE(ok.re, 41); // not refused busy
+}
+
+void TstLinkInput::watchdogAndBeginReleaseStuckKeys()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    f.input.setHoldLimit(300);
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    QVERIFY(phone.waitFor(s("ok")));
+    phone.send(InputFixture::frame(s("input.key"), o({{s("name"), s("Ctrl")}, {s("state"), s("down")}})));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65507:1")); }));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65507:0")); }, 4000)); // watchdog
+    QVERIFY(!f.input.holding());
+    // A new input.begin releases whatever is held.
+    phone.send(InputFixture::frame(s("input.key"), o({{s("name"), s("Alt")}, {s("state"), s("down")}})));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65513:1")); }));
+    f.input.setHoldLimit(60'000);
+    InputFixture::begin(phone, 2);
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65513:0")); }));
+}
+
+void TstLinkInput::keyPressesAreRateLimitedButReleasesAreNot()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    QVERIFY(phone.waitFor(s("ok")));
+    f.fakePortal.calls.clear();
+    for (int i = 0; i < 300; ++i) phone.send(InputFixture::frame(s("input.key"), o({{s("keysym"), 97}, {s("state"), s("down")}})));
+    for (int i = 0; i < 300; ++i) phone.send(InputFixture::frame(s("input.key"), o({{s("keysym"), 97}, {s("state"), s("up")}})));
+    QVERIFY(waitUntil([&] { return f.callCount(s("NotifyKeyboardKeysym:97:0")) >= 300; }));
+    const int downs = f.callCount(s("NotifyKeyboardKeysym:97:1"));
+    QVERIFY2(downs > 0 && downs < 150, qPrintable(QString::number(downs)));
+    QVERIFY(!f.input.holding());
+}
+
+void TstLinkInput::sessionControlKeysymsAndC1TextAreRefused()
+{
+    using namespace InputFrames;
+    QVERIFY(!validKeysym(0x1008ff2a)); // PowerOff
+    QVERIFY(!validKeysym(0x1008ff2f)); // Sleep
+    QVERIFY(!validKeysym(0x1008ffa7)); // Suspend
+    QVERIFY(!validKeysym(0x1008ffa8)); // Hibernate
+    QVERIFY(!validKeysym(0x1008ff61)); // LogOff
+    QVERIFY(!validKeysym(0x1008ff2b)); // WakeUp
+    QVERIFY(validKeysym(0x1008ff13));  // AudioRaiseVolume
+    InputFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    QVERIFY(phone.waitFor(s("ok")));
+    f.fakePortal.calls.clear();
+    phone.send(InputFixture::frame(s("input.text"), o({{s("text"), QStringLiteral("a\u0085\u009fb")}}), 7));
+    Envelope ok;
+    QVERIFY(phone.waitFor(s("ok"), &ok));
+    QVERIFY(waitUntil([&] { return f.fakePortal.calls.size() >= 4; }));
+    QTest::qWait(50);
+    QCOMPARE(f.fakePortal.calls, (QStringList{s("NotifyKeyboardKeysym:97:1"), s("NotifyKeyboardKeysym:97:0"),
+                                              s("NotifyKeyboardKeysym:98:1"), s("NotifyKeyboardKeysym:98:0")}));
+}
+
+void TstLinkInput::lockedBeginDoesNotClaimTheController()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone first, second;
+    QVERIFY(f.pairPhone(first));
+    QVERIFY(f.pairPhone(second));
+    f.gate.setOpen(false);
+    InputFixture::begin(first, 1);
+    Envelope err;
+    QVERIFY(first.waitFor(s("error"), &err));
+    QCOMPARE(err.b.value(s("message")).toString(), s("locked"));
+    QVERIFY(f.input.controller().isEmpty());
+    f.gate.setOpen(true);
+    InputFixture::begin(second, 2); // not busy: the locked attempt claimed nothing
+    Envelope ok;
+    QVERIFY(second.waitFor(s("ok"), &ok));
+    QCOMPARE(ok.re, 2);
+}
+
+void TstLinkInput::refusedSelectDevicesClearsTheToken()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    QVERIFY(QDir().mkpath(QFileInfo(f.tokenFile()).absolutePath()));
+    QFile t(f.tokenFile());
+    QVERIFY(t.open(QIODevice::WriteOnly));
+    t.write("stale-token\n");
+    t.close();
+    QVERIFY(t.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner));
+    f.fakePortal.mode = FakePortal::Mode::RefuseSelect;
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    Envelope err;
+    QVERIFY(phone.waitFor(s("error"), &err));
+    QCOMPARE(f.fakePortal.lastSelect.value(s("restore_token")).toString(), s("stale-token"));
+    QVERIFY(!QFileInfo::exists(f.tokenFile()));
+}
+
+void TstLinkInput::shutdownReleasesBeforeClosing()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    QVERIFY(phone.waitFor(s("ok")));
+    phone.send(InputFixture::frame(s("input.key"), o({{s("name"), s("Meta")}, {s("state"), s("down")}})));
+    QVERIFY(waitUntil([&] { return f.callSeen(s("NotifyKeyboardKeysym:65515:1")); }));
+    f.input.shutdown();
+    QVERIFY(waitUntil([&] { return f.callSeen(s("Close")); }));
+    const int up = int(f.fakePortal.calls.indexOf(s("NotifyKeyboardKeysym:65515:0")));
+    QVERIFY(up >= 0);
+    QVERIFY(up < int(f.fakePortal.calls.indexOf(s("Close")))); // released while the session was still open
 }
 
 QTEST_GUILESS_MAIN(TstLinkInput)

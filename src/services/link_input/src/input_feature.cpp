@@ -8,12 +8,18 @@ namespace QindaQt::Link {
 namespace {
 constexpr double kRatePerSecond = 240; // desktop cap; the phone coalesces to 120/s
 constexpr double kBurst = 60;
+constexpr double kKeyRatePerSecond = 100; // key and button presses; releases are never limited
+constexpr double kKeyBurst = 30;
 }
 
 InputFeature::InputFeature(PortalInputSession &portal, InputGate &gate, QObject *parent)
     : QObject(parent), m_portal(portal), m_gate(gate), m_held(portal), m_text(portal)
 {
     m_clock.start();
+    // AGENT-GUARD: backstop for a lost key-up or button-up (a dropped frame, a failed portal call).
+    m_watchdog.setInterval(1000);
+    connect(&m_watchdog, &QTimer::timeout, this, [this] { m_held.releaseOlderThan(m_holdLimitMs); });
+    m_watchdog.start();
     connect(&m_portal, &PortalInputSession::activated, this, &InputFeature::onActivated);
     connect(&m_portal, &PortalInputSession::failed, this,
             [this](PortalInputSession::Failure f, const QString &) { onFailed(f); });
@@ -28,6 +34,13 @@ InputFeature::InputFeature(PortalInputSession &portal, InputGate &gate, QObject 
 }
 
 InputFeature::~InputFeature() { m_held.releaseAll(); }
+
+void InputFeature::shutdown()
+{
+    endController(QStringLiteral("shutdown"), true);
+    m_held.releaseAll();
+    if (m_portal.state() != PortalInputSession::State::Idle) m_portal.close();
+}
 
 bool InputFeature::flowing() const
 {
@@ -76,13 +89,18 @@ void InputFeature::begin(Session &session, qint64 id)
         session.send(state);
         return;
     }
-    m_device = session.deviceId();
-    m_session = &session;
     if (!m_gate.open()) {
-        reply(id, QStringLiteral("busy"), QStringLiteral("locked"));
-        pushState(QStringLiteral("locked"));
+        // Not claimed: a locked desktop must not keep a phone as controller.
+        session.send(makeError(QStringLiteral("busy"), QStringLiteral("locked"), id));
+        Envelope state;
+        state.t = QStringLiteral("input.state");
+        state.b = QJsonObject{{QStringLiteral("state"), QStringLiteral("locked")}};
+        session.send(state);
         return;
     }
+    m_device = session.deviceId();
+    m_session = &session;
+    m_held.releaseAll(); // a fresh begin never inherits anything held by an earlier one
     if (m_portal.active()) {
         m_phase = Phase::Active;
         reply(id, {});
@@ -152,10 +170,13 @@ void InputFeature::endController(const QString &reason, bool notifyPhone)
     m_beginId = m_textId = 0;
     m_textToken.clear();
     m_session = nullptr;
+    // AGENT-GUARD: ordering. Dependents (the macro runner) release what they
+    // hold while the portal session is still active; only then does it close.
+    Q_EMIT controllerEnded(who);
+    m_held.releaseAll();
     // The portal session closes with its controller so the compositor's
     // "remote control" indicator never outlives the phone's use.
     if (m_portal.state() != PortalInputSession::State::Idle) m_portal.close();
-    Q_EMIT controllerEnded(who);
 }
 
 void InputFeature::sessionClosed(const QString &deviceId)
@@ -175,14 +196,18 @@ void InputFeature::onGateChanged()
     }
 }
 
-bool InputFeature::allowRate()
+bool InputFeature::take(double &tokens, qint64 &last, double rate, double burst)
 {
-    const double elapsed = double(m_clock.restart()) / 1000.0;
-    m_tokens = std::min(kBurst, m_tokens + elapsed * kRatePerSecond);
-    if (m_tokens < 1) return false;
-    m_tokens -= 1;
+    const qint64 now = m_clock.elapsed();
+    tokens = std::min(burst, tokens + double(now - last) / 1000.0 * rate);
+    last = now;
+    if (tokens < 1) return false;
+    tokens -= 1;
     return true;
 }
+
+bool InputFeature::allowRate() { return take(m_tokens, m_lastMotion, kRatePerSecond, kBurst); }
+bool InputFeature::allowKeyRate() { return take(m_keyTokens, m_lastKey, kKeyRatePerSecond, kKeyBurst); }
 
 void InputFeature::deliver(Session &session, const Envelope &e)
 {
@@ -196,6 +221,8 @@ void InputFeature::deliver(Session &session, const Envelope &e)
     if (const auto *p = std::get_if<F::Pointer>(&*event)) {
         if (allowRate()) m_held.pointerMotion(p->dx, p->dy);
     } else if (const auto *b = std::get_if<F::Button>(&*event)) {
+        // Releases are never rate limited: dropping one would leave the button down.
+        if (b->state != F::ButtonState::Up && !allowKeyRate()) return;
         if (b->state != F::ButtonState::Up) m_held.pointerButton(b->evdev, true);
         if (b->state != F::ButtonState::Down) m_held.pointerButton(b->evdev, false);
     } else if (const auto *s = std::get_if<F::Scroll>(&*event)) {
@@ -207,6 +234,7 @@ void InputFeature::deliver(Session &session, const Envelope &e)
             m_held.pointerAxis(s->dx, s->dy, s->finish);
         }
     } else if (const auto *k = std::get_if<F::Key>(&*event)) {
+        if (k->state != F::KeyState::Up && !allowKeyRate()) return; // releases are exempt, see above
         if (k->state != F::KeyState::Up) m_held.keysym(k->keysym, true);
         if (k->state != F::KeyState::Down) m_held.keysym(k->keysym, false);
     } else if (const auto *t = std::get_if<F::Text>(&*event)) {

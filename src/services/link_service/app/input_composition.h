@@ -28,6 +28,8 @@ class InputComposition final : public QObject {
 public:
     InputComposition(Hub &hub, QDBusConnection bus, InputCompositionOptions options, QObject *parent = nullptr);
     ~InputComposition() override;
+    // Releases held input and closes the portal session; safe to call more than once.
+    void shutdown();
 
 private:
     StaticInputGate m_closedGate{false};

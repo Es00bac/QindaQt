@@ -4,7 +4,7 @@
 
 namespace QindaQt::Link {
 
-TextTyper::TextTyper(InputSink &sink, QObject *parent) : QObject(parent), m_sink(sink)
+TextTyper::TextTyper(InputSink &sink, QObject *parent) : QObject(parent), m_held(sink)
 {
     m_timer.setInterval(4);
     connect(&m_timer, &QTimer::timeout, this, &TextTyper::pump);
@@ -19,7 +19,7 @@ bool TextTyper::enqueue(const QString &token, const QString &text)
         if (cp == '\r') continue;
         if (cp == '\n') job.symbols.append(0xff0d);       // Return
         else if (cp == '\t') job.symbols.append(0xff09);  // Tab
-        else if (cp >= 0x20 && cp != 0x7f && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff))
+        else if (cp >= 0x20 && cp != 0x7f && !(cp >= 0x80 && cp <= 0x9f) && cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff))
             job.symbols.append(InputFrames::keysymForCodepoint(cp));
     }
     if (job.symbols.isEmpty() || m_queued + job.symbols.size() > kMaxQueued) return false;
@@ -47,16 +47,22 @@ void TextTyper::record(const QString &token, State state)
 
 void TextTyper::cancel(const QString &prefix)
 {
+    QStringList dropped;
     for (auto it = m_jobs.begin(); it != m_jobs.end();) {
         if (prefix.isEmpty() || it->token.startsWith(prefix)) {
             m_queued -= it->symbols.size() - it->next;
             record(it->token, State::Failed);
+            dropped << it->token;
             it = m_jobs.erase(it);
         } else {
             ++it;
         }
     }
     if (m_jobs.empty()) m_timer.stop();
+    // AGENT-GUARD: waiters (InputFeature's reply, the macro runner) rely on one
+    // finished() per job; a cancel without it wedges them. Emitted last, after
+    // the queue is consistent, because a waiter may enqueue again.
+    for (const QString &token : std::as_const(dropped)) Q_EMIT finished(token, false);
 }
 
 void TextTyper::pump()
@@ -69,8 +75,9 @@ void TextTyper::pump()
             const qint32 sym = job.symbols[job.next++];
             --budget;
             --m_queued;
-            if (!m_sink.keysym(sym, true) || !m_sink.keysym(sym, false)) {
+            if (!m_held.keysym(sym, true) || !m_held.keysym(sym, false)) {
                 ok = false;
+                m_held.releaseAll(); // never leave the half-typed key down
                 break;
             }
         }

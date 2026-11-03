@@ -46,8 +46,19 @@ std::optional<qint32> namedKeysym(const QString &name)
 
 bool validKeysym(qint64 k)
 {
+    // AGENT-GUARD: a phone must not be able to send session-control keys. The
+    // XF86 block is therefore an allowlist of media and brightness keys, never
+    // a range: PowerOff, Sleep, Suspend, Hibernate, WakeUp, LogOff, ScreenSaver,
+    // Standby and Eject are all outside it. Keep docs and Java InputFrames in step.
+    static constexpr qint64 xf86[] = {
+        0x1008ff02, 0x1008ff03,                         // MonBrightnessUp / Down
+        0x1008ff11, 0x1008ff12, 0x1008ff13,             // AudioLowerVolume / Mute / RaiseVolume
+        0x1008ff14, 0x1008ff15, 0x1008ff16, 0x1008ff17, // AudioPlay / Stop / Prev / Next
+        0x1008ff31, 0x1008ffb2};                        // AudioPause / AudioMicMute
+    for (qint64 allowed : xf86) {
+        if (k == allowed) return true;
+    }
     return (k >= 0x20 && k <= 0x7e) || (k >= 0xa0 && k <= 0xff) || (k >= 0xfe00 && k <= 0xffff)
-        || (k >= 0x1008ff00 && k <= 0x1008ffff)
         || (k >= 0x01000100 && k <= 0x0110ffff && !(k >= 0x0100d800 && k <= 0x0100dfff));
 }
 

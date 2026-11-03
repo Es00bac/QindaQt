@@ -30,7 +30,8 @@ public:
     // False (nothing queued) when the queue is full or the text is empty.
     bool enqueue(const QString &token, const QString &text);
     [[nodiscard]] State state(const QString &token) const;
-    // Drops queued jobs whose token starts with `prefix` (all when empty).
+    // Drops queued jobs whose token starts with `prefix` (all when empty). Each dropped job
+    // emits finished(token, false) so no waiter is left hanging.
     void cancel(const QString &prefix = {});
     [[nodiscard]] bool busy() const { return !m_jobs.empty(); }
 
@@ -46,7 +47,7 @@ private:
     void pump();
     void record(const QString &token, State state);
 
-    InputSink &m_sink;
+    HeldInput m_held; // so a half-typed key is released, never left down
     QTimer m_timer;
     std::deque<Job> m_jobs;
     qsizetype m_queued = 0;

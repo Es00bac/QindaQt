@@ -96,9 +96,14 @@ public final class InputFrames {
         return Envelope.of("input.key", b);
     }
 
+    /** XF86 media and brightness keys allowed; session-control keys (power, sleep, suspend, log off ...) never. */
+    private static final long[] XF86_ALLOWED = {0x1008ff02L, 0x1008ff03L, 0x1008ff11L, 0x1008ff12L, 0x1008ff13L,
+            0x1008ff14L, 0x1008ff15L, 0x1008ff16L, 0x1008ff17L, 0x1008ff31L, 0x1008ffb2L};
+
+    /** Mirrors InputFrames::validKeysym in src/services/link_input (the desktop is the authority). */
     public static boolean validKeysym(long k) {
+        for (long a : XF86_ALLOWED) if (k == a) return true;
         return (k >= 0x20 && k <= 0x7e) || (k >= 0xa0 && k <= 0xff) || (k >= 0xfe00 && k <= 0xffff)
-                || (k >= 0x1008ff00L && k <= 0x1008ffffL)
                 || (k >= 0x01000100L && k <= 0x0110ffffL && !(k >= 0x0100d800L && k <= 0x0100dfffL));
     }
 

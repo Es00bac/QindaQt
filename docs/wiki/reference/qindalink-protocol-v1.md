@@ -244,7 +244,7 @@ reply on success. A frame that has an `id` and fails validation gets
 
 | Type | Direction | Body | Reply |
 | --- | --- | --- | --- |
-| `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop is locked (`message` is `locked`). `error{internal}` when the portal is unavailable. |
+| `input.begin` | phone→desktop, with `id` | `{}` | `ok` when input is active. `error{denied}` when the desktop user did not approve. `error{busy}` when another phone controls input, or the desktop is locked (`message` is `locked`; the phone is not made controller and asks again after unlocking). `error{internal}` when the portal is unavailable. |
 | `input.end` | both | phone→desktop: `{}` (an optional `id` is answered `ok`). desktop→phone: `reason`, currently `revoked` | none / `ok` |
 | `input.state` | desktop→phone | `state`: `pending` (waiting for the desktop user), `active`, `denied`, `unavailable`, `locked`, `busy` (another phone controls input) | none |
 | `input.pointer` | phone→desktop | `dx`, `dy`: numbers, relative, finite, absolute value at most 1000 | none |
@@ -261,22 +261,29 @@ Rules:
   a reply only as confirmation.
 - **Rates.** A phone sends at most 120 `input.pointer` or `input.scroll`
   frames per second, coalescing movement between sends. The desktop drops
-  pointer and scroll frames above 240 per second with a burst of 60. Keys and
-  buttons are not rate limited. Text is typed in bounded batches (24 symbols
+  pointer and scroll frames above 240 per second with a burst of 60, and key and
+  button presses (`down`, `tap`, `click`) above 100 per second with a burst of 30.
+  Releases (`up`) are never limited, so a limit can never leave something held. Text is typed in bounded batches (24 symbols
   every 4 ms), and a second `input.text` while one is typing gets `busy`.
 - **Keys.** A `keysym` is an X11 keysym in one of these ranges: 0x20–0x7E,
-  0xA0–0xFF, 0xFE00–0xFFFF, 0x1008FF00–0x1008FFFF, and Unicode
-  `0x01000000 | codepoint` for U+0100 to U+10FFFF (surrogates excluded). A
+  0xA0–0xFF, 0xFE00–0xFFFF, the XF86 media and brightness keys
+  0x1008FF02, 0x1008FF03, 0x1008FF11–0x1008FF17, 0x1008FF31 and 0x1008FFB2, and
+  Unicode `0x01000000 | codepoint` for U+0100 to U+10FFFF (surrogates
+  excluded). Session-control keysyms (PowerOff, Sleep, Suspend, Hibernate,
+  WakeUp, LogOff, ScreenSaver, Standby, Eject) are refused. A
   `name` is one of `Escape`, `Tab`, `Return`, `BackSpace`, `Delete`, `Insert`,
   `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up`, `Down`, `Space`,
   `Menu`, `Print`, `CapsLock`, `Shift`, `Ctrl`, `Alt`, `Meta`, `F1` to `F12`.
   A chord is `down` of each modifier, then the key, then `up` in reverse.
 - **Text.** The desktop types `input.text` as keysyms. Characters from U+0100
   up use `0x01000000 | codepoint`, a line feed is Return, a tab is Tab, and
-  other control characters are skipped. The text is never logged or stored.
-- **Releasing.** On `input.end`, disconnect, desktop lock, portal revocation
-  or loss of READY, the desktop releases every key and button the phone still
-  holds. A phone still sends `up` for what it pressed.
+  other control characters, including U+0080 to U+009F, are skipped. The text is never logged or stored.
+- **Releasing.** On `input.end`, a new `input.begin`, disconnect, desktop lock,
+  portal revocation, service shutdown or loss of READY, the desktop releases
+  every key and button the phone still holds, while the portal session is still
+  open. It also releases any key or button held for more than 30 seconds
+  without being pressed again. A lock that cancels a typing `input.text` answers
+  it with an error. A phone still sends `up` for what it pressed.
 - **Revocation.** If the portal session is closed or revoked, the desktop
   sends `input.end{reason:"revoked"}`, forgets the portal restore token and
   ends the phone's control. The next `input.begin` starts a new portal

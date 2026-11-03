@@ -76,3 +76,24 @@ The first live run raises a desktop **remote-control approval prompt**. Tell the
 3. Check: pointer move, tap, hold-drag, two-finger scroll, a short typed text, one macro from Settings > Input > Macros.
 4. Lock the desktop: input must stop and held keys release; unlock: input resumes (this proves `NativeInputGate`).
 5. Revoke the permission in the desktop's remote-control settings: the phone must show the approval state again.
+
+## Repair round (review of f4446d0fe: accept-with-P1s)
+
+Merged `main` first (docs, ADR index and `mkdocs.yml` conflicts resolved additively; ADRs 0435 mirror, 0436 this lane, 0437 applet).
+
+- P1 text wedge: `TextTyper::cancel` now emits `finished(token,false)` per dropped job, so a lock mid-text answers the request with an error
+  and clears the in-flight token; the next `input.text` works (test `lockMidTextReplyAndNextTextWorks`).
+- P1 stuck keys: phone queue never evicts up/click/press frames (oldest movement/scroll goes first; hard cap 2048 refuses only new
+  presses, never an up). Desktop `HeldInput` records press times and a 1 s watchdog releases anything held over 30 s
+  (`setHoldLimit`), and `input.begin` releases everything first. Tests: `InputTest` (click and key-up survive a full queue),
+  `watchdogAndBeginReleaseStuckKeys`.
+- P2: key and button presses rate-capped at 100/s burst 30 (releases exempt); `input.end`/disconnect emit `controllerEnded` and release
+  before the portal closes (`inputEndReleasesMacroBeforeClosingThePortal`); XF86 range replaced by a media/brightness allowlist on both
+  sides and documented; C1 text 0x80-0x9f skipped; `TextTyper` presses via `HeldInput` (a failed key-up stays in the ledger, a failed
+  key releases all); a closed gate does not claim the controller (the phone gets `busy/locked` and `input.state locked`, UI offers
+  "Ask again"); SIGTERM/SIGINT end the loop and `InputComposition::shutdown()` releases then closes; refused `SelectDevices` clears the
+  restore token.
+- Evidence: all 15 `qindaqt_link_*test` and service targets built; `ctest -R qindaqt.link-` 14/14 passed (input now 21 cases,
+  macros 12; input and macros repeated 3x stable); `phone/engine-tests/run.sh` OK (InputTest 64 checks); preview smoke 0 warnings;
+  `tools/validate-docs` and `mkdocs build --strict` pass. APK not rebuilt this round (phone Java compiles under `run.sh`; QML/Java
+  changes are small); no portal, device or keyring was touched.

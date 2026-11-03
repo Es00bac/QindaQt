@@ -108,6 +108,7 @@ void PortalInputSession::onCreated(uint response, const QVariantMap &results)
 void PortalInputSession::onSelected(uint response, const QVariantMap &)
 {
     if (response != 0) {
+        m_tokens.clear(); // a refused (possibly stale) token must not be offered again
         fail(Failure::Unavailable, QStringLiteral("SelectDevices refused"));
         return;
     }

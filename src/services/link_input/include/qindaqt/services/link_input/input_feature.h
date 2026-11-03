@@ -8,6 +8,7 @@
 
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QObject>
+#include <QtCore/QTimer>
 
 namespace QindaQt::Link {
 
@@ -39,6 +40,11 @@ public:
     // flow right now (portal active, gate open).
     [[nodiscard]] QString controller() const { return m_device; }
     [[nodiscard]] bool flowing() const;
+    // A key or button held longer than this without being pressed again is released (default 30 s).
+    void setHoldLimit(int ms) { m_holdLimitMs = ms; }
+    [[nodiscard]] bool holding() const { return m_held.holding(); }
+    // Orderly shutdown: release everything through the still-active portal, then close it.
+    void shutdown();
 
 Q_SIGNALS:
     void controllerEnded(const QString &deviceId);
@@ -56,6 +62,8 @@ private:
     void pushState(const QString &state);
     void reply(qint64 id, const QString &errorCode, const QString &message = {});
     [[nodiscard]] bool allowRate();
+    [[nodiscard]] bool allowKeyRate();
+    [[nodiscard]] bool take(double &tokens, qint64 &last, double rate, double burst);
 
     PortalInputSession &m_portal;
     InputGate &m_gate;
@@ -69,6 +77,10 @@ private:
     QString m_textToken; // the single in-flight input.text job
     quint64 m_textSeq = 0;
     double m_tokens = 60;
+    double m_keyTokens = 30;
+    qint64 m_lastMotion = 0, m_lastKey = 0;
+    int m_holdLimitMs = 30'000;
+    QTimer m_watchdog;
     QElapsedTimer m_clock;
 };
 

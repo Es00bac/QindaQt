@@ -18,9 +18,12 @@ InputComposition::InputComposition(Hub &hub, QDBusConnection bus, InputCompositi
     m_catalog.start();
 }
 
-InputComposition::~InputComposition()
+void InputComposition::shutdown()
 {
     m_output.releaseAll();
+    m_input.shutdown();
 }
+
+InputComposition::~InputComposition() { shutdown(); }
 
 } // namespace QindaQt::Link
