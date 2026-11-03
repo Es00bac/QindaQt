@@ -2,6 +2,7 @@
 #include <qindaqt/services/link_transport/hub.h>
 
 #include <QtCore/QDateTime>
+#include <QtCore/QElapsedTimer>
 
 namespace QindaQt::Link {
 
@@ -15,15 +16,63 @@ Hub::Hub(DeviceIdentity identity, TrustStore &store, HubOptions options, QObject
 
 Hub::~Hub() = default;
 
-bool Hub::listen(const QHostAddress &address, quint16 port, Origin origin)
+bool Hub::listen(const QHostAddress &address, quint16 port, Origin origin, QString *error)
 {
     auto listener = std::make_unique<TlsListener>(m_identity, origin, this);
+    if (origin == Origin::Lan) {
+        if (!m_lanLimiter) {
+            m_lanLimiter = std::make_unique<AcceptLimiter>(
+                m_options.lanAcceptsPerSource, m_options.lanAcceptsGlobal, m_options.lanAcceptWindowMs,
+                [] { static QElapsedTimer t = [] { QElapsedTimer e; e.start(); return e; }(); return t.elapsed(); });
+        }
+        listener->setAcceptLimiter(m_lanLimiter.get(), m_options.lanHandshakeTimeoutMs);
+    }
     if (!listener->listen(address, port)) {
+        if (error != nullptr) *error = listener->errorString();
         return false;
     }
     connect(listener.get(), &TlsListener::connectionReady, this, &Hub::adopt);
     m_listeners.push_back(std::move(listener));
     return true;
+}
+
+bool Hub::unlisten(const QHostAddress &address, Origin origin)
+{
+    for (auto it = m_listeners.begin(); it != m_listeners.end(); ++it) {
+        if ((*it)->origin() == origin && (*it)->address() == address) {
+            (*it)->close();
+            (*it)->deleteLater();
+            it->release();
+            m_listeners.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void Hub::dropSessions(Origin origin)
+{
+    const auto sessions = m_sessions.values();
+    for (Session *s : sessions) {
+        if (s->origin() == origin && s->state() != SessionState::Closed) {
+            s->close(QStringLiteral("shutdown"));
+        }
+    }
+}
+
+qsizetype Hub::listenerCount(Origin origin) const
+{
+    qsizetype n = 0;
+    for (const auto &l : m_listeners) n += l->origin() == origin ? 1 : 0;
+    return n;
+}
+
+quint16 Hub::portOf(const QHostAddress &address, Origin origin) const
+{
+    for (const auto &l : m_listeners) {
+        if (l->origin() == origin && l->address() == address) return l->port();
+    }
+    return 0;
 }
 
 quint16 Hub::port(qsizetype index) const
@@ -39,18 +88,31 @@ void Hub::adopt(QSslSocket *socket, Origin origin)
         connect(session, &Session::closed, session, &QObject::deleteLater);
         return;
     }
-    // Cap unauthenticated connections: refuse right after the handshake.
-    int unauthenticated = 0;
-    for (Session *other : std::as_const(m_sessions)) {
-        if (other != session && other->state() != SessionState::Ready && other->state() != SessionState::Closed
-            && other->deviceId() != id) {
-            ++unauthenticated;
+    // Cap unauthenticated connections: refuse right after the handshake. A session whose proven id is
+    // pinned is exempt, and LAN sessions have their own small budget, so neither a LAN flood nor throwaway
+    // keys can starve a paired phone or the USB pairing path (ADR-0441).
+    if (!m_store.contains(id)) {
+        int loopbackUnauth = 0, lanUnauth = 0, lanFromSource = 0;
+        for (Session *other : std::as_const(m_sessions)) {
+            if (other == session || other->state() == SessionState::Ready || other->state() == SessionState::Closed
+                || other->deviceId() == id || m_store.contains(other->deviceId())) {
+                continue;
+            }
+            if (other->origin() == Origin::Lan) {
+                ++lanUnauth;
+                if (other->sourceAddress() == session->sourceAddress()) ++lanFromSource;
+            } else {
+                ++loopbackUnauth;
+            }
         }
-    }
-    if (unauthenticated >= m_options.maxUnpaired) {
-        connect(session, &Session::closed, session, &QObject::deleteLater);
-        session->close(QString());
-        return;
+        const bool refuse = origin == Origin::Lan
+            ? (lanUnauth >= m_options.maxLanUnpaired || lanFromSource >= m_options.maxLanUnpairedPerSource)
+            : loopbackUnauth >= m_options.maxUnpaired;
+        if (refuse) {
+            connect(session, &Session::closed, session, &QObject::deleteLater);
+            session->close(QString());
+            return;
+        }
     }
     Session *existing = m_sessions.value(id);
     if (existing != nullptr && existing->state() != SessionState::Closed) {
@@ -81,7 +143,10 @@ void Hub::wire(Session *session)
         Q_EMIT devicesChanged();
     });
     connect(session, &Session::pairingCodeReady, this, [this, session, id](const QString &code) {
-        Q_EMIT pairingRequested(id, session->peer().name, session->peer().model, code);
+        const bool lan = session->origin() == Origin::Lan;
+        Q_EMIT pairingRequested(id, session->peer().name, session->peer().model, code,
+                                lan ? QStringLiteral("lan") : QStringLiteral("usb"),
+                                lan ? session->sourceAddress().toString() : QString());
     });
     connect(session, &Session::pairingCompleted, this, &Hub::devicesChanged);
     connect(session, &Session::closed, this, [this, session, id] {
@@ -100,10 +165,29 @@ void Hub::wire(Session *session)
 bool Hub::beginPairing(Session *session)
 {
     if (m_pairingOwner != nullptr && m_pairingOwner != session) {
-        return false;
+        // A USB pairing outranks a LAN one: otherwise a LAN host could hold the single slot.
+        if (session == nullptr || m_pairingOwner->origin() != Origin::Lan || session->origin() != Origin::Loopback) {
+            return false;
+        }
+        Session *old = m_pairingOwner;
+        m_pairingOwner = nullptr;
+        old->close(QStringLiteral("replaced"));
     }
     m_pairingOwner = session;
+    if (session != nullptr && session->origin() == Origin::Lan && m_pairingWindow) {
+        // One accepted LAN pair.request per window.
+        m_pairingWindow = false;
+        Q_EMIT lanPairingWindowConsumed();
+    }
     return true;
+}
+
+void Hub::abortLanPairings()
+{
+    const auto sessions = m_sessions.values();
+    for (Session *s : sessions) {
+        if (s->origin() == Origin::Lan && s->pairingPending()) s->close(QStringLiteral("pair-timeout"));
+    }
 }
 
 void Hub::endPairing(Session *session)
@@ -180,7 +264,9 @@ QJsonArray Hub::pendingPairings() const
             out.append(QJsonObject{{QStringLiteral("id"), it.key()},
                                    {QStringLiteral("name"), it.value()->peer().name},
                                    {QStringLiteral("model"), it.value()->peer().model},
-                                   {QStringLiteral("code"), it.value()->pairingCode()}});
+                                   {QStringLiteral("code"), it.value()->pairingCode()},
+                                   {QStringLiteral("origin"), it.value()->origin() == Origin::Lan ? QStringLiteral("lan") : QStringLiteral("usb")},
+                                   {QStringLiteral("source"), it.value()->origin() == Origin::Lan ? it.value()->sourceAddress().toString() : QString()}});
         }
     }
     return out;

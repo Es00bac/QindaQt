@@ -9,6 +9,7 @@ add_library(QindaQt::LinkTransport ALIAS qindaqt_link_transport)
 target_sources(
     qindaqt_link_transport
     PRIVATE
+        src/accept_limiter.cpp
         src/desktop_pairing.cpp
         src/features.cpp
         src/hub.cpp
@@ -21,6 +22,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_transport/accept_limiter.h
             include/qindaqt/services/link_transport/caller_authority.h
             include/qindaqt/services/link_transport/desktop_pairing.h
             include/qindaqt/services/link_transport/feature.h

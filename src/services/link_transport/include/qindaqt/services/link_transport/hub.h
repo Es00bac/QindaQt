@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <qindaqt/services/link_transport/accept_limiter.h>
 #include <qindaqt/services/link_transport/identity.h>
 #include <qindaqt/services/link_transport/ring_feature.h>
 #include <qindaqt/services/link_transport/session.h>
@@ -20,7 +21,16 @@ namespace QindaQt::Link {
 struct HubOptions {
     PeerHello local;          // name/model/os/app advertised in hello
     SessionTimings timings;   // tests shrink these
-    int maxUnpaired = 8;      // UNPAIRED/AwaitHello connections held at once
+    int maxUnpaired = 8;      // unauthenticated loopback connections held at once
+    // LAN connections never share the loopback budget (ADR-0441): a LAN host with throwaway keys must not
+    // be able to refuse a paired phone's USB reconnect. A session whose TLS-proven id is already pinned
+    // counts against no cap.
+    int maxLanUnpaired = 3;           // unauthenticated LAN connections held at once
+    int maxLanUnpairedPerSource = 1;  // ... from one source address
+    int lanAcceptsPerSource = 6;      // TLS accepts per source address per window
+    int lanAcceptsGlobal = 30;        // TLS accepts in total per window
+    int lanAcceptWindowMs = 10'000;
+    int lanHandshakeTimeoutMs = 3'000;
 };
 
 // Owns the listeners and live sessions, applies the one-connection-per-device
@@ -38,11 +48,22 @@ public:
     Hub(DeviceIdentity identity, TrustStore &store, HubOptions options, QObject *parent = nullptr);
     ~Hub() override;
 
-    // Adds a listener; port 0 picks an ephemeral port. LAN origin listeners
-    // exist for the replacement/denied rules; this lane never opens one.
-    [[nodiscard]] bool listen(const QHostAddress &address, quint16 port, Origin origin = Origin::Loopback);
+    // Adds a listener; port 0 picks an ephemeral port. On failure `error`
+    // (when given) receives the socket's reason. LAN-origin listeners are
+    // opened and closed only by the service's LanController (ADR-0441).
+    [[nodiscard]] bool listen(const QHostAddress &address, quint16 port, Origin origin = Origin::Loopback,
+                              QString *error = nullptr);
+    // Closes the listener bound to exactly `address` with `origin`; live sessions stay. False if none.
+    bool unlisten(const QHostAddress &address, Origin origin);
+    // Closes every live session that arrived through `origin` with bye{reason:"shutdown"}.
+    void dropSessions(Origin origin);
     [[nodiscard]] quint16 port(qsizetype listenerIndex = 0) const;
+    [[nodiscard]] qsizetype listenerCount(Origin origin) const;
+    // Bound port of the listener on exactly `address` with `origin`, 0 if none.
+    [[nodiscard]] quint16 portOf(const QHostAddress &address, Origin origin) const;
     void setPairingWindowOpen(bool open) { m_pairingWindow = open; }
+    // Ends every LAN pairing still in flight (the window closed or LAN was switched off).
+    void abortLanPairings();
     // Registers a feature (non-owning). Must happen before connections arrive.
     void addFeature(FeatureHandler *handler) { m_router.add(handler); }
 
@@ -69,8 +90,11 @@ public:
 
 Q_SIGNALS:
     void devicesChanged();
+    // `origin` is "usb" or "lan"; `source` is the peer address for LAN (empty for USB).
     void pairingRequested(const QString &deviceId, const QString &name, const QString &model,
-                          const QString &code);
+                          const QString &code, const QString &origin, const QString &source);
+    // The first accepted LAN pair.request closes the window (one pairing per window).
+    void lanPairingWindowConsumed();
 
 private:
     void wire(Session *session);
@@ -86,6 +110,7 @@ private:
     QHash<QString, Session *> m_sessions;
     bool m_pairingWindow = false;
     Session *m_pairingOwner = nullptr;
+    std::unique_ptr<AcceptLimiter> m_lanLimiter;
 };
 
 } // namespace QindaQt::Link

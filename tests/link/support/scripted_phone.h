@@ -47,7 +47,7 @@ public:
     [[nodiscard]] bool autoPong() const { return m_autoPong; }
     void setAutoPong(bool on) { m_autoPong = on; }
 
-    bool connectTo(quint16 port)
+    bool connectTo(quint16 port, const QString &host = QStringLiteral("127.0.0.1"))
     {
         Q_ASSERT(port != 47160);
         QSslConfiguration config = QSslConfiguration::defaultConfiguration();
@@ -59,7 +59,7 @@ public:
         connect(&m_socket, &QSslSocket::readyRead, this, [this] { pump(); });
         // Data that arrived together with the peer's close must still be read.
         connect(&m_socket, &QSslSocket::disconnected, this, [this] { pump(); });
-        m_socket.connectToHostEncrypted(QStringLiteral("127.0.0.1"), port);
+        m_socket.connectToHostEncrypted(host, port);
         connect(&m_socket, &QSslSocket::encrypted, this, [this] { m_everEncrypted = true; });
         return waitUntil([this] { return m_everEncrypted; });
     }

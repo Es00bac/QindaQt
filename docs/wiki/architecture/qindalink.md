@@ -52,8 +52,12 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
   a fake `InputActions1`. See [Input and macros](#input-and-macros). The first
   live run against the real portal needs the user's approval and is **not yet
   recorded**.
+- **LAN and Tailscale** ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)).
+  Implemented behind the protected `SetLanEnabled` setting and tested against a
+  `127.0.0.2` stand-in LAN, a fake Avahi daemon and a fake NSD. No live Wi-Fi run is
+  recorded yet; it needs the user's approval and an open firewall port.
 - **Not implemented yet:** the vault (in
-  progress), LAN mode, and the QindaTK desktop app. Sending an SMS has never
+  progress) and the QindaTK desktop app. Sending an SMS has never
   been exercised live; it needs the user's approval.
 
 ## Components
@@ -123,6 +127,51 @@ on hardware needs the user's approval and is not yet recorded. `hello.name` is t
 device name (`Settings.Global.device_name`, then the model) and `status.network.signal` carries a
 0-4 level for Wi-Fi and cellular, `null` when unknown. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
+
+## LAN and Tailscale
+
+Off by default. `SetLanEnabled(true)` (a trusted caller, see the
+[Link1 reference](../reference/link1-v1.md)) persists `lanEnabled` and starts
+`LanController` ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)):
+
+- **Listeners.** One TLS listener per up, non-loopback interface address on
+  port 47160, private ranges only (RFC1918, `100.64.0.0/10`, `fc00::/7`; never public
+  IPv4, global IPv6, link-local or container bridges), re-synced every 15 s.
+  Tailscale's `tailscale0` address is covered the same way. A private-range hotspot
+  or guest Wi-Fi is still included unless the interface allowlist (`SetLanInterfaces`)
+  names the interfaces to use. LAN has its own small unauthenticated-session budget
+  and accept rate limits, so it cannot starve USB or a paired phone
+  ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)).
+  A failed bind is reported in `LanStatus` and retried.
+- **Advert.** `_qindalink._tcp` through Avahi with TXT `proto=1`,
+  `id=<first 16 hex of the desktop SPKI digest>`, `name=<hostname>`, only while a
+  listener is bound. Without Avahi the listeners still work and the phone can use
+  its manual address.
+- **Pairing.** Only inside the window opened by `OpenPairingWindow` (120 s); the first accepted LAN request closes it. The prompt says it comes over Wi-Fi and from which address.
+  A paired phone reconnects over LAN without a window.
+- **Phone.** Setup has a Connection section: phone network, the desktops
+  found, a manual address (for example the desktop's Tailscale IP or MagicDNS
+  name, optionally `:port`), and Pair over Wi-Fi, which tells the user to open
+  the pairing window on the desktop. The Home screen reports the transport
+  truthfully (`USB`, or `Wi-Fi or Tailscale`).
+- **Firewall.** The service never edits firewall rules. TCP 47160 must be
+  reachable on the interface in use. On the development desktop, read-only checks
+  on 2026-11-02 showed `nftables`, `firewalld` and `ufw` inactive and
+  `qindafirewall.service` disabled; the kernel ruleset itself needs root to read
+  and was not inspected. If a firewall blocks the port, the user allows inbound
+  TCP 47160 from the home network or the Tailscale interface, for example in the
+  QindaFirewall app ("let the home network in") or with an `nft` rule such as
+  `tcp dport 47160 accept` on the right interface; the service does not do this.
+- **Android 17.** The app declares `ACCESS_LOCAL_NETWORK` (local-network access
+  is gated for apps that target API 37; this build targets 36) and needs no
+  multicast-lock or `NEARBY_WIFI_DEVICES` permission because `NsdManager` uses
+  the system mDNS daemon. Whether Android 17 blocks a target-36 app from
+  private-range connections or mDNS is a live-test item.
+
+Evidence: desktop rows `qindaqt.link-lan`, `qindaqt.link-lan-service`,
+`qindaqt.link-avahi` and the introspection coverage sweep; phone `LanTest`
+(candidate ordering, TXT filtering, manual address parsing, backoff, transport
+reporting, USB takeover, all with a fake NSD and opener).
 
 ## Notifications
 
@@ -224,9 +273,12 @@ counts against a per-device rate limit.
 
 - The phone engine always tries `127.0.0.1:47160` first. That address works
   whenever the desktop has an ADB reverse tunnel to the phone.
-- When LAN mode is on, the phone then tries the desktops it has pinned, using
-  addresses from `_qindalink._tcp` discovery or from a manually entered
-  address (which also covers Tailscale).
+- When LAN mode is on, the phone then tries the last LAN address that worked,
+  the desktops it has pinned (addresses from `_qindalink._tcp` discovery, kept
+  only when the TXT `id` is a prefix of the pinned SPKI id), and finally a
+  manually entered address (which also covers Tailscale). It backs off with
+  jitter, searches only while not connected, and moves from LAN to USB when the
+  cable comes back. See [LAN and Tailscale](#lan-and-tailscale).
 - Pairing compares a six-digit code on both screens; see the
   [protocol reference](../reference/qindalink-protocol-v1.md#pairing).
 - The desktop presents an incoming pairing request as a notification with
@@ -468,3 +520,12 @@ qindaqt-link-mirror                                phone (shell uid, app_process
 | M1d | Phone apps as desktop windows over ADB | One phone app runs in a desktop window with working touch, keys and resize |
 | M2 | Notifications, SMS, input and macros, vault typing, panel applet, QindaTK app | Per-feature focused tests and one USB end-to-end smoke each |
 | M3 | LAN discovery, wireless ADB streaming, audio forwarding, desktop package revision | A signed Portage build and a LAN smoke |
+
+## Packaging
+
+QindaLink ships inside `gui-wm/qindaqt-desktop` (service, D-Bus activation file,
+systemd user unit, companion app, mirror, applet). The service starts at login
+through a QindaQt-only XDG autostart entry that triggers D-Bus activation, so USB
+tunnels and phone notifications work with no window open. Dependencies and
+install paths: [QindaLink in the desktop package](../development/gentoo-desktop.md#qindalink-in-the-desktop-package-revision-r49-recipe).
+

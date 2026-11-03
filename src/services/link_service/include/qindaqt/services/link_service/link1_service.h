@@ -7,6 +7,7 @@
 #include <qindaqt/services/link_transport/caller_authority.h>
 #include <qindaqt/services/link_notifications/notifications_module.h>
 #include <qindaqt/services/link_messages/messages_adaptor.h>
+#include <qindaqt/services/link_service/lan_controller.h>
 #include <qindaqt/services/link_service/pairing_presenter.h>
 #include <qindaqt/services/link_transport/hub.h>
 
@@ -32,6 +33,11 @@ struct ServiceConfig {
     CallerAuthority *callerAuthority = nullptr;
     // Optional (ADR-0440): when set, org.qindaqt.Link1.Focus.Publish feeds it. Not owned.
     FocusStore *focusStore = nullptr;
+    // LAN mode (ADR-0441). Off unless service.json enables it. The injected publisher is not owned.
+    quint16 lanPort = 47160;
+    LanAddressProvider lanAddresses;     // empty = every up, non-loopback interface address
+    ServicePublisher *lanPublisher = nullptr;
+    int pairingWindowMs = 120000;
 };
 
 // Exports org.qindaqt.Link1 at /org/qindaqt/Link1 (docs/wiki/reference/link1-v1.md)
@@ -46,6 +52,8 @@ struct ServiceConfig {
 class Link1Service final : public QObject, protected QDBusContext {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Link1")
+    Q_PROPERTY(bool LanEnabled READ LanEnabled)
+    Q_PROPERTY(QString LanStatus READ LanStatus)
     Q_CLASSINFO("D-Bus Introspection",
                 "<interface name=\"org.qindaqt.Link1\">"
                 "<method name=\"Devices\"><arg name=\"json\" type=\"s\" direction=\"out\"/></method>"
@@ -55,6 +63,13 @@ class Link1Service final : public QObject, protected QDBusContext {
                 "<method name=\"Ring\"><arg name=\"id\" type=\"s\" direction=\"in\"/></method>"
                 "<method name=\"PendingPairings\"><arg name=\"json\" type=\"s\" direction=\"out\"/></method>"
                 "<method name=\"ListenPort\"><arg name=\"port\" type=\"q\" direction=\"out\"/></method>"
+                "<method name=\"SetLanEnabled\"><arg name=\"enabled\" type=\"b\" direction=\"in\"/></method>"
+                "<method name=\"SetLanInterfaces\"><arg name=\"names\" type=\"as\" direction=\"in\"/></method>"
+                "<method name=\"OpenPairingWindow\"><arg name=\"seconds\" type=\"u\" direction=\"out\"/></method>"
+                "<property name=\"LanEnabled\" type=\"b\" access=\"read\"/>"
+                "<property name=\"LanStatus\" type=\"s\" access=\"read\"/>"
+                "<signal name=\"PairingWindowChanged\"><arg name=\"open\" type=\"b\"/><arg name=\"seconds\" type=\"u\"/></signal>"
+                "<signal name=\"LanStatusChanged\"><arg name=\"json\" type=\"s\"/></signal>"
                 "<signal name=\"DevicesChanged\"><arg name=\"json\" type=\"s\"/></signal>"
                 "<signal name=\"PairingRequested\"><arg name=\"id\" type=\"s\"/><arg name=\"name\" type=\"s\"/>"
                 "<arg name=\"model\" type=\"s\"/><arg name=\"code\" type=\"s\"/></signal>"
@@ -65,6 +80,9 @@ public:
     ~Link1Service() override;
     [[nodiscard]] bool start(QString *error);
     [[nodiscard]] Hub *hub() { return m_hub.get(); }
+    // Open metadata, like Devices: carries no addresses (see LanController::statusJson).
+    [[nodiscard]] bool LanEnabled() const;
+    [[nodiscard]] QString LanStatus() const;
 
 public Q_SLOTS:
     Q_SCRIPTABLE QString Devices() const;
@@ -73,9 +91,16 @@ public Q_SLOTS:
     Q_SCRIPTABLE void Ring(const QString &id);
     Q_SCRIPTABLE QString PendingPairings() const;
     Q_SCRIPTABLE quint16 ListenPort() const;
+    // Protected (ADR-0438): changes what the machine exposes to the network.
+    Q_SCRIPTABLE void SetLanEnabled(bool enabled);
+    // Protected: restricts the LAN listener and mDNS advert to the named interfaces (empty = all private-range ones).
+    Q_SCRIPTABLE void SetLanInterfaces(const QStringList &names);
+    Q_SCRIPTABLE quint32 OpenPairingWindow();
 
 Q_SIGNALS:
     Q_SCRIPTABLE void DevicesChanged(const QString &json);
+    Q_SCRIPTABLE void PairingWindowChanged(bool open, quint32 seconds);
+    Q_SCRIPTABLE void LanStatusChanged(const QString &json);
     Q_SCRIPTABLE void PairingRequested(const QString &id, const QString &name, const QString &model,
                                        const QString &code);
 
@@ -93,6 +118,7 @@ private:
     std::unique_ptr<SendGuard> m_sendGuard;
     std::unique_ptr<Hub> m_hub;
     std::unique_ptr<TunnelManager> m_tunnels;
+    std::unique_ptr<LanController> m_lan;
     QStringList m_presented;
 };
 

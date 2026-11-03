@@ -8,8 +8,11 @@ add_library(QindaQt::LinkService ALIAS qindaqt_link_service)
 target_sources(
     qindaqt_link_service
     PRIVATE
+        src/avahi_publisher.cpp
         src/caller_policy.cpp
         src/focus_adaptor.cpp
+        src/lan_controller.cpp
+        src/lan_settings.cpp
         src/link1_service.cpp
         src/phone_setup.cpp
         src/setup_adaptor.cpp
@@ -19,14 +22,18 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_service/avahi_publisher.h
             include/qindaqt/services/link_service/caller_policy.h
             include/qindaqt/services/link_service/focus_adaptor.h
+            include/qindaqt/services/link_service/lan_controller.h
+            include/qindaqt/services/link_service/lan_settings.h
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
             include/qindaqt/services/link_service/phone_setup.h
             include/qindaqt/services/link_service/setup_adaptor.h
             include/qindaqt/services/link_service/qt_notification_presenter.h
             include/qindaqt/services/link_service/send_guard.h
+            include/qindaqt/services/link_service/service_publisher.h
 )
 target_link_libraries(
     qindaqt_link_service
@@ -102,3 +109,21 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
     COMPONENT QindaQtLink
 )
+
+# AGENT-CONTRACT: login start. The session supervisor runs one XDG autostart batch
+# (docs/wiki/architecture/session-autostart.md); this QindaQt-only entry sends a
+# no-reply org.freedesktop.DBus.Peer.Ping to org.qindaqt.Link1, which makes the bus
+# D-Bus-activate qindaqt-link-service.service exactly as the first applet call would.
+# The service therefore runs under its systemd unit (sandbox, KillMode=process), never
+# as a bare supervisor child. Do not point Exec at the binary: a direct child would
+# own the bus name and bypass the unit. Same install-time prefix rule as
+# qindaqt-obs-login.desktop (src/services/streaming_preferences/CMakeLists.txt).
+install(CODE "
+    if(CMAKE_INSTALL_PREFIX MATCHES \"^/(usr(/local)?)?/?$\")
+        set(_qindaqt_autostart_dir \"/etc/xdg/autostart\")
+    else()
+        set(_qindaqt_autostart_dir \"\${CMAKE_INSTALL_PREFIX}/etc/xdg/autostart\")
+    endif()
+    file(INSTALL DESTINATION \"\${_qindaqt_autostart_dir}\" TYPE FILE
+         FILES \"${CMAKE_CURRENT_SOURCE_DIR}/data/qindaqt-link-service.desktop\")
+" COMPONENT QindaQtLink)
