@@ -5,9 +5,11 @@
 - Branch: `link/mirror`, base `f6c27bc90`
 - First candidate: `91fd1f528931d11be16adb99272dc9ea38d53d03`. It was
   reviewed as ACCEPT-WITH-P1s.
-- **Current candidate:** `cc1e878145317af82199a7d40c35822324601970`. It
-  includes the merge of main `be31feb83` and the repair round. The final
-  handoff commit adds only this file's update on top.
+- Repair candidate: `68e7450a0`, accepted and merged to main as
+  `f593162cd`.
+- **Current candidate:** the pause-on-screen-off follow-up `33aaa9193`,
+  merged with hub/main `f593162cd` as `e67e40d01`. The final handoff commit
+  adds only this file's update on top.
 
 ## Outcome state
 
@@ -294,3 +296,72 @@ not installed or removed.
 
 Re-review the repair (c2b95b168 + cc1e87814) and integrate. Then decide
 whether mirroring should hold the phone's screen on, as noted above.
+
+
+## Follow-up (2026-11-03): pause on screen-off, keyframe throttle
+
+The user decided: **pause on screen-off**. QindaLink never holds the phone's
+main screen awake and never turns its panel off. Commit `33aaa9193`, then
+merged with hub/main `f593162cd` as `e67e40d01`.
+
+### What landed
+
+- **Server.**
+  - `ScreenStateWatcher` runs only when the mirror display shares the phone's
+    power group (displayGroupId 0).
+  - It polls `IPowerManager.isInteractive()` (else
+    `isDisplayInteractive(0)`) every 500 ms through the pure
+    `ScreenStateTracker`.
+  - It sends control `screen-state` (0x85) `{state: on|off}`, and on `on` it
+    requests a keyframe.
+- **Desktop pause.** On `off` the window keeps the last frame, dimmed, under
+  "Phone screen is off — wake your phone to continue". Held fingers and keys
+  are released, and input is dropped, not queued. The pause clears on `on`
+  or on the first keyframe after `off`.
+- **Keyframe throttle (P2).** Every desktop `sync` goes through
+  `KeyframeThrottle`, with a 1 s minimum gap.
+- **Evidence modes.** `--probe` prints `syncs=N`. Pause and resume are
+  printed, and the second grab may fire while paused.
+- **Docs.** The reference page covers the new message, the pause behaviour
+  and the throttle. The architecture page records the user decision.
+
+### Verification
+
+- `ctest -R '^qindaqt\.link-mirror-'`: 3/3 passed, both before and after
+  merging hub/main. New tests: `parsesScreenState` and
+  `keyframeRequestsAreSpacedOut`.
+- `phone/mirror_server/tests/run.sh`: 83 passed, 0 failed (screen-state
+  transitions added).
+- **Fake server, offscreen, merged tree.**
+  - Screen off at 4 s: "paused: phone screen off". 8 taps reached the server
+    before the off point and 0 controls after it.
+  - `build/mirror/live/fake-paused.png` shows the dimmed frame with the
+    notice.
+- **Fake server, resume.**
+  - Off at 3 s and on at 5 s: frames stalled at 90, then "resumed", exactly
+    1 sync, and frames continued.
+  - Silent resume (a keyframe with no `screen-state on`) also printed
+    "resumed".
+- **Live on R3GL40ABQXM.** The phone's screen stayed on and was never turned
+  off by me.
+  - The server logged "shares the phone's power group; no wake lock" and
+    "watching the phone screen".
+  - No `screen-state` events, probe 0 dropped and 0 syncs.
+  - Tap 7 plus text "45" turned "0" into "745".
+  - The `off` path was verified on the fake server only, as instructed.
+  - Jars were removed from `/data/local/tmp` afterwards, and no server was
+    left running.
+- **APK.** `phone/tools/build-apk.sh` exited 0. The APK contains 19
+  `org.qindaqt.link.mirror` classes, including `ScreenStateWatcher` and
+  `ScreenStateTracker`.
+- **Docs.** `validate-docs` passed (592 documents after the merge), and
+  `mkdocs build --strict` exited 0.
+
+### Caveats
+
+- **Off/on not seen on the phone.** A real screen-off and screen-on on the
+  phone has not been observed, by instruction. The poll interval means up to
+  500 ms of latency.
+- **Host load.** The host was heavily loaded (load average 28–84). Startup
+  can drop packets while VA-API opens; the throttle now caps the resulting
+  syncs at 1 per second.
