@@ -192,9 +192,12 @@ void TstLinkVaultService::focusIsForgottenWhenThePublisherLeavesTheBus()
     ScriptedPhone phone;
     QVERIFY(pairWithService(phone, svc));
     // A separate connection plays the shell, so it can leave the bus on its own.
-    QDBusConnection shell = QDBusConnection::connectToBus(QDBusConnection::SessionBus, s("fake-shell"));
-    QVERIFY(shell.isConnected());
-    QCOMPARE(publish(shell, fact(s("{win-9}"), 1)).type(), QDBusMessage::ReplyMessage);
+    {
+        // The handle must go out of scope before disconnectFromBus, or the connection stays open.
+        QDBusConnection shell = QDBusConnection::connectToBus(QDBusConnection::SessionBus, s("fake-shell"));
+        QVERIFY(shell.isConnected());
+        QCOMPARE(publish(shell, fact(s("{win-9}"), 1)).type(), QDBusMessage::ReplyMessage);
+    }
     Envelope e;
     phone.send(request(s("desktop.focus"), 1));
     QVERIFY(phone.waitFor(s("desktop.focus"), &e));
