@@ -18,21 +18,29 @@ mkdir -p "$out"
 # QindaTK for Android (docs/android.md of QindaTK, D-354). Pinned commit; built into build/phone and
 # staged there if the stage is missing. Nothing is installed system-wide.
 qtk_rev=${QINDATK_REV:-9ff55fbd}
-qtk_src="${QINDATK_SRC:-$out/qindatk-src}"
-qtk_stage="$out/qindatk-stage"
+# AGENT-NOTE: ONE QindaTK-for-Android stage per QindaTK revision, shared by every
+# worktree (user requirement 2026-11-02: no repeated huge builds). It used to live
+# in each worktree's build/phone and every phone lane rebuilt it (~10 min, 4.5 GB).
+qtk_cache="${QINDATK_ANDROID_CACHE:-$HOME/.cache/qindalink/qindatk-android}"
+qtk_stage="$qtk_cache/$qtk_rev"
+qtk_src="${QINDATK_SRC:-$qtk_cache/src}"
+qtk_build="$qtk_cache/build-$qtk_rev"
+launcher=()
+command -v ccache >/dev/null && launcher=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
 # AGENT-GUARD: the stage records the QindaTK revision it was built from; a pin
 # change must rebuild it, or an old stage (e.g. one missing the D-355 Android
 # qmldir fix) is silently reused and `import QindaTK` fails on the phone.
 if [ ! -f "$qtk_stage/lib/cmake/QindaTK/QindaTKConfig.cmake" ] \
         || [ "$(cat "$qtk_stage/.qindatk-rev" 2>/dev/null)" != "$qtk_rev" ]; then
-    rm -rf "$qtk_stage" "$out/qindatk-build"
+    rm -rf "$qtk_stage" "$qtk_build"
+    mkdir -p "$qtk_cache"
     if [ ! -d "$qtk_src/.git" ]; then
         git clone -q "${QINDATK_REPO:-$HOME/git/QindaTK.git}" "$qtk_src"
     fi
     git -C "$qtk_src" cat-file -e "$qtk_rev^{commit}" 2>/dev/null || git -C "$qtk_src" fetch -q origin
     git -C "$qtk_src" checkout -q "$qtk_rev"
     export JAVA_HOME=/opt/openjdk-bin-21
-    cmake -S "$qtk_src" -B "$out/qindatk-build" -G Ninja \
+    cmake -S "$qtk_src" -B "$qtk_build" -G Ninja "${launcher[@]}" \
         -DCMAKE_TOOLCHAIN_FILE="$qt/lib/cmake/Qt6/qt.toolchain.cmake" -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$qtk_stage" -DQINDATK_BUILD_TOOLS=OFF -DQINDATK_BUILD_EXAMPLES=OFF \
         -DBUILD_TESTING=OFF -DQINDATK_ENABLE_POPPLER_QT6=OFF -DQINDATK_ENABLE_ALSA=OFF \
@@ -40,9 +48,10 @@ if [ ! -f "$qtk_stage/lib/cmake/QindaTK/QindaTKConfig.cmake" ] \
         -DQINDATK_ENABLE_DBUS=OFF -DQINDATK_ENABLE_WIDGETS=OFF -DQINDATK_ENABLE_NATIVE_PRINT=OFF \
         -DQINDATK_ENABLE_SQLITE=OFF -DQINDATK_ENABLE_LCMS2=OFF -DQINDATK_ENABLE_LIBVTERM=OFF \
         -DQINDATK_ENABLE_PLUGIN_HOST=OFF
-    cmake --build "$out/qindatk-build"
-    cmake --install "$out/qindatk-build"
+    cmake --build "$qtk_build"
+    cmake --install "$qtk_build"
     echo "$qtk_rev" > "$qtk_stage/.qindatk-rev"
+    rm -rf "$qtk_build"  # the stage is all the app needs; keep the cache small
 fi
 
 export JAVA_HOME=/opt/openjdk-bin-21
@@ -58,7 +67,7 @@ if [ -d "$root/phone/mirror_server/src/main/java" ]; then
     cp -a "$root/phone/mirror_server/src/main/java/." "$pkg/src/"
 fi
 
-"$qt/bin/qt-cmake" -S "$root/phone/app" -B "$out/cmake" -G Ninja \
+"$qt/bin/qt-cmake" -S "$root/phone/app" -B "$out/cmake" -G Ninja "${launcher[@]}" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DQT_HOST_PATH=/usr \
     -DANDROID_SDK_ROOT="$sdk" -DANDROID_NDK_ROOT="$ndk" \
