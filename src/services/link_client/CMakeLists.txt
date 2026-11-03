@@ -23,11 +23,16 @@ target_compile_features(qindaqt_link_client PUBLIC cxx_std_20)
 set_target_properties(qindaqt_link_client PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_link_client)
 
-install(
-    TARGETS qindaqt_link_client
-    EXPORT QindaQtTargets
-    ARCHIVE COMPONENT QindaQtLink
-    FILE_SET HEADERS
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    COMPONENT QindaQtLink
-)
+# AGENT-GUARD: install only when a Link program is part of this build (the gui-apps/qindalink
+# package). The desktop package builds link_client for the panel applet alone and must ship no
+# Link file; installing it there would collide with gui-apps/qindalink.
+if(QINDAQT_BUILD_LINK_SERVICE OR QINDAQT_BUILD_LINK_APP)
+    install(
+        TARGETS qindaqt_link_client
+        EXPORT QindaQtTargets
+        ARCHIVE COMPONENT QindaQtLink
+        FILE_SET HEADERS
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        COMPONENT QindaQtLink
+    )
+endif()
