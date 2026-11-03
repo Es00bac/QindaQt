@@ -183,6 +183,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/networkappletcomposition.h
         runtime/firewallappletcomposition.cpp
         runtime/firewallappletcomposition.h
+        runtime/linkappletcomposition.cpp
+        runtime/linkappletcomposition.h
         runtime/clipboardappletcomposition.cpp
         runtime/clipboardappletcomposition.h
         runtime/desktopcontrolscomposition.cpp
@@ -328,6 +330,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_network_applet_runtime
             TARGET qindaqt_shell_agent_usage_applet_runtime
             TARGET qindaqt_shell_firewall_applet_runtime
+            TARGET qindaqt_shell_link_applet_runtime
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_smart_lights_applet_runtime
@@ -371,6 +374,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NetworkQtTransport
             QindaQt::ShellFirewallAppletRuntime
             QindaQt::FirewallQtTransport
+            QindaQt::ShellLinkAppletRuntime
+            QindaQt::LinkClient
             QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellLauncherQml
             QindaQt::ShellLauncherRuntime

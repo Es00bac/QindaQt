@@ -179,6 +179,20 @@
       "capability": "security.read",
       "decision": "deny",
       "reason": "Whether this computer is being attacked, and by whom, stays with the audited Firewall applet; third-party packages have no security read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "phone.read",
+      "decision": "deny",
+      "reason": "The paired phone's presence, battery and pairing state stay with the audited QindaLink applet; third-party packages have no phone read authority."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "phone.control",
+      "decision": "deny",
+      "reason": "Accepting a pairing, ringing or unpairing the phone stays with the audited QindaLink applet; third-party packages may not control the phone."
     }
   ]
 }

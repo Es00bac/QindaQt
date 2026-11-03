@@ -61,6 +61,10 @@ enum class Capability {
     // the Firewall applet never changes the firewall, so there is no
     // SecurityControl token.
     SecurityRead,
+    // Paired-phone status and pairing/ring control over public Link1
+    // (ADR-0437). Control covers ConfirmPairing, Ring and Unpair.
+    PhoneRead,
+    PhoneControl,
 };
 
 struct EntryPoint final {

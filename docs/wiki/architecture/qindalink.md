@@ -13,28 +13,41 @@ The durable decisions are
 (transport, identity and pairing). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core integrated (desktop service and phone engine); M2 messages data path (`sms`) built on branch `link/sms`, awaiting integration and an on-device read check.**
+Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications and SMS integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input, macros and the vault are not integrated yet.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
   `org.qindaqt.Link1` and the typed client are integrated. See
   [Link1 protocol 1](../reference/link1-v1.md).
-- **Phone.** The Java engine and a plain-QtQuick debug APK are integrated.
-  The UI moves onto QindaTK once QindaTK builds for Android.
-- **Evidence.**
+- **Phone.** The Java engine and the QindaTK UI are integrated. The UI uses
+  QindaTK `9ff55fbd` (D-355), and the APK is signed with the shared per-user
+  debug key.
+- **Panel applet** (`qindaqt.applets.link`, [ADR-0437](../adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md)).
+  Integrated with fake-transport and offscreen evidence. It has not been
+  checked in a live session yet.
+- **Phone apps on the desktop** ([ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md)).
+  On the phone, these were proven by the calculator streaming, input
+  (0 → 74), resize and app exit. Mirroring pauses when the phone screen turns
+  off, by the user's decision.
+- **Notifications and SMS.** Both are integrated, after independent review
+  and a repair round. Caller authority for the sensitive Link1 methods is the
+  next slice.
+- **Evidence on the user's phone (SM-S948U, Android 17, 2026-11-02):**
+  - Pairing over USB with the Keystore identity: both sides showed the same
+    code, and both trust stores were written.
+  - Reconnection after a service restart without pairing again.
+  - QindaTK UI rendering.
+  - A 45-notification snapshot plus a test notification mirrored (recorded
+    as lengths and hashes only).
+  - 429 SMS threads paged with no duplicates, including one thread of 27,665
+    messages (19,539 SMS, 8,126 MMS), with no content printed.
+- **Shared evidence.**
   - Both codecs pass every golden vector.
-  - A cross-implementation test (`phone/engine-tests/run-cross-impl.sh`)
-    pairs the real Java session with the real desktop service over TLS 1.3
-    on a private bus.
-  - Pairing on the physical phone over USB, and the Keystore-backed
-    handshake on the device, are **not yet recorded**.
-- **Notifications (M2, 2026-11).** Phone notifications appear on the desktop
-  with dismissal, action buttons and reply requests working both ways; see
-  [Notifications](#notifications). Verified on the JVM, in an in-process
-  desktop test and by a JVM phone against the real service on a private bus;
-  the physical-phone check is **not yet recorded** (see the live check recipe below).
-- **Not implemented yet:** SMS, input, macros, vault, LAN mode, the applet,
-  the app and streaming.
+  - `phone/engine-tests/run-cross-impl.sh` pairs the real Java session with
+    the real desktop service on a private bus.
+- **Not implemented yet:** input and macros (in review), the vault (in
+  progress), LAN mode, and the QindaTK desktop app. Sending an SMS has never
+  been exercised live; it needs the user's approval.
 
 ## Components
 
@@ -60,14 +73,14 @@ Current maturity: **M1 link core integrated (desktop service and phone engine); 
 | Notifications | `src/services/link_notifications` | `notify` capability: presenter interface, icon cache, mute list, `org.qindaqt.Link1.Notifications` adaptor |
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
-| Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge, quick actions |
+| Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
-| Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app |
+| Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
 | Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
 | Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
 | Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
 | Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
-| Mirror server | `phone/mirror_server` | Java `app_process` entry point compiled into the APK |
+| Mirror server | `phone/mirror_server` | Java `app_process` entry point `org.qindaqt.link.mirror.Server`, compiled into the APK, with no dependency on the phone app's code. `build-dev-jar.sh` builds a standalone development jar |
 | Shared vectors | `tests/link/vectors` | Golden frame and pairing vectors used by both codecs |
 
 Feature modules (`link_notifications`, `link_messages`, `link_input`,
@@ -249,20 +262,69 @@ work around that.
 
 ## Phone apps on the desktop
 
-- `qindaqt-link-mirror` starts the mirror server on the phone with
-  `app_process` as the `shell` user, using the installed APK as its class
-  path.
-- For each app it creates a virtual display sized to the desktop window,
-  launches the app on that display and encodes it with MediaCodec.
-- The desktop decodes the H.264/HEVC stream with VA-API (the RX 5700 XT
-  decodes both) and presents it in an ordinary QindaQt window titled with the
-  app's label and icon.
-- Pointer, wheel, keyboard and text input on that window are injected on the
-  phone's virtual display.
-- Resizing the window resizes the virtual display. Closing it releases the
-  display and stops the app.
-- Streaming needs ADB and stops when ADB drops. The mirror lane owns the
-  sub-protocol and documents it as `reference/qindalink-mirror-v1.md`.
+`qindaqt-link-mirror --serial <serial> --package <package>` shows one phone app
+in one ordinary desktop window. The wire contract, the server command line and
+the verified hidden-API shapes are in
+[QindaLink mirror protocol 1](../reference/qindalink-mirror-v1.md).
+
+```
+qindaqt-link-mirror                                phone (shell uid, app_process)
+┌──────────────────────────────────────┐          ┌──────────────────────────────────┐
+│ AdbSession: push jar / pm path,      │── adb ──►│ Server: probe hidden API, listen │
+│   start server, forward tcp:0        │          │   localabstract:qindalink-mirror-│
+│ MirrorConnection: hello, demux ◄─────┼─ frames ─┤   <token>                        │
+│ DecodeWorker: libavcodec VA-API      │          │ VirtualDisplayHost ─ MediaCodec  │
+│   (software fallback), newest frame  │          │ AppLauncher (launch on display)  │
+│ MirrorWindow: letterboxed presenter, │─ input ─►│ InputInjector (display id)       │
+│   InputTranslator / ViewportMapper   │          │ DisplayPower (per-display lock)  │
+│ MirrorController: resize debounce,   │          │ AppInventory (labels, PNG icons) │
+│   cleanup                            │          └──────────────────────────────────┘
+└──────────────────────────────────────┘
+```
+
+- **Start.** The desktop starts the mirror server on the phone with
+  `app_process` as the `shell` user. The class path is the installed
+  QindaLink APK, or a development jar passed with `--server-jar`. A
+  per-session secret reaches the server only on its stdin and in `hello`. The
+  socket name and the ADB forward carry a non-secret random suffix (see the
+  [threat model](../reference/qindalink-mirror-v1.md#threat-model)).
+- **Display.** The server creates a trusted virtual display that owns its
+  content, accepts touch, has its own display group and destroys its content
+  when removed. It is sized to the window in device pixels at
+  160 dpi × the window's device pixel ratio. The server launches the app's
+  launcher activity on it and encodes it with MediaCodec (H.264 High, or HEVC
+  with `--codec hevc`).
+- **Power and keyboard.** The phone's own screen and keyboard stay out of the
+  way.
+  - A wake lock is held only when the mirror display has its own display
+    group. On the SM-S948U (SDK 37) it stays in group 0, so mirroring
+    follows the phone's own power state and never wakes or holds its screen.
+  - The display's IME policy hides the phone keyboard, because the desktop
+    types instead.
+- **Decode and present.** The desktop decodes with libavcodec
+  ([ADR-0435](../adr/0435-decode-qindalink-streams-with-ffmpeg.md)), VA-API
+  first (radeonsi on the RX 5700 XT), falling back to software
+  automatically. It
+  presents the newest frame letterboxed in a window titled with the app's
+  label and icon, with the app id `org.qindaqt.link.mirror.<package>`.
+- **Input.** The primary button is a finger. The secondary button is Back.
+  The wheel scrolls, typing is sent as text, and chords and special keys are
+  sent as Android key events. All of it is injected with the mirror display's
+  id, so it never reaches the phone's own screen.
+- **Resize and close.** Resizing the window resizes the virtual display after
+  a 250 ms debounce, and the encoder restarts as a new stream generation.
+  Closing the window, or Ctrl+C, ends the session. The server then releases
+  the display, which ends the app's task on it. The desktop removes its ADB
+  forward.
+- **ADB loss.** Streaming needs ADB and stops when ADB drops. A visible window
+  then shows the reason until it is closed.
+- **App exit.** When the app leaves its display on the phone, the window shows
+  "App closed on phone" and closes after 2 s.
+- **Server lifetime.** The shell-uid server never outlives its desktop. It
+  exits without a completed `hello` in 20 s, after 3 bad peers, and after
+  30 s without a frame (the desktop pings every 5 s).
+- **Evidence modes.** `--grab`, `--probe` and `--list` run on the offscreen
+  Qt platform and never map a window. They are the evidence path for agents.
 
 ## Known limits
 

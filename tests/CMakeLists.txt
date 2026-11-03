@@ -198,6 +198,9 @@ endif()
 if(QINDAQT_BUILD_QINDALUTRIS)
     add_subdirectory(apps/qindalutris)
 endif()
+if(TARGET qindaqt_link_mirror_core)
+    add_subdirectory(apps/link_mirror)
+endif()
 
 if(TARGET qindaqt_session_supervisor_support)
     add_subdirectory(session_supervisor)
@@ -224,6 +227,7 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/network_applet)
     add_subdirectory(shell/agent_usage_applet)
     add_subdirectory(shell/firewall_applet)
+    add_subdirectory(shell/link_applet)
     add_subdirectory(shell/smart_lights_applet)
     # AGENT-GUARD: the applet target only exists inside QINDAQT_BUILD_SHELL
     # (src/CMakeLists.txt). Registered outside this block, the row breaks a

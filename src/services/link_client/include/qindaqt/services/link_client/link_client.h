@@ -4,6 +4,7 @@
 #include <qindaqt/services/link_client/link_transport.h>
 
 #include <QtCore/QList>
+#include <QtCore/QStringList>
 
 namespace QindaQt::Link {
 
@@ -14,6 +15,9 @@ struct LinkDevice {
     QString plugged, networkType;
     int signal = -1;                     // -1 = unknown
     qint64 lastSeen = 0;                 // ms since epoch, 0 = never
+    // Optional `caps` array: capabilities the phone advertised in its hello.
+    // Link1 does not emit it yet, so an absent key means "unknown" (empty).
+    QStringList capabilities;
 };
 
 // Parses a Devices() / DevicesChanged JSON array. Malformed entries are skipped.

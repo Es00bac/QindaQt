@@ -24,6 +24,11 @@ QList<LinkDevice> parseDevices(const QByteArray &json)
         d.connected = o.value(QStringLiteral("connected")).toBool();
         d.ready = o.value(QStringLiteral("ready")).toBool();
         d.lastSeen = qint64(o.value(QStringLiteral("lastSeen")).toDouble());
+        for (const QJsonValue &cap : o.value(QStringLiteral("caps")).toArray()) {
+            if (cap.isString()) {
+                d.capabilities.append(cap.toString());
+            }
+        }
         const QJsonObject battery = o.value(QStringLiteral("battery")).toObject();
         d.batteryLevel = battery.contains(QStringLiteral("level")) ? battery.value(QStringLiteral("level")).toInt(-1) : -1;
         d.charging = battery.value(QStringLiteral("charging")).toBool();
