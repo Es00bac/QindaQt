@@ -12,7 +12,9 @@ import android.os.IBinder;
 import android.util.Log;
 import java.io.File;
 import org.qindaqt.link.engine.DeviceInfo;
+import org.qindaqt.link.engine.EndpointConnector;
 import org.qindaqt.link.engine.EngineState;
+import org.qindaqt.link.engine.LanMemory;
 import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.StatusFeature;
@@ -27,14 +29,15 @@ import org.qindaqt.link.macro.MacroFeature;
  * The engine and its state live in static fields so the Qt UI bridge can
  * attach and detach freely; the engine keeps running with no UI.
  *
- * AGENT-GUARD: the engine must only be created here. Connection target is
- * 127.0.0.1:47160 unless the debug-only intent extra "port" overrides it
- * (the dev fake desktop uses 47199 via adb reverse so no override is needed).
+ * AGENT-GUARD: the engine must only be created here. Connection targets come from
+ * {@link EndpointConnector} (USB loopback 127.0.0.1:47160 first; LAN only as a fallback). The dev fake
+ * desktop uses 47199 via adb reverse so no override is needed.
  */
 public final class LinkService extends Service {
     private static final String TAG = "QindaLink";
     private static final String CHANNEL = "link-status";
     static volatile LinkEngine engine;
+    static volatile EndpointConnector connector;
     private static AndroidStatusSource statusSource;
     private static SmsSenderAndroid smsSender;
     static final InputFeature inputFeature = new InputFeature();
@@ -66,8 +69,11 @@ public final class LinkService extends Service {
                             .add(new NotificationFeature(NotificationAndroidSource.init(this), state))
                             .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), smsSender = new SmsSenderAndroid(this), state))
                             .add(inputFeature).add(macroFeature);
-                    engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
-                            new PinStore(new File(dir, "desktop-pin")), registry, info, state);
+                    PinStore pins = new PinStore(new File(dir, "desktop-pin"));
+                    // Order and rules: EndpointPlanner. USB first, then the last LAN address, discovered desktops, the manual address.
+                    connector = new EndpointConnector(ep -> new TlsConnector(id, ep.host, ep.port).connect(), pins,
+                            new LanMemory(new File(dir, "lan-addresses")), new NsdDiscovery(this));
+                    engine = new LinkEngine(connector, pins, registry, info, state);
                     engine.start();
                     Log.i(TAG, "engine started");
                 } catch (Exception e) {
@@ -81,7 +87,7 @@ public final class LinkService extends Service {
 
     @Override public void onDestroy() {
         synchronized (LinkService.class) {
-            if (engine != null) { engine.stop(); engine = null; }
+            if (engine != null) { engine.stop(); engine = null; connector = null; }
             if (statusSource != null) { statusSource.stop(); statusSource = null; }
             if (smsSender != null) { smsSender.close(); smsSender = null; }
         }

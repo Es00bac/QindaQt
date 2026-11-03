@@ -40,7 +40,7 @@ public:
 
     // Adds a listener; port 0 picks an ephemeral port. On failure `error`
     // (when given) receives the socket's reason. LAN-origin listeners are
-    // opened and closed only by the service's LanController (ADR-0439).
+    // opened and closed only by the service's LanController (ADR-0440).
     [[nodiscard]] bool listen(const QHostAddress &address, quint16 port, Origin origin = Origin::Loopback,
                               QString *error = nullptr);
     // Closes the listener bound to exactly `address` with `origin`; live sessions stay. False if none.

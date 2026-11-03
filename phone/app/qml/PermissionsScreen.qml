@@ -2,12 +2,12 @@
 import QtQuick
 import QindaTK as Tk
 
-// Permissions checklist. States come from link.perm (DeviceFacts.java); "later" rows are features
+// Setup: the permissions checklist, then the Connection section (Wi-Fi/Tailscale). States come from link.perm (DeviceFacts.java); "later" rows are features
 // this build does not implement yet and are shown as such, never with an invented state.
 ScreenFrame {
     id: root
-    title: qsTr("Permissions")
-    subtitle: qsTr("What QindaLink may use on this phone")
+    title: qsTr("Setup")
+    subtitle: qsTr("How this phone connects, and what QindaLink may use")
 
     function stateOf(key) { return link.perm[key] === undefined ? "later" : link.perm[key] }
 
@@ -63,4 +63,6 @@ ScreenFrame {
         onOpenRequested: key => link.openSettings(key)
         Tk.Flex.alignSelf: Tk.Flex.Stretch
     }
+
+    ConnectionSection { Tk.Flex.alignSelf: Tk.Flex.Stretch }
 }

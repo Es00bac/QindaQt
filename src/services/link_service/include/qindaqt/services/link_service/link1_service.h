@@ -30,7 +30,7 @@ struct ServiceConfig {
     QString cacheDir;           // production passes $XDG_CACHE_HOME/qindalink
     // Required (ADR-0438): decides who may use protected members. Not owned. start() fails without it.
     CallerAuthority *callerAuthority = nullptr;
-    // LAN mode (ADR-0439). Off unless service.json enables it. The injected publisher is not owned.
+    // LAN mode (ADR-0440). Off unless service.json enables it. The injected publisher is not owned.
     quint16 lanPort = 47160;
     LanAddressProvider lanAddresses;     // empty = every up, non-loopback interface address
     ServicePublisher *lanPublisher = nullptr;

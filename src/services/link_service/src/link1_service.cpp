@@ -50,7 +50,7 @@ bool Link1Service::start(QString *error)
     options.local.os = QSysInfo::prettyProductName();
     options.local.app = m_config.version;
     m_hub = std::make_unique<Hub>(identity, *m_store, options);
-    // AGENT-GUARD: this is the loopback listener only. LAN mode (ADR-0434, ADR-0439) is the
+    // AGENT-GUARD: this is the loopback listener only. LAN mode (ADR-0434, ADR-0440) is the
     // LanController below, behind an explicit persisted setting; never bind 0.0.0.0 here.
     if (!m_hub->listen(QHostAddress::LocalHost, m_config.port)) {
         return fail(QStringLiteral("cannot listen on 127.0.0.1:%1").arg(m_config.port));
@@ -145,7 +145,7 @@ void Link1Service::Ring(const QString &id)
 }
 quint16 Link1Service::ListenPort() const { return m_hub->port(); }
 
-// AGENT-GUARD (ADR-0438, ADR-0439): both act as the user on the machine's network exposure.
+// AGENT-GUARD (ADR-0438, ADR-0440): both act as the user on the machine's network exposure.
 void Link1Service::SetLanEnabled(bool enabled)
 {
     if (!m_config.callerAuthority->authorize(message())) return;

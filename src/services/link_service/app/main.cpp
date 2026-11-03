@@ -142,7 +142,7 @@ int main(int argc, char **argv)
     }
     CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted);
     config.callerAuthority = &callerPolicy;
-    // AGENT-GUARD (ADR-0439): LAN stays off until the persisted setting says otherwise; these only
+    // AGENT-GUARD (ADR-0440): LAN stays off until the persisted setting says otherwise; these only
     // wire the machinery. The Avahi record exists only while a LAN listener is bound.
     config.lanPort = parser.isSet(lanPort) ? quint16(parser.value(lanPort).toUInt()) : config.port;
     if (parser.isSet(pairingWindow)) config.pairingWindowMs = parser.value(pairingWindow).toInt();

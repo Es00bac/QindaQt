@@ -7,16 +7,22 @@ function connected(phase) {
         || phase === "ready" || phase === "stale"
 }
 
+// "lan" is what the engine reports for any network address (Wi-Fi or Tailscale); "wifi" is the old spelling.
 function transportLabel(transport) {
-    return transport === "usb" ? "USB" : transport === "wifi" ? "Wi-Fi" : "Offline"
+    return transport === "usb" ? "USB" : (transport === "lan" || transport === "wifi") ? "Wi-Fi or Tailscale" : "Offline"
+}
+
+// Fits "Connected over ..." / "Desktop found over ...".
+function transportPhrase(transport) {
+    return transport === "usb" ? "USB" : (transport === "lan" || transport === "wifi") ? "the network" : "Offline"
 }
 
 function headline(phase, transport) {
     switch (phase) {
-    case "ready": return "Connected over " + transportLabel(transport)
+    case "ready": return "Connected over " + transportPhrase(transport)
     case "confirm": return "Confirm the pairing code"
     case "pairing": return "Pairing in progress"
-    case "connected": return "Desktop found over " + transportLabel(transport)
+    case "connected": return "Desktop found over " + transportPhrase(transport)
     case "stale": return "Pairing needs renewing"
     case "connecting": return "Looking for your desktop"
     case "error": return "Something went wrong"

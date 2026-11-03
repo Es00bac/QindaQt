@@ -1,6 +1,7 @@
 package org.qindaqt.link.android;
 
 import android.content.Context;
+import org.qindaqt.link.engine.EndpointConnector;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.Session;
 
@@ -30,6 +31,26 @@ public final class LinkBridge {
     public static void forget() {
         LinkEngine e = LinkService.engine();
         if (e != null) e.forget();
+    }
+
+    // ---- LAN connection (EndpointConnector). AGENT-CONTRACT: also looked up by name from LinkBridge.cpp. ----
+
+    /** {manual, manualError, discovering, selected, desktops:[{id,name}]}; a stub when the service is down. */
+    public static String lanJson() {
+        EndpointConnector c = LinkService.connector;
+        return c == null ? "{\"manual\":\"\",\"manualError\":\"\",\"discovering\":false,\"selected\":\"\",\"desktops\":[]}" : c.uiJson();
+    }
+
+    /** Saves the manual desktop address (empty clears it). Returns "" or the message to show. */
+    public static String setManualAddress(String address) {
+        EndpointConnector c = LinkService.connector;
+        return c == null ? "Service not running" : c.setManualAddress(address);
+    }
+
+    /** An unpaired phone connects over Wi-Fi only to the desktop picked here ("" clears). */
+    public static void selectDesktop(String id) {
+        EndpointConnector c = LinkService.connector;
+        if (c != null) c.selectDesktop(id == null || id.isEmpty() ? null : id);
     }
 
     /** UI facts (battery, network, permission states) from {@link DeviceFacts}; never blocks. */

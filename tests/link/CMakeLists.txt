@@ -200,7 +200,7 @@ if(QINDAQT_DBUS_RUN_SESSION)
     set_tests_properties(qindaqt.link-lan-service PROPERTIES LABELS "service;link" TIMEOUT 40)
 endif()
 
-# LAN mode (ADR-0439): real Hub and TLS over a 127.0.0.2 "LAN" address, fake mDNS publisher.
+# LAN mode (ADR-0440): real Hub and TLS over a 127.0.0.2 "LAN" address, fake mDNS publisher.
 qt_add_executable(qindaqt_link_lan_test tst_link_lan.cpp support/fake_publisher.h)
 target_link_libraries(qindaqt_link_lan_test PRIVATE QindaQt::LinkService Qt6::Test)
 qindaqt_enable_warnings(qindaqt_link_lan_test)

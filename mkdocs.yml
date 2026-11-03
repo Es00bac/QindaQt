@@ -619,3 +619,4 @@ nav:
       - "0436: QindaLink macros reuse the InputActions library": adr/0436-qindalink-macros-reuse-the-input-actions-library.md
       - "0437: QindaLink panel applet and phone capability tokens": adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md
       - "0438: QindaLink Link1 caller authority": adr/0438-qindalink-link1-caller-authority.md
+      - "0440: QindaLink LAN listener and discovery": adr/0440-qindalink-lan-listener-and-discovery.md
