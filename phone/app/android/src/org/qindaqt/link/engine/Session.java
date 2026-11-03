@@ -56,6 +56,7 @@ public final class Session {
     private String desktopName = "";
     private List<?> desktopCaps = new ArrayList<>();
     private boolean desktopTrusted, pinMatches, stale;
+    private final Map<Long, FeatureContext.ReplyHandler> replies = new java.util.HashMap<>();
     private long nextId = 1, requestId, lastSentMs, lastRecvMs, pairStartMs;
     private byte[] np, nd, commit;
     private String code = "";
@@ -183,6 +184,12 @@ public final class Session {
     }
 
     private boolean onFrame(Envelope e) throws IOException {
+        // AGENT-CONTRACT: a reply to a feature's request() goes to that feature whatever its type (ok, error,
+        // or a typed frame such as desktop.focus), before the core frames are interpreted.
+        if (e.re != 0 && phase == Phase.READY) {
+            FeatureContext.ReplyHandler rh = replies.remove(e.re);
+            if (rh != null) { rh.onReply(e); return true; }
+        }
         switch (e.t) {
             case "hello": return onHello(e);
             case "ping": send(new Envelope("pong", 0, e.id, null)); return true;
@@ -354,6 +361,16 @@ public final class Session {
             String ns = dot < 0 ? e.t : e.t.substring(0, dot);
             if (phase != Phase.READY || !h.namespaces().contains(ns) || !desktopCaps.contains(h.capability())) return false;
             Session.this.send(e);
+            return true;
+        }
+        @Override public boolean request(String type, Map<String, Object> body, ReplyHandler handler) throws IOException {
+            int dot = type.indexOf('.');
+            String ns = dot < 0 ? type : type.substring(0, dot);
+            if (phase != Phase.READY || !h.namespaces().contains(ns) || !desktopCaps.contains(h.capability())) return false;
+            long id = nextId++;
+            replies.put(id, handler);
+            try { Session.this.send(new Envelope(type, id, 0, body)); }
+            catch (IOException ex) { replies.remove(id); throw ex; }
             return true;
         }
         @Override public long nextId() { return nextId++; }
