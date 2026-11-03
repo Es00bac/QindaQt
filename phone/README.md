@@ -70,8 +70,8 @@ on the host belongs to the real link service; do not bind it from tests.
 
 ## Known limits (M1c)
 
-- Only `status` is advertised; `ring` replies `error{unsupported}`.
-- Signal strength is `null`; the LAN listener, notifications, SMS and input are out of scope.
+- `ring` is implemented by `ring/RingFeature` (alarm stream, Stop notification); the fake desktop never sends one.
+- Signal strength is reported for the active Wi-Fi or cellular link; the LAN listener, notifications, SMS and input are out of scope here.
 - Pairing starts from a button, not automatically, so a stray local listener cannot raise a code.
 
 ## Cross-implementation test (real desktop service)

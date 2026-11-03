@@ -115,9 +115,13 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. The `status`, `notify`, `sms`, `input` and `macro`
-capabilities are advertised; `ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
-reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
+through one polled JNI bridge. The `status`, `notify`, `sms`, `input`, `macro`
+and `ring` capabilities are advertised. `ring` (`ring/RingFeature` over a `RingSink`; Android
+implementation plays the alarm stream at full volume, posts a Stop/full-screen notification and
+restores the volume) is proven end to end against the real service with a fake sink; a live ring
+on hardware needs the user's approval and is not yet recorded. `hello.name` is the user-visible
+device name (`Settings.Global.device_name`, then the model) and `status.network.signal` carries a
+0-4 level for Wi-Fi and cellular, `null` when unknown. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
 
 ## Notifications

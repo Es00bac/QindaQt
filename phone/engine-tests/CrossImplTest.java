@@ -129,7 +129,16 @@ public final class CrossImplTest {
                 "network", SessionTest.m("type", "wifi", "signal", Json.NULL));
         EngineState state = new EngineState();
         PinStore pins = new PinStore(new File(tmp, "phone-pin"));
-        Session s = new Session(link, pins, st, new DeviceInfo("xtest-phone", "xtest", "JVM", "0"), state);
+        final java.util.concurrent.atomic.AtomicInteger rings = new java.util.concurrent.atomic.AtomicInteger();
+        org.qindaqt.link.ring.RingSink fakeSink = new org.qindaqt.link.ring.RingSink() {
+            public String start(Runnable r) { rings.incrementAndGet(); return "alarm"; }
+            public void stop() { }
+        };
+        // Fake sink: the desktop's Ring reaches the real RingFeature but nothing can ring a phone.
+        org.qindaqt.link.engine.FeatureRegistry reg = new org.qindaqt.link.engine.FeatureRegistry()
+                .add(new org.qindaqt.link.engine.StatusFeature(st, new EngineState()))
+                .add(new org.qindaqt.link.ring.RingFeature(fakeSink, new EngineState()));
+        Session s = new Session(link, pins, reg, new DeviceInfo("xtest-phone", "xtest", "JVM", "0"), state);
         Thread t = new Thread(s::run);
         t.start();
         waitPhase(state, EngineState.Phase.CONNECTED, 10000);
@@ -154,6 +163,16 @@ public final class CrossImplTest {
             seen = devices.contains(id) && devices.contains("\"ready\":true") && devices.contains("\"level\":42");
         }
         expect(seen, "Devices() lists the phone ready with status battery level 42");
+        expect(devices.contains("\"ring\""), "Devices() lists the ring capability for the phone");
+        gdbus("Ring", id);
+        for (dl = System.currentTimeMillis() + 5000; rings.get() == 0 && System.currentTimeMillis() < dl; Thread.sleep(50)) { }
+        expect(rings.get() == 1, "Link1.Ring reached the phone's RingFeature (fake sink started once)");
+        gdbus("Ring", id); // already ringing: the phone answers error{busy}, which the service logs
+        String svcLog = "";
+        for (dl = System.currentTimeMillis() + 5000; !svcLog.contains("busy") && System.currentTimeMillis() < dl; Thread.sleep(100))
+            svcLog = new String(Files.readAllBytes(log.toPath()), StandardCharsets.UTF_8);
+        expect(svcLog.contains("busy") && rings.get() == 1, "second Ring was answered busy and did not restart the alarm");
+        expect(svcLog.indexOf("Ring failed") == svcLog.lastIndexOf("Ring failed"), "only the busy ring failed");
         s.command(Session.Command.STOP);
         t.join(3000);
         monitor.destroy();
