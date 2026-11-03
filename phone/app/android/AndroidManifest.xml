@@ -17,6 +17,9 @@
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <!-- Find-my-phone ring: full-screen alert, and DND bypass when the user grants policy access. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"

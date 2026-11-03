@@ -11,5 +11,14 @@ public final class DeviceInfo {
         this.app = clip(app, 64);
     }
 
+    /**
+     * The user-visible device name: the Settings.Global device name when set, else the model.
+     * Pure so the JVM tests can cover the fallback; the Android caller supplies the setting.
+     */
+    public static String displayName(String settingsName, String model) {
+        String n = settingsName == null ? "" : settingsName.trim();
+        return n.isEmpty() ? model : n;
+    }
+
     private static String clip(String s, int n) { return s.length() <= n ? s : s.substring(0, n); }
 }

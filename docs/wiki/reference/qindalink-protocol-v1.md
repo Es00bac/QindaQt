@@ -114,7 +114,7 @@ TLS 1.3 handshake (both certificates) ──► both send hello
 | `ok` | both | `{}`; generic success reply | — |
 | `error` | both | `code` (see below), `message` (string ≤ 512, for logs only, never shown verbatim as a secret-bearing string) | — |
 | `status` | phone→desktop | See [status](#status) | none |
-| `ring` | desktop→phone | `{}`. The phone rings at full volume, overriding silent mode, until the user stops it on the phone. | `ok` or `error` |
+| `ring` | desktop→phone | `{}` or `{stop:true}`. `{}`: the phone rings on its alarm stream at full volume, overriding silent mode (and Do Not Disturb where Android allows it), until the user stops it on the phone (Stop action, unlock or opening the app), a `ring{stop:true}` arrives, the link ends, or 60 s pass; the previous alarm volume is restored. `ok` once it rings, `error{busy}` if already ringing, `error{internal}` if it cannot play. `{stop:true}` stops a ring and is `ok` even when idle. The desktop does not yet send `stop`. | `ok` or `error` |
 
 Error codes: `unknown-type`, `bad-request`, `not-paired`, `unsupported`,
 `busy`, `denied`, `target-changed`, `timeout`, `internal`.
@@ -143,7 +143,7 @@ At most one frame goes out per 2 seconds, except that a change in the
 | `battery.charging` | bool |
 | `battery.plugged` | `none`, `usb`, `ac`, `wireless`, `dock` |
 | `network.type` | `none`, `wifi`, `cellular`, `ethernet`, `other` |
-| `network.signal` | integer 0–4, or `null` when unknown |
+| `network.signal` | integer 0–4 for the active Wi-Fi or cellular link (Wi-Fi level from RSSI, cellular `SignalStrength.getLevel()`), or `null` when unknown or the transport has no level. Sent under the 2-second rate limit above. |
 
 ## Pairing
 

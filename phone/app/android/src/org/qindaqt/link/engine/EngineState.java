@@ -22,6 +22,7 @@ public final class EngineState {
     private long lastStatusMs;
     private String notifyAccess = "unknown";
     private String sms = "";
+    private String ring = "idle";
 
     public synchronized void set(Phase p, String desktopName, String code, String message) {
         this.phase = p;
@@ -43,6 +44,9 @@ public final class EngineState {
     /** Permission summary of the sms feature (no content), for example "read,no-send". */
     public synchronized void setSms(String summary) { sms = summary == null ? "" : summary; }
 
+    /** Ring feature state: "idle", "failed" or "ringing,<note>" (note such as "alarm,no-dnd-access"). */
+    public synchronized void setRing(String s) { ring = s == null ? "idle" : s; }
+
     public synchronized Phase phase() { return phase; }
 
     public synchronized String toJson() {
@@ -56,6 +60,7 @@ public final class EngineState {
         m.put("sms", sms);
         m.put("lastStatusAgeMs", lastStatusMs == 0 ? -1L : System.currentTimeMillis() - lastStatusMs);
         m.put("notifyAccess", notifyAccess);
+        m.put("ring", ring);
         return Json.write(m);
     }
 }
