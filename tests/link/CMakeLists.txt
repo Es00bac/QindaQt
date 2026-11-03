@@ -137,6 +137,22 @@ if(QINDAQT_DBUS_RUN_SESSION)
     set_tests_properties(qindaqt.link-vault-service PROPERTIES LABELS "service;link" TIMEOUT 90)
 endif()
 
+# The JVM phone against the real service (skips unless phone/engine-tests/run-cross-vault.sh sets the class path).
+if(QINDAQT_DBUS_RUN_SESSION)
+    qt_add_executable(
+        qindaqt_link_vault_cross_test
+        tst_link_vault_cross.cpp
+        support/fake_portal.h
+    )
+    target_link_libraries(qindaqt_link_vault_cross_test PRIVATE QindaQt::LinkTransport Qt6::Test Qt6::DBus)
+    target_compile_definitions(
+        qindaqt_link_vault_cross_test
+        PRIVATE QINDAQT_LINK_SERVICE_BINARY="$<TARGET_FILE:qindaqt-link-service>"
+    )
+    add_dependencies(qindaqt_link_vault_cross_test qindaqt-link-service)
+    qindaqt_enable_warnings(qindaqt_link_vault_cross_test)
+endif()
+
 # input.* and macro.* against a fake RemoteDesktop portal and fake InputActions1
 # registered under unique names on the test bus; rows run under dbus-run-session
 # so they never touch the user's bus. No row can reach the real portal.
