@@ -359,40 +359,79 @@ recipe and apply these dependency changes to a new revision pinned to final
 container-wm main, including native polkit and subsequent lanes. No delivery
 list or installed package changes are part of M1 source qualification.
 
-### QindaLink in the desktop package (revision r49 recipe)
+### QindaLink is its own package
 
-The [QindaLink](../architecture/qindalink.md) phone companion ships inside
-`gui-wm/qindaqt-desktop`, not in a package of its own. The recipe is
-`packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r49.ebuild`.
-It carries a `@@QINDAQT_COMMIT@@` placeholder that `cut-package.sh` replaces,
-and it carries one patch, `qindaqt-desktop-r45-keyring-activation.patch`: the
-r40, r42, r46 and r48 changes are already in `main` from `42edc40cb`, but the r45
-fix exists only on `fix/keyring-activation-ownership-20261030`. Pin a commit that
-descends from `42edc40cb` and re-check that the r45 patch still applies forward.
+QindaLink ships as `gui-apps/qindalink`, not inside `gui-wm/qindaqt-desktop`, so a Link
+fix never recompiles the desktop and the two packages never own the same file. Templates:
+`packaging/gentoo/gui-apps/qindalink/qindalink-0.1.0_pre20261102.ebuild` and
+`packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261102.ebuild`; both keep
+a `@@QINDAQT_COMMIT@@` placeholder that the cut script replaces.
 
-| Part | Installed as |
-| --- | --- |
-| Service | `/usr/bin/qindaqt-link-service` |
-| D-Bus activation | `/usr/share/dbus-1/services/org.qindaqt.Link1.service` (`Exec=` the binary above, `SystemdService=qindaqt-link-service.service`) |
-| User unit | `/usr/lib/systemd/user/qindaqt-link-service.service`, `WantedBy=default.target` (never `graphical-session.target`, which QindaQt does not activate) |
-| Login start | `/etc/xdg/autostart/qindaqt-link-service.desktop`, a `QindaQt`-only entry that pings `org.qindaqt.Link1` so the bus activates the unit |
-| Companion app | `/usr/bin/qindaqt-link`, `org.qindaqt.Link.desktop`, `hicolor/scalable/apps/org.qindaqt.Link.svg` |
-| Mirror | `/usr/bin/qindaqt-link-mirror` (needs `media-video/ffmpeg[vaapi]`, ADR-0435) |
-| Applet | inside the production shell; no separate file |
+| Part | Package | Installed as |
+| --- | --- | --- |
+| Service | qindalink | `/usr/bin/qindaqt-link-service` |
+| D-Bus activation | qindalink | `/usr/share/dbus-1/services/org.qindaqt.Link1.service` (`Exec=` the binary, `SystemdService=qindaqt-link-service.service`) |
+| User unit | qindalink | `/usr/lib/systemd/user/qindaqt-link-service.service`, `WantedBy=default.target` (never `graphical-session.target`, which QindaQt does not activate) |
+| Login start | qindalink | `/etc/xdg/autostart/qindaqt-link-service.desktop`, a QindaQt-only entry that pings `org.qindaqt.Link1` so the bus activates the unit |
+| Companion app | qindalink | `/usr/bin/qindaqt-link`, `org.qindaqt.Link.desktop`, `org.qindaqt.Link.svg` |
+| Mirror | qindalink | `/usr/bin/qindaqt-link-mirror` (`media-video/ffmpeg[vaapi]`, ADR-0435) |
+| Panel applet, focus relay | qindaqt-desktop | inside the production shell |
 
-Dependencies added to RDEPEND (and so DEPEND): `media-video/ffmpeg:=[vaapi]`
-for the mirror decoder and `dev-util/android-tools` for `/usr/bin/adb`.
-`dev-libs/openssl` (libcrypto 3.2) was already required. `net-dns/avahi` is
-added only when LAN discovery lands; it is reached over D-Bus, so there is no
-link-time need. Nothing in the build touches the network.
+CMake switches (`src/CMakeLists.txt`): `QINDAQT_BUILD_LINK_SERVICE`, `QINDAQT_BUILD_LINK_APP` and
+`QINDAQT_BUILD_LINK_MIRROR`, all default ON. The desktop ebuild passes all three OFF. The shell still
+builds the applet and focus relay, which use only `link_client`; that library is a private static
+dependency and its install rule runs only when a Link program is built, so the desktop installs no
+Link file. The qindalink ebuild builds only `qindaqt-link-service`, `qindaqt-link` and
+`qindaqt-link-mirror` (about 220 compile steps, mostly the QindaTK-facing controls it links) and
+installs components `QindaQtLink`, `QindaLinkApp` and `LinkMirror`, then deletes the build-time
+static libraries and headers. Both ebuilds pass `-DBUILD_TESTING=OFF`, which keeps
+`QINDAQT_LINK_TEST_HOOKS` out of the service.
 
-`qindaqt-link` stays in this package rather than a separate one. It talks to
-`Link1` and is one of the two executables the service's caller policy trusts
-(ADR-0438), so the two must move together; the System Monitor is separate
-because it has no such coupling. The recipe still passes
-`-DQINDAQT_BUILD_SYSTEM_MONITOR=OFF`.
+qindalink RDEPENDs on `gui-wm/qindaqt-desktop` because `qindaqt-link` finds
+`libqindaqt_app_shell.so` in the desktop's QML tree through its RUNPATH
+(`$ORIGIN/../lib64/qt6/qml/QindaQt/AppShell`), and the service needs the session bus, portal and
+notification host. Other RDEPENDs: `dev-util/android-tools` (`/usr/bin/adb`),
+`media-video/ffmpeg[vaapi]`, `dev-libs/qindatk`, OpenSSL 3.2, Qt 6.11. Avahi joins when LAN discovery
+lands.
 
-AGENT-GUARD: the caller policy's trusted paths are `QINDAQT_BINDIR/qindaqt-link`
-and `QINDAQT_BINDIR/qindaqt-shell`, with `QINDAQT_BINDIR` equal to
-`KDE_INSTALL_FULL_BINDIR`. The ebuild must keep installing both under
-`/usr/bin`; a different `-DCMAKE_INSTALL_BINDIR` silently denies every client.
+AGENT-GUARD: the caller policy's trusted paths are `QINDAQT_BINDIR/qindaqt-link` and
+`QINDAQT_BINDIR/qindaqt-shell`. Both packages must keep installing their binary under `/usr/bin`.
+
+### Version rule
+
+A new source snapshot gets a new `_preYYYYMMDD` version (`0.1.0_pre20261102`). Use `-rN` only for an
+ebuild-only change over the same source. Never reuse a version for a different commit; the cut scripts
+refuse it. The repository keeps one placeholder template per package and version; the pinned ebuild
+and Manifest live only in the overlay. The desktop recipe carries the r45 keyring-activation patch
+(its fix exists only on `fix/keyring-activation-ownership-20261030`); the cut refuses a commit that
+patch does not apply to.
+
+`.cache/small-team/install-qindalink-desktop.sh [--dry-run] <commit>` cuts and installs both
+packages in one emerge; `--dry-run` prints every step with no sudo.
+
+### ccache across snapshots
+
+Portage's ccache hits across desktop updates only when compile commands do not change between
+snapshots. Two things make that so:
+
+1. **Stable source path.** The archive prefix and `S` are the fixed name `QindaQt`
+   (`S="${WORKDIR}/QindaQt"`), not `QindaQt-<commit>`.
+2. **Relative paths.** Add these lines once to `/var/cache/ccache/ccache.conf` (the install script
+   does it idempotently):
+
+```
+base_dir = /var/tmp/portage
+hash_dir = false
+sloppiness = file_macro,locale,time_macros
+```
+
+`cmake.eclass` puts the build directory next to the source: `${WORKDIR}/<PF>_build` and
+`${WORKDIR}/QindaQt`. With `base_dir` ccache rewrites absolute paths under `/var/tmp/portage` relative
+to the compiler's working directory, so a command reads `../QindaQt/src/...` in every snapshot even
+though `<PF>` (in the working directory name) changes. `hash_dir = false` keeps the working directory
+itself out of the hash; `file_macro` lets `__FILE__` differ and `time_macros` ignores `__DATE__`.
+
+Remaining misses: Qt's `mocs_compilation.cpp` and `qrc_*.cpp` files `#include` generated files by
+absolute build-directory path, and that text is hashed, so those units miss whenever `<PF>` changes.
+Any header edit also misses every unit that includes it. The measured benefit is stated in the
+handoff, not here.
