@@ -17,6 +17,14 @@ using namespace QindaQt::Link;
 using namespace QindaQt::Link::Test;
 
 namespace {
+// The adaptor behavior under test here is the D-Bus mapping; caller policy has its own rows.
+struct AllowAll final : CallerAuthority {
+    bool authorize(const QDBusMessage &, QString *name) override
+    {
+        if (name != nullptr) *name = QStringLiteral("test");
+        return true;
+    }
+};
 QString s(const char *v) { return QString::fromLatin1(v); }
 constexpr auto kPath = "/org/qindaqt/Link1/Messages";
 constexpr auto kIface = "org.qindaqt.Link1.Messages";
@@ -56,7 +64,8 @@ private Q_SLOTS:
         HubFixture hub;
         MessagesFeature feature([&](const QString &dev) { return hub.hub.session(dev); });
         hub.hub.addFeature(&feature);
-        new MessagesAdaptor(&feature, svc);
+        AllowAll allowAll;
+        new MessagesAdaptor(&feature, svc, &allowAll);
         QVERIFY(svc.registerObject(s(kPath), &feature, QDBusConnection::ExportAdaptors));
         QVERIFY(svc.registerService(s("org.qindaqt.Link1.MessagesTest")));
         ScriptedPhone phone;

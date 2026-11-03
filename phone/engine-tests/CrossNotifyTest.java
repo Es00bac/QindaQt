@@ -92,7 +92,8 @@ public final class CrossNotifyTest {
         File recFile = new File(tmp, "recording.jsonl"), log = new File(tmp, "service.log");
         ProcessBuilder pb = new ProcessBuilder("dbus-run-session", "--", "bash", "-c",
                 "echo $$ > '" + addr + ".pid'; echo \"$DBUS_SESSION_BUS_ADDRESS\" > '" + addr + "'; exec \"$0\" --data-dir '" + data
-                        + "' --config-dir '" + cfg + "' --cache-dir '" + cache + "' --port 0 --no-adb --no-notifications --recording-notifier '" + recFile + "'", a[0]);
+                        + "' --config-dir '" + cfg + "' --cache-dir '" + cache + "' --port 0 --no-adb --no-notifications --recording-notifier '" + recFile + "'"
+                        + " --trusted-caller \"$(readlink -f \"$(command -v gdbus)\")\"", a[0]);
         pb.environment().put("QT_QPA_PLATFORM", "offscreen");
         pb.redirectErrorStream(true).redirectOutput(log);
         CrossImplTest.svc = pb.start();

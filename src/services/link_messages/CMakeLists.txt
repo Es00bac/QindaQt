@@ -15,6 +15,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_messages/send_gate.h
             include/qindaqt/services/link_messages/message_model.h
             include/qindaqt/services/link_messages/messages_adaptor.h
             include/qindaqt/services/link_messages/messages_feature.h

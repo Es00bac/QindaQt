@@ -10,10 +10,12 @@ The durable decisions are
 [ADR-0433](../adr/0433-qindalink-phone-companion-architecture.md)
 (components and process boundaries) and
 [ADR-0434](../adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md)
-(transport, identity and pairing). The wire contract is the
+(transport, identity and pairing). Macros follow
+[ADR-0436](../adr/0436-qindalink-macros-reuse-the-input-actions-library.md)
+(ADR-0427's library, one portal session). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications, SMS and the QindaTK app (pairing, Messages, Phone apps, mute list, USB setup, reply window) integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input, macros and the vault are not integrated yet.**
+Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications, SMS and the QindaTK app (pairing, Messages, Phone apps, mute list, USB setup, reply window) integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input and macros are integrated with fake-portal evidence only (the first live portal run needs the user's approval). The vault is not integrated yet.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -45,7 +47,12 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
   - Both codecs pass every golden vector.
   - `phone/engine-tests/run-cross-impl.sh` pairs the real Java session with
     the real desktop service on a private bus.
-- **Not implemented yet:** input and macros (in review), the vault (in
+- **Input and macros** ([ADR-0436](../adr/0436-qindalink-macros-reuse-the-input-actions-library.md)).
+  Integrated after review and a repair round; tested against a fake portal and
+  a fake `InputActions1`. See [Input and macros](#input-and-macros). The first
+  live run against the real portal needs the user's approval and is **not yet
+  recorded**.
+- **Not implemented yet:** the vault (in
   progress), LAN mode, and the QindaTK desktop app. Sending an SMS has never
   been exercised live; it needs the user's approval.
 
@@ -76,7 +83,9 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
 | App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, Settings link for macros, phone setup (built; see [app page](../apps/qindalink.md)). There is no macro editor in the app (ADR-0436) |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
-| Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
+| Input | `src/services/link_input` | `input` capability: the single RemoteDesktop portal session (`PortalInputSession`, an `InputSink`), frame parsing and bounds, text batching, held-key ledger, the `input.*` handler |
+| Macros | `src/services/link_macros` | `macro` capability: `MacroCatalog` (InputActions1 client), `PortalMacroOutput` (the shared `MacroRunner`'s output over the sink), the `macro.*` handler |
+| Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools, Touchpad, Keyboard, Macros and the Vault placeholder, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
 | Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
 | Phone engine (Java) | `phone/app/android/src/org/qindaqt/link/{proto,engine,android}` | `proto`: pure codec, JSON, pairing math (no `android.*`); `engine`: session state machine, reconnect loop, pin store; `android`: Keystore identity, pinned TLS 1.3 connector, `connectedDevice` foreground service, status source, the single JNI bridge class |
 | Phone tests and tools | `phone/engine-tests`, `phone/tools` | JVM vector and loopback-session runner (`run.sh`), `build-apk.sh`, dev-only `fake-desktop.py` (see `phone/README.md`) |
@@ -106,8 +115,8 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. The `status` and `notify` capabilities are
-advertised; `ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
+through one polled JNI bridge. The `status`, `notify`, `sms`, `input` and `macro`
+capabilities are advertised; `ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
 reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
 
@@ -195,6 +204,18 @@ has no UI of its own.
   `unsupported` when Android refuses, and messages it sends are not recorded
   in the provider by the platform.
 
+## Who may call Link1
+
+The session bus is shared by every process of the user, so `qindaqt-link-service`
+authorizes callers itself ([ADR-0438](../adr/0438-qindalink-link1-caller-authority.md)).
+Device metadata (`Devices`, `PendingPairings`, change signals) is open.
+Reading messages or notifications, sending, replying, muting and
+pairing decisions need a caller whose executable is `qindaqt-link`,
+`qindaqt-shell` or given with `--trusted-caller`; others get
+`org.qindaqt.Link1.Error.Denied`. Broadcast signals never carry message or
+notification text, and every accepted text send raises a desktop notice and
+counts against a per-device rate limit.
+
 ## Connection and pairing
 
 - The phone engine always tries `127.0.0.1:47160` first. That address works
@@ -225,6 +246,54 @@ cmd deviceidle whitelist +org.qindaqt.link
 The service uses Portage's `/usr/bin/adb` (`dev-util/android-tools`). A user
 `adb` elsewhere on `PATH` speaks the same server protocol and can share the
 running ADB server.
+
+## Input and macros
+
+The phone is a touchpad, a keyboard and a macro pad
+([protocol](../reference/qindalink-protocol-v1.md#remote-input-input),
+[ADR-0436](../adr/0436-qindalink-macros-reuse-the-input-actions-library.md)).
+
+```
+ phone: Touchpad / Keyboard / Macros screens
+   │ input.* / macro.*                       desktop: qindaqt-link-service
+   ▼                                          ┌───────────────────────────────┐
+ InputFeature ── HeldInput ── PortalInputSession ──► RemoteDesktop portal
+ MacroFeature ── MacroRunner ── PortalMacroOutput ─┘  (one session, approved once)
+        │             ▲
+        │      MacroCatalog ◄── org.qindaqt.InputActions1 (GetSnapshot, Changed)
+        └── InputGate (native compositor Unlocked receipt)
+```
+
+- **One approval.** The portal session is created only when the controlling
+  phone sends `input.begin`. It requests keyboard and pointer with
+  `persist_mode` 2; the restore token lives in
+  `$XDG_STATE_HOME/qindalink/restore-token` (0600) and is discarded when the
+  portal revokes the session. The session closes when its controller ends,
+  disconnects, locks the desktop or loses READY.
+- **Reusable sink.** `InputSink` is the only way QindaLink moves desktop input.
+  Features wrap it in a `HeldInput` ledger so that a disconnect, lock, cancel or
+  revoke releases every key and button. Secret typing reuses the sink and
+  `TextTyper`.
+- **Gate.** Input flows only while the portal is active and the gate is open.
+  The production gate (`NativeInputGate`) opens only on an authenticated native
+  Unlocked receipt, with the compositor PID taken from the Wayland socket's
+  kernel peer and checked against the bus owner. Unknown, Locking and Locked
+  are closed.
+- **Macros.** The catalog is read from `InputActions1`; the runner is the shared
+  `MacroRunner`. Compositor-only actions fail the run. See the ADR.
+- **Phone.** `TouchGestures` (pure Java) turns touches into frames: one-finger
+  move, tap = left click, two-finger tap = right click, two-finger scroll,
+  press-hold-drag; `InputFeature` and `MacroFeature` hold the sender state.
+
+### First live run (needs the user's approval, not yet done)
+
+The prompt is a desktop remote-control approval. Tell the user first, then:
+
+1. Start `qindaqt-link-service` normally and pair the phone.
+2. Open the phone's Tools → Touchpad. The desktop shows the portal approval once.
+3. Approve, move the pointer, tap, type a short text, and run one macro.
+4. Revoke the access in the desktop's remote-control settings and confirm the
+   phone shows the approval state again.
 
 ## Secret typing
 

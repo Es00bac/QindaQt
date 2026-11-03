@@ -2,7 +2,7 @@
 import QtQuick
 import QindaTK as Tk
 
-// The four controller features, all still placeholders. Each opens its own screen file.
+// The controller features. Touchpad, Keyboard and Macros are live; Vault is still a placeholder. Each opens its own screen file.
 ScreenFrame {
     id: root
     title: qsTr("Tools")
@@ -36,7 +36,7 @@ ScreenFrame {
                     Tk.Label { text: modelData.title }
                     Tk.Caption { text: modelData.detail; muted: true; wrapMode: Text.Wrap; Tk.Flex.alignSelf: Tk.Flex.Stretch }
                 }
-                Tk.Badge { text: qsTr("Coming soon") }
+                Tk.Badge { visible: modelData.page === "vault"; text: qsTr("Coming soon") }
             }
         }
     }

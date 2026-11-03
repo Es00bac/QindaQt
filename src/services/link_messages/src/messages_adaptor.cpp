@@ -15,7 +15,7 @@ QString errorName(const QString &code)
         QStringLiteral("unknown-type"), QStringLiteral("bad-request"), QStringLiteral("not-paired"),
         QStringLiteral("unsupported"), QStringLiteral("busy"), QStringLiteral("denied"),
         QStringLiteral("target-changed"), QStringLiteral("timeout"), QStringLiteral("internal"),
-        QStringLiteral("not-connected"), QStringLiteral("bad-reply")};
+        QStringLiteral("not-connected"), QStringLiteral("bad-reply"), QStringLiteral("rate-limited")};
     if (!known.contains(code)) return QStringLiteral("org.qindaqt.Link1.Error.Internal");
     QString out = QStringLiteral("org.qindaqt.Link1.Error.");
     bool up = true;
@@ -32,8 +32,8 @@ QString errorName(const QString &code)
 
 } // namespace
 
-MessagesAdaptor::MessagesAdaptor(MessagesFeature *feature, QDBusConnection bus)
-    : QDBusAbstractAdaptor(feature), m_feature(feature), m_bus(std::move(bus))
+MessagesAdaptor::MessagesAdaptor(MessagesFeature *feature, QDBusConnection bus, CallerAuthority *authority, SendGate *gate)
+    : QDBusAbstractAdaptor(feature), m_feature(feature), m_bus(std::move(bus)), m_authority(authority), m_gate(gate)
 {
     connect(feature, &MessagesFeature::threadsChanged, this, &MessagesAdaptor::ThreadsChanged);
     connect(feature, &MessagesFeature::sendStatus, this, &MessagesAdaptor::SendStatus);
@@ -45,6 +45,12 @@ MessagesAdaptor::MessagesAdaptor(MessagesFeature *feature, QDBusConnection bus)
             << QStringList();
         m_bus.send(sig);
     });
+}
+
+void MessagesAdaptor::deny(const QDBusMessage &msg)
+{
+    msg.setDelayedReply(true);
+    m_bus.send(msg.createErrorReply(QStringLiteral("org.qindaqt.Link1.Error.Denied"), QStringLiteral("no caller authority")));
 }
 
 MessagesFeature::Reply MessagesAdaptor::completer(const QDBusMessage &msg)
@@ -62,6 +68,10 @@ MessagesFeature::Reply MessagesAdaptor::completer(const QDBusMessage &msg)
 QString MessagesAdaptor::ListThreads(const QString &device, int limit, qlonglong before, qlonglong beforeId,
                                      const QDBusMessage &msg)
 {
+    if (m_authority == nullptr || !m_authority->authorize(msg)) {
+        if (m_authority == nullptr) deny(msg);
+        return {};
+    }
     m_feature->listThreads(device, limit, before, beforeId, completer(msg));
     return {};
 }
@@ -69,12 +79,20 @@ QString MessagesAdaptor::ListThreads(const QString &device, int limit, qlonglong
 QString MessagesAdaptor::ListMessages(const QString &device, qlonglong thread, int limit, qlonglong before,
                                       const QString &beforeKind, qlonglong beforeId, const QDBusMessage &msg)
 {
+    if (m_authority == nullptr || !m_authority->authorize(msg)) {
+        if (m_authority == nullptr) deny(msg);
+        return {};
+    }
     m_feature->listMessages(device, thread, limit, before, beforeKind, beforeId, completer(msg));
     return {};
 }
 
 QString MessagesAdaptor::GetPart(const QString &device, qlonglong part, int maxEdge, const QDBusMessage &msg)
 {
+    if (m_authority == nullptr || !m_authority->authorize(msg)) {
+        if (m_authority == nullptr) deny(msg);
+        return {};
+    }
     m_feature->getPart(device, part, maxEdge, completer(msg));
     return {};
 }
@@ -82,12 +100,29 @@ QString MessagesAdaptor::GetPart(const QString &device, qlonglong part, int maxE
 QString MessagesAdaptor::Send(const QString &device, const QStringList &addrs, const QString &text, int subscription,
                               const QDBusMessage &msg)
 {
+    QString caller;
+    if (m_authority == nullptr || !m_authority->authorize(msg, &caller)) {
+        if (m_authority == nullptr) deny(msg);
+        return {};
+    }
+    if (m_gate != nullptr) {
+        const QString refused = m_gate->admit(device, int(addrs.size()), caller);
+        if (!refused.isEmpty()) {
+            msg.setDelayedReply(true);
+            m_bus.send(msg.createErrorReply(errorName(refused), refused));
+            return {};
+        }
+    }
     m_feature->send(device, addrs, text, subscription, completer(msg));
     return {};
 }
 
 QString MessagesAdaptor::MarkRead(const QString &device, qlonglong thread, const QDBusMessage &msg)
 {
+    if (m_authority == nullptr || !m_authority->authorize(msg)) {
+        if (m_authority == nullptr) deny(msg);
+        return {};
+    }
     m_feature->markRead(device, thread, completer(msg));
     return {};
 }

@@ -33,6 +33,9 @@ bool Link1Service::start(QString *error)
         if (error != nullptr) *error = why;
         return false;
     };
+    if (m_config.callerAuthority == nullptr) {
+        return fail(QStringLiteral("no caller authority configured; refusing to export Link1 unprotected"));
+    }
     IdentityStore identityStore(m_config.dataDir);
     QString identityError;
     const DeviceIdentity identity = identityStore.loadOrCreate(QSysInfo::machineHostName(), &identityError);
@@ -58,12 +61,13 @@ bool Link1Service::start(QString *error)
         new NotificationsModule(*m_hub,
                                 {m_config.configDir.isEmpty() ? m_config.dataDir + QStringLiteral("/config") : m_config.configDir,
                                  m_config.cacheDir.isEmpty() ? m_config.dataDir + QStringLiteral("/cache") : m_config.cacheDir,
-                                 m_config.phoneNotifications, m_config.replyLauncher},
+                                 m_config.phoneNotifications, m_config.replyLauncher, m_config.callerAuthority, m_bus},
                                 this);
     }
     m_messages = std::make_unique<MessagesFeature>([hub = m_hub.get()](const QString &id) { return hub->session(id); });
     m_hub->addFeature(m_messages.get());
-    new MessagesAdaptor(m_messages.get(), m_bus); // owned by m_messages; exported below
+    m_sendGuard = std::make_unique<SendGuard>(m_config.phoneNotifications);
+    new MessagesAdaptor(m_messages.get(), m_bus, m_config.callerAuthority, m_sendGuard.get()); // owned by m_messages; exported below
     connect(m_hub.get(), &Hub::devicesChanged, this, &Link1Service::onDevicesChanged);
     connect(m_hub.get(), &Hub::pairingRequested, this,
             [this](const QString &id, const QString &name, const QString &model, const QString &code) {
@@ -82,7 +86,7 @@ bool Link1Service::start(QString *error)
         m_tunnels = std::make_unique<TunnelManager>(*m_adb, tunnel);
         m_tunnels->start();
     }
-    new SetupAdaptor(m_adb, m_tunnels.get(), m_bus, this); // org.qindaqt.Link1.Setup; owned by this
+    new SetupAdaptor(m_adb, m_tunnels.get(), m_bus, this, m_config.callerAuthority); // org.qindaqt.Link1.Setup; owned by this
     if (!m_bus.registerObject(QString::fromLatin1(kPath), this,
                               QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
                                   | QDBusConnection::ExportAdaptors)) {
@@ -105,10 +109,25 @@ QString Link1Service::Devices() const
     return QString::fromUtf8(QJsonDocument(m_hub->devices()).toJson(QJsonDocument::Compact));
 }
 
-void Link1Service::ConfirmPairing(const QString &id, bool accept) { m_hub->confirmPairing(id, accept); }
-void Link1Service::Unpair(const QString &id) { m_hub->unpair(id); }
+// AGENT-GUARD (ADR-0438): ConfirmPairing, Unpair and Ring act as the user; they need a trusted caller.
+// Devices, PendingPairings and ListenPort are public metadata and stay open.
+void Link1Service::ConfirmPairing(const QString &id, bool accept)
+{
+    if (!m_config.callerAuthority->authorize(message())) return;
+    m_hub->confirmPairing(id, accept);
+}
+void Link1Service::Unpair(const QString &id)
+{
+    if (!m_config.callerAuthority->authorize(message())) return;
+    m_hub->unpair(id);
+}
+QString Link1Service::PendingPairings() const
+{
+    return QString::fromUtf8(QJsonDocument(m_hub->pendingPairings()).toJson(QJsonDocument::Compact));
+}
 void Link1Service::Ring(const QString &id)
 {
+    if (!m_config.callerAuthority->authorize(message())) return;
     m_hub->ring(id, [id](bool ok, const QString &code) {
         if (!ok) qWarning("Link1 Ring failed for %.8s: %s", qPrintable(id), qPrintable(code));
     });

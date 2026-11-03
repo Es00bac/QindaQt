@@ -10,6 +10,7 @@
     </method>
     <method name="Unpair"><arg name="id" type="s" direction="in"/></method>
     <method name="Ring"><arg name="id" type="s" direction="in"/></method>
+    <method name="PendingPairings"><arg name="json" type="s" direction="out"/></method>
     <method name="ListenPort"><arg name="port" type="q" direction="out"/></method>
     <signal name="DevicesChanged"><arg name="json" type="s"/></signal>
     <signal name="PairingRequested">

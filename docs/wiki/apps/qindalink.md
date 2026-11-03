@@ -87,7 +87,5 @@ error states are the visual evidence.
 
 - `Link1.PendingPairings` belongs to the caller-policy slice. Until it lands the
   Devices page shows only requests that arrive while it is open.
-- `Setup.SetupPhone` and `Setup.SetupStatus` are not yet restricted to the
-  QindaLink app (AGENT-GUARD TODO in `setup_adaptor.h`).
 - The input page reports "unavailable" until the input feature lands; its
   `desktopInputBuilt` constant flips then.

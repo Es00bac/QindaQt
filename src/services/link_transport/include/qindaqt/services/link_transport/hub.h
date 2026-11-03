@@ -47,6 +47,8 @@ public:
     void addFeature(FeatureHandler *handler) { m_router.add(handler); }
 
     [[nodiscard]] QJsonArray devices() const;
+    // Pairing requests waiting for the desktop user: [{id,name,model,code}].
+    [[nodiscard]] QJsonArray pendingPairings() const;
     void confirmPairing(const QString &deviceId, bool accept);
     void unpair(const QString &deviceId);
     void ring(const QString &deviceId, std::function<void(bool ok, const QString &code)> done);

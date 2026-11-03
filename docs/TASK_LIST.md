@@ -1,3 +1,43 @@
+## November 2 — QindaLink M2: applet, phone apps, notifications and SMS integrated and proven on the phone
+
+Integrated on main (`0436d85ce`):
+- the panel applet (ADR-0437);
+- phone apps as desktop windows (ADR-0435, FFmpeg/VA-API), with the user's
+  pause-on-screen-off decision;
+- phone notifications;
+- SMS/MMS (`Link1.Messages`);
+- the phone UI on QindaTK (QindaTK main `9ff55fb`: the D-354 Android build
+  plus the D-355 qmldir fix).
+
+Each candidate passed an independent review and a repair round. The
+merged-tree gates on the combined tree were:
+- 16/16 `qindaqt.link-*` rows (core, notifications, messages, mirror);
+- the JVM engine suite;
+- 25 applet guard and panel rows;
+- validate-docs and mkdocs --strict.
+
+**Verified on the user's SM-S948U (Android 17), read-only, with no content
+printed:**
+- USB pairing with the Keystore identity; both sides showed 576 763.
+- Reconnection after a service restart without pairing again.
+- The QindaTK home screen rendering.
+- A 45-notification snapshot plus a test notification mirrored (lengths and
+  hashes only).
+- 429 SMS threads with no duplicates.
+- One 27,665-message thread (19,539 SMS, 8,126 MMS) paged in 139 pages with
+  no duplicates.
+- A streamed calculator accepting taps and text, resizing, and reporting
+  that it exited.
+
+**Not done:**
+- Any SMS send (it needs the user's approval).
+- Live phone input and macros. That needs one RemoteDesktop portal approval
+  from the user, and the lane is in repair.
+- Vault (the phone part is in progress).
+- Caller authority for sensitive Link1 members (in progress).
+- The QindaTK desktop app (in progress).
+- LAN mode and packaging.
+
 ## November 2 — QindaLink link core integrated (desktop service + phone engine)
 
 The QindaLink desktop core (`922695b60`) and the phone engine (`e52aae6c2`)

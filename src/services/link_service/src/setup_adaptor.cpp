@@ -9,12 +9,23 @@ namespace {
 QString compact(const QJsonDocument &doc) { return QString::fromUtf8(doc.toJson(QJsonDocument::Compact)); }
 }
 
-SetupAdaptor::SetupAdaptor(AdbRunner *runner, TunnelManager *tunnels, QDBusConnection bus, QObject *exported)
-    : QDBusAbstractAdaptor(exported), m_tunnels(tunnels), m_bus(std::move(bus))
+SetupAdaptor::SetupAdaptor(AdbRunner *runner, TunnelManager *tunnels, QDBusConnection bus, QObject *exported,
+                           CallerAuthority *authority)
+    : QDBusAbstractAdaptor(exported), m_tunnels(tunnels), m_authority(authority), m_bus(std::move(bus))
 {
     if (runner != nullptr) {
         m_setup = new PhoneSetup(*runner, QStringLiteral("org.qindaqt.link"), this);
     }
+}
+
+bool SetupAdaptor::allowed(const QDBusMessage &msg)
+{
+    msg.setDelayedReply(true);
+    if (m_authority == nullptr) {
+        m_bus.send(msg.createErrorReply(QStringLiteral("org.qindaqt.Link1.Error.Denied"), QStringLiteral("denied")));
+        return false;
+    }
+    return m_authority->authorize(msg);  // queues the Denied reply itself on false
 }
 
 void SetupAdaptor::reply(const QDBusMessage &msg, const QString &json) { m_bus.send(msg.createReply(json)); }
@@ -30,7 +41,7 @@ void SetupAdaptor::fail(const QDBusMessage &msg, const QString &code)
 
 QString SetupAdaptor::AdbDevices(const QDBusMessage &msg)
 {
-    msg.setDelayedReply(true);
+    if (!allowed(msg)) return {};
     QJsonArray out;
     if (m_tunnels != nullptr) {
         for (const TunnelStatus &d : m_tunnels->devices()) {
@@ -45,7 +56,7 @@ QString SetupAdaptor::AdbDevices(const QDBusMessage &msg)
 
 QString SetupAdaptor::SetupPhone(const QString &serial, const QDBusMessage &msg)
 {
-    msg.setDelayedReply(true);
+    if (!allowed(msg)) return {};
     if (m_setup == nullptr) {
         fail(msg, QStringLiteral("not-connected"));
     } else if (!PhoneSetup::validSerial(serial)) {
@@ -58,7 +69,7 @@ QString SetupAdaptor::SetupPhone(const QString &serial, const QDBusMessage &msg)
 
 QString SetupAdaptor::SetupStatus(const QString &serial, const QDBusMessage &msg)
 {
-    msg.setDelayedReply(true);
+    if (!allowed(msg)) return {};
     if (m_setup == nullptr) {
         fail(msg, QStringLiteral("not-connected"));
     } else if (!PhoneSetup::validSerial(serial)) {
