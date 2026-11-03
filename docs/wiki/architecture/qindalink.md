@@ -115,7 +115,7 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. The `status`, `notify`, `sms`, `input` and `macro`
+through one polled JNI bridge. The `status`, `notify`, `sms`, `input`, `macro`
 and `ring` capabilities are advertised. `ring` (`ring/RingFeature` over a `RingSink`; Android
 implementation plays the alarm stream at full volume, posts a Stop/full-screen notification and
 restores the volume) is proven end to end against the real service with a fake sink; a live ring
