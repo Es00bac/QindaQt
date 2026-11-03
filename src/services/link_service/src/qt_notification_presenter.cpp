@@ -21,7 +21,7 @@ QtNotificationPresenter::QtNotificationPresenter(QDBusConnection bus, QObject *p
 }
 
 void QtNotificationPresenter::present(const QString &deviceId, const QString &name, const QString &model,
-                                      const QString &code)
+                                      const QString &code, const QString &origin, const QString &source)
 {
     QDBusMessage m = QDBusMessage::createMethodCall(QString::fromLatin1(kService), QString::fromLatin1(kPath),
                                                     QString::fromLatin1(kService), QStringLiteral("Notify"));
@@ -30,7 +30,10 @@ void QtNotificationPresenter::present(const QString &deviceId, const QString &na
     const uint replaces = m_byDevice.value(deviceId, 0);
     m << QStringLiteral("QindaLink") << replaces << QStringLiteral("phone")
       << QStringLiteral("Pair with %1?").arg(safeName)
-      << QStringLiteral("%1 (%2) shows the same code: %3").arg(safeName, safeModel, spacedCode(code))
+      << (origin == QLatin1String("lan")
+              ? QStringLiteral("%1 (%2) wants to pair over Wi-Fi from %3 and shows the code: %4")
+                    .arg(safeName, safeModel, sanitizeForNotification(source), spacedCode(code))
+              : QStringLiteral("%1 (%2) shows the same code: %3").arg(safeName, safeModel, spacedCode(code)))
       << QStringList{QStringLiteral("accept"), QStringLiteral("Accept"), QStringLiteral("reject"),
                      QStringLiteral("Reject")}
       << QVariantMap{{QStringLiteral("resident"), true}} << 0;

@@ -83,10 +83,11 @@ bool Link1Service::start(QString *error)
     new MessagesAdaptor(m_messages.get(), m_bus, m_config.callerAuthority, m_sendGuard.get()); // owned by m_messages; exported below
     connect(m_hub.get(), &Hub::devicesChanged, this, &Link1Service::onDevicesChanged);
     connect(m_hub.get(), &Hub::pairingRequested, this,
-            [this](const QString &id, const QString &name, const QString &model, const QString &code) {
+            [this](const QString &id, const QString &name, const QString &model, const QString &code,
+                   const QString &origin, const QString &source) {
                 m_presented.append(id);
                 if (m_presenter != nullptr) {
-                    m_presenter->present(id, name, model, code);
+                    m_presenter->present(id, name, model, code, origin, source);
                 }
                 Q_EMIT PairingRequested(id, name, model, code);
             });
@@ -153,6 +154,14 @@ void Link1Service::SetLanEnabled(bool enabled)
 {
     if (!m_config.callerAuthority->authorize(message())) return;
     m_lan->setEnabled(enabled);
+}
+void Link1Service::SetLanInterfaces(const QStringList &names)
+{
+    if (!m_config.callerAuthority->authorize(message())) return;
+    QString error;
+    if (!m_lan->setInterfaces(names, &error)) {
+        sendErrorReply(QDBusError::InvalidArgs, error);
+    }
 }
 quint32 Link1Service::OpenPairingWindow()
 {
