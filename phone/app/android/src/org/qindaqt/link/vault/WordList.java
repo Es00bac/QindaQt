@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-3.0-US
 // GENERATED FILE (vendored data): the EFF "large" Diceware word list, 7776 words, from
 // https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt (dice numbers dropped, order kept).
 // Licence: Creative Commons Attribution 3.0 United States (CC BY 3.0 US), (c) Electronic Frontier
-// Foundation. Attribution is recorded in ADR-0439 and the QindaLink architecture page. Not hand
+// Foundation, https://creativecommons.org/licenses/by/3.0/us/ (the rest of this package is LGPL). Attribution is recorded in ADR-0439 and the QindaLink architecture page. Not hand
 // edited; the chunks stay below the 64 KB class-file string constant limit.
 package org.qindaqt.link.vault;
 

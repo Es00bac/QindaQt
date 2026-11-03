@@ -50,10 +50,10 @@ public final class VaultTests {
         return r;
     }
 
-    static VaultSession fresh() throws Exception { return VaultSession.create(new TestWrapper(KEK), false, () -> now); }
+    static VaultSession fresh() throws Exception { return VaultSession.create(new TestWrapper(KEK), 0, () -> now); }
 
     static boolean fails(byte[] file, VaultException.Reason... ok) {
-        try { VaultSession.open(file, new TestWrapper(KEK), () -> now).lock(); return false; }
+        try { VaultSession.open(file, new TestWrapper(KEK), () -> now, 0).lock(); return false; }
         catch (VaultException e) { return ok.length == 0 || Arrays.asList(ok).contains(e.reason()); }
         catch (Exception e) { return false; }
     }
@@ -63,7 +63,7 @@ public final class VaultTests {
         String a = s.put(rec("alpha", "ann", "pw-A-1")), b = s.put(rec("beta", "bob", "pw-B-2"));
         check(s.size() == 2, "two entries");
         byte[] file = s.serialize();
-        VaultSession t = VaultSession.open(file, new TestWrapper(KEK), () -> now);
+        VaultSession t = VaultSession.open(file, new TestWrapper(KEK), () -> now, 0);
         check(t.size() == 2, "reopen count");
         VaultRecord r = t.get(a);
         check(r.passwordString().equals("pw-A-1") && r.notesString().equals("note-alpha") && r.username.equals("ann"), "round trip");
@@ -74,7 +74,7 @@ public final class VaultTests {
         // Edit then delete.
         VaultRecord e = t.get(b); e.title = "beta2"; e.updatedMillis = 0; t.put(e); e.wipe();
         t.delete(a);
-        VaultSession u = VaultSession.open(t.serialize(), new TestWrapper(KEK), () -> now);
+        VaultSession u = VaultSession.open(t.serialize(), new TestWrapper(KEK), () -> now, 0);
         check(u.size() == 1 && u.list().get(0).title.equals("beta2"), "edit+delete persisted");
         // The file must not contain any plaintext field.
         String raw = new String(file, StandardCharsets.ISO_8859_1);
@@ -91,7 +91,7 @@ public final class VaultTests {
         check(fails(Arrays.copyOf(file, file.length + 1)), "trailing byte rejected");
         check(fails(new byte[0]) && fails("QLVT".getBytes(StandardCharsets.US_ASCII)), "empty/short rejected");
         byte[] wrongKek = new byte[32]; wrongKek[0] = 1;
-        try { VaultSession.open(file, new TestWrapper(wrongKek), () -> now); check(false, "wrong KEK opened"); }
+        try { VaultSession.open(file, new TestWrapper(wrongKek), () -> now, 0); check(false, "wrong KEK opened"); }
         catch (VaultException ex) { check(ex.reason() == VaultException.Reason.TAMPERED, "wrong KEK is tampered"); }
         // Version byte: unsupported version is its own reason.
         byte[] v = file.clone(); v[5] = 2;
@@ -103,7 +103,7 @@ public final class VaultTests {
         // Locate entries by scanning from the end: each = 1 + 32 (id) + 12 + 4 + len.
         int n = f.length;
         // walk forward instead: parse header + index to find entry start.
-        int p = 4 + 2 + 1; int wl = ((f[p] & 0xff) << 8) | (f[p + 1] & 0xff); p += 2 + wl;
+        int p = 4 + 2 + 1 + 8; int wl = ((f[p] & 0xff) << 8) | (f[p + 1] & 0xff); p += 2 + wl;
         p += 12; p += 4 + u32(f, p); p += 4;
         int s1 = p; int l1 = 1 + 32 + 12 + 4 + u32(f, p + 1 + 32 + 12);
         int s2 = s1 + l1; int l2 = 1 + 32 + 12 + 4 + u32(f, s2 + 1 + 32 + 12);
@@ -123,6 +123,96 @@ public final class VaultTests {
         check(fails(swapEntries(s.serialize())), "swap of equal-size entries rejected");
         // Drop an entry from the file but keep the count: index mismatch.
         s.lock();
+    }
+
+
+    /** Wrapper whose unwrap throws a chosen failure (stands in for Keystore/BiometricPrompt errors). */
+    static final class FailingWrapper implements DekWrapper {
+        final Exception failure;
+        FailingWrapper(Exception f) { failure = f; }
+        public byte[] wrap(byte[] d) throws GeneralSecurityException { throw new GeneralSecurityException("x"); }
+        public byte[] unwrap(byte[] w) throws GeneralSecurityException {
+            if (failure instanceof RuntimeException) throw (RuntimeException) failure;
+            throw (GeneralSecurityException) failure;
+        }
+    }
+
+    static VaultException.Reason openReason(byte[] file, DekWrapper w) {
+        try { VaultSession.open(file, w, () -> now, 0).lock(); return null; } catch (VaultException e) { return e.reason(); }
+    }
+
+    static void lifecycle() throws Exception {
+        VaultSession s = fresh();
+        s.put(rec("x", "u", "p"));
+        byte[] file = s.serialize();
+        check(openReason(file, new FailingWrapper(new javax.crypto.AEADBadTagException("t"))) == VaultException.Reason.TAMPERED, "AEAD bad tag is tampered");
+        check(openReason(file, new FailingWrapper(new DekWrapper.KeyInvalidatedException("k"))) == VaultException.Reason.KEY_INVALIDATED, "invalidated key");
+        check(openReason(file, new FailingWrapper(new GeneralSecurityException("user not authenticated"))) == VaultException.Reason.KEY_UNAVAILABLE, "auth failure is retryable");
+        check(openReason(file, new FailingWrapper(new java.security.ProviderException("keystore busy"))) == VaultException.Reason.KEY_UNAVAILABLE, "provider error is retryable");
+        check(openReason(file, new FailingWrapper(new javax.crypto.BadPaddingException("p"))) == VaultException.Reason.KEY_UNAVAILABLE, "non-AEAD padding error is retryable");
+        VaultLifecycle.State st;
+        // The state machine: only integrity-type failures reach ERROR (the state that offers Restore).
+        for (VaultException.Reason r : VaultException.Reason.values()) {
+            st = VaultLifecycle.afterOpenFailure(r);
+            boolean integrity = r == VaultException.Reason.TAMPERED || r == VaultException.Reason.CORRUPT
+                || r == VaultException.Reason.UNSUPPORTED_VERSION || r == VaultException.Reason.ROLLBACK;
+            check((st == VaultLifecycle.State.ERROR) == integrity, "ERROR only for integrity failures: " + r);
+        }
+        check(VaultLifecycle.afterOpenFailure(VaultException.Reason.KEY_UNAVAILABLE) == VaultLifecycle.State.LOCKED, "retry stays LOCKED");
+        check(VaultLifecycle.afterOpenFailure(VaultException.Reason.KEY_INVALIDATED) == VaultLifecycle.State.INVALIDATED, "invalidated state");
+        for (VaultLifecycle.State x : VaultLifecycle.State.values()) {
+            boolean ok = x == VaultLifecycle.State.NONE || x == VaultLifecycle.State.INVALIDATED || x == VaultLifecycle.State.ERROR;
+            check(VaultLifecycle.canRestore(x) == ok, "restore allowed only when absent or unusable: " + x);
+        }
+        check(!VaultLifecycle.canRestore(VaultLifecycle.State.LOCKED) && !VaultLifecycle.canRestore(VaultLifecycle.State.UNLOCKED), "no restore over a locked or open vault");
+        check(VaultLifecycle.restoreNeedsReplaceConfirm(VaultLifecycle.State.ERROR) && !VaultLifecycle.restoreNeedsReplaceConfirm(VaultLifecycle.State.NONE), "replace confirmation");
+        check(VaultLifecycle.canCreate(VaultLifecycle.State.NONE) && VaultLifecycle.canCreate(VaultLifecycle.State.RESTORE_READY) && !VaultLifecycle.canCreate(VaultLifecycle.State.LOCKED), "create gate");
+        check(VaultLifecycle.nextKeySlot(0, true) == 1 && VaultLifecycle.nextKeySlot(1, true) == 0 && VaultLifecycle.nextKeySlot(-1, true) == 1 && VaultLifecycle.nextKeySlot(-1, false) == 0, "fresh key slot");
+        // Slot and StrongBox flags round trip through the authenticated header.
+        VaultSession b = VaultSession.create(new TestWrapper(KEK), VaultSession.FLAG_KEY_B | VaultSession.FLAG_STRONGBOX, () -> now);
+        b.put(rec("y", "u", "p"));
+        byte[] bf = b.serialize();
+        check(VaultSession.flagsOf(bf) == 3, "flags in header");
+        VaultSession bo = VaultSession.open(bf, new TestWrapper(KEK), () -> now, 0);
+        check(bo.keySlot() == 1 && bo.strongBox(), "slot B and strongbox restored");
+        // A failed wrap is retryable, not corrupt.
+        try { VaultSession.create(new FailingWrapper(new GeneralSecurityException("x")), 0, () -> now); check(false, "create with failing wrapper"); }
+        catch (VaultException e) { check(e.reason() == VaultException.Reason.KEY_UNAVAILABLE, "failed wrap is retryable"); }
+    }
+
+    static void rollbackAndTransactions() throws Exception {
+        VaultSession s = fresh();
+        s.put(rec("x", "u", "p"));
+        byte[] g1 = s.serialize();
+        byte[] g2 = s.serialize();
+        check(VaultSession.generationOf(g1) == 1 && VaultSession.generationOf(g2) == 2 && s.generation() == 2, "generation advances per write");
+        check(VaultSession.open(g2, new TestWrapper(KEK), () -> now, 2).isUnlocked(), "current generation opens");
+        try { VaultSession.open(g1, new TestWrapper(KEK), () -> now, 2); check(false, "old generation opened"); }
+        catch (VaultException e) { check(e.reason() == VaultException.Reason.ROLLBACK, "older generation refused"); }
+        check(VaultLifecycle.afterOpenFailure(VaultException.Reason.ROLLBACK) == VaultLifecycle.State.ERROR, "rollback offers recovery");
+
+        // Transactional import: a failing record leaves the session exactly as it was.
+        VaultSession t = fresh();
+        String keep = t.put(rec("keep", "k", "pw-keep"));
+        List<VaultRecord> bad = new ArrayList<>();
+        bad.add(rec("good", "g", "pw-g")); bad.get(0).id = "0123456789abcdef0123456789abcdef";
+        VaultRecord empty = new VaultRecord(); empty.id = "fedcba9876543210fedcba9876543210"; bad.add(empty);
+        try { t.stageImport(bad, true); check(false, "bad stage accepted"); } catch (VaultException e) { check(e.reason() == VaultException.Reason.INVALID, "bad record aborts stage"); }
+        check(t.size() == 1 && t.get(keep).passwordString().equals("pw-keep"), "failed stage leaves the session untouched");
+        List<VaultRecord> good = new ArrayList<>();
+        VaultRecord r = rec("new", "n", "pw-new"); r.id = "0123456789abcdef0123456789abcdef"; good.add(r);
+        VaultSession.Staged st = t.stageImport(good, true);
+        check(t.size() == 1 && st.count() == 1, "staging does not apply");
+        long before = t.generation();
+        byte[] staged = t.serializeStaged(st);
+        check(t.generation() == before && t.size() == 1, "serialising a stage does not apply it");
+        VaultSession u = VaultSession.open(staged, new TestWrapper(KEK), () -> now, 0);
+        check(u.size() == 1 && u.list().get(0).title.equals("new"), "staged bytes hold the new state");
+        t.commit(st);
+        check(t.size() == 1 && t.list().get(0).title.equals("new") && t.generation() == before + 1, "commit applies after the write");
+        // A discarded stage changes nothing.
+        t.stageImport(new ArrayList<>(), true);
+        check(t.size() == 1, "discarded stage is a no-op");
     }
 
     static void sessionRules() throws Exception {
@@ -192,8 +282,10 @@ public final class VaultTests {
         check(!PassphraseStrength.check("short".toCharArray()).ok, "short refused");
         check(PassphraseStrength.check("abcdefghijkl".toCharArray()).ok, "12 chars ok");
         check(!PassphraseStrength.check("abcdefghijk".toCharArray()).ok, "11 chars refused");
-        check(PassphraseStrength.check("ab cd ef gh".toCharArray()).ok, "4 words ok");
-        check(!PassphraseStrength.check("ab cd ef g".toCharArray()).ok, "3 words refused");
+        check(!PassphraseStrength.check("ab cd ef gh".toCharArray()).ok, "4 tiny words refused");
+        check(PassphraseStrength.check("gold tree blue moon".toCharArray()).ok, "4 real words ok");
+        check(!PassphraseStrength.check("gold tree".toCharArray()).ok, "2 short words refused");
+        check(!PassphraseStrength.check("aaaaaaaaaaaa".toCharArray()).ok, "weak 12 chars refused");
         check(PassphraseStrength.check("Tr0ub4dor&3-xylophone".toCharArray()).bits > PassphraseStrength.check("aaaaaaaaaaaa".toCharArray()).bits, "repeats weaker");
     }
 
@@ -275,7 +367,7 @@ public final class VaultTests {
     }
 
     public static void main(String[] a) throws Exception {
-        formatAndTamper(); swapFixture(); sessionRules(); backup(); strength(); generator(); autotype(); typingSource();
+        formatAndTamper(); swapFixture(); lifecycle(); rollbackAndTransactions(); sessionRules(); backup(); strength(); generator(); autotype(); typingSource();
         System.out.println("VaultTests ok: " + checks + " checks");
     }
 }

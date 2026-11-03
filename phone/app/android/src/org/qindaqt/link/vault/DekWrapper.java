@@ -12,6 +12,17 @@ import java.security.GeneralSecurityException;
  * Ownership: the arguments belong to the caller; implementations must not retain them.
  */
 public interface DekWrapper {
+    /**
+     * Thrown by {@link #wrap}/{@link #unwrap} when the key is permanently unusable (Android:
+     * KeyPermanentlyInvalidatedException). Any other GeneralSecurityException except
+     * AEADBadTagException means "could not use the key now" and is retryable; only AEADBadTagException
+     * means the wrapped blob itself failed authentication.
+     */
+    final class KeyInvalidatedException extends GeneralSecurityException {
+        private static final long serialVersionUID = 1L;
+        public KeyInvalidatedException(String m) { super(m); }
+    }
+
     /** Returns an opaque blob that {@link #unwrap} turns back into the DEK. */
     byte[] wrap(byte[] dek) throws GeneralSecurityException;
 

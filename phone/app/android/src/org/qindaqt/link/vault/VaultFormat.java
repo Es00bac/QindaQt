@@ -9,7 +9,7 @@ import java.util.Map;
  * On-disk layout of the vault file (all integers big-endian):
  *
  * <pre>
- * header : "QLVT" | u16 version=1 | u8 flags (bit0 = StrongBox key) | u16 wrappedLen | wrapped DEK
+ * header : "QLVT" | u16 version=1 | u8 flags (bit0 StrongBox, bit1 Keystore slot B) | u64 generation | u16 wrappedLen | wrapped DEK
  * index  : iv[12] | u32 len | ct          (AES-GCM; plaintext = u32 n, then n x list fields)
  * entries: u32 n, then n x ( u8 idLen | id | iv[12] | u32 len | ct )   (plaintext = VaultRecord)
  * </pre>
@@ -23,22 +23,23 @@ final class VaultFormat {
     static final byte[] MAGIC = {'Q', 'L', 'V', 'T'};
     static final int VERSION = 1;
     static final int MAX_ENTRIES = 50_000, MAX_CT = 4 * 1024 * 1024, MAX_WRAPPED = 512;
-    static final int FLAG_STRONGBOX = 1;
+    static final int FLAG_STRONGBOX = 1, FLAG_KEY_B = 2;
 
     private VaultFormat() {}
 
     /** The parsed, still unauthenticated header. {@code bytes} is exactly what the index AAD covers. */
     static final class Header {
         final int flags;
+        final long generation;
         final byte[] wrapped, bytes;
         final int bodyOffset;
-        Header(int flags, byte[] wrapped, byte[] bytes) {
-            this.flags = flags; this.wrapped = wrapped; this.bytes = bytes; this.bodyOffset = bytes.length;
+        Header(int flags, long generation, byte[] wrapped, byte[] bytes) {
+            this.flags = flags; this.generation = generation; this.wrapped = wrapped; this.bytes = bytes; this.bodyOffset = bytes.length;
         }
     }
 
-    static byte[] headerBytes(int flags, byte[] wrapped) {
-        return new Bin.Out().raw(MAGIC).u16(VERSION).u8(flags).u16(wrapped.length).raw(wrapped).toByteArray();
+    static byte[] headerBytes(int flags, long generation, byte[] wrapped) {
+        return new Bin.Out().raw(MAGIC).u16(VERSION).u8(flags).u64(generation).u16(wrapped.length).raw(wrapped).toByteArray();
     }
 
     static Header parseHeader(byte[] file) throws VaultException {
@@ -48,10 +49,11 @@ final class VaultFormat {
         int version = in.u16();
         if (version != VERSION) throw new VaultException(VaultException.Reason.UNSUPPORTED_VERSION, "vault version");
         int flags = in.u8();
+        long generation = in.u64();
         int n = in.u16();
         if (n == 0 || n > MAX_WRAPPED) throw new VaultException(VaultException.Reason.CORRUPT, "wrapped key size");
         byte[] wrapped = in.raw(n);
-        return new Header(flags, wrapped, java.util.Arrays.copyOf(file, in.pos()));
+        return new Header(flags, generation, wrapped, java.util.Arrays.copyOf(file, in.pos()));
     }
 
     static byte[] entryAad(String id) {

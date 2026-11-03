@@ -90,7 +90,7 @@ QVariantMap FakeVault::passphraseHint(const QString &p)
 QString FakeVault::exportBackup(const QString &pass, const QString &confirm)
 {
     if (pass != confirm) return QStringLiteral("The passphrases do not match.");
-    if (pass.size() < 12) return QStringLiteral("Use at least 12 characters or 4 words.");
+    if (pass.size() < 12) return QStringLiteral("Use at least 12 varied characters or 4 words.");
     m_backupOp = QStringLiteral("export"); m_backupStatus = QStringLiteral("done"); m_backupCount = m_entries.size();
     emit changed();
     return {};

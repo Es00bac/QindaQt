@@ -50,6 +50,7 @@ public final class VaultBackup {
         Bin.Out p = new Bin.Out().u32(records.size());
         for (VaultRecord r : records) { byte[] b = r.toBytes(); p.raw(b); Bin.wipe(b); }
         byte[] plain = p.toByteArray();
+        p.wipe();
         byte[] key = derive(passphrase, salt, iterations);
         try {
             VaultCrypto.Sealed s = VaultCrypto.seal(key, header, plain);

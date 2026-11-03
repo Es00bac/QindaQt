@@ -35,7 +35,9 @@ public final class VaultRecord {
     byte[] toBytes() {
         Bin.Out o = new Bin.Out();
         o.u8(1).str(id).str(title).str(username).str(url).u64(updatedMillis).bytes(password).bytes(notes).str(autotype);
-        return o.toByteArray();
+        byte[] r = o.toByteArray();
+        o.wipe();
+        return r;
     }
 
     static VaultRecord read(Bin.In in) throws VaultException {

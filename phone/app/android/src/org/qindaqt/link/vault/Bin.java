@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package org.qindaqt.link.vault;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -9,17 +8,32 @@ import java.util.Arrays;
 final class Bin {
     private Bin() {}
 
-    /** Growing writer. {@link #wipe()} zeroes the internal buffer copy where possible. */
+    /**
+     * Growing writer over its own buffer so {@link #wipe()} can really zero it (a ByteArrayOutputStream
+     * would leave old copies behind when it grows; this one zeroes the old buffer on every growth).
+     * AGENT-GUARD: call wipe() on every Out that carried a secret, after toByteArray().
+     */
     static final class Out {
-        private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Out u8(int v) { bos.write(v); return this; }
-        Out u16(int v) { bos.write(v >>> 8); bos.write(v); return this; }
+        private byte[] buf = new byte[256];
+        private int n;
+        private void room(int add) {
+            if (n + add <= buf.length) return;
+            byte[] bigger = new byte[Math.max(buf.length * 2, n + add)];
+            System.arraycopy(buf, 0, bigger, 0, n);
+            Arrays.fill(buf, (byte) 0);
+            buf = bigger;
+        }
+        private void put(int v) { room(1); buf[n++] = (byte) v; }
+        Out u8(int v) { put(v); return this; }
+        Out u16(int v) { put(v >>> 8); put(v); return this; }
         Out u32(long v) { u16((int) (v >>> 16)); u16((int) v); return this; }
         Out u64(long v) { u32(v >>> 32); u32(v & 0xffffffffL); return this; }
-        Out raw(byte[] b) { bos.write(b, 0, b.length); return this; }
+        Out raw(byte[] b) { room(b.length); System.arraycopy(b, 0, buf, n, b.length); n += b.length; return this; }
         Out bytes(byte[] b) { u32(b.length); return raw(b); }
         Out str(String s) { return bytes(s.getBytes(StandardCharsets.UTF_8)); }
-        byte[] toByteArray() { return bos.toByteArray(); }
+        byte[] toByteArray() { return Arrays.copyOf(buf, n); }
+        /** Zeroes the internal buffer and empties the writer. */
+        void wipe() { Arrays.fill(buf, (byte) 0); n = 0; }
     }
 
     /** Bounds-checked reader; every failure is {@code CORRUPT}. */
