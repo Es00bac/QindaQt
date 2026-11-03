@@ -28,6 +28,8 @@ private Q_SLOTS:
         QCOMPARE(rows.at(1).value(QStringLiteral("label")).toString(), QStringLiteral("org.x.y"));  // label falls back to the package
         QVERIFY(rows.at(1).value(QStringLiteral("iconUrl")).toString().isEmpty());
         QVERIFY(PhoneAppsViewModel::parseInventory("garbage").isEmpty());
+        // `$` would accept a trailing newline; the shape must be anchored at both ends.
+        QVERIFY(PhoneAppsViewModel::parseInventory("{\"apps\":[{\"package\":\"com.a.b\\n\",\"label\":\"X\"}]}").isEmpty());
     }
 
     void listsThroughTheMirrorWithTheServicesSerial()
@@ -87,6 +89,7 @@ private Q_SLOTS:
         QVERIFY(apps.open(QStringLiteral("com.example.chat")));
         QCOMPARE(runner.started, (QList<QStringList>{{QStringLiteral("mirror"), QStringLiteral("--serial"), QStringLiteral("DEMO0001"),
                                                       QStringLiteral("--package"), QStringLiteral("com.example.chat")}}));
+        QVERIFY(!apps.open(QStringLiteral("com.example.chat\n")));
         QVERIFY(!apps.open(QStringLiteral("bad name; rm")));  // never reaches a process
         QCOMPARE(runner.started.size(), 1);
     }

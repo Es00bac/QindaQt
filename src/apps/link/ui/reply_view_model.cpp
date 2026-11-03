@@ -45,6 +45,8 @@ void ReplyViewModel::fail(const QString &code)
         m_error = tr("The phone is not connected.");
     } else if (code == QLatin1String("unverified")) {
         m_error = tr("The phone could not confirm that the reply was delivered.");
+    } else if (code == QLatin1String("caller-denied")) {
+        m_error = tr("This copy of QindaLink isn't allowed to use the QindaLink service. Use the installed app.");
     } else if (code == QLatin1String("denied")) {
         m_error = tr("The phone has not allowed QindaLink to answer notifications.");
     } else {

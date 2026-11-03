@@ -12,9 +12,11 @@ Tk.Scroll {
     objectName: "inputPage"
     padding: Tk.Theme.space.sm
 
-    // AGENT-NOTE: flip when the desktop half of the input feature (capability `input`) lands on
-    // main and the service can inject events; until then the rows below stay "unavailable".
-    readonly property bool desktopInputBuilt: false
+    // AGENT-CONTRACT: input is the phone's feature (capability `input` in Devices() caps). The desktop
+    // grants it only while the session is unlocked and in front, and reports the gate (locked,
+    // inactive, unverified, busy) to the phone as `input.state`, not to this app (protocol page,
+    // "Remote input"). So this page shows what is knowable here -- whether the phone offers input
+    // -- and says where the gate's reason appears, instead of claiming a state it cannot read.
     readonly property bool phoneHasInput: Devices.capabilities.indexOf("input") >= 0
 
     Tk.Flex {
@@ -36,23 +38,23 @@ Tk.Scroll {
                 Tk.KeyValue {
                     objectName: "touchpadStatus"
                     key: qsTr("Touchpad")
-                    value: page.desktopInputBuilt && page.phoneHasInput ? qsTr("Available") : qsTr("Unavailable")
+                    value: page.phoneHasInput ? qsTr("Offered by the phone") : qsTr("Unavailable")
                     mono: false
                 }
                 Tk.KeyValue {
                     objectName: "keyboardStatus"
                     key: qsTr("Keyboard")
-                    value: page.desktopInputBuilt && page.phoneHasInput ? qsTr("Available") : qsTr("Unavailable")
+                    value: page.phoneHasInput ? qsTr("Offered by the phone") : qsTr("Unavailable")
                     mono: false
                 }
                 Tk.Caption {
                     Tk.Flex.minWidth: 0
                     wrapMode: Text.WordWrap
-                    text: !page.desktopInputBuilt
-                          ? qsTr("Driving this desktop from the phone is not part of this build yet.")
-                          : !Devices.hasDevice ? qsTr("Connect a phone to use it as a touchpad or keyboard.")
+                    text: !Devices.hasDevice ? qsTr("Connect a phone to use it as a touchpad or keyboard.")
                           : !page.phoneHasInput ? qsTr("This phone's QindaLink app does not offer input.")
-                          : qsTr("Open the QindaLink app on the phone to start.")
+                          : qsTr("Start it from the QindaLink app on the phone. The desktop allows it only while this "
+                                 + "session is unlocked and in front; the phone shows the reason when it is refused "
+                                 + "(locked, inactive, or unverified).")
                 }
             }
         }

@@ -23,6 +23,12 @@ QString codeFor(const QDBusError &error)
 {
     const QString name = error.name();
     if (name.startsWith(QLatin1String(kErrorPrefix))) {
+        // The caller policy and the phone both answer Denied; only the message tells them apart
+        // (caller_policy.cpp and messages_adaptor.cpp say "caller is not a trusted..." / "no caller authority").
+        if (name.endsWith(QLatin1String("Denied")) && (error.message().startsWith(QLatin1String("caller is not"))
+                                                       || error.message().startsWith(QLatin1String("no caller")))) {
+            return QStringLiteral("caller-denied");
+        }
         const QString tail = name.mid(int(qstrlen(kErrorPrefix)));
         QString code;
         for (const QChar c : tail) {

@@ -23,8 +23,14 @@ Source: `src/apps/link`. Tests: `tests/apps/link` (`qindaqt.link-app-*`).
 ## Rules that are easy to break
 
 - **Nothing is sent without a click.** `ConversationViewModel` reaches
-  `Messages.Send` only from the Send button, and the first send of a session
-  also needs the OK in a dialog that lists the recipients. The text box never
+  `Messages.Send` only from the Send button (or "Retry to these"), and the first
+  send to a given set of recipients in a session also needs the OK in a dialog
+  that lists them. Confirmation is per normalised recipient set, so confirming
+  one conversation never authorises another.
+- **Send failures.** A partial failure names the recipients that did not get
+  the text (display names where known) and keeps the draft for them behind a
+  "Retry to these" button. `rate-limited`, a caller-policy `Denied` and a phone
+  `denied` each have their own wording; the error stays until the reader acts. The text box never
   submits on Enter, and a draft is never restored into a send.
 - **Pairing is a decision.** Showing a code never calls `ConfirmPairing`;
   Accept and Reject do. Reject takes focus so a stray Enter refuses.
@@ -87,5 +93,6 @@ error states are the visual evidence.
 
 - `Link1.PendingPairings` belongs to the caller-policy slice. Until it lands the
   Devices page shows only requests that arrive while it is open.
-- The input page reports "unavailable" until the input feature lands; its
-  `desktopInputBuilt` constant flips then.
+- The input page shows only what is knowable here: whether the phone lists the `input` capability.
+  The desktop's gate (locked, inactive, unverified, busy) is sent to the phone as `input.state`, so the
+  page says where the reason appears rather than guessing it.

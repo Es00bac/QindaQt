@@ -29,7 +29,7 @@ PhoneSetup::PhoneSetup(AdbRunner &runner, QString package, QObject *parent)
 
 bool PhoneSetup::validSerial(const QString &serial)
 {
-    static const QRegularExpression shape(QStringLiteral("^[A-Za-z0-9._:-]{1,64}$"));
+    static const QRegularExpression shape(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z0-9._:-]{1,64}")));
     return shape.match(serial).hasMatch();
 }
 
@@ -59,7 +59,19 @@ QList<PhoneSetup::Step> PhoneSetup::grantSteps() const
 
 void PhoneSetup::run(const QString &serial, Done done)
 {
-    runSteps(serial, grantSteps(), false, std::move(done));
+    if (m_running.contains(serial)) {
+        done(QJsonObject{{QStringLiteral("serial"), serial},
+                         {QStringLiteral("ok"), false},
+                         {QStringLiteral("error"), QStringLiteral("busy")},
+                         {QStringLiteral("steps"), QJsonArray()}});
+        return;
+    }
+    const bool track = validSerial(serial);
+    if (track) m_running.insert(serial);
+    runSteps(serial, grantSteps(), false, [this, serial, track, done = std::move(done)](const QJsonObject &report) {
+        if (track) m_running.remove(serial);
+        done(report);
+    });
 }
 
 void PhoneSetup::status(const QString &serial, Done done)
