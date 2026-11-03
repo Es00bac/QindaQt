@@ -164,6 +164,10 @@ add_custom_target(
         qindaqt_shell_audio_applet_runtimeplugin
         qindaqt_shell_bluetooth_applet_runtimeplugin
         qindaqt_shell_smart_lights_applet_runtimeplugin
+        qindaqt_shell_link_applet_runtimeplugin
+        qindaqt_shell_network_applet_runtimeplugin
+        qindaqt_shell_agent_usage_applet_runtimeplugin
+        qindaqt_shell_firewall_applet_runtimeplugin
         qindaqt_shell_power_applet_runtimeplugin
         qindaqt_shell_status_notifier_applet_runtimeplugin
         qindaqt_shell_obs_applet_runtimeplugin
@@ -194,6 +198,10 @@ if(TARGET qindaqt-shell)
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellSmartLightsAppletRuntime
+            QindaQt::ShellLinkAppletRuntime
+            QindaQt::ShellNetworkAppletRuntime
+            QindaQt::ShellAgentUsageAppletRuntime
+            QindaQt::ShellFirewallAppletRuntime
             QindaQt::ShellVoiceAppletRuntime
             QindaQt::ShellPowerAppletRuntime
             QindaQt::ShellLauncherQml
@@ -205,6 +213,10 @@ if(TARGET qindaqt-shell)
             qindaqt_shell_audio_applet_runtimeplugin
             qindaqt_shell_bluetooth_applet_runtimeplugin
             qindaqt_shell_smart_lights_applet_runtimeplugin
+            qindaqt_shell_link_applet_runtimeplugin
+            qindaqt_shell_network_applet_runtimeplugin
+            qindaqt_shell_agent_usage_applet_runtimeplugin
+            qindaqt_shell_firewall_applet_runtimeplugin
             qindaqt_shell_voice_applet_runtimeplugin
             qindaqt_shell_clipboard_applet_runtimeplugin
             qindaqt_shell_power_applet_runtimeplugin

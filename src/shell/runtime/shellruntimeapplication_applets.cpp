@@ -9,6 +9,7 @@
 #include "networkappletcomposition.h"
 #include "agentusageappletcomposition.h"
 #include "firewallappletcomposition.h"
+#include "linkappletcomposition.h"
 #include "agent_usage_applet_controller.h"
 #include "smartlightsappletcomposition.h"
 #include "voiceappletcomposition.h"
@@ -207,6 +208,11 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
         std::make_unique<NetworkAppletComposition>(m_applets, m_appletPolicy);
     m_firewallApplet =
         std::make_unique<FirewallAppletComposition>(m_applets, m_appletPolicy);
+    m_linkApplet =
+        std::make_unique<LinkAppletComposition>(m_applets, m_appletPolicy);
+    // The launcher runtime is initialized before this function (see
+    // ShellRuntimeApplication::initialize); "Open QindaLink" borrows it.
+    m_linkApplet->attachLauncher(m_launcherApplet->access());
     m_smartLightsApplet =
         std::make_unique<SmartLightsAppletComposition>(m_applets, m_appletPolicy);
     m_obsApplet =

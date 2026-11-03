@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "link",
+  "name": "QindaLink",
+  "description": "Shows the paired phone's connection and battery, presents the six-digit pairing code with Accept and Reject, and can ring or unpair the phone through the public Link1 service.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.link"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 72, "maximum": 140, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["phone.read", "phone.control"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
