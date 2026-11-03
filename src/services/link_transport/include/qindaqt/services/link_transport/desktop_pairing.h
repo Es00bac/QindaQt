@@ -20,6 +20,7 @@ class DesktopPairing final : public QObject {
 public:
     DesktopPairing(QByteArray spkiD, QByteArray spkiP, int timeoutMs, QObject *parent = nullptr);
 
+    [[nodiscard]] bool awaitingLocalDecision() const { return m_state == State::Deciding && !m_localAccepted; }
     [[nodiscard]] bool active() const { return m_state != State::Idle && m_state != State::Done; }
     // Step 2: sends pair.commit as the reply to `requestId`; starts the timeout.
     void begin(qint64 requestId);

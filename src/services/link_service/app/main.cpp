@@ -5,6 +5,7 @@
 #include <qindaqt/services/link_notifications/fdo_phone_presenter.h>
 #include <qindaqt/services/link_notifications/process_reply_launcher.h>
 #include <qindaqt/services/link_notifications/recording_presenter.h>
+#include <qindaqt/services/link_service/caller_policy.h>
 #include <qindaqt/services/link_service/link1_service.h>
 #include <qindaqt/services/link_service/qt_notification_presenter.h>
 
@@ -65,7 +66,10 @@ int main(int argc, char **argv)
                                QStringLiteral("Do not offer the input and macro capabilities."));
     QCommandLineOption stateDir(QStringLiteral("state-dir"), QStringLiteral("State directory for the portal restore token."),
                                 QStringLiteral("dir"));
-    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir});
+    QCommandLineOption trustedCaller(QStringLiteral("trusted-caller"),
+                                     QStringLiteral("Extra executable allowed to use protected Link1 members (repeatable)."),
+                                     QStringLiteral("exe"));
+    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
     parser.process(app);
 
     ServiceConfig config;
@@ -118,6 +122,12 @@ int main(int argc, char **argv)
     if (!parser.isSet(noAdb)) {
         adb = std::make_unique<QProcessAdbRunner>();
     }
+    // AGENT-GUARD (ADR-0438): the trusted set is fixed here, from the installed QindaLink clients plus
+    // --trusted-caller (tests). Never read it from the environment or a D-Bus call.
+    QStringList trusted{QStringLiteral(QINDAQT_BINDIR "/qindaqt-link"), QStringLiteral(QINDAQT_BINDIR "/qindaqt-shell")};
+    trusted += parser.values(trustedCaller);
+    CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted);
+    config.callerAuthority = &callerPolicy;
     Link1Service service(config, bus, presenter.get(), adb.get());
     QString error;
     if (!service.start(&error)) {

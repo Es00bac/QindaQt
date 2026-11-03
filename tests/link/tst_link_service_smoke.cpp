@@ -29,7 +29,8 @@ private Q_SLOTS:
         service.setProcessChannelMode(QProcess::ForwardedChannels);
         service.start(QStringLiteral(QINDAQT_LINK_SERVICE_BINARY),
                       {QStringLiteral("--data-dir"), data.path(), QStringLiteral("--port"), QStringLiteral("0"),
-                       QStringLiteral("--no-adb"), QStringLiteral("--no-notifications")});
+                       QStringLiteral("--no-adb"), QStringLiteral("--no-notifications"),
+                       QStringLiteral("--trusted-caller"), QCoreApplication::applicationFilePath()});
         QVERIFY(service.waitForStarted());
 
         QDBusConnection bus = QDBusConnection::sessionBus();
