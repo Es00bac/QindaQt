@@ -77,14 +77,17 @@ Tk.Flex {
                 secondaryText: pkg
                 tooltip: qsTr("Open %1 on the desktop").arg(label)
                 onClicked: PhoneApps.open(pkg)
-                leading: Image {
-                    source: row.iconUrl
-                    sourceSize.width: 48
-                    sourceSize.height: 48
-                    width: 24
-                    height: 24
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
+                leading: Item {
+                    implicitWidth: 22
+                    implicitHeight: 22
+                    Image {
+                        anchors.fill: parent
+                        source: row.iconUrl
+                        sourceSize.width: 44
+                        sourceSize.height: 44
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
                 }
                 trailing: Tk.Flex {
                     align: Tk.Flex.Center
@@ -110,6 +113,8 @@ Tk.Flex {
 
         Tk.EmptyState {
             anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 360)
+            maxTextWidth: width
             visible: PhoneApps.state !== "ready"
             objectName: "appsState"
             iconName: PhoneApps.state === "loading" ? "loader" : PhoneApps.state === "needs-adb" ? "unlink" : "layout-grid"

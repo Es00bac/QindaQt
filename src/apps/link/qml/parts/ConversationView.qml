@@ -61,30 +61,44 @@ Tk.Flex {
             visible: Conversation.open
             model: Conversation.messages
             spacing: Tk.Theme.space.xs
+            // AGENT-NOTE: bubbles vary in height, and a virtualised ListView only estimates the
+            // height of rows it has not built, so jumping to the end overshoots without limit.
+            // A page is at most a few hundred short rows, so build them all and the end is exact.
+            cacheBuffer: 200000
             boundsBehavior: Flickable.StopAtBounds
             T.ScrollBar.vertical: Tk.ScrollBar {}
             property bool stickToEnd: true
 
             // Older pages arrive above what is on screen; the view keeps its place.
-            onAtYBeginningChanged: if (atYBeginning && Conversation.hasOlder) Conversation.loadOlder()
-            onAtYEndChanged: stickToEnd = atYEnd
-            onCountChanged: if (stickToEnd) Qt.callLater(positionViewAtEnd)
+            // Only the reader's own scrolling decides these; programmatic jumps must not.
+            onAtYBeginningChanged: if (atYBeginning && moving && Conversation.hasOlder) Conversation.loadOlder()
+            onMovementEnded: stickToEnd = atYEnd
+            onContentHeightChanged: if (stickToEnd) settle.restart()
+
+            // Row heights are only estimated until delegates exist, so one jump to the end is
+            // not enough; jump again once layout has settled.
+            Timer {
+                id: settle
+                interval: 40
+                onTriggered: bubbles.positionViewAtEnd()
+            }
 
             delegate: MessageBubble {
                 width: ListView.view.width
             }
 
-            header: Tk.Caption {
+            header: Item {
                 width: bubbles.width
-                horizontalAlignment: Text.AlignHCenter
+                height: Conversation.loading ? Tk.Theme.size.row : 0
                 visible: Conversation.loading
-                height: visible ? implicitHeight + Tk.Theme.space.sm : 0
-                text: qsTr("Loading...")
+                Tk.Caption { anchors.centerIn: parent; text: qsTr("Loading...") }
             }
         }
 
         Tk.EmptyState {
             anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 360)
+            maxTextWidth: width
             visible: !Conversation.open || (Conversation.error.length > 0 && bubbles.count === 0)
             iconName: Conversation.error.length > 0 ? "triangle-alert" : "message-square"
             title: Conversation.error.length > 0 ? qsTr("Could not load this conversation") : qsTr("Pick a conversation")

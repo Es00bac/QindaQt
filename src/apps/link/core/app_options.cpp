@@ -27,7 +27,8 @@ std::optional<AppOptions> parseAppOptions(const QStringList &arguments, QString 
     const QCommandLineOption grab(QStringLiteral("grab"), QStringLiteral("Render offscreen to a PNG and exit."), QStringLiteral("png"));
     const QCommandLineOption grabAfter(QStringLiteral("grab-after"), QStringLiteral("Milliseconds before --grab writes."), QStringLiteral("ms"));
     const QCommandLineOption reply(QStringLiteral("reply"), QStringLiteral("Open the notification reply form for: -- <device> <key> <action>."));
-    parser.addOptions({page, size, fake, grab, grabAfter, reply});
+    const QCommandLineOption openThread(QStringLiteral("open-thread"), QStringLiteral("With --fake: open this conversation id."), QStringLiteral("id"));
+    parser.addOptions({page, size, fake, grab, grabAfter, reply, openThread});
     parser.addPositionalArgument(QStringLiteral("target"), QStringLiteral("With --reply: device, key and action."));
     if (!parser.parse(arguments)) {
         *error = parser.errorText();
@@ -76,6 +77,14 @@ std::optional<AppOptions> parseAppOptions(const QStringList &arguments, QString 
         options.grabAfterMs = parser.value(grabAfter).toInt(&ok);
         if (!ok || options.grabAfterMs < 0 || options.grabAfterMs > 60000) {
             *error = QStringLiteral("--grab-after must be 0..60000");
+            return std::nullopt;
+        }
+    }
+    if (parser.isSet(openThread)) {
+        bool ok = false;
+        options.openThread = parser.value(openThread).toLongLong(&ok);
+        if (!ok || !parser.isSet(fake)) {
+            *error = QStringLiteral("--open-thread needs a number and --fake");
             return std::nullopt;
         }
     }

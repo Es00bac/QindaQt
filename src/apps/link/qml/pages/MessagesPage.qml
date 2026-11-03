@@ -24,12 +24,18 @@ Tk.Flex {
         onDismissed: Prefs.rcsNoticeDismissed = true
     }
 
-    Tk.EmptyState {
+    Item {
         visible: !Devices.phoneReady
         Tk.Flex.grow: 1
-        iconName: "message-square"
-        title: qsTr("No phone connected")
-        text: qsTr("Messages appear here once a paired phone is connected over USB.")
+        Tk.Flex.basis: 0
+        Tk.EmptyState {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 360)
+            maxTextWidth: width
+            iconName: "message-square"
+            title: qsTr("No phone connected")
+            text: qsTr("Messages appear here once a paired phone is connected over USB.")
+        }
     }
 
     Tk.Flex {

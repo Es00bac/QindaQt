@@ -23,6 +23,7 @@ struct AppOptions {
     QString fakeScenario;             // empty = the real session bus
     QString grabPath;
     int grabAfterMs = 1200;
+    qint64 openThread = -1;           // --open-thread N (with --fake): open that conversation, for renders
     QString device, key, action;      // Reply mode
     [[nodiscard]] bool fake() const { return !fakeScenario.isEmpty(); }
     // Offscreen runs must never map a window on the user's desktop.

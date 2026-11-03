@@ -116,7 +116,14 @@ void FakeLinkApi::populate()
 {
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const qint64 minute = 60 * 1000;
-    devicesJson = compact(QJsonArray{QJsonObject{
+    const QString newId(64, QLatin1Char('b'));
+    const QJsonObject incoming{{QStringLiteral("id"), newId}, {QStringLiteral("name"), QStringLiteral("Spare phone")},
+                               {QStringLiteral("model"), QStringLiteral("SM-DEMO2")}, {QStringLiteral("paired"), false},
+                               {QStringLiteral("connected"), true}, {QStringLiteral("ready"), false},
+                               {QStringLiteral("transport"), QStringLiteral("usb")}};
+    pending = QJsonArray{QJsonObject{{QStringLiteral("id"), newId}, {QStringLiteral("name"), QStringLiteral("Spare phone")},
+                                     {QStringLiteral("model"), QStringLiteral("SM-DEMO2")}, {QStringLiteral("code"), QStringLiteral("482915")}}};
+    devicesJson = compact(QJsonArray{incoming, QJsonObject{
         {QStringLiteral("id"), QString(64, QLatin1Char('a'))},
         {QStringLiteral("name"), QStringLiteral("Demo phone")},
         {QStringLiteral("model"), QStringLiteral("SM-DEMO1")},
@@ -181,7 +188,6 @@ void FakeLinkApi::populate()
     currentJson = QJsonArray{QJsonObject{{QStringLiteral("device"), QString(64, QLatin1Char('a'))},
                                          {QStringLiteral("key"), QStringLiteral("0|com.example.chat|7|null|1")},
                                          {QStringLiteral("app"), QStringLiteral("Chat")}}};
-    pending = QJsonArray{};
     setupReportJson = compact(QJsonObject{});
 }
 

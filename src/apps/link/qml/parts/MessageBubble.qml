@@ -44,14 +44,19 @@ Item {
             Tk.Flex {
                 direction: Tk.Flex.Column
                 gap: Tk.Theme.space.xs
-                Image {
+                Item {
                     visible: bubble.imageState === "ready"
-                    source: bubble.image
-                    fillMode: Image.PreserveAspectFit
-                    sourceSize.width: 480
                     Tk.Flex.shrink: 0
-                    width: Math.min(sourceSize.width, 240)
-                    height: status === Image.Ready ? width * implicitHeight / Math.max(1, implicitWidth) : 0
+                    Tk.Flex.alignSelf: Tk.Flex.Start
+                    implicitWidth: 240
+                    implicitHeight: pic.status === Image.Ready ? 240 * pic.implicitHeight / Math.max(1, pic.implicitWidth) : 0
+                    Image {
+                        id: pic
+                        anchors.fill: parent
+                        source: bubble.image
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize.width: 480
+                    }
                 }
                 Tk.Caption {
                     visible: bubble.imageState === "loading" || bubble.imageState === "none"

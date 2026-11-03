@@ -42,7 +42,7 @@ Source: `src/apps/link`. Tests: `tests/apps/link` (`qindaqt.link-app-*`).
 ```
 qindaqt-link [--page devices|messages|apps|notifications|input|vault] [--size WxH]
 qindaqt-link --reply -- <device> <key> <action>
-qindaqt-link --fake populated|empty|unavailable|error [--page P] [--size WxH] --grab out.png [--grab-after ms]
+qindaqt-link --fake populated|empty|unavailable|error [--page P] [--open-thread N] [--size WxH] --grab out.png [--grab-after ms]
 ```
 
 - **Reply window.** `--reply -- <device> <key> <action>` is the argv the

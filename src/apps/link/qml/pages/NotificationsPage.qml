@@ -76,6 +76,8 @@ Tk.Flex {
 
         Tk.EmptyState {
             anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 360)
+            maxTextWidth: width
             visible: Mutes.apps.count === 0
             iconName: Mutes.error.length > 0 ? "triangle-alert" : "bell"
             title: Mutes.error.length > 0 ? qsTr("Could not load apps") : Mutes.loaded ? qsTr("No apps yet") : qsTr("Loading")

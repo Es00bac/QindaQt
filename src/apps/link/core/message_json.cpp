@@ -107,6 +107,7 @@ QVariantMap messageRow(const QJsonObject &message, qint64 nowMs)
     row.insert(QStringLiteral("image"), QString());
     row.insert(QStringLiteral("imageState"), imagePart >= 0 ? QStringLiteral("none") : QStringLiteral("absent"));
     row.insert(QStringLiteral("status"), box == QLatin1String("failed") ? QStringLiteral("failed") : QString());
+    row.insert(QStringLiteral("statusText"), QString());
     row.insert(QStringLiteral("local"), false);
     return row;
 }

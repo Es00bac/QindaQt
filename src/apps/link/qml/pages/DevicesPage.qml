@@ -57,6 +57,7 @@ Tk.Scroll {
 
                 Tk.Flex {
                     direction: Tk.Flex.Column
+                    width: parent.width
                     align: Tk.Flex.Stretch
                     gap: Tk.Theme.space.xs
                     visible: Devices.hasDevice
@@ -105,12 +106,18 @@ Tk.Scroll {
                     }
                 }
 
-                Tk.EmptyState {
+                Item {
                     visible: !Devices.hasDevice
-                    iconName: "smartphone"
-                    title: qsTr("No phone")
-                    text: qsTr("Install QindaLink on the phone, connect it with USB debugging on and open the app. "
-                               + "It appears here with a pairing code.")
+                    implicitWidth: 360
+                    implicitHeight: 150
+                    Tk.EmptyState {
+                        anchors.fill: parent
+                        maxTextWidth: 340
+                        iconName: "smartphone"
+                        title: qsTr("No phone")
+                        text: qsTr("Install QindaLink on the phone, connect it with USB debugging on and open the app. "
+                                   + "It appears here with a pairing code.")
+                    }
                 }
             }
 

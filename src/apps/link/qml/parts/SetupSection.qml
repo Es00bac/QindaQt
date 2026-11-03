@@ -13,6 +13,7 @@ LinkPanel {
     iconName: "wrench"
 
     Tk.Flex {
+        width: parent.width
         direction: Tk.Flex.Column
         align: Tk.Flex.Stretch
         gap: Tk.Theme.space.sm

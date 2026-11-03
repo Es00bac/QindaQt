@@ -141,6 +141,18 @@ int main(int argc, char **argv)
     if (options.mode == Mode::Reply) reply->load();
     if (options.page == QLatin1String("notifications") || options.fake()) notifications.refresh();
 
+    if (options.openThread >= 0) {
+        // Render aid: open the conversation once the thread list has loaded.
+        auto opened = std::make_shared<bool>(false);
+        QObject::connect(&threads, &ThreadsViewModel::stateChanged, &app, [&, opened] {
+            const QVariantMap row = threads.thread(options.openThread);
+            if (!*opened && !row.isEmpty()) {
+                *opened = true;
+                conversation.openThread(row);
+            }
+        });
+    }
+
     if (options.headless()) {
         if (window == nullptr) { std::fprintf(stderr, "qindaqt-link: --grab needs a window root\n"); return 1; }
         QTimer::singleShot(options.grabAfterMs, window, [window, path = options.grabPath] {

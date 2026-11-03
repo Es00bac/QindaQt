@@ -104,7 +104,7 @@ private Q_SLOTS:
         QVERIFY(QDBusReply<QString>(notif.call(QStringLiteral("ListApps"))).isValid());
         QVERIFY(QDBusReply<QString>(notif.call(QStringLiteral("Current"))).isValid());
         // Setup with a trusted caller is not Denied (the service runs --no-adb here, so NotConnected).
-        const QDBusMessage setup = QDBusInterface(QStringLiteral("org.qindaqt.Link1"), root, iface(".Setup")).call(QStringLiteral("SetupStatus"), QStringLiteral("DEMO0001"));
+        const QDBusMessage setup = QDBusInterface(QStringLiteral("org.qindaqt.Link1"), root, iface(".Setup"), bus).call(QStringLiteral("SetupStatus"), QStringLiteral("DEMO0001"));
         QVERIFY(setup.errorName() != QLatin1String(kDenied));
         const QDBusMessage threads = msgs.call(QStringLiteral("ListThreads"), dev, 10, qlonglong(0), qlonglong(0));
         QVERIFY(threads.type() == QDBusMessage::ErrorMessage && threads.errorName() != QLatin1String(kDenied));

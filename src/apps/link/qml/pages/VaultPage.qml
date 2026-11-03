@@ -4,9 +4,14 @@ import QindaTK as Tk
 
 // Vault: a placeholder. The vault lives only on the phone (ADR-0433 rule 2); typing a secret into
 // a desktop field is configured there.
-Tk.EmptyState {
+Item {
     objectName: "vaultPage"
-    iconName: "lock"
-    title: qsTr("Vault")
-    text: qsTr("Vault typing is configured on the phone.")
+    Tk.EmptyState {
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 32, 360)
+        maxTextWidth: width
+        iconName: "lock"
+        title: qsTr("Vault")
+        text: qsTr("Vault typing is configured on the phone.")
+    }
 }

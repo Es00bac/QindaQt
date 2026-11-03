@@ -29,7 +29,9 @@ Tk.Scroll {
             iconName: "mouse-pointer"
             Tk.Flex.shrink: 0
             Tk.Flex {
+                width: parent.width
                 direction: Tk.Flex.Column
+                align: Tk.Flex.Stretch
                 gap: Tk.Theme.space.xs
                 Tk.KeyValue {
                     objectName: "touchpadStatus"

@@ -56,21 +56,22 @@ Tk.Flex {
                 tooltip: title
                 onClicked: Conversation.openThread(Threads.threads.get(index))
                 trailing: Tk.Flex {
-                    direction: Tk.Flex.Column
-                    align: Tk.Flex.End
-                    gap: 0
-                    Tk.Caption { text: row.when }
+                    align: Tk.Flex.Center
+                    gap: Tk.Theme.space.xs
                     Tk.Badge {
                         visible: row.unread > 0
                         variant: "accent"
                         text: String(row.unread)
                     }
+                    Tk.Caption { text: row.when }
                 }
             }
         }
 
         Tk.EmptyState {
             anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 360)
+            maxTextWidth: width
             visible: Threads.threads.count === 0 && !Threads.loading
             iconName: Threads.error.length > 0 ? "triangle-alert" : "inbox"
             title: Threads.error.length > 0 ? qsTr("Could not load messages")
