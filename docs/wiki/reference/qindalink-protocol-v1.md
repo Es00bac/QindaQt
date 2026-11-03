@@ -143,7 +143,7 @@ At most one frame goes out per 2 seconds, except that a change in the
 | `battery.charging` | bool |
 | `battery.plugged` | `none`, `usb`, `ac`, `wireless`, `dock` |
 | `network.type` | `none`, `wifi`, `cellular`, `ethernet`, `other` |
-| `network.signal` | integer 0–4 for the active Wi-Fi or cellular link (Wi-Fi level from RSSI, cellular `SignalStrength.getLevel()`), or `null` when unknown or the transport has no level. Sent under the 2-second rate limit above. |
+| `network.signal` | integer 0–4 for the active Wi-Fi or cellular link (Wi-Fi level from the connection RSSI via `WifiManager`, because `NetworkCapabilities.getSignalStrength()` is redacted for ordinary apps on Android 12+ and no location permission is needed; cellular `SignalStrength.getLevel()`), or `null` when unknown or the transport has no level. Sent under the 2-second rate limit above. |
 
 ## Pairing
 

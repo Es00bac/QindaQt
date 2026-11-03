@@ -91,6 +91,12 @@ public final class RingTest {
         expect(!f.onFrame(new Envelope("ring.x", 9, 0, null)), "unknown type not handled");
         expect(DeviceInfo.displayName(" My Phone ", "SM-X").equals("My Phone") && DeviceInfo.displayName(null, "SM-X").equals("SM-X")
                 && DeviceInfo.displayName("  ", "SM-X").equals("SM-X"), "device name falls back to the model");
+        expect(org.qindaqt.link.engine.SignalLevel.wifi(-40) == 4 && org.qindaqt.link.engine.SignalLevel.wifi(-55) == 4
+                && org.qindaqt.link.engine.SignalLevel.wifi(-100) == 0 && org.qindaqt.link.engine.SignalLevel.wifi(-90) == 0
+                && org.qindaqt.link.engine.SignalLevel.wifi(-78) == 1 && org.qindaqt.link.engine.SignalLevel.wifi(-67) == 2
+                && org.qindaqt.link.engine.SignalLevel.wifi(-60) == 3, "wifi rssi maps to 0-4");
+        expect(org.qindaqt.link.engine.SignalLevel.wifi(-127) == -1 && org.qindaqt.link.engine.SignalLevel.wifi(0) == -1
+                && org.qindaqt.link.engine.SignalLevel.platform(5) == -1 && org.qindaqt.link.engine.SignalLevel.platform(3) == 3, "unknown readings give -1");
         System.out.println("ring tests OK (" + checks + " checks)");
     }
 }

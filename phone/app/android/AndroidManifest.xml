@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- CHANGE_NETWORK_STATE is one of the prerequisites Android 14+ demands of a connectedDevice service. -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <!-- Normal permission: lets WifiManager report the connection RSSI (not location-gated) for status.network.signal. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
