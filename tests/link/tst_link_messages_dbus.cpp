@@ -24,6 +24,7 @@ struct AllowAll final : CallerAuthority {
         if (name != nullptr) *name = QStringLiteral("test");
         return true;
     }
+    bool authorizeRole(const QDBusMessage &m, CallerRole, QString *name) override { return authorize(m, name); }
 };
 QString s(const char *v) { return QString::fromLatin1(v); }
 constexpr auto kPath = "/org/qindaqt/Link1/Messages";

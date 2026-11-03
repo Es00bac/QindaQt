@@ -46,4 +46,8 @@
       <arg name="serial" type="s" direction="in"/><arg name="report" type="s" direction="out"/>
     </method>
   </interface>
+  <interface name="org.qindaqt.Link1.Focus">
+    <!-- Shell only (ADR-0440). json: {"uuid","appId","title","revision"} or {} when unknown. -->
+    <method name="Publish"><arg name="json" type="s" direction="in"/></method>
+  </interface>
 </node>

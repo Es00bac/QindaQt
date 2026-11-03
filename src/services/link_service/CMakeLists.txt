@@ -9,6 +9,7 @@ target_sources(
     qindaqt_link_service
     PRIVATE
         src/caller_policy.cpp
+        src/focus_adaptor.cpp
         src/link1_service.cpp
         src/phone_setup.cpp
         src/setup_adaptor.cpp
@@ -19,6 +20,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/services/link_service/caller_policy.h
+            include/qindaqt/services/link_service/focus_adaptor.h
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
             include/qindaqt/services/link_service/phone_setup.h
@@ -28,7 +30,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_link_service
-    PUBLIC QindaQt::LinkTransport QindaQt::LinkAdb QindaQt::LinkNotifications QindaQt::LinkMessages Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::LinkTransport QindaQt::LinkFocus QindaQt::LinkAdb QindaQt::LinkNotifications QindaQt::LinkMessages Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_link_service PUBLIC cxx_std_20)
 set_target_properties(qindaqt_link_service PROPERTIES CXX_EXTENSIONS OFF)
@@ -50,6 +52,7 @@ target_link_libraries(
         QindaQt::LinkService
         QindaQt::LinkInput
         QindaQt::LinkMacros
+        QindaQt::LinkVault
         QindaQt::SessionLockState
         QindaQt::CompositorAttachment
         qindaqt_compositor_names

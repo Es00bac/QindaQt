@@ -116,21 +116,43 @@ qindaqt_enable_warnings(qindaqt_link_setup_test)
 add_test(NAME qindaqt.link-setup COMMAND qindaqt_link_setup_test)
 set_tests_properties(qindaqt.link-setup PROPERTIES LABELS "service;link" TIMEOUT 30)
 
+# The real service with a fake portal and the shell-only Focus.Publish (ADR-0440).
+if(QINDAQT_DBUS_RUN_SESSION)
+    qt_add_executable(
+        qindaqt_link_vault_service_test
+        tst_link_vault_service.cpp
+        support/fake_portal.h
+    )
+    target_link_libraries(qindaqt_link_vault_service_test PRIVATE QindaQt::LinkTransport Qt6::Test Qt6::DBus)
+    target_compile_definitions(
+        qindaqt_link_vault_service_test
+        PRIVATE QINDAQT_LINK_SERVICE_BINARY="$<TARGET_FILE:qindaqt-link-service>"
+    )
+    add_dependencies(qindaqt_link_vault_service_test qindaqt-link-service)
+    qindaqt_enable_warnings(qindaqt_link_vault_service_test)
+    add_test(
+        NAME qindaqt.link-vault-service
+        COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_vault_service_test>
+    )
+    set_tests_properties(qindaqt.link-vault-service PROPERTIES LABELS "service;link" TIMEOUT 90)
+endif()
+
 # input.* and macro.* against a fake RemoteDesktop portal and fake InputActions1
 # registered under unique names on the test bus; rows run under dbus-run-session
 # so they never touch the user's bus. No row can reach the real portal.
 if(QINDAQT_DBUS_RUN_SESSION)
-    foreach(_t IN ITEMS input macros)
+    foreach(_t IN ITEMS input macros vault)
         qt_add_executable(
             qindaqt_link_${_t}_test
             tst_link_${_t}.cpp
             support/fake_portal.h
             support/fake_input_actions.h
             support/input_fixture.h
+            support/vault_fixture.h
         )
         target_link_libraries(
             qindaqt_link_${_t}_test
-            PRIVATE QindaQt::LinkInput QindaQt::LinkMacros Qt6::Test Qt6::DBus
+            PRIVATE QindaQt::LinkInput QindaQt::LinkMacros QindaQt::LinkVault QindaQt::LinkFocus Qt6::Test Qt6::DBus
         )
         qindaqt_enable_warnings(qindaqt_link_${_t}_test)
         add_test(

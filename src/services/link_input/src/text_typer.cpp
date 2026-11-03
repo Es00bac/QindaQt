@@ -2,12 +2,48 @@
 #include <qindaqt/services/link_input/input_frames.h>
 #include <qindaqt/services/link_input/text_typer.h>
 
+#include <cstring>
+
 namespace QindaQt::Link {
 
 TextTyper::TextTyper(InputSink &sink, QObject *parent) : QObject(parent), m_held(sink)
 {
     m_timer.setInterval(4);
     connect(&m_timer, &QTimer::timeout, this, &TextTyper::pump);
+}
+
+TextTyper::~TextTyper()
+{
+    for (Job &j : m_jobs) wipe(j.symbols);
+}
+
+void TextTyper::zero(QList<qint32> &symbols)
+{
+    if (symbols.isEmpty()) return;
+    symbols.detach(); // a shared buffer would otherwise be copied by data() and the other owner left intact
+    explicit_bzero(symbols.data(), size_t(symbols.size()) * sizeof(qint32));
+}
+
+void TextTyper::wipe(QList<qint32> &symbols)
+{
+    zero(symbols);
+    symbols.clear();
+}
+
+bool TextTyper::enqueueSymbols(const QString &token, QList<qint32> symbols)
+{
+    if (symbols.isEmpty() || m_queued + symbols.size() > kMaxQueued) {
+        wipe(symbols);
+        return false;
+    }
+    Job job;
+    job.token = token;
+    job.symbols = std::move(symbols);
+    m_queued += job.symbols.size();
+    m_done.remove(token);
+    m_jobs.push_back(std::move(job));
+    if (!m_timer.isActive()) m_timer.start();
+    return true;
 }
 
 bool TextTyper::enqueue(const QString &token, const QString &text)
@@ -51,6 +87,7 @@ void TextTyper::cancel(const QString &prefix)
     for (auto it = m_jobs.begin(); it != m_jobs.end();) {
         if (prefix.isEmpty() || it->token.startsWith(prefix)) {
             m_queued -= it->symbols.size() - it->next;
+            wipe(it->symbols);
             record(it->token, State::Failed);
             dropped << it->token;
             it = m_jobs.erase(it);
@@ -67,6 +104,10 @@ void TextTyper::cancel(const QString &prefix)
 
 void TextTyper::pump()
 {
+    if (m_guard && !m_jobs.empty() && !m_guard()) {
+        cancel();
+        return;
+    }
     int budget = kBatch;
     while (budget > 0 && !m_jobs.empty()) {
         Job &job = m_jobs.front();
@@ -84,6 +125,7 @@ void TextTyper::pump()
         if (!ok || job.next >= job.symbols.size()) {
             const QString token = job.token;
             m_queued -= job.symbols.size() - job.next;
+            wipe(job.symbols);
             m_jobs.pop_front();
             record(token, ok ? State::Complete : State::Failed);
             Q_EMIT finished(token, ok);
