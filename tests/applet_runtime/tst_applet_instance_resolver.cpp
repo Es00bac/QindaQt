@@ -65,6 +65,7 @@ private slots:
     void networkAppletResolvesInStockAndVerticalPlacements();
     void agentUsageResolvesBesideStatusAcrossAllProfiles();
     void firewallAppletResolvesWithSecurityReadOnly();
+    void linkAppletResolvesWithPhoneTokens();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -102,6 +103,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.gather-overview"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
+        // QindaLink phone chip (ADR-0437); sorted position.
+        QStringLiteral("qindaqt.applets.link"),
         // Network over public Network1 (ADR-0258); sorted position.
         QStringLiteral("qindaqt.applets.network"),
         QStringLiteral("qindaqt.applets.notification-center"),
@@ -725,6 +728,23 @@ void AppletInstanceResolverTests::firewallAppletResolvesWithSecurityReadOnly()
         QVERIFY2(firewall.ready(), qPrintable(firewall.diagnostic));
         QCOMPARE(firewall.entryPoint, QStringLiteral("qindaqt.applets.firewall"));
         QCOMPARE(firewall.grantedCapabilities, QStringList{QStringLiteral("security.read")});
+    }
+}
+
+void AppletInstanceResolverTests::linkAppletResolvesWithPhoneTokens()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    for (const auto edge : {Profiles::Edge::Top, Profiles::Edge::Bottom,
+                            Profiles::Edge::Left, Profiles::Edge::Right}) {
+        const auto link = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            instance(QStringLiteral("link")), edge, fixture.catalog,
+            fixture.policy, fixture.registry);
+        QVERIFY2(link.ready(), qPrintable(link.diagnostic));
+        QCOMPARE(link.entryPoint, QStringLiteral("qindaqt.applets.link"));
+        QCOMPARE(link.grantedCapabilities,
+                 (QStringList{QStringLiteral("phone.control"), QStringLiteral("phone.read")}));
     }
 }
 

@@ -101,6 +101,7 @@ nav:
       - Network applet: shell/network-applet.md
       - AI agent usage applet: shell/agent-usage-applet.md
       - Firewall applet: shell/firewall-applet.md
+      - QindaLink applet: shell/link-applet.md
       - Clipboard applet: shell/clipboard-applet.md
       - Panel popup placement: shell/panel-popup-placement.md
       - Production panel surfaces: shell/panel-surfaces.md
@@ -615,3 +616,4 @@ nav:
       - "0433: QindaLink phone companion architecture": adr/0433-qindalink-phone-companion-architecture.md
       - "0434: QindaLink pinned TLS transport and pairing": adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md
       - "0435: Decode QindaLink phone streams with FFmpeg": adr/0435-decode-qindalink-streams-with-ffmpeg.md
+      - "0437: QindaLink panel applet and phone capability tokens": adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md

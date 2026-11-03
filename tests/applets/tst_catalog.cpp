@@ -40,12 +40,14 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 36);
+    QCOMPARE(catalog.manifests().size(), 37);
 
     const QSet<QString> expected{
         QStringLiteral("agent-usage"),
         // Firewall over public Firewall1 (docs/wiki/shell/firewall-applet.md).
         QStringLiteral("firewall"),
+        // QindaLink phone chip (docs/wiki/shell/link-applet.md).
+        QStringLiteral("link"),
         QStringLiteral("launcher"),
         QStringLiteral("task-list"),
         // ADR-0224: presentations of launcher and task-list under their own
@@ -166,6 +168,14 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QCOMPARE(toString(Capability::SecurityRead), QStringLiteral("security.read"));
     QCOMPARE(capabilityFromString(QStringLiteral("security.read")),
              std::optional<Capability>{Capability::SecurityRead});
+    const AppletManifest *link = catalog.findById(QStringLiteral("link"));
+    QVERIFY(link != nullptr);
+    QCOMPARE(link->entryPoint.value, QStringLiteral("qindaqt.applets.link"));
+    QVERIFY(link->capabilities
+            == QVector<Capability>({Capability::PhoneRead, Capability::PhoneControl}));
+    QCOMPARE(toString(Capability::PhoneRead), QStringLiteral("phone.read"));
+    QCOMPARE(capabilityFromString(QStringLiteral("phone.control")),
+             std::optional<Capability>{Capability::PhoneControl});
     QVERIFY(audio->capabilities
             == QVector<Capability>({Capability::AudioRead,
                                     Capability::AudioControl}));

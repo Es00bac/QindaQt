@@ -21,6 +21,7 @@ Flickable {
     property var networkAppletAccess: null
     property var agentUsageAppletAccess: null
     property var firewallAppletAccess: null
+    property var linkAppletAccess: null
     property var smartLightsAppletAccess: null
     property var voiceAppletAccess: null
     property var obsAppletAccess: null
@@ -416,6 +417,7 @@ Flickable {
                 bluetoothAppletAccess: root.bluetoothAppletAccess
                 agentUsageAppletAccess: root.agentUsageAppletAccess
                 firewallAppletAccess: root.firewallAppletAccess
+                linkAppletAccess: root.linkAppletAccess
                 networkAppletAccess: root.networkAppletAccess
                 smartLightsAppletAccess: root.smartLightsAppletAccess
                 voiceAppletAccess: root.voiceAppletAccess
