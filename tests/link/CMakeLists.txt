@@ -176,6 +176,15 @@ if(QINDAQT_DBUS_RUN_SESSION)
     )
     set_tests_properties(qindaqt.link-caller-coverage PROPERTIES LABELS "service;link" TIMEOUT 60)
 
+    qt_add_executable(qindaqt_link_avahi_test tst_link_avahi.cpp)
+    target_link_libraries(qindaqt_link_avahi_test PRIVATE QindaQt::LinkService Qt6::DBus Qt6::Test)
+    qindaqt_enable_warnings(qindaqt_link_avahi_test)
+    add_test(
+        NAME qindaqt.link-avahi
+        COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_avahi_test>
+    )
+    set_tests_properties(qindaqt.link-avahi PROPERTIES LABELS "service;link" TIMEOUT 40)
+
     qt_add_executable(qindaqt_link_lan_service_test tst_link_lan_service.cpp)
     target_link_libraries(qindaqt_link_lan_service_test PRIVATE QindaQt::LinkTransport Qt6::DBus Qt6::Test)
     target_compile_definitions(

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/link_service/avahi_publisher.h>
 
+#include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
@@ -95,15 +96,21 @@ void AvahiPublisher::attempt()
 
 void AvahiPublisher::addAndCommit()
 {
-    QList<QByteArray> txt;
+    // AGENT-GUARD: build the aay by hand. QList<QByteArray> is not a registered D-Bus type, and the
+    // marshalling failure only shows as a dropped message, so Avahi never receives the service.
+    QDBusArgument txt;
+    txt.beginArray(QMetaType::QByteArray);
     for (auto it = m_advert.txt.cbegin(); it != m_advert.txt.cend(); ++it) {
-        txt.append((it.key() + QLatin1Char('=') + it.value()).toUtf8());
+        txt << (it.key() + QLatin1Char('=') + it.value()).toUtf8();
     }
+    txt.endArray();
     QDBusMessage add = QDBusMessage::createMethodCall(QString::fromLatin1(kAvahi), m_groupPath,
                                                       QString::fromLatin1(kGroup), QStringLiteral("AddService"));
     // (interface i, protocol i, flags u, name s, type s, domain s, host s, port q, txt aay)
+    // AGENT-GUARD: wrap the port in QVariant::fromValue; a bare quint16 converts to int32 ('i') and
+    // Avahi rejects the call with a signature mismatch.
     add << kAvahiUnspec << kAvahiUnspec << quint32(0) << m_activeName << m_advert.type << QString() << QString()
-        << quint16(m_advert.port) << QVariant::fromValue(txt);
+        << QVariant::fromValue(quint16(m_advert.port)) << QVariant::fromValue(txt);
     const QDBusMessage added = m_bus.call(add, QDBus::Block, 5000);
     if (added.type() == QDBusMessage::ErrorMessage) {
         setState(QStringLiteral("failed"));
