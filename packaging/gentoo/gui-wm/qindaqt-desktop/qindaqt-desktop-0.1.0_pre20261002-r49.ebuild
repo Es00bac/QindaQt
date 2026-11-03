@@ -26,14 +26,17 @@ HOMEPAGE="https://github.com/Es00bac/QindaQt"
 # qindaqt-link-service (D-Bus activated, systemd user unit, login start through
 # an XDG autostart entry), the qindaqt-link companion app, qindaqt-link-mirror
 # (FFmpeg + VA-API decode) and the shell link applet. It is cut from a main
-# commit at or after 42edc40cb, which already contains every source change the
-# r40/r42/r45/r46/r48 patches carried, so PATCHES is gone: re-applying them
-# fails. Pin only a commit that descends from 42edc40cb.
+# commit at or after 42edc40cb. The r40/r42/r46/r48 changes are already in main,
+# so those patches are gone (re-applying them fails). The r45 keyring-activation
+# fix lives only on fix/keyring-activation-ownership-20261030 (a40cb9f60), not in
+# main, so r45 stays a patch: re-check `git apply --check` of it against the
+# pinned commit at cut time.
 # Full coherent image: core, SDK headers, QML and native plugin share one source.
 # @@QINDAQT_COMMIT@@ is replaced by cut-package.sh (it pins the full sha).
 QINDAQT_COMMIT="@@QINDAQT_COMMIT@@"
 SRC_URI="https://github.com/Es00bac/QindaQt/archive/${QINDAQT_COMMIT}.tar.gz -> ${PF}.tar.gz"
 S="${WORKDIR}/QindaQt-${QINDAQT_COMMIT}"
+PATCHES=( "${FILESDIR}/qindaqt-desktop-r45-keyring-activation.patch" )
 # SDL3 controller input is an independent plugin over the installed compositor SDK.
 
 LICENSE="GPL-3+"

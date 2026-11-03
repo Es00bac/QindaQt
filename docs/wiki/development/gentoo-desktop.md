@@ -365,8 +365,10 @@ The [QindaLink](../architecture/qindalink.md) phone companion ships inside
 `gui-wm/qindaqt-desktop`, not in a package of its own. The recipe is
 `packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r49.ebuild`.
 It carries a `@@QINDAQT_COMMIT@@` placeholder that `cut-package.sh` replaces,
-and it has no `PATCHES`: the r40, r42, r45, r46 and r48 patches are already in
-`main` from `42edc40cb`, so pin only a commit that descends from it.
+and it carries one patch, `qindaqt-desktop-r45-keyring-activation.patch`: the
+r40, r42, r46 and r48 changes are already in `main` from `42edc40cb`, but the r45
+fix exists only on `fix/keyring-activation-ownership-20261030`. Pin a commit that
+descends from `42edc40cb` and re-check that the r45 patch still applies forward.
 
 | Part | Installed as |
 | --- | --- |
