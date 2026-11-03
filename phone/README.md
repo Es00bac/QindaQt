@@ -35,7 +35,7 @@ with that stage as `CMAKE_PREFIX_PATH` and `CMAKE_FIND_ROOT_PATH` and bundles th
 `QT_QML_IMPORT_PATH` (QindaTK `docs/android.md`). The first run adds about 10 minutes for QindaTK.
 Screens: Home, Pairing (large `123 456` code, equal-weight Accept/Reject, stale-pin "Pair again"),
 Permissions (states from `DeviceFacts.java`; features not built yet show "Coming soon"), Tools and
-the placeholders Touchpad, Keyboard, Macros, Vault (one file each; replace the file to build the feature).
+the placeholders Touchpad, Keyboard, Macros (one file each; replace the file to build the feature) and the Vault (`Vault*.qml`, see the architecture page).
 
 ## Desktop preview
 
@@ -70,8 +70,8 @@ on the host belongs to the real link service; do not bind it from tests.
 
 ## Known limits (M1c)
 
-- Only `status` is advertised; `ring` replies `error{unsupported}`.
-- Signal strength is `null`; the LAN listener, notifications, SMS and input are out of scope.
+- `ring` is implemented by `ring/RingFeature` (alarm stream, Stop notification); the fake desktop never sends one.
+- Signal strength is reported for the active Wi-Fi or cellular link; the LAN listener, notifications, SMS and input are out of scope here.
 - Pairing starts from a button, not automatically, so a stray local listener cannot raise a code.
 
 ## Cross-implementation test (real desktop service)

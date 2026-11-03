@@ -7,5 +7,5 @@ root=$(cd "$here/../.." && pwd)
 out="$root/build/phone/engine-tests-x"
 rm -rf "$out"; mkdir -p "$out"
 javac -d "$out" "$root"/phone/app/android/src/org/qindaqt/link/proto/*.java \
-    "$root"/phone/app/android/src/org/qindaqt/link/engine/*.java "$here/SessionTest.java" "$here/CrossImplTest.java"
+    "$root"/phone/app/android/src/org/qindaqt/link/engine/*.java "$root"/phone/app/android/src/org/qindaqt/link/ring/*.java "$here/SessionTest.java" "$here/CrossImplTest.java"
 exec java -cp "$out" CrossImplTest "$1"

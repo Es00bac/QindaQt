@@ -59,7 +59,7 @@ bool wantsHeadless(int argc, char **argv)
 {
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--grab") == 0 || std::strcmp(argv[i], "--probe") == 0
-            || std::strcmp(argv[i], "--list") == 0 || std::strncmp(argv[i], "--grab=", 7) == 0) {
+            || std::strcmp(argv[i], "--list") == 0 || std::strcmp(argv[i], "--list-json") == 0 || std::strncmp(argv[i], "--grab=", 7) == 0) {
             return true;
         }
     }

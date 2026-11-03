@@ -19,6 +19,7 @@
 #include <QtQml/qqml.h>
 
 #include "FakeBridge.h"
+#include "FakeVault.h"
 
 static int g_warnings = 0;
 static QtMessageHandler g_prev = nullptr;
@@ -63,8 +64,11 @@ int main(int argc, char *argv[])
 
     FakeBridge bridge;
     bridge.setScenario(QStringLiteral("ready"));
+    FakeVault vault;
+    vault.setScenario(QStringLiteral("unlocked"));
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("link"), &bridge);
+    engine.rootContext()->setContextProperty(QStringLiteral("vault"), &vault);
     engine.loadFromModule("QindaLinkApp", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
@@ -111,6 +115,40 @@ int main(int argc, char *argv[])
                     else ++shots;
                 }
             }
+        }
+    }
+    // Vault: every state and view, with synthetic data. FLAG_SECURE must follow the page.
+    win->setProperty("page", "home");
+    settle(win);
+    if (vault.secure()) { fprintf(stderr, "FAIL vault secure flag set off the vault page\n"); ++failures; }
+    win->setProperty("page", "vault");
+    settle(win);
+    if (!vault.secure()) { fprintf(stderr, "FAIL vault secure flag not set on the vault page\n"); ++failures; }
+    struct Shot { const char *scenario, *view, *id; bool gen; };
+    const Shot shots_[] = {
+        {"none", "list", "", false}, {"nolock", "list", "", false}, {"locked", "list", "", false},
+        {"authenticating", "list", "", false}, {"invalidated", "list", "", false}, {"error", "list", "", false},
+        {"restore_ready", "list", "", false}, {"empty", "list", "", false}, {"unlocked", "list", "", false},
+        {"unlocked", "detail", "a1", false}, {"unlocked", "edit", "", false}, {"unlocked", "edit", "a2", false},
+        {"unlocked", "edit", "", true}, {"unlocked", "backup", "", false}};
+    for (const Shot &sh : shots_) {
+        vault.setScenario(QString::fromLatin1(sh.scenario));
+        win->setProperty("page", "tools");
+        settle(win);
+        win->setProperty("page", "vault");
+        settle(win);
+        auto *loader = win->findChild<QQuickItem *>(QStringLiteral("pageLoader"));
+        QObject *screen = loader ? loader->property("item").value<QObject *>() : nullptr;
+        if (!screen) { fprintf(stderr, "FAIL vault/%s: no screen\n", sh.scenario); ++failures; continue; }
+        screen->setProperty("view", QString::fromLatin1(sh.view));
+        screen->setProperty("entryId", QString::fromLatin1(sh.id));
+        screen->setProperty("startWithGenerator", sh.gen);
+        settle(win);
+        if (!grabDir.isEmpty()) {
+            const QString path = QStringLiteral("%1/vault-%2-%3%4.png").arg(grabDir, QString::fromLatin1(sh.scenario),
+                QString::fromLatin1(sh.view), sh.gen ? QStringLiteral("-gen") : (*sh.id ? QStringLiteral("-") + QString::fromLatin1(sh.id) : QString()));
+            if (!win->grabWindow().save(path)) { ++failures; fprintf(stderr, "FAIL save %s\n", qPrintable(path)); }
+            else ++shots;
         }
     }
     printf("preview: %d screens grabbed, %d failures, %d QML warnings\n", shots, failures, g_warnings);

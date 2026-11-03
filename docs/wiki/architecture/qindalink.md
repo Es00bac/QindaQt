@@ -15,7 +15,7 @@ The durable decisions are
 (ADR-0427's library, one portal session). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications and SMS integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input and macros are integrated with fake-portal evidence only (the first live portal run needs the user's approval). The vault is not integrated yet.**
+Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications, SMS and the QindaTK app (pairing, Messages, Phone apps, mute list, USB setup, reply window) integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input and macros are integrated with fake-portal evidence only (the first live portal run needs the user's approval). The vault is not integrated yet.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -85,7 +85,7 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
-| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, phone setup, and a link to Settings → Input → Macros (it has no macro editor) |
+| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, Settings link for macros, phone setup (built; see [app page](../apps/qindalink.md)). There is no macro editor in the app (ADR-0436) |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
 | Input | `src/services/link_input` | `input` capability: the single RemoteDesktop portal session (`PortalInputSession`, an `InputSink`), frame parsing and bounds, text batching, held-key ledger, the `input.*` handler |
 | Macros | `src/services/link_macros` | `macro` capability: `MacroCatalog` (InputActions1 client), `PortalMacroOutput` (the shared `MacroRunner`'s output over the sink), the `macro.*` handler |
@@ -119,9 +119,13 @@ advertise. `status` is the first such feature (`StatusFeature`). Core frames
 the Java codec and pairing math pass all golden vectors, and a JVM loopback
 test drives the whole phone session (pairing, pin, status, `ring` refused).
 The UI is plain QtQuick (to be moved onto QindaTK) and talks to the engine
-through one polled JNI bridge. The `status`, `notify`, `sms`, `input` and `macro`
-capabilities are advertised; `ring` is answered with `error{unsupported}`. Wi-Fi/cellular signal is
-reported as `null`. Pairing with the real desktop service is proven by the cross-implementation
+through one polled JNI bridge. The `status`, `notify`, `sms`, `input`, `macro`
+and `ring` capabilities are advertised. `ring` (`ring/RingFeature` over a `RingSink`; Android
+implementation plays the alarm stream at full volume, posts a Stop/full-screen notification and
+restores the volume) is proven end to end against the real service with a fake sink; a live ring
+on hardware needs the user's approval and is not yet recorded. `hello.name` is the user-visible
+device name (`Settings.Global.device_name`, then the model) and `status.network.signal` carries a
+0-4 level for Wi-Fi and cellular, `null` when unknown. Pairing with the real desktop service is proven by the cross-implementation
 test; on-device pairing over USB is not yet recorded.
 
 ## LAN and Tailscale
@@ -280,8 +284,8 @@ counts against a per-device rate limit.
 A sideloaded app on Android 17 cannot get notification access, SMS
 permissions or an exemption from battery optimisation without several manual
 Settings visits, some of them behind "restricted settings". With ADB
-connected, the QindaLink app's **Set up phone** action runs the equivalent
-grants and shows each result:
+connected, the QindaLink app's **Set up phone** action asks the service
+(`org.qindaqt.Link1.Setup`) to run the equivalent grants and shows each result:
 
 ```
 pm grant org.qindaqt.link android.permission.{READ_SMS,SEND_SMS,RECEIVE_SMS,READ_CONTACTS,POST_NOTIFICATIONS,READ_PHONE_STATE}
@@ -375,6 +379,28 @@ enforced by this contract:
 Typing into the QindaQt lock screen is out of scope. The portal does not
 deliver input while the session is locked, and this design does not try to
 work around that.
+
+## Phone vault (part 1)
+
+Decision record: [ADR-0439](../adr/0439-qindalink-phone-password-vault.md).
+
+- Code: pure-Java format and crypto in `phone/app/android/src/org/qindaqt/link/vault/`
+  (JVM tests `phone/engine-tests/VaultTests.java`); Android glue in
+  `android/Vault*.java`; UI in `phone/app/qml/Vault*.qml`; Qt seam
+  `phone/app/VaultBridge.*` (`vault` context property, preview stand-in
+  `FakeVault`).
+- Data key (DEK) wrapped by a per-use-authenticated Keystore key (two alias
+  slots so a restore never deletes the old key first); entries AES-256-GCM;
+  header generation counter against rollback; `FLAG_SECURE` for the whole
+  unlocked session; locks on 5 min idle, screen off, 30 s without UI, explicit.
+  Only an AEAD tag failure counts as tampered; a failed authentication is a
+  retry, never a recovery prompt (`VaultLifecycle`).
+- Backups are passphrase-encrypted (PBKDF2-HMAC-SHA256, 600 000+ iterations) and
+  are the only way content leaves the phone. A backup is the recovery path when
+  the Keystore key is invalidated.
+- Part 2 consumes `VaultTypingSource` (steps text/key/delay, only while
+  unlocked) and defines the `vault.*`/`desktop.*` frames.
+- Word list: EFF large list, CC BY 3.0 US, (c) Electronic Frontier Foundation.
 
 ## Phone apps on the desktop
 

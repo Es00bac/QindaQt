@@ -23,6 +23,7 @@ public final class EngineState {
     private String notifyAccess = "unknown";
     private String sms = "";
     private String transport = "none";
+    private String ring = "idle";
 
     public synchronized void set(Phase p, String desktopName, String code, String message) {
         this.phase = p;
@@ -48,6 +49,8 @@ public final class EngineState {
     public synchronized void setTransport(String t) { transport = t == null ? "none" : t; }
 
     public synchronized String transport() { return transport; }
+    /** Ring feature state: "idle", "failed" or "ringing,<note>" (note such as "alarm,no-dnd-access"). */
+    public synchronized void setRing(String s) { ring = s == null ? "idle" : s; }
 
     public synchronized Phase phase() { return phase; }
 
@@ -63,6 +66,7 @@ public final class EngineState {
         m.put("sms", sms);
         m.put("lastStatusAgeMs", lastStatusMs == 0 ? -1L : System.currentTimeMillis() - lastStatusMs);
         m.put("notifyAccess", notifyAccess);
+        m.put("ring", ring);
         return Json.write(m);
     }
 }

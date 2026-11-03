@@ -12,7 +12,7 @@ qt_standard_project_setup(REQUIRES 6.8)
 find_package(QindaTK REQUIRED)
 include(qml/qml-files.cmake)
 
-qt_add_executable(qindalink main.cpp LinkBridge.cpp LinkBridge.h)
+qt_add_executable(qindalink main.cpp LinkBridge.cpp LinkBridge.h VaultBridge.cpp VaultBridge.h)
 
 qt_add_qml_module(qindalink
     URI QindaLinkApp

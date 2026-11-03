@@ -23,6 +23,7 @@ import org.qindaqt.link.engine.PinStore;
 import org.qindaqt.link.notify.NotificationFeature;
 import org.qindaqt.link.input.InputFeature;
 import org.qindaqt.link.macro.MacroFeature;
+import org.qindaqt.link.ring.RingFeature;
 
 /**
  * Foreground service (type connectedDevice) that owns the {@link LinkEngine}.
@@ -40,6 +41,7 @@ public final class LinkService extends Service {
     static volatile EndpointConnector connector;
     private static AndroidStatusSource statusSource;
     private static SmsSenderAndroid smsSender;
+    private static RingSinkAndroid ringSink;
     static final InputFeature inputFeature = new InputFeature();
     static final MacroFeature macroFeature = new MacroFeature();
 
@@ -61,14 +63,15 @@ public final class LinkService extends Service {
                     Identity id = Identity.loadOrCreate();
                     File dir = getFilesDir();
                     id.exportCertificatePem(new File(dir, "identity-cert.pem"));
-                    DeviceInfo info = new DeviceInfo(Build.MODEL, Build.MODEL, "Android " + Build.VERSION.RELEASE, "0.1.0");
+                    DeviceInfo info = new DeviceInfo(DeviceInfo.displayName(deviceName(), Build.MODEL), Build.MODEL, "Android " + Build.VERSION.RELEASE, "0.1.0");
                     statusSource = new AndroidStatusSource(this);
                     statusSource.start();
                     EngineState state = new EngineState();
                     FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
                             .add(new NotificationFeature(NotificationAndroidSource.init(this), state))
                             .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), smsSender = new SmsSenderAndroid(this), state))
-                            .add(inputFeature).add(macroFeature);
+                            .add(inputFeature).add(macroFeature)
+                            .add(new RingFeature(ringSink = new RingSinkAndroid(this), state));
                     PinStore pins = new PinStore(new File(dir, "desktop-pin"));
                     // Order and rules: EndpointPlanner. USB first, then the last LAN address, discovered desktops, the manual address.
                     connector = new EndpointConnector(ep -> new TlsConnector(id, ep.host, ep.port).connect(), pins,
@@ -89,9 +92,16 @@ public final class LinkService extends Service {
         synchronized (LinkService.class) {
             if (engine != null) { engine.stop(); engine = null; connector = null; }
             if (statusSource != null) { statusSource.stop(); statusSource = null; }
+            if (ringSink != null) { ringSink.stop(); ringSink = null; }
             if (smsSender != null) { smsSender.close(); smsSender = null; }
         }
         super.onDestroy();
+    }
+
+    /** Settings.Global.DEVICE_NAME ("device_name"); null when unset or unreadable. */
+    private String deviceName() {
+        try { return android.provider.Settings.Global.getString(getContentResolver(), "device_name"); }
+        catch (RuntimeException e) { return null; }
     }
 
     private Notification notification() {

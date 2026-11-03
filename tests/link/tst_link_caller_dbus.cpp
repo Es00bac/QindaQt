@@ -85,6 +85,9 @@ private Q_SLOTS:
             {iface(".Notifications"), root, QStringLiteral("SetAppMuted"), {QStringLiteral("pkg"), QStringLiteral("true")}},
             {iface(".Notifications"), root, QStringLiteral("Reply"), {dev, QStringLiteral("k"), QStringLiteral("1"), QStringLiteral("t")}},
             {iface(".Notifications"), root, QStringLiteral("Current"), {}},
+            {iface(".Setup"), root, QStringLiteral("AdbDevices"), {}},
+            {iface(".Setup"), root, QStringLiteral("SetupPhone"), {QStringLiteral("DEMO0001")}},
+            {iface(".Setup"), root, QStringLiteral("SetupStatus"), {QStringLiteral("DEMO0001")}},
         };
         for (const Case &c : protectedCalls) {
             const GdbusResult r = gdbus(c.iface, c.path, c.method, c.args);
@@ -100,6 +103,9 @@ private Q_SLOTS:
         // --- trusted caller (this binary): reaches the member (the answer may be any error but Denied)
         QVERIFY(QDBusReply<QString>(notif.call(QStringLiteral("ListApps"))).isValid());
         QVERIFY(QDBusReply<QString>(notif.call(QStringLiteral("Current"))).isValid());
+        // Setup with a trusted caller is not Denied (the service runs --no-adb here, so NotConnected).
+        const QDBusMessage setup = QDBusInterface(QStringLiteral("org.qindaqt.Link1"), root, iface(".Setup"), bus).call(QStringLiteral("SetupStatus"), QStringLiteral("DEMO0001"));
+        QVERIFY(setup.errorName() != QLatin1String(kDenied));
         const QDBusMessage threads = msgs.call(QStringLiteral("ListThreads"), dev, 10, qlonglong(0), qlonglong(0));
         QVERIFY(threads.type() == QDBusMessage::ErrorMessage && threads.errorName() != QLatin1String(kDenied));
         link.call(QStringLiteral("Ring"), dev);  // void, must not be an error reply
