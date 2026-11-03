@@ -47,6 +47,7 @@ inline constexpr std::uint8_t Ready = 0x81;
 inline constexpr std::uint8_t Display = 0x82;
 inline constexpr std::uint8_t Error = 0x83;
 inline constexpr std::uint8_t AppExited = 0x84;
+inline constexpr std::uint8_t ScreenState = 0x85;
 } // namespace control
 
 namespace video {

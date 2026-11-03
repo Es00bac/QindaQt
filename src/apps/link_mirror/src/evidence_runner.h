@@ -34,6 +34,7 @@ private:
     void deliver(const InputStep &step);
     void writeGrab(const QString &path);
     void probeTick();
+    void checkPausedGrab();
     void done(int exitCode, const QString &message = {});
 
     const MirrorOptions &m_options;
@@ -46,6 +47,7 @@ private:
     QElapsedTimer m_sinceMark;
     QTimer m_deadline;
     QTimer m_probeTimer;
+    QTimer m_pausedGrabCheck;
     QElapsedTimer m_probeClock;
     quint64 m_probeStartFrames = 0;
     int m_probeTicks = 0;

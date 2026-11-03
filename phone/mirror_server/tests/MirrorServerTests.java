@@ -18,6 +18,7 @@ public final class MirrorServerTests {
         secret();
         inputPolicy();
         listenPolicy();
+        screenState();
         System.out.println("mirror server tests: " + passed + " passed, " + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);
     }
@@ -110,6 +111,15 @@ public final class MirrorServerTests {
         check("clamp NaN", InputPolicy.clamp(Float.NaN, 720) == 0f);
         check("clamp no display", InputPolicy.clamp(10f, 0) == 0f);
         check("buttons masked", InputPolicy.buttons(0xff) == 0x1f);
+    }
+
+    private static void screenState() {
+        ScreenStateTracker tracker = new ScreenStateTracker(true);
+        check("screen steady on", tracker.update(true) == null);
+        check("screen turns off", ScreenStateTracker.OFF.equals(tracker.update(false)));
+        check("screen steady off", tracker.update(false) == null);
+        check("screen turns on", ScreenStateTracker.ON.equals(tracker.update(true)));
+        check("screen starts off", ScreenStateTracker.ON.equals(new ScreenStateTracker(false).update(true)));
     }
 
     private static void listenPolicy() {

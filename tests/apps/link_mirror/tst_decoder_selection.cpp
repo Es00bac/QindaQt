@@ -210,6 +210,24 @@ private Q_SLOTS:
         QCOMPARE(gate.admit(delta, 0), BacklogGate::Verdict::Queue);
     }
 
+    void keyframeRequestsAreSpacedOut()
+    {
+        KeyframeThrottle throttle(1000);
+        QVERIFY(throttle.allow(0));
+        QVERIFY(!throttle.allow(10));
+        QVERIFY(!throttle.allow(999));
+        QVERIFY(throttle.allow(1000));
+        QVERIFY(!throttle.allow(1500));
+        QVERIFY(throttle.allow(2600));
+        // A slow decoder tripping the backlog gate every 100 ms gets one request per second.
+        KeyframeThrottle loop;
+        int sent = 0;
+        for (qint64 now = 10'000; now < 15'000; now += 100) {
+            sent += loop.allow(now) ? 1 : 0;
+        }
+        QCOMPARE(sent, 5);
+    }
+
     void parsesPreferences()
     {
         QCOMPARE(parseDecoderPreference(QStringLiteral("auto")), DecoderPreference::Auto);

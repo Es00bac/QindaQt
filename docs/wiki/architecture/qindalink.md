@@ -299,6 +299,12 @@ qindaqt-link-mirror                                phone (shell uid, app_process
   - A wake lock is held only when the mirror display has its own display
     group. On the SM-S948U (SDK 37) it stays in group 0, so mirroring
     follows the phone's own power state and never wakes or holds its screen.
+  - **User decision (2026-11-02): pause on screen-off.** QindaLink never holds
+    the phone's main screen awake and never turns the panel off. When the
+    phone's screen goes off, the server sends `screen-state off`. The window
+    dims the last frame under "Phone screen is off — wake your phone to
+    continue" and drops input. On `screen-state on`, or the next keyframe,
+    the picture resumes.
   - The display's IME policy hides the phone keyboard, because the desktop
     types instead.
 - **Decode and present.** The desktop decodes with libavcodec

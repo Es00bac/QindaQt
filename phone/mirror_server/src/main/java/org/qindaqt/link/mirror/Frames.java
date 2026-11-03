@@ -41,6 +41,7 @@ final class Frames {
     static final int C_DISPLAY = 0x82;
     static final int C_ERROR = 0x83;
     static final int C_APP_EXITED = 0x84;
+    static final int C_SCREEN_STATE = 0x85;
 
     // Video, server -> desktop.
     static final int V_FORMAT = 0x01;

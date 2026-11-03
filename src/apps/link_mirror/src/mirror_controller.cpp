@@ -40,6 +40,7 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
     m_resizeDebounce.setSingleShot(true);
     m_resizeDebounce.setInterval(kResizeDebounceMs);
     connect(&m_resizeDebounce, &QTimer::timeout, this, &MirrorController::applyResize);
+    m_clock.start();
     m_keepalive.setInterval(kKeepaliveMs);
     connect(&m_keepalive, &QTimer::timeout, this, [this] { m_connection.send(pingFrame()); });
 
@@ -59,12 +60,26 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
     connect(&m_connection, &MirrorConnection::displayChanged, this, &MirrorController::onDisplay);
     connect(&m_connection, &MirrorConnection::serverError, this, &MirrorController::onServerError);
     connect(&m_connection, &MirrorConnection::appExited, this, &MirrorController::onAppExited);
+    connect(&m_connection, &MirrorConnection::screenStateChanged, this, [this](bool on) {
+        if (m_options.verbose) {
+            report(on ? QStringLiteral("phone screen on") : QStringLiteral("phone screen off"));
+        }
+        setPaused(!on);
+        if (on) {
+            requestKeyframe(); // the server sends one too; the throttle collapses duplicates
+        }
+    });
     connect(&m_connection, &MirrorConnection::appReceived, this, &MirrorController::onApp);
     connect(&m_connection, &MirrorConnection::inventoryFinished, this, &MirrorController::inventoryDone);
     connect(&m_connection, &MirrorConnection::videoFormat, this,
             [this](const VideoFormat &format) { m_worker->postFormat(format); });
-    connect(&m_connection, &MirrorConnection::videoPacket, this,
-            [this](const VideoPacket &packet) { m_worker->postPacket(packet); });
+    connect(&m_connection, &MirrorConnection::videoPacket, this, [this](const VideoPacket &packet) {
+        // A keyframe after "off" means the phone drew again; do not wait for screen-state on.
+        if (packet.key && m_window.paused()) {
+            setPaused(false);
+        }
+        m_worker->postPacket(packet);
+    });
     connect(&m_connection, &MirrorConnection::failed, this, [this](const QString &reason) { finish(1, reason); });
     connect(&m_connection, &MirrorConnection::disconnected, this, [this] {
         // AGENT-GUARD: the server closes right after app-exited by design; that close is not
@@ -91,7 +106,7 @@ MirrorController::MirrorController(const MirrorOptions &options, MirrorWindow &w
             report(QStringLiteral("decoder %1 %2x%3").arg(decoderPathName(path)).arg(size.width()).arg(size.height()));
         }
     });
-    connect(m_worker.get(), &DecodeWorker::keyframeNeeded, this, [this] { m_connection.send(syncFrame()); });
+    connect(m_worker.get(), &DecodeWorker::keyframeNeeded, this, &MirrorController::requestKeyframe);
     connect(m_worker.get(), &DecodeWorker::decoderFailed, this,
             [this](const QString &reason) { finish(1, QStringLiteral("no video decoder: ") + reason); });
     connect(m_worker.get(), &DecodeWorker::decodeWarning, this, [this](const QString &reason) {
@@ -208,6 +223,23 @@ void MirrorController::onAppExited(const QString &reason)
     m_window.setFrame(QImage());
     m_window.setStatusText(QStringLiteral("App closed on phone"));
     QTimer::singleShot(kAppClosedLingerMs, this, [this] { finish(0); });
+}
+
+void MirrorController::setPaused(bool paused)
+{
+    if (paused == m_window.paused() || m_finished) {
+        return;
+    }
+    m_window.setPaused(paused);
+    Q_EMIT pausedChanged(paused);
+}
+
+void MirrorController::requestKeyframe()
+{
+    if (m_syncThrottle.allow(m_clock.elapsed())) {
+        ++m_keyframeRequests;
+        m_connection.send(syncFrame());
+    }
 }
 
 void MirrorController::handleViewResized(QSize logicalSize, qreal devicePixelRatio)

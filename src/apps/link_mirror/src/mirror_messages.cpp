@@ -211,6 +211,22 @@ std::optional<int> parseInventoryEnd(const QByteArray &payload)
     return body->value(QStringLiteral("count")).toInt();
 }
 
+std::optional<bool> parseScreenState(const QByteArray &payload)
+{
+    const auto body = object(payload);
+    if (!body) {
+        return std::nullopt;
+    }
+    const QString state = body->value(QStringLiteral("state")).toString();
+    if (state == QLatin1String("on")) {
+        return true;
+    }
+    if (state == QLatin1String("off")) {
+        return false;
+    }
+    return std::nullopt;
+}
+
 std::optional<QString> parseAppExited(const QByteArray &payload)
 {
     const auto body = object(payload);

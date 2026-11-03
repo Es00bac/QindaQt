@@ -36,6 +36,7 @@ Q_SIGNALS:
     void displayChanged(const qindaqt::link_mirror::DisplayInfo &display);
     void serverError(const qindaqt::link_mirror::ServerError &error);
     void appExited(const QString &reason);
+    void screenStateChanged(bool on);
     void videoFormat(const qindaqt::link_mirror::VideoFormat &format);
     void videoPacket(const qindaqt::link_mirror::VideoPacket &packet);
     void appReceived(const qindaqt::link_mirror::AppEntry &app);

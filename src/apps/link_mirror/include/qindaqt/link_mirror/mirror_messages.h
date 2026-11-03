@@ -84,5 +84,7 @@ struct AppEntry {
 [[nodiscard]] std::optional<int> parseInventoryEnd(const QByteArray &payload);
 // app-exited: the reason string ("no-tasks"), or nullopt for a malformed body.
 [[nodiscard]] std::optional<QString> parseAppExited(const QByteArray &payload);
+// screen-state: true for "on", false for "off", nullopt for anything else.
+[[nodiscard]] std::optional<bool> parseScreenState(const QByteArray &payload);
 
 } // namespace qindaqt::link_mirror
