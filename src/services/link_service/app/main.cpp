@@ -5,6 +5,7 @@
 #include <qindaqt/services/link_notifications/fdo_phone_presenter.h>
 #include <qindaqt/services/link_notifications/process_reply_launcher.h>
 #include <qindaqt/services/link_notifications/recording_presenter.h>
+#include <qindaqt/services/link_service/avahi_publisher.h>
 #include <qindaqt/services/link_service/caller_policy.h>
 #include <qindaqt/services/link_service/link1_service.h>
 #include <qindaqt/services/link_service/qt_notification_presenter.h>
@@ -16,6 +17,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QStandardPaths>
 #include <QtDBus/QDBusConnection>
+#include <QtNetwork/QHostAddress>
 
 #include <QtCore/QSocketNotifier>
 
@@ -69,7 +71,15 @@ int main(int argc, char **argv)
     QCommandLineOption trustedCaller(QStringLiteral("trusted-caller"),
                                      QStringLiteral("TEST/DEVELOPMENT ONLY: extra executable allowed to use protected Link1 members (repeatable). Never use in an installed session."),
                                      QStringLiteral("exe"));
-    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
+    QCommandLineOption noAvahi(QStringLiteral("no-avahi"), QStringLiteral("Do not publish _qindalink._tcp through Avahi."));
+    QCommandLineOption lanPort(QStringLiteral("lan-port"), QStringLiteral("LAN listener port (default: --port)."),
+                               QStringLiteral("port"));
+    QCommandLineOption lanAddress(QStringLiteral("lan-test-address"),
+                                  QStringLiteral("TEST ONLY: bind the LAN listener to this address instead of the machine's interfaces (repeatable)."),
+                                  QStringLiteral("addr"));
+    QCommandLineOption pairingWindow(QStringLiteral("pairing-window-ms"),
+                                     QStringLiteral("TEST ONLY: pairing window length."), QStringLiteral("ms"));
+    parser.addOptions({noAvahi, lanPort, lanAddress, pairingWindow, dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
     parser.process(app);
 
     ServiceConfig config;
@@ -132,6 +142,20 @@ int main(int argc, char **argv)
     }
     CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted);
     config.callerAuthority = &callerPolicy;
+    // AGENT-GUARD (ADR-0439): LAN stays off until the persisted setting says otherwise; these only
+    // wire the machinery. The Avahi record exists only while a LAN listener is bound.
+    config.lanPort = parser.isSet(lanPort) ? quint16(parser.value(lanPort).toUInt()) : config.port;
+    if (parser.isSet(pairingWindow)) config.pairingWindowMs = parser.value(pairingWindow).toInt();
+    if (parser.isSet(lanAddress)) {
+        QList<QHostAddress> fixed;
+        for (const QString &a : parser.values(lanAddress)) fixed.append(QHostAddress(a));
+        config.lanAddresses = [fixed] { return fixed; };
+    }
+    std::unique_ptr<AvahiPublisher> avahi;
+    if (!parser.isSet(noAvahi)) {
+        avahi = std::make_unique<AvahiPublisher>(QDBusConnection::systemBus());
+        config.lanPublisher = avahi.get();
+    }
     Link1Service service(config, bus, presenter.get(), adb.get());
     QString error;
     if (!service.start(&error)) {

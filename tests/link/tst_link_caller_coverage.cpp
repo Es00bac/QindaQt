@@ -105,7 +105,8 @@ private Q_SLOTS:
         // The sweep must actually see the known surface, or an empty walk would pass vacuously.
         QStringList names;
         for (const Method &m : methods) names << m.iface + QLatin1Char('.') + m.name;
-        for (const char *expected : {"org.qindaqt.Link1.ConfirmPairing", "org.qindaqt.Link1.Messages.Send",
+        for (const char *expected : {"org.qindaqt.Link1.ConfirmPairing", "org.qindaqt.Link1.SetLanEnabled",
+                                     "org.qindaqt.Link1.OpenPairingWindow", "org.qindaqt.Link1.Messages.Send",
                                      "org.qindaqt.Link1.Notifications.Current"}) {
             QVERIFY2(names.contains(QLatin1String(expected)), expected);
         }
@@ -127,7 +128,7 @@ private Q_SLOTS:
             ++checked;
         }
         qInfo("introspection sweep: %d methods total, %d protected methods denied", int(methods.size()), checked);
-        QVERIFY(checked >= 12);
+        QVERIFY(checked >= 14);  // 12 before LAN mode, plus SetLanEnabled and OpenPairingWindow
         service.terminate();  // our own child, by handle
         QVERIFY(service.waitForFinished(5000));
     }

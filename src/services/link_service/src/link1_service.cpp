@@ -50,10 +50,22 @@ bool Link1Service::start(QString *error)
     options.local.os = QSysInfo::prettyProductName();
     options.local.app = m_config.version;
     m_hub = std::make_unique<Hub>(identity, *m_store, options);
-    // AGENT-GUARD: loopback only in this release. LAN mode (ADR-0434) adds a
-    // second listener behind an explicit setting; never bind 0.0.0.0 here.
+    // AGENT-GUARD: this is the loopback listener only. LAN mode (ADR-0434, ADR-0439) is the
+    // LanController below, behind an explicit persisted setting; never bind 0.0.0.0 here.
     if (!m_hub->listen(QHostAddress::LocalHost, m_config.port)) {
         return fail(QStringLiteral("cannot listen on 127.0.0.1:%1").arg(m_config.port));
+    }
+    {
+        LanOptions lan;
+        lan.configDir = m_config.configDir.isEmpty() ? m_config.dataDir + QStringLiteral("/config") : m_config.configDir;
+        lan.port = m_config.lanPort;
+        lan.addresses = m_config.lanAddresses;
+        lan.publisher = m_config.lanPublisher;
+        lan.instanceName = QSysInfo::machineHostName();
+        lan.pairingWindowMs = m_config.pairingWindowMs;
+        m_lan = std::make_unique<LanController>(*m_hub, std::move(lan));
+        connect(m_lan.get(), &LanController::pairingWindowChanged, this, &Link1Service::PairingWindowChanged);
+        connect(m_lan.get(), &LanController::statusChanged, this, [this] { Q_EMIT LanStatusChanged(m_lan->statusJson()); });
     }
     if (m_config.phoneNotifications != nullptr) {
         new NotificationsModule(*m_hub,
@@ -87,6 +99,7 @@ bool Link1Service::start(QString *error)
     }
     if (!m_bus.registerObject(QString::fromLatin1(kPath), this,
                               QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
+                                  | QDBusConnection::ExportScriptableProperties
                                   | QDBusConnection::ExportAdaptors)) {
         return fail(QStringLiteral("cannot register %1").arg(QLatin1String(kPath)));
     }
@@ -131,6 +144,20 @@ void Link1Service::Ring(const QString &id)
     });
 }
 quint16 Link1Service::ListenPort() const { return m_hub->port(); }
+
+// AGENT-GUARD (ADR-0438, ADR-0439): both act as the user on the machine's network exposure.
+void Link1Service::SetLanEnabled(bool enabled)
+{
+    if (!m_config.callerAuthority->authorize(message())) return;
+    m_lan->setEnabled(enabled);
+}
+quint32 Link1Service::OpenPairingWindow()
+{
+    if (!m_config.callerAuthority->authorize(message())) return 0;
+    return m_lan->openPairingWindow();
+}
+bool Link1Service::LanEnabled() const { return m_lan->enabled(); }
+QString Link1Service::LanStatus() const { return m_lan->statusJson(); }
 
 void Link1Service::onDevicesChanged()
 {

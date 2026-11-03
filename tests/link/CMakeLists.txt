@@ -175,4 +175,25 @@ if(QINDAQT_DBUS_RUN_SESSION)
         COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_caller_coverage_test>
     )
     set_tests_properties(qindaqt.link-caller-coverage PROPERTIES LABELS "service;link" TIMEOUT 60)
+
+    qt_add_executable(qindaqt_link_lan_service_test tst_link_lan_service.cpp)
+    target_link_libraries(qindaqt_link_lan_service_test PRIVATE QindaQt::LinkTransport Qt6::DBus Qt6::Test)
+    target_compile_definitions(
+        qindaqt_link_lan_service_test
+        PRIVATE QINDAQT_LINK_SERVICE_BINARY="$<TARGET_FILE:qindaqt-link-service>"
+    )
+    add_dependencies(qindaqt_link_lan_service_test qindaqt-link-service)
+    qindaqt_enable_warnings(qindaqt_link_lan_service_test)
+    add_test(
+        NAME qindaqt.link-lan-service
+        COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_lan_service_test>
+    )
+    set_tests_properties(qindaqt.link-lan-service PROPERTIES LABELS "service;link" TIMEOUT 40)
 endif()
+
+# LAN mode (ADR-0439): real Hub and TLS over a 127.0.0.2 "LAN" address, fake mDNS publisher.
+qt_add_executable(qindaqt_link_lan_test tst_link_lan.cpp support/fake_publisher.h)
+target_link_libraries(qindaqt_link_lan_test PRIVATE QindaQt::LinkService Qt6::Test)
+qindaqt_enable_warnings(qindaqt_link_lan_test)
+add_test(NAME qindaqt.link-lan COMMAND qindaqt_link_lan_test)
+set_tests_properties(qindaqt.link-lan PROPERTIES LABELS "service;link" TIMEOUT 30)

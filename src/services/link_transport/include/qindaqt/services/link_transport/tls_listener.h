@@ -24,6 +24,8 @@ public:
     [[nodiscard]] bool listen(const QHostAddress &address, quint16 port);
     [[nodiscard]] quint16 port() const { return m_server.serverPort(); }
     [[nodiscard]] Origin origin() const { return m_origin; }
+    [[nodiscard]] QHostAddress address() const { return m_server.serverAddress(); }
+    [[nodiscard]] QString errorString() const { return m_server.errorString(); }
     void close() { m_server.close(); }
 
 Q_SIGNALS:
