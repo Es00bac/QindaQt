@@ -91,10 +91,10 @@ void InputFeature::begin(Session &session, qint64 id)
     }
     if (!m_gate.open()) {
         // Not claimed: a locked desktop must not keep a phone as controller.
-        session.send(makeError(QStringLiteral("busy"), QStringLiteral("locked"), id));
+        session.send(makeError(QStringLiteral("busy"), InputGate::reasonName(m_gate.reason()), id));
         Envelope state;
         state.t = QStringLiteral("input.state");
-        state.b = QJsonObject{{QStringLiteral("state"), QStringLiteral("locked")}};
+        state.b = QJsonObject{{QStringLiteral("state"), InputGate::reasonName(m_gate.reason())}};
         session.send(state);
         return;
     }
@@ -126,7 +126,7 @@ void InputFeature::onActivated()
     m_phase = Phase::Active;
     const qint64 id = std::exchange(m_beginId, 0);
     reply(id, {});
-    pushState(m_gate.open() ? QStringLiteral("active") : QStringLiteral("locked"));
+    pushState(m_gate.open() ? QStringLiteral("active") : InputGate::reasonName(m_gate.reason()));
 }
 
 void InputFeature::onFailed(PortalInputSession::Failure failure)
@@ -190,7 +190,7 @@ void InputFeature::onGateChanged()
     if (!m_gate.open()) {
         m_text.cancel();
         m_held.releaseAll();
-        pushState(QStringLiteral("locked"));
+        pushState(InputGate::reasonName(m_gate.reason()));
     } else if (m_phase == Phase::Active && m_portal.active()) {
         pushState(QStringLiteral("active"));
     }

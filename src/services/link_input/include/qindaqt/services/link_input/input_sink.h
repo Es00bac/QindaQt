@@ -30,13 +30,36 @@ public:
     virtual bool keysym(qint32 keysym, bool down) = 0;
 };
 
-// Whether input may be delivered right now (the screen is unlocked and the
-// session is in front). Fail closed: an unknown state is closed.
+// Whether input may be delivered right now, and if not, why. The reason is
+// sent to the phone (input.state), so it must be true: a state the source cannot
+// confirm is Unverified, never Locked.
+//
+// AGENT-GUARD: fail closed. Open only on positive proof that the screen is
+// unlocked and the session is in front. Locked only when the lock-state source
+// says so; a missing or unauthenticated source is Unverified.
 class InputGate : public QObject {
     Q_OBJECT
 public:
+    enum class Reason {
+        Open,
+        Locked,     // the lock-state source reports Locking or Locked
+        Inactive,   // the session is not in front (reserved for a source that can report it)
+        Unverified, // no usable lock-state source (Session1, compositor or attachment missing)
+    };
     using QObject::QObject;
-    [[nodiscard]] virtual bool open() const = 0;
+    [[nodiscard]] virtual Reason reason() const = 0;
+    [[nodiscard]] bool open() const { return reason() == Reason::Open; }
+    // The input.state string for a closed gate (protocol page, "Remote input").
+    [[nodiscard]] static QString reasonName(Reason r)
+    {
+        switch (r) {
+        case Reason::Locked: return QStringLiteral("locked");
+        case Reason::Inactive: return QStringLiteral("inactive");
+        case Reason::Unverified: return QStringLiteral("unverified");
+        case Reason::Open: break;
+        }
+        return QStringLiteral("active");
+    }
 Q_SIGNALS:
     void changed();
 };
@@ -45,18 +68,21 @@ Q_SIGNALS:
 class StaticInputGate final : public InputGate {
     Q_OBJECT
 public:
-    explicit StaticInputGate(bool open = true, QObject *parent = nullptr) : InputGate(parent), m_open(open) {}
-    [[nodiscard]] bool open() const override { return m_open; }
-    void setOpen(bool open)
+    explicit StaticInputGate(bool open = true, QObject *parent = nullptr)
+        : InputGate(parent), m_reason(open ? Reason::Open : Reason::Unverified) {}
+    [[nodiscard]] Reason reason() const override { return m_reason; }
+    // false means Locked, the case a test usually wants.
+    void setOpen(bool open) { setReason(open ? Reason::Open : Reason::Locked); }
+    void setReason(Reason r)
     {
-        if (m_open != open) {
-            m_open = open;
+        if (m_reason != r) {
+            m_reason = r;
             Q_EMIT changed();
         }
     }
 
 private:
-    bool m_open;
+    Reason m_reason;
 };
 
 // Wraps a sink and remembers what this owner holds down, so that releaseAll()

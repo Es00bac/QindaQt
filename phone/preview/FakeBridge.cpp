@@ -54,7 +54,7 @@ void FakeBridge::forget() { setScenario(QStringLiteral("found")); }
 QStringList FakeBridge::inputScenarios()
 {
     return {QStringLiteral("active"), QStringLiteral("pending"), QStringLiteral("denied"), QStringLiteral("locked"),
-            QStringLiteral("running"), QStringLiteral("failed"), QStringLiteral("empty")};
+            QStringLiteral("unverified"), QStringLiteral("running"), QStringLiteral("failed"), QStringLiteral("empty")};
 }
 
 void FakeBridge::setInputScenario(const QString &name)
@@ -68,7 +68,8 @@ void FakeBridge::setInputScenario(const QString &name)
     m_macroRunning.clear(); m_macroRunState.clear(); m_macroReason.clear(); m_macroLast.clear();
     m_inputState = name == QLatin1String("pending") ? QStringLiteral("pending")
         : name == QLatin1String("denied") ? QStringLiteral("denied")
-        : name == QLatin1String("locked") ? QStringLiteral("locked") : QStringLiteral("active");
+        : name == QLatin1String("locked") ? QStringLiteral("locked")
+        : name == QLatin1String("unverified") ? QStringLiteral("unverified") : QStringLiteral("active");
     if (name == QLatin1String("running")) { m_macroRunning = QStringLiteral("paste"); m_macroRunState = QStringLiteral("running"); }
     if (name == QLatin1String("failed")) { m_macroRunState = QStringLiteral("failed"); m_macroReason = QStringLiteral("input-unavailable"); }
     if (name == QLatin1String("empty")) m_macros.clear();

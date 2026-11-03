@@ -44,6 +44,7 @@ private slots:
     void lockedBeginDoesNotClaimTheController();
     void refusedSelectDevicesClearsTheToken();
     void shutdownReleasesBeforeClosing();
+    void gateReasonsAreReportedTruthfully();
 };
 
 void TstLinkInput::parsesAndBoundsFrames()
@@ -485,6 +486,36 @@ void TstLinkInput::shutdownReleasesBeforeClosing()
     const int up = int(f.fakePortal.calls.indexOf(s("NotifyKeyboardKeysym:65515:0")));
     QVERIFY(up >= 0);
     QVERIFY(up < int(f.fakePortal.calls.indexOf(s("Close")))); // released while the session was still open
+}
+
+void TstLinkInput::gateReasonsAreReportedTruthfully()
+{
+    InputFixture f;
+    QVERIFY(f.usable());
+    // No lock-state source: the phone must hear "unverified", never "locked".
+    f.gate.setReason(InputGate::Reason::Unverified);
+    ScriptedPhone phone;
+    QVERIFY(f.pairPhone(phone));
+    InputFixture::begin(phone, 1);
+    Envelope err;
+    QVERIFY(phone.waitFor(s("error"), &err));
+    QCOMPARE(err.b.value(s("message")).toString(), s("unverified"));
+    QVERIFY(waitUntil([&] { return phone.count(s("input.state")) >= 1; }));
+    QCOMPARE(phone.all().last().b.value(s("state")).toString(), s("unverified"));
+    QVERIFY(f.input.controller().isEmpty());
+    // Once verified and open, begin works; later transitions name their own reason.
+    f.gate.setReason(InputGate::Reason::Open);
+    InputFixture::begin(phone, 2);
+    Envelope ok;
+    QVERIFY(phone.waitFor(s("ok"), &ok));
+    f.gate.setReason(InputGate::Reason::Locked);
+    QVERIFY(waitUntil([&] { return phone.all().last().b.value(s("state")).toString() == s("locked"); }));
+    f.gate.setReason(InputGate::Reason::Unverified);
+    QVERIFY(waitUntil([&] { return phone.all().last().b.value(s("state")).toString() == s("unverified"); }));
+    f.gate.setReason(InputGate::Reason::Inactive);
+    QVERIFY(waitUntil([&] { return phone.all().last().b.value(s("state")).toString() == s("inactive"); }));
+    f.gate.setReason(InputGate::Reason::Open);
+    QVERIFY(waitUntil([&] { return phone.all().last().b.value(s("state")).toString() == s("active"); }));
 }
 
 QTEST_GUILESS_MAIN(TstLinkInput)
