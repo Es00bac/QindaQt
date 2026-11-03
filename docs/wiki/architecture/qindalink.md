@@ -215,7 +215,7 @@ authorizes callers itself ([ADR-0438](../adr/0438-qindalink-link1-caller-authori
 Device metadata (`Devices`, `PendingPairings`, change signals) is open.
 Reading messages or notifications, sending, replying, muting and
 pairing decisions need a caller whose executable is `qindaqt-link`,
-`qindaqt-shell` or given with `--trusted-caller`; others get
+`qindaqt-shell` or given with `--trusted-caller`; `Focus.Publish` needs the shell itself (ADR-0440); others get
 `org.qindaqt.Link1.Error.Denied`. Broadcast signals never carry message or
 notification text, and every accepted text send raises a desktop notice and
 counts against a per-device rate limit.
@@ -328,6 +328,11 @@ enforced by this contract:
    after typing and sets itself non-dumpable (`PR_SET_DUMPABLE 0`). JSON
    parsing may leave transient copies inside Qt containers. Zeroing is best
    effort, and the guarantee is no persistence and no logging.
+
+Implementation and decisions: [ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md). The shell relays
+the focused window (ADR-0063 identity joined with task-list title and application id) to
+`Link1.Focus.Publish`; only `qindaqt-shell` may call it. `VaultTypingFeature` (`src/services/link_vault`)
+serves `desktop.focus` and `vault.type`, re-checking focus before each step and batch.
 
 Typing into the QindaQt lock screen is out of scope. The portal does not
 deliver input while the session is locked, and this design does not try to
