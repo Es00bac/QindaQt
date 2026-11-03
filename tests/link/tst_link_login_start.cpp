@@ -51,7 +51,12 @@ private slots:
         QFile unit(QStringLiteral(QINDAQT_LINK_UNIT_TEMPLATE));
         QVERIFY(unit.open(QIODevice::ReadOnly));
         const QString text = QString::fromUtf8(unit.readAll());
-        const QString install = text.mid(text.indexOf(QStringLiteral("[Install]")));
+        QStringList lines;  // the AGENT-GUARD comment itself names the forbidden target
+        for (const QString &line : text.mid(text.indexOf(QStringLiteral("[Install]"))).split(u'\n')) {
+            if (!line.startsWith(u'#'))
+                lines << line;
+        }
+        const QString install = lines.join(u'\n');
         QVERIFY(install.contains(QStringLiteral("WantedBy=default.target")));
         QVERIFY(!install.contains(QStringLiteral("WantedBy=graphical-session.target")));
         QVERIFY(text.contains(QStringLiteral("ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-link-service")));
