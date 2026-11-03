@@ -103,7 +103,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.gather-overview"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
-        // QindaLink phone chip (ADR-0435); sorted position.
+        // QindaLink phone chip (ADR-0437); sorted position.
         QStringLiteral("qindaqt.applets.link"),
         // Network over public Network1 (ADR-0258); sorted position.
         QStringLiteral("qindaqt.applets.network"),

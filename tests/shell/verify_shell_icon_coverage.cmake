@@ -45,7 +45,7 @@ require_declaration("src/shell/network_applet/qml/NetworkApplet.qml" "networkApp
 # under the pinned Breeze fixture, unlike the icons checked with
 # require_icon below), so only its icon-first declaration is enforced here.
 require_declaration("src/shell/firewall_applet/qml/FirewallApplet.qml" "firewallAppletIcon")
-# QindaLink phone chip (ADR-0435): phone-symbolic ships in the QindaQt theme.
+# QindaLink phone chip (ADR-0437): phone-symbolic ships in the QindaQt theme.
 require_declaration("src/shell/link_applet/qml/LinkApplet.qml" "linkAppletIcon")
 if(NOT EXISTS "${QINDAQT_SOURCE_DIR}/data/icons/QindaQt/scalable/devices/phone-symbolic.svg")
     message(FATAL_ERROR "QindaLink phone glyph is missing from the shipped QindaQt theme")

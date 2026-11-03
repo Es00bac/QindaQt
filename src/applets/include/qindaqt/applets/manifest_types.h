@@ -62,7 +62,7 @@ enum class Capability {
     // SecurityControl token.
     SecurityRead,
     // Paired-phone status and pairing/ring control over public Link1
-    // (ADR-0435). Control covers ConfirmPairing, Ring and Unpair.
+    // (ADR-0437). Control covers ConfirmPairing, Ring and Unpair.
     PhoneRead,
     PhoneControl,
 };

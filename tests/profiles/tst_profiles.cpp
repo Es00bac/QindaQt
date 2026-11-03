@@ -346,7 +346,7 @@ void ProfileTests::theDefaultProfilePlacesTheStreamingApplet()
     QCOMPARE(zone, QStringLiteral("end"));
 }
 
-// ADR-0435: the QindaLink chip is a hardware chip like OBS, so only the
+// ADR-0437: the QindaLink chip is a hardware chip like OBS, so only the
 // flagship profile places it; desktop-imitation profiles carry none.
 void ProfileTests::onlyTheFlagshipProfilePlacesTheLinkChip()
 {

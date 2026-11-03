@@ -614,4 +614,4 @@ nav:
       - "0432: Review keyring requester before credentials": adr/0432-review-keyring-requester-before-credentials.md
       - "0433: QindaLink phone companion architecture": adr/0433-qindalink-phone-companion-architecture.md
       - "0434: QindaLink pinned TLS transport and pairing": adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md
-      - "0435: QindaLink panel applet and phone capability tokens": adr/0435-qindalink-panel-applet-and-phone-capability-tokens.md
+      - "0437: QindaLink panel applet and phone capability tokens": adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md

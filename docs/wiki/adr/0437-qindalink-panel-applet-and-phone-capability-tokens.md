@@ -1,4 +1,4 @@
-# ADR-0435: QindaLink panel applet and the phone capability tokens
+# ADR-0437: QindaLink panel applet and the phone capability tokens
 
 - **Status:** Accepted
 - **Date:** 2026-11-02

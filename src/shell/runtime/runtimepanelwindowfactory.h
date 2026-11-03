@@ -118,7 +118,7 @@ public:
     // Firewall applet facade (ADR-0431). Set after construction, like the
     // Network and Agent Usage facades above.
     void setFirewallAppletAccess(QObject *access) noexcept;
-    // QindaLink applet facade (ADR-0435), set after construction like Firewall.
+    // QindaLink applet facade (ADR-0437), set after construction like Firewall.
     void setLinkAppletAccess(QObject *access) noexcept;
     // The gather overview composition (the panel button half of the
     // Meta+G gesture). Set after construction for the same reason as

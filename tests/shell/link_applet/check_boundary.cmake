@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# ADR-0435: the QindaLink applet is a public Link1 consumer (phone.read plus
+# ADR-0437: the QindaLink applet is a public Link1 consumer (phone.read plus
 # phone.control). Its sources may not reach the D-Bus transport or the link
 # service; may not start processes (Open QindaLink goes through the injected
 # launcher seam); and its QML may not contain any text-entry control.

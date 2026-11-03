@@ -28,7 +28,7 @@ class LauncherAppletController;
 namespace QindaQt::Shell {
 
 // Shell-private ownership boundary for the public Link1 client and the
-// QindaLink applet facade (ADR-0435, docs/wiki/shell/link-applet.md). The
+// QindaLink applet facade (ADR-0437, docs/wiki/shell/link-applet.md). The
 // audited manifest/registry/policy gates are evaluated once. A denied
 // `phone.read` grant constructs no transport or client at all (Firewall and
 // Agent Usage precedent): the controller then presents permanently as

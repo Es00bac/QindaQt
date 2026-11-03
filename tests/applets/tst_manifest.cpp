@@ -75,7 +75,7 @@ void ManifestTest::roundTripsEveryFirstPartyManifest()
     const QStringList fileNames =
         directory.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
     QCOMPARE(fileNames.size(), 37);
-    QVERIFY(fileNames.contains(QStringLiteral("link.json"))); // ADR-0435
+    QVERIFY(fileNames.contains(QStringLiteral("link.json"))); // ADR-0437
     QVERIFY(fileNames.contains(QStringLiteral("agent-usage.json")));
     QVERIFY(fileNames.contains(QStringLiteral("network.json"))); // ADR-0258
     QVERIFY(fileNames.contains(QStringLiteral("audio.json")));

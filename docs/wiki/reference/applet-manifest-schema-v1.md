@@ -45,7 +45,7 @@ effective only with the corresponding read grant. `security.read`
 control counterpart at all: the Firewall applet it gates cannot block, allow,
 confirm an automatic action, or change a rule, so no such authority exists to
 separate. The QindaLink applet requests `phone.read` and `phone.control`
-([ADR-0435](../adr/0435-qindalink-panel-applet-and-phone-capability-tokens.md));
+([ADR-0437](../adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md));
 control covers `ConfirmPairing`, `Ring` and `Unpair`, and a denied read grant
 constructs no client.
 

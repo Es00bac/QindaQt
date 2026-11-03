@@ -3,7 +3,7 @@
 `src/shell/link_applet` owns the panel QindaLink applet,
 `qindaqt.applets.link`: the paired phone's connection and battery at a glance,
 and the desktop's pairing UI. The decision is
-[ADR-0435](../adr/0435-qindalink-panel-applet-and-phone-capability-tokens.md);
+[ADR-0437](../adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md);
 the service is [QindaLink](../architecture/qindalink.md) and its public API is
 [Link1](../reference/link1-v1.md).
 

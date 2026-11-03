@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Pure presentation over the public Link1 value model (ADR-0435,
+# Pure presentation over the public Link1 value model (ADR-0437,
 # docs/wiki/shell/link-applet.md). The runtime target below is the only
 # LinkClient/QML composition boundary; shell composition in
 # src/shell/runtime owns the Qt D-Bus transport and client.

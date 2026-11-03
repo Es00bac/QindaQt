@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Link panel applet (docs/wiki/shell/link-applet.md, ADR-0435): pure
+# Link panel applet (docs/wiki/shell/link-applet.md, ADR-0437): pure
 # projection, the controller over the public LinkClient with a fake
 # transport, the compiled QML module offscreen with keyboard-only
 # interaction, and the source boundary probe.

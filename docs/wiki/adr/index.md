@@ -457,4 +457,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0433: QindaLink phone companion architecture](0433-qindalink-phone-companion-architecture.md) — Accepted Java engine + QML/QindaTK phone UI, shell-uid mirror server over ADB, `qindaqt-link-service` with `Link1`, portal-only desktop input, phone-only vault.
 - [ADR-0434: QindaLink pinned TLS transport and code-comparison pairing](0434-qindalink-pinned-tls-transport-and-sas-pairing.md) — Accepted TLS 1.3 with SPKI-pinned P-256 keys on every path, committed six-digit code pairing, loopback/USB always on and LAN opt-in.
-- [ADR-0435: QindaLink panel applet and phone capability tokens](0435-qindalink-panel-applet-and-phone-capability-tokens.md) — Accepted `qindaqt.applets.link` over the public Link1 client with `phone.read` and `phone.control` tokens.
+- [ADR-0437: QindaLink panel applet and phone capability tokens](0437-qindalink-panel-applet-and-phone-capability-tokens.md) — Accepted `qindaqt.applets.link` over the public Link1 client with `phone.read` and `phone.control` tokens.
