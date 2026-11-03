@@ -34,6 +34,7 @@ final class Session implements ScreenEncoder.Sink {
     private final DisplayPower power;
     private ScreenEncoder encoder;
     private TaskWatcher watcher;
+    private ScreenStateWatcher screenWatcher;
     private boolean versionMismatch;
     private int width;
     private int height;
@@ -199,6 +200,10 @@ final class Session implements ScreenEncoder.Sink {
         sendDisplay();
         watcher = new TaskWatcher(api, id, this::appExited);
         watcher.start();
+        if (power.sharesPhoneGroup()) {
+            screenWatcher = new ScreenStateWatcher(api, this::screenStateChanged);
+            screenWatcher.start();
+        }
     }
 
     private void resize(int requestedWidth, int requestedHeight, int requestedDpi) throws Exception {
@@ -233,6 +238,18 @@ final class Session implements ScreenEncoder.Sink {
         }
         Ln.i("app left the mirror display (" + reason + ")");
         connection.close(); // ends the read loop; close() releases the display
+    }
+
+    /** Watcher thread: the phone's own screen turned off or on (group-0 displays only). */
+    private void screenStateChanged(String state) {
+        try {
+            connection.sendJson(Frames.CH_CONTROL, Frames.C_SCREEN_STATE, new JSONObject().put("state", state));
+        } catch (IOException | JSONException e) {
+            Ln.w("could not report the phone screen state");
+        }
+        if (ScreenStateTracker.ON.equals(state) && encoder != null) {
+            encoder.requestSyncFrame(); // resume the picture at once instead of after 10 s
+        }
     }
 
     private void listApps(JSONObject body) throws Exception {
@@ -285,6 +302,9 @@ final class Session implements ScreenEncoder.Sink {
     private void close() {
         if (watcher != null) {
             watcher.stop();
+        }
+        if (screenWatcher != null) {
+            screenWatcher.stop();
         }
         if (encoder != null) {
             display.setSurfaceQuietly();

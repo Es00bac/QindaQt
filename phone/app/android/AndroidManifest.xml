@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
@@ -52,6 +55,16 @@
             android:name="org.qindaqt.link.android.LinkService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+        <!-- Notification access is granted by the user or with `cmd notification allow_listener`. -->
+        <service
+            android:name="org.qindaqt.link.android.NotificationListener"
+            android:exported="true"
+            android:label="QindaLink notifications"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.qtprovider"

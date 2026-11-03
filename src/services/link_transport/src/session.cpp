@@ -238,7 +238,10 @@ void Session::dispatch(const Envelope &e)
     if (e.t == QLatin1String("pong")) {
         return;
     }
-    if (e.re != 0 && (e.t == QLatin1String("ok") || e.t == QLatin1String("error"))) {
+    // AGENT-CONTRACT: a reply is `ok`, `error`, or a typed frame whose `re` names a request this side
+    // made (sms.* replies carry data, protocol page "Messages"). Typed frames with an unknown `re`
+    // fall through to their feature handler.
+    if (e.re != 0 && (e.t == QLatin1String("ok") || e.t == QLatin1String("error") || m_pending.contains(e.re))) {
         if (auto cb = m_pending.take(e.re)) {
             cb(e);
         }

@@ -1,7 +1,8 @@
 #!/bin/bash
 # Builds the QindaLink phone APK (org.qindaqt.link) with Qt for Android 6.11.1, arm64-v8a.
 #
-# Output: build/phone/QindaLink-debug.apk (signed with build/phone/debug.keystore, never committed).
+# Output: build/phone/QindaLink-debug.apk, signed with the shared per-user debug key
+# ($QINDALINK_KEYSTORE, default ~/.local/share/qindalink-dev/debug.keystore; never committed).
 # Needs (all installed through Portage, see phone/README.md): JDK 21, Android SDK/NDK, Qt for
 # Android under /opt/qt6-android, host Qt for QT_HOST_PATH, Gradle 9.3.1 (/usr/share/gradle-bin-9.3.1).
 # Build parallelism is whatever the tools default to; MAKEOPTS and job counts are never overridden.
@@ -16,13 +17,19 @@ mkdir -p "$out"
 
 # QindaTK for Android (docs/android.md of QindaTK, D-354). Pinned commit; built into build/phone and
 # staged there if the stage is missing. Nothing is installed system-wide.
-qtk_rev=${QINDATK_REV:-27da0a0d}
+qtk_rev=${QINDATK_REV:-9ff55fbd}
 qtk_src="${QINDATK_SRC:-$out/qindatk-src}"
 qtk_stage="$out/qindatk-stage"
-if [ ! -f "$qtk_stage/lib/cmake/QindaTK/QindaTKConfig.cmake" ]; then
+# AGENT-GUARD: the stage records the QindaTK revision it was built from; a pin
+# change must rebuild it, or an old stage (e.g. one missing the D-355 Android
+# qmldir fix) is silently reused and `import QindaTK` fails on the phone.
+if [ ! -f "$qtk_stage/lib/cmake/QindaTK/QindaTKConfig.cmake" ] \
+        || [ "$(cat "$qtk_stage/.qindatk-rev" 2>/dev/null)" != "$qtk_rev" ]; then
+    rm -rf "$qtk_stage" "$out/qindatk-build"
     if [ ! -d "$qtk_src/.git" ]; then
         git clone -q "${QINDATK_REPO:-$HOME/git/QindaTK.git}" "$qtk_src"
     fi
+    git -C "$qtk_src" cat-file -e "$qtk_rev^{commit}" 2>/dev/null || git -C "$qtk_src" fetch -q origin
     git -C "$qtk_src" checkout -q "$qtk_rev"
     export JAVA_HOME=/opt/openjdk-bin-21
     cmake -S "$qtk_src" -B "$out/qindatk-build" -G Ninja \
@@ -35,6 +42,7 @@ if [ ! -f "$qtk_stage/lib/cmake/QindaTK/QindaTKConfig.cmake" ]; then
         -DQINDATK_ENABLE_PLUGIN_HOST=OFF
     cmake --build "$out/qindatk-build"
     cmake --install "$out/qindatk-build"
+    echo "$qtk_rev" > "$qtk_stage/.qindatk-rev"
 fi
 
 export JAVA_HOME=/opt/openjdk-bin-21
@@ -60,10 +68,19 @@ fi
     -DQINDALINK_ANDROID_PACKAGE_SOURCE="$pkg"
 cmake --build "$out/cmake" --target apk
 
-# Re-sign with a keystore that lives only under build/.
-ks="$out/debug.keystore"
-[ -f "$ks" ] || keytool -genkeypair -keystore "$ks" -storepass android -keypass android -alias qindalink-debug \
-    -keyalg EC -groupname secp256r1 -validity 3650 -dname "CN=QindaLink debug"
+# Re-sign with ONE per-user development key shared by every worktree.
+# AGENT-NOTE: Android refuses to update an installed app signed with a different
+# key (INSTALL_FAILED_UPDATE_INCOMPATIBLE), and uninstalling wipes the phone's
+# Keystore identity and desktop pin. A per-worktree key therefore forced
+# re-pairing on every lane's build. The key is a debug key, never committed;
+# release signing is a packaging decision for later.
+ks="${QINDALINK_KEYSTORE:-$HOME/.local/share/qindalink-dev/debug.keystore}"
+if [ ! -f "$ks" ]; then
+    mkdir -p "$(dirname "$ks")"
+    keytool -genkeypair -keystore "$ks" -storepass android -keypass android -alias qindalink-debug \
+        -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=QindaLink Debug"
+    chmod 600 "$ks"
+fi
 apk=$(find "$out/cmake" -name '*-debug.apk' -o -name '*debug*.apk' | head -n1)
 [ -n "$apk" ] || { echo "no APK produced" >&2; exit 1; }
 cp "$apk" "$out/QindaLink-debug.apk"

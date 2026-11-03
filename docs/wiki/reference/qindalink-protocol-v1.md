@@ -222,13 +222,188 @@ implements it, including any frame that carries user content.
 
 ## Notifications (`notify.*`)
 
-Not specified yet. The notifications lane replaces this paragraph with the
-frame table for capability `notify`.
+Capability `notify`. The phone mirrors its notifications to the desktop and
+the desktop sends dismissals and action requests back.
+
+<!-- AGENT-GUARD: notification titles, texts, and reply texts are personal
+content. Neither side logs them (log the frame type and byte length only), and
+no test or tool may print them. -->
+
+Lengths below count UTF-16 code units (Java `String.length()`, Qt
+`QString::size()`). The sender truncates over-long `title` and `text`; the
+receiver treats any other violation of a bound, a type or a pattern as a bad
+frame: a request gets `error{code:"bad-request"}` and a frame without an `id`
+is dropped. Both sides ignore unknown keys.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `notify.posted` | phone→desktop | A notification (below). A `key` the desktop already shows is an update. | none |
+| `notify.snapshot` | phone→desktop | `items`: array of at most 50 notification objects. Sent once on entering READY. It replaces the desktop's set for this phone: keys that are absent are closed, unchanged keys are left alone. | none |
+| `notify.removed` | phone→desktop | `key` (1–512) | none |
+| `notify.dismiss` | desktop→phone | `key`. The user dismissed it on the desktop. The phone calls `cancelNotification(key)`. | `ok` if `id` is present |
+| `notify.action` | desktop→phone | `key`, `action` (an action `id`, 1–64), `title` (the action title shown, 1–64), optional `text` (0–4096, only for a `reply` action) | `ok`, or `error` (below), if `id` is present |
+| `notify.icon` | desktop→phone | `hash` (64 lowercase hex). Asks for the PNG of an icon the desktop does not have cached. | none |
+| `notify.icon` | phone→desktop | `hash`, `png` (base64, at most 65 536 characters; empty when the phone no longer has it) | none |
+
+A notification object:
+
+```json
+{"key":"0|com.example|7|null|10234","pkg":"com.example","app":"Example",
+ "title":"…","text":"…","when":1767225600000,"icon":"<64 hex>",
+ "actions":[{"id":"0","title":"Archive","reply":false},
+            {"id":"1","title":"Reply","reply":true}]}
+```
+
+| Field | Bound |
+| --- | --- |
+| `key` | string 1–512, the Android notification key; opaque to the desktop |
+| `pkg` | string 1–256, the application package |
+| `app` | string 1–128, the application label |
+| `title` | string 0–256 |
+| `text` | string 0–2048 |
+| `when` | integer, milliseconds since the epoch |
+| `icon` | 64 lowercase hex characters (SHA-256 of the 64 px PNG), or `""` when the phone has no icon |
+| `actions` | array of at most 8 `{id: string 1–64, title: string 1–64, reply: bool}` |
+
+Rules:
+
+- **Which notifications.** The phone sends neither ongoing nor
+  foreground-service nor group-summary notifications, nor QindaLink's own. Text
+  that Android redacts for sensitive content reaches the desktop redacted;
+  nothing works around that.
+- **Icons.** The desktop requests a hash it has not cached and waits up to 10
+  seconds before showing the notification without an icon. It accepts the
+  reply only when the decoded bytes start with the PNG signature, are at most
+  49 152 bytes, and hash to the requested `hash`; it then caches the file
+  under that hash.
+- **Action ids are positions.** An app may repost a notification with reordered
+  actions between display and tap. The phone therefore compares `title` with
+  the title (clipped to 64) of the action now at that index and answers
+  `target-changed` without firing anything on a mismatch.
+- **Unverified activity actions.** Android does not report whether an action
+  that starts an activity actually ran; a foreground-service app is usually not
+  allowed to start activities from the background. For an activity
+  `PendingIntent` the phone requests background-activity-start permission,
+  sends the intent, and answers `error{code:"unsupported", message:"unverified"}`
+  instead of `ok`. Broadcast, service and reply actions answer `ok`.
+- **Stale copies.** When a notification the desktop may show is reposted as
+  ongoing or foreground-service, or removed, the phone sends `notify.removed`
+  for it if it ever sent that key.
+- **Errors for `notify.action` and `notify.dismiss`.** `target-changed` when the
+  key is no longer active on the phone or the action no longer matches, `bad-request` for an unknown action
+  `id` or `text` sent to a non-reply action, `denied` when the phone has no
+  notification access, and `internal` when Android refuses the action.
+- **Dismissal both ways.** `notify.removed` also follows a `notify.dismiss`,
+  because the phone reports every removal. The desktop closes a notification
+  it no longer shows without sending anything back, so the exchange ends.
+- **Rate and size.** The phone sends at most 20 `notify.posted` or
+  `notify.removed` frames per 500 ms and coalesces updates to one key. The
+  desktop keeps at most 100 notifications per phone and closes the oldest
+  beyond that.
 
 ## Messages (`sms.*`)
 
-Not specified yet. The SMS lane replaces this paragraph with the
-frame table for capability `sms`.
+Capability `sms`. The phone reads the Android SMS/MMS provider and the
+desktop asks for pages of it; nothing is stored on the desktop disk.
+Requests go desktop to phone; the reply is a frame of the **same type** with
+`re` set to the request `id` (or `error`). Every list is bounded, and the
+phone enforces the bounds even if the desktop asks for more (it clamps
+`limit` rather than failing). Times are integer milliseconds since the epoch.
+All identifiers are provider integers: thread ids, SMS ids, MMS ids and MMS
+part ids. An SMS and an MMS can share a numeric id, so a message is identified
+by the pair (`kind`, `id`).
+
+**Paging.** Lists are newest first, ordered by (`date` descending, `id`
+descending). A request carries `before` and `beforeId` (both optional, both
+integers; `before` of 0 or less, or absent, means "from the newest"); the reply holds only rows strictly older than that pair. `more` is
+true when at least one older row exists. The cursor for the next page is the
+`date` and `id` of the last row received. For `sms.messages` the order is
+(`date` descending, `kind` with `mms` before `sms`, `id` descending) and the
+cursor also carries `beforeKind` (`sms` or `mms`, default `sms`; anything
+else is `bad-request`), so rows that share a millisecond are never repeated or
+skipped even though SMS and MMS ids overlap. MMS dates are stored in seconds
+on the phone and reported as `seconds * 1000`.
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `sms.threads` | request, desktop→phone | `limit` (int 1–100, default 50), `before`, `beforeId` | `sms.threads`: `threads` (array ≤ 100 of thread), `more` (bool), `unread` (int, total unread messages on the phone) |
+| `sms.messages` | request, desktop→phone | `thread` (int, required), `limit` (int 1–200, default 50), `before`, `beforeKind`, `beforeId` | `sms.messages`: `thread`, `messages` (array ≤ 200 of message), `more` |
+| `sms.part` | request, desktop→phone | `part` (int, required), `maxEdge` (int 64–2048, default 1280) | `sms.part`: `part`, `mime`, `size` (int, bytes sent), `scaled` (bool), `data` (base64) |
+| `sms.send` | request, desktop→phone | `addrs` (array 1–10 of string ≤ 32), `text` (string 1–1600 chars), `sub` (int, optional subscription id) | `sms.send`: `ref` (int, unique within the connection) |
+| `sms.read` | request, desktop→phone | `thread` (int, required) | `sms.read`: `thread`, `unread` (new total) |
+| `sms.changed` | event, phone→desktop | `threads` (array ≤ 100 of thread id), `all` (bool, true when more than 100 changed or the set is unknown), `unread` (int total) | none |
+| `sms.sent` | event, phone→desktop | `ref`, `state` (`sent`, `failed` or `delivered`), `code` (string, only with `failed`), `unsent` (array of int, optional, only with `failed`) | none |
+
+**thread:** `id` (int), `addrs` (array ≤ 20 of string ≤ 64), `names`
+(array of string ≤ 128, the same length as `addrs`, `""` where the number is
+not a contact), `snippet` (string ≤ 200 chars), `date`, `unread` (int ≥ 0),
+`count` (int ≥ 0, messages in the thread).
+
+**message:** `id` (int), `kind` (`sms` or `mms`), `box` (`inbox`, `sent`,
+`outbox`, `failed`, `queued` or `draft`), `addr` (string ≤ 64, the sender for
+`inbox`, the first recipient otherwise), `date`, `body` (string ≤ 4000
+chars), `trunc` (bool, true when `body` was cut), `read` (bool), `parts`
+(array ≤ 16 of part, always present, empty for SMS). **part:** `id` (int),
+`mime` (string ≤ 128), `name` (string ≤ 128, may be empty), `size` (int
+bytes, or -1 when unknown). MMS text parts are folded into `body` and not
+listed; every other part is listed.
+
+Rules:
+
+- **Frame size.** A reply stays below 2 MiB. The phone ends a list early
+  and sets `more:true` when the next row would exceed that, so a page can be
+  shorter than `limit`.
+- **`sms.part`.** The payload before base64 is at most 2 MiB. An image larger
+  than that, or with a longest edge above `maxEdge`, is decoded and
+  re-encoded as JPEG phone-side (`scaled:true`, `mime:"image/jpeg"`). A
+  non-image over the cap is answered `error{code:"unsupported"}`.
+- **`sms.send` destinations.** Every address is checked before anything is
+  sent. Spaces, dashes, dots and parentheses are stripped; what remains must be
+  ASCII digits with an optional leading `+` and 7 to 20 digits. Anything else
+  (premium short codes, alphanumeric sender ids, empty strings) is answered
+  `error{denied}` and **nothing** is sent, even to the valid recipients. More
+  than 10 addresses or more than 1600 characters of text is `bad-request`.
+- **`sms.send`.** The phone divides long text into SMS parts and sends each
+  to each address through the platform `SmsManager`. The reply only says the
+  request was accepted (`ref`). Then `sms.sent` events report, for the whole
+  request, `sent` once every part has left for every address, `delivered`
+  once every delivery report has arrived (not all carriers send them), and
+  `failed` on the first failure, with `code` one of `generic`, `no-service`,
+  `null-pdu`, `radio-off`, `limit`, `denied`, `unknown`. After `failed` or
+  `delivered` no further event is sent for that `ref`. If the platform refuses a
+  recipient after earlier recipients were already handed to the radio, the
+  request has been accepted, so the phone sends `failed` with `unsent` listing
+  the 0-based indexes of the addresses that were never sent (the desktop must
+  not blindly resend the others). A platform failure before the first
+  recipient is `error{internal}` and nothing was sent. Invalid input is
+  `error{bad-request}`; without the SEND_SMS permission the phone answers
+  `error{denied}`.
+- **Provider failures.** If the phone's SMS provider throws (a vendor rejecting a
+  column, a revoked permission mid-request), the phone answers
+  `error{internal}` with a `message` that names the operation and exception
+  class only. A failure is never reported as an empty list.
+- **Errors.** Without READ_SMS every request except `sms.send` is answered
+  `error{denied}`. `sms.read` is answered `error{unsupported}` when the
+  phone's SMS role does not allow writing the provider (see below).
+- **`sms.changed`.** Sent once on entering READY (so the desktop learns the
+  unread total) and then after a 500 ms debounce of provider changes. It
+  names the threads whose summary changed; the desktop re-requests what it
+  displays.
+- **Privacy.** Neither side logs the body of any `sms.*` frame, address, name
+  or snippet; logs carry the type, ids and lengths only.
+
+**Limits of the platform.**
+
+- *RCS.* RCS chats are not in the SMS/MMS provider. They never appear in
+  these lists, and the desktop cannot see or answer them.
+- *Marking read.* Since Android 4.4 only the default SMS app may write the
+  provider. QindaLink is not the default SMS app and never asks to be, so
+  `sms.read` is answered `error{unsupported}` unless the platform lets the
+  update through; the phone attempts one provider update and reports
+  `unsupported` when it throws or changes no row.
+- *Sent messages.* A message sent by a non-default app is not written to the
+  provider by the platform, so it appears in the thread list only after
+  the user's own SMS app records it, if ever.
 
 ## Remote input (`input.*`)
 

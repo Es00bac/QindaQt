@@ -2,6 +2,9 @@
 // qindaqt-link-service: owns the QindaLink identity, trust store, loopback
 // TLS listener and ADB tunnels, and exports org.qindaqt.Link1.
 #include <qindaqt/services/link_adb/adb_runner.h>
+#include <qindaqt/services/link_notifications/fdo_phone_presenter.h>
+#include <qindaqt/services/link_notifications/process_reply_launcher.h>
+#include <qindaqt/services/link_notifications/recording_presenter.h>
 #include <qindaqt/services/link_service/link1_service.h>
 #include <qindaqt/services/link_service/qt_notification_presenter.h>
 
@@ -37,7 +40,13 @@ int main(int argc, char **argv)
     QCommandLineOption noAdb(QStringLiteral("no-adb"), QStringLiteral("Do not track or tunnel ADB devices."));
     QCommandLineOption noNotify(QStringLiteral("no-notifications"),
                                 QStringLiteral("Do not post pairing notifications."));
-    parser.addOptions({dataDir, port, noAdb, noNotify});
+    QCommandLineOption recordingNotifier(QStringLiteral("recording-notifier"),
+                                         QStringLiteral("Test only: record phone notifications to FILE instead of "
+                                                        "posting them to the notification server."),
+                                         QStringLiteral("file"));
+    QCommandLineOption configDir(QStringLiteral("config-dir"), QStringLiteral("Settings directory."), QStringLiteral("dir"));
+    QCommandLineOption cacheDir(QStringLiteral("cache-dir"), QStringLiteral("Icon cache directory."), QStringLiteral("dir"));
+    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir});
     parser.process(app);
 
     ServiceConfig config;
@@ -46,6 +55,13 @@ int main(int argc, char **argv)
         : QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/qindalink");
     config.port = quint16(parser.value(port).toUInt());
     config.version = QStringLiteral(QINDAQT_VERSION);
+
+    config.configDir = parser.isSet(configDir)
+        ? parser.value(configDir)
+        : QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/qindalink");
+    config.cacheDir = parser.isSet(cacheDir)
+        ? parser.value(cacheDir)
+        : QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation) + QStringLiteral("/qindalink");
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     // Exit when the constructing bus goes away; reconnecting would resume with stale state.
@@ -56,6 +72,17 @@ int main(int argc, char **argv)
     if (!parser.isSet(noNotify)) {
         presenter = std::make_unique<QtNotificationPresenter>(bus);
     }
+    // AGENT-GUARD: phone notification content goes only to the injected presenter. Tests pass
+    // --recording-notifier; --no-notifications alone leaves the `notify` capability off.
+    std::unique_ptr<NotificationPresenter> phonePresenter;
+    ProcessReplyLauncher replyLauncher;
+    if (parser.isSet(recordingNotifier)) {
+        phonePresenter = std::make_unique<RecordingPresenter>(parser.value(recordingNotifier));
+    } else if (!parser.isSet(noNotify)) {
+        phonePresenter = std::make_unique<FdoPhoneNotificationPresenter>(bus);
+    }
+    config.phoneNotifications = phonePresenter.get();
+    config.replyLauncher = &replyLauncher;
     std::unique_ptr<AdbRunner> adb;
     if (!parser.isSet(noAdb)) {
         adb = std::make_unique<QProcessAdbRunner>();

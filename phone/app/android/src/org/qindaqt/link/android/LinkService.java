@@ -16,7 +16,9 @@ import org.qindaqt.link.engine.EngineState;
 import org.qindaqt.link.engine.FeatureRegistry;
 import org.qindaqt.link.engine.LinkEngine;
 import org.qindaqt.link.engine.StatusFeature;
+import org.qindaqt.link.sms.SmsFeature;
 import org.qindaqt.link.engine.PinStore;
+import org.qindaqt.link.notify.NotificationFeature;
 
 /**
  * Foreground service (type connectedDevice) that owns the {@link LinkEngine}.
@@ -32,6 +34,7 @@ public final class LinkService extends Service {
     private static final String CHANNEL = "link-status";
     static volatile LinkEngine engine;
     private static AndroidStatusSource statusSource;
+    private static SmsSenderAndroid smsSender;
 
     /** Starts the service; safe to call repeatedly. */
     public static void start(Context ctx) {
@@ -55,7 +58,9 @@ public final class LinkService extends Service {
                     statusSource = new AndroidStatusSource(this);
                     statusSource.start();
                     EngineState state = new EngineState();
-                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state));
+                    FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
+                            .add(new NotificationFeature(NotificationAndroidSource.init(this), state))
+                            .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), smsSender = new SmsSenderAndroid(this), state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);
                     engine.start();
@@ -73,6 +78,7 @@ public final class LinkService extends Service {
         synchronized (LinkService.class) {
             if (engine != null) { engine.stop(); engine = null; }
             if (statusSource != null) { statusSource.stop(); statusSource = null; }
+            if (smsSender != null) { smsSender.close(); smsSender = null; }
         }
         super.onDestroy();
     }

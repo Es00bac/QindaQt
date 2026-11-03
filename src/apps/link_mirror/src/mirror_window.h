@@ -28,6 +28,10 @@ public:
 
     void setFrame(QImage frame);
     void setStatusText(const QString &text);
+    // Paused: the phone's own screen is off. The last frame stays, dimmed under a notice, and
+    // input is dropped (not queued) until resumed.
+    void setPaused(bool paused);
+    [[nodiscard]] bool paused() const { return m_paused; }
     [[nodiscard]] const QImage &frame() const { return m_frame; }
     // Draws the current presentation at a view size (logical pixels == image pixels).
     [[nodiscard]] QImage renderSnapshot(QSize viewSize) const;
@@ -58,6 +62,7 @@ private:
     InputTranslator m_translator;
     QImage m_frame;
     QString m_status;
+    bool m_paused = false;
 };
 
 } // namespace qindaqt::link_mirror

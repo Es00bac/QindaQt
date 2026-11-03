@@ -325,8 +325,10 @@ public final class Session {
         } catch (IOException e) {
             // Protocol: never enter READY with a pin we could not persist, or the stores disagree after restart.
             pins.clear();
-            bye("error");
+            // AGENT-NOTE: publish ERROR before bye so anything that observes the bye
+            // (the peer, tests) already sees the final local state; the reverse order raced.
             state.set(EngineState.Phase.ERROR, desktopName, "", "Could not save the pairing");
+            bye("error");
             return false;
         }
         pinMatches = true;
