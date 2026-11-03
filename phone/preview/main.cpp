@@ -95,17 +95,25 @@ int main(int argc, char *argv[])
                 continue;
             win->setProperty("page", page);
             settle(win);
-            auto *loader = win->findChild<QQuickItem *>(QStringLiteral("pageLoader"));
-            const QVariant item = loader ? loader->property("item") : QVariant();
-            if (!loader || item.value<QObject *>() == nullptr) {
-                fprintf(stderr, "FAIL %s/%s: page did not load\n", qPrintable(scenario), qPrintable(page));
-                ++failures;
-                continue;
-            }
-            if (!grabDir.isEmpty()) {
-                const QString path = QStringLiteral("%1/%2-%3.png").arg(grabDir, scenario, page);
-                if (!win->grabWindow().save(path)) { ++failures; fprintf(stderr, "FAIL save %s\n", qPrintable(path)); }
-                else ++shots;
+            // Touchpad, Keyboard and Macros also load once per input scenario (pending, denied, running ...).
+            const bool inputPage = page == "touchpad" || page == "keyboard" || page == "macros";
+            const QStringList variants = inputPage ? FakeBridge::inputScenarios() : QStringList{QString()};
+            for (const QString &variant : variants) {
+                if (inputPage) { bridge.setInputScenario(variant); settle(win); }
+                auto *loader = win->findChild<QQuickItem *>(QStringLiteral("pageLoader"));
+                const QVariant item = loader ? loader->property("item") : QVariant();
+                if (!loader || item.value<QObject *>() == nullptr) {
+                    fprintf(stderr, "FAIL %s/%s: page did not load\n", qPrintable(scenario), qPrintable(page));
+                    ++failures;
+                    continue;
+                }
+                if (!grabDir.isEmpty()) {
+                    const QString path = variant.isEmpty() || variant == QLatin1String("active")
+                        ? QStringLiteral("%1/%2-%3.png").arg(grabDir, scenario, page)
+                        : QStringLiteral("%1/%2-%3-%4.png").arg(grabDir, scenario, page, variant);
+                    if (!win->grabWindow().save(path)) { ++failures; fprintf(stderr, "FAIL save %s\n", qPrintable(path)); }
+                    else ++shots;
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
 # QindaLink lane vault-phone: handoff (part 1 of 2)
 
 - Branch `link/vault-phone`, merged with main at `eb2b67e88` (conflict only in `phone/engine-tests/run.sh`, resolved by keeping both lists).
-- Design: ADR-0438 and the "Phone vault (part 1)" section of `docs/wiki/architecture/qindalink.md`.
+- Design: ADR-0439 and the "Phone vault (part 1)" section of `docs/wiki/architecture/qindalink.md`.
 
 ## Changed paths
 - `phone/app/android/src/org/qindaqt/link/vault/**` (pure Java: format, session, backup, generator, autotype, typing seam, generated EFF `WordList.java`).

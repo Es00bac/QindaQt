@@ -1,4 +1,4 @@
-# ADR-0438: QindaLink phone password vault
+# ADR-0439: QindaLink phone password vault
 
 - **Status:** Accepted
 - **Date:** 2026-11-02

@@ -88,6 +88,9 @@ public:
     // Sends bye{reason} (when non-empty) and closes after flushing.
     void close(const QString &byeReason);
     [[nodiscard]] bool pairingPending() const;
+    // True from the moment the code is known until the desktop user decided (or pairing ended).
+    [[nodiscard]] bool awaitingLocalDecision() const;
+    [[nodiscard]] const QString &pairingCode() const { return m_code; }
 
 Q_SIGNALS:
     void helloReceived();
@@ -123,6 +126,7 @@ private:
     qint64 m_nextId = 1;
     QHash<qint64, std::function<void(const Envelope &)>> m_pending;
     DesktopPairing *m_pairing = nullptr;
+    QString m_code;
 };
 
 } // namespace QindaQt::Link

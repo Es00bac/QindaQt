@@ -78,7 +78,8 @@ public final class CrossImplTest {
         // dbus-run-session owns the private bus; the wrapper publishes its address then execs the service.
         ProcessBuilder pb = new ProcessBuilder("dbus-run-session", "--", "bash", "-c",
                 "echo $$ > '" + addr + ".pid'; echo \"$DBUS_SESSION_BUS_ADDRESS\" > '" + addr + "'; exec \"$0\" --data-dir '" + data
-                        + "' --port 0 --no-adb --no-notifications", a[0]);
+                        + "' --port 0 --no-adb --no-notifications"
+                        + " --trusted-caller \"$(readlink -f \"$(command -v gdbus)\")\"", a[0]);
         pb.environment().put("QT_QPA_PLATFORM", "offscreen");
         pb.redirectErrorStream(true).redirectOutput(log);
         svc = pb.start();

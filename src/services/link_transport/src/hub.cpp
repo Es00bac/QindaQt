@@ -164,11 +164,26 @@ QJsonObject Hub::snapshotFor(const QString &id, const PairedDevice *paired, Sess
     o.insert(QStringLiteral("transport"),
              !live ? QStringLiteral("none")
                    : session->origin() == Origin::Loopback ? QStringLiteral("usb") : QStringLiteral("lan"));
+    o.insert(QStringLiteral("caps"), live ? QJsonArray::fromStringList(session->peer().caps) : QJsonArray());
     o.insert(QStringLiteral("battery"), status.value(QStringLiteral("battery")));
     o.insert(QStringLiteral("network"), status.value(QStringLiteral("network")));
     o.insert(QStringLiteral("lastSeen"),
              double(live ? QDateTime::currentMSecsSinceEpoch() : (paired != nullptr ? paired->lastSeen : 0)));
     return o;
+}
+
+QJsonArray Hub::pendingPairings() const
+{
+    QJsonArray out;
+    for (auto it = m_sessions.cbegin(); it != m_sessions.cend(); ++it) {
+        if (it.value()->awaitingLocalDecision()) {
+            out.append(QJsonObject{{QStringLiteral("id"), it.key()},
+                                   {QStringLiteral("name"), it.value()->peer().name},
+                                   {QStringLiteral("model"), it.value()->peer().model},
+                                   {QStringLiteral("code"), it.value()->pairingCode()}});
+        }
+    }
+    return out;
 }
 
 QJsonArray Hub::devices() const

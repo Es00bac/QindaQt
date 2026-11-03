@@ -17,7 +17,7 @@ import java.util.Map;
  * AGENT-GUARD: AAD for an entry is "QLVT-entry" + id + u16 version; for the index it is "QLVT-index"
  * + the exact header bytes. So a flipped header byte, a swapped id or a changed version fails the
  * GCM tag (TAMPERED) and nothing is parsed from unauthenticated data. Never decode before open().
- * Deviation from the lane brief, recorded in ADR-0438: the index AAD also covers the header.
+ * Deviation from the lane brief, recorded in ADR-0439: the index AAD also covers the header.
  */
 final class VaultFormat {
     static final byte[] MAGIC = {'Q', 'L', 'V', 'T'};

@@ -4,7 +4,7 @@ import QindaTK as Tk
 
 // Password and passphrase generator. The result is offered through `use(value)`; the panel keeps
 // `value` only for display and clears it when destroyed. Length 8-128, character classes, or 3-12
-// words from the bundled EFF large list (CC BY 3.0 US, see ADR-0438).
+// words from the bundled EFF large list (CC BY 3.0 US, see ADR-0439).
 Tk.Card {
     id: root
 

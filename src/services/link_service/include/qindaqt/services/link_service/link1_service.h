@@ -2,6 +2,8 @@
 #pragma once
 
 #include <qindaqt/services/link_adb/tunnel_manager.h>
+#include <qindaqt/services/link_service/send_guard.h>
+#include <qindaqt/services/link_transport/caller_authority.h>
 #include <qindaqt/services/link_notifications/notifications_module.h>
 #include <qindaqt/services/link_messages/messages_adaptor.h>
 #include <qindaqt/services/link_service/pairing_presenter.h>
@@ -25,6 +27,8 @@ struct ServiceConfig {
     ReplyLauncher *replyLauncher = nullptr;
     QString configDir;          // production passes $XDG_CONFIG_HOME/qindalink
     QString cacheDir;           // production passes $XDG_CACHE_HOME/qindalink
+    // Required (ADR-0438): decides who may use protected members. Not owned. start() fails without it.
+    CallerAuthority *callerAuthority = nullptr;
 };
 
 // Exports org.qindaqt.Link1 at /org/qindaqt/Link1 (docs/wiki/reference/link1-v1.md)
@@ -46,6 +50,7 @@ class Link1Service final : public QObject, protected QDBusContext {
                 "<arg name=\"accept\" type=\"b\" direction=\"in\"/></method>"
                 "<method name=\"Unpair\"><arg name=\"id\" type=\"s\" direction=\"in\"/></method>"
                 "<method name=\"Ring\"><arg name=\"id\" type=\"s\" direction=\"in\"/></method>"
+                "<method name=\"PendingPairings\"><arg name=\"json\" type=\"s\" direction=\"out\"/></method>"
                 "<method name=\"ListenPort\"><arg name=\"port\" type=\"q\" direction=\"out\"/></method>"
                 "<signal name=\"DevicesChanged\"><arg name=\"json\" type=\"s\"/></signal>"
                 "<signal name=\"PairingRequested\"><arg name=\"id\" type=\"s\"/><arg name=\"name\" type=\"s\"/>"
@@ -63,6 +68,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE void ConfirmPairing(const QString &id, bool accept);
     Q_SCRIPTABLE void Unpair(const QString &id);
     Q_SCRIPTABLE void Ring(const QString &id);
+    Q_SCRIPTABLE QString PendingPairings() const;
     Q_SCRIPTABLE quint16 ListenPort() const;
 
 Q_SIGNALS:
@@ -81,6 +87,7 @@ private:
     // AGENT-GUARD: declared before m_hub so it is destroyed after the hub, whose sessions call
     // sessionClosed() on every registered feature while they shut down.
     std::unique_ptr<MessagesFeature> m_messages;
+    std::unique_ptr<SendGuard> m_sendGuard;
     std::unique_ptr<Hub> m_hub;
     std::unique_ptr<TunnelManager> m_tunnels;
     QStringList m_presented;

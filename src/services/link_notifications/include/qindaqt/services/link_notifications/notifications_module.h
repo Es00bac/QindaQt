@@ -14,6 +14,8 @@ struct NotificationsConfig {
     QString cacheDir;   // icons/ lives here ($XDG_CACHE_HOME/qindalink)
     NotificationPresenter *presenter = nullptr;  // required, not owned
     ReplyLauncher *reply = nullptr;              // optional, not owned
+    CallerAuthority *authority = nullptr;        // required for the D-Bus adaptor, not owned (ADR-0438)
+    QDBusConnection bus{QStringLiteral("link-notifications-unset")};  // used for Denied replies; the service sets it
 };
 
 // Composition of the notify capability for qindaqt-link-service: registers

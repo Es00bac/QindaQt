@@ -4,7 +4,7 @@
 set(QINDALINK_QML_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(_names
     Main.qml ScreenFrame.qml HomeScreen.qml PairingScreen.qml PermissionsScreen.qml PermissionRow.qml
-    ToolsScreen.qml TouchpadScreen.qml KeyboardScreen.qml MacrosScreen.qml VaultScreen.qml
+    InputStateNotice.qml ToolsScreen.qml TouchpadScreen.qml KeyboardScreen.qml MacrosScreen.qml VaultScreen.qml
     VaultSecretField.qml VaultGateView.qml VaultListView.qml VaultDetailView.qml VaultGeneratorPanel.qml
     VaultEditView.qml VaultBackupView.qml LinkText.js)
 set(QINDALINK_QML_FILES "")

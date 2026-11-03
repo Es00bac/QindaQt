@@ -10,22 +10,32 @@ wire format is the separate [QindaLink protocol 1](qindalink-protocol-v1.md).
 - **Introspection:** `src/services/link_service/data/org.qindaqt.Link1.xml`
   (installed to `share/dbus-1/interfaces`)
 
+## Access
+
+Every member is either **open** (public metadata, any bus client) or **trusted**
+(content or an action as the user). A trusted member called by anything else
+fails with `org.qindaqt.Link1.Error.Denied`. The trusted callers are the installed
+`qindaqt-link` and `qindaqt-shell` executables plus any `--trusted-caller <exe>`
+given to the service (test/development only; logged as a warning) ([ADR-0438](../adr/0438-qindalink-link1-caller-authority.md)).
+The **Access** column below uses these words.
+
 ## Methods
 
-| Method | Signature | Behavior |
-| --- | --- | --- |
-| `Devices` | `() → s` | Compact JSON array of device snapshots (below). |
-| `ConfirmPairing` | `(s id, b accept)` | The desktop user's decision for the pending pairing with device `id`. Unknown ids and ids with no pending code are ignored. |
-| `Unpair` | `(s id)` | Deletes the stored pin, sends `bye{unpaired}` on a live connection and closes it. |
-| `Ring` | `(s id)` | Asks a READY phone that lists the `ring` capability to ring. Fire-and-forget; failures are logged without the device id beyond a prefix. |
-| `ListenPort` | `() → q` | The TCP port of the loopback listener (47160 in production). Diagnostics and tests only. |
+| Method | Access | Signature | Behavior |
+| --- | --- | --- | --- |
+| `Devices` | open | `() → s` | Compact JSON array of device snapshots (below). |
+| `PendingPairings` | open | `() → s` | JSON array `[{id,name,model,code}]` of pairing requests waiting for the desktop user's decision, so a shell started after the request still shows it. |
+| `ConfirmPairing` | trusted | `(s id, b accept)` | The desktop user's decision for the pending pairing with device `id`. Unknown ids and ids with no pending code are ignored. |
+| `Unpair` | trusted | `(s id)` | Deletes the stored pin, sends `bye{unpaired}` on a live connection and closes it. |
+| `Ring` | trusted | `(s id)` | Asks a READY phone that lists the `ring` capability to ring. Fire-and-forget; failures are logged without the device id beyond a prefix. |
+| `ListenPort` | open | `() → q` | The TCP port of the loopback listener (47160 in production). Diagnostics and tests only. |
 
 ## Signals
 
-| Signal | Signature | Meaning |
-| --- | --- | --- |
-| `DevicesChanged` | `(s json)` | Any snapshot-visible change; `json` is what `Devices()` would return now. |
-| `PairingRequested` | `(s id, s name, s model, s code)` | The phone and desktop have exchanged nonces. `code` is the raw six digits (`"007123"`); UIs show it as `007 123`. The desktop also posts a notification with Accept and Reject. |
+| Signal | Access | Signature | Meaning |
+| --- | --- | --- | --- |
+| `DevicesChanged` | open | `(s json)` | Any snapshot-visible change; `json` is what `Devices()` would return now. |
+| `PairingRequested` | open | `(s id, s name, s model, s code)` | The phone and desktop have exchanged nonces. `code` is the raw six digits (`"007123"`); UIs show it as `007 123`. The desktop also posts a notification with Accept and Reject. |
 
 ## Notifications interface
 
@@ -34,15 +44,15 @@ adaptor, only when the service has a phone-notification presenter (so not under
 `--no-notifications` alone). Frame semantics are in the
 [protocol reference](qindalink-protocol-v1.md#notifications-notify).
 
-| Member | Signature | Behavior |
-| --- | --- | --- |
-| `ListApps` | `() → s` | JSON array of `{pkg,label,muted}` for apps seen so far or muted. |
-| `SetAppMuted` | `(s pkg, b muted)` | Persists the choice; muting closes that app's shown notifications. |
-| `Reply` | `(s device, s key, s action, s text) → s` | Sends `notify.action` with `text`. Returns `""` once sent, or `not-found`, `bad-request` or `not-connected`. |
-| `Current` | `() → s` | JSON array of the tracked notifications: `device,key,pkg,app,title,text,when,hasReply,actions`. Personal content, session bus only. |
-| `Revision` | `() → u` | Number of `CurrentChanged` signals sent since the service started. |
-| `CurrentChanged` | signal `(u revision, s item)` | One changed entry per signal: its `Current()` object, or `{device,key,removed:true}`. A client that sees a gap in `revision` re-reads `Current()`. |
-| `ReplyFinished` | signal `(s device, s key, s action, s error)` | The phone's answer to `Reply`; `error` is empty on success, or a protocol code; `unverified` means the action launches an activity and Android may have suppressed it. |
+| Member | Access | Signature | Behavior |
+| --- | --- | --- | --- |
+| `ListApps` | trusted | `() → s` | JSON array of `{pkg,label,muted}` for apps seen so far or muted. |
+| `SetAppMuted` | trusted | `(s pkg, b muted)` | Persists the choice; muting closes that app's shown notifications. |
+| `Reply` | trusted | `(s device, s key, s action, s text) → s` | Sends `notify.action` with `text`. Returns `""` once sent, or `not-found`, `bad-request` or `not-connected`. |
+| `Current` | trusted | `() → s` | JSON array of the tracked notifications: `device,key,pkg,app,title,text,when,hasReply,actions`. Personal content, session bus only. |
+| `Revision` | open | `() → u` | Number of `CurrentChanged` signals sent since the service started. |
+| `CurrentChanged` | open signal | `(u revision, s item)` | One changed entry per signal, identifiers only: `{device,key}` plus `removed:true` when it went away; never text. Trusted clients read the content with `Current()`. A client that sees a gap in `revision` re-reads `Current()`. |
+| `ReplyFinished` | open signal `(s device, s key, s action, s error)` | The phone's answer to `Reply`; `error` is empty on success, or a protocol code; `unverified` means the action launches an activity and Android may have suppressed it. |
 
 `qindaqt-link-service --recording-notifier FILE` replaces the freedesktop
 presenter with a file recorder for private-bus tests; `--config-dir` and
@@ -57,22 +67,22 @@ id from `Devices`. All string results are compact JSON; the JSON bodies are the
 validated `sms.*` reply bodies, restricted to the documented keys. Calls reply
 asynchronously, after the phone answers (10 s limit).
 
-| Method | Signature | Result JSON |
-| --- | --- | --- |
-| `ListThreads` | `(s device, i limit, x before, x beforeId) → s` | `{"threads":[…],"more":b,"unread":n}`. `limit` is clamped to 1–100; `before`/`beforeId` < 0 mean "newest". |
-| `ListMessages` | `(s device, x thread, i limit, x before, s beforeKind, x beforeId) → s` | `{"thread":n,"messages":[…],"more":b}`; `limit` clamped to 1–200. The cursor is the last row's `date`, `kind` and `id`; `beforeKind` is `sms`, `mms` or empty (`sms`). |
-| `GetPart` | `(s device, x part, i maxEdge) → s` | `{"part":n,"mime":"…","size":n,"scaled":b,"data":"<base64>"}` |
-| `Send` | `(s device, as addrs, s text, i subscription) → s` | `{"ref":n}`; `subscription` < 0 means the default. Progress arrives as `SendStatus`. |
-| `MarkRead` | `(s device, x thread) → s` | `{"thread":n,"unread":n}` |
+| Method | Access | Signature | Result JSON |
+| --- | --- | --- | --- |
+| `ListThreads` | trusted | `(s device, i limit, x before, x beforeId) → s` | `{"threads":[…],"more":b,"unread":n}`. `limit` is clamped to 1–100; `before`/`beforeId` < 0 mean "newest". |
+| `ListMessages` | trusted | `(s device, x thread, i limit, x before, s beforeKind, x beforeId) → s` | `{"thread":n,"messages":[…],"more":b}`; `limit` clamped to 1–200. The cursor is the last row's `date`, `kind` and `id`; `beforeKind` is `sms`, `mms` or empty (`sms`). |
+| `GetPart` | trusted | `(s device, x part, i maxEdge) → s` | `{"part":n,"mime":"…","size":n,"scaled":b,"data":"<base64>"}` |
+| `Send` | trusted | `(s device, as addrs, s text, i subscription) → s` | `{"ref":n}`; `subscription` < 0 means the default. Progress arrives as `SendStatus`. Limited to 5 sends per minute and 30 per hour per device (`Error.RateLimited`); every accepted send posts a desktop notice "QindaLink sent a text to N recipient(s)" naming the requesting executable. |
+| `MarkRead` | trusted | `(s device, x thread) → s` | `{"thread":n,"unread":n}` |
 
-| Signal | Signature | Meaning |
+| Signal | Access | Signature | Meaning |
 | --- | --- | --- |
-| `ThreadsChanged` | `(s device, s json)` | `{"threads":[ids],"all":b,"unread":n}`. Also sent once when a phone becomes READY. |
-| `SendStatus` | `(s device, x ref, s state, s code, s detail)` | `state` is `sent`, `delivered` or `failed`; `code` is non-empty only for `failed`. `detail` is empty, or `{"unsent":[i…]}` listing recipient indexes never sent after a partial failure. |
+| `ThreadsChanged` | open | `(s device, s json)` | `{"threads":[ids],"all":b,"unread":n}`. Also sent once when a phone becomes READY. |
+| `SendStatus` | open | `(s device, x ref, s state, s code, s detail)` | `state` is `sent`, `delivered` or `failed`; `code` is non-empty only for `failed`. `detail` is empty, or `{"unsent":[i…]}` listing recipient indexes never sent after a partial failure. |
 
-| Property | Type | Meaning |
-| --- | --- | --- |
-| `UnreadCount` | `i` | Unread messages summed over connected phones; changes are announced with `PropertiesChanged`. It is 0 for a disconnected phone. |
+| Property | Access | Type | Meaning |
+| --- | --- | --- | --- |
+| `UnreadCount` | open | `i` | Unread messages summed over connected phones; changes are announced with `PropertiesChanged`. It is 0 for a disconnected phone. |
 
 Errors are D-Bus errors `org.qindaqt.Link1.Error.<Code>`: `NotConnected`
 (no READY session), `Unsupported` (the phone lacks `sms`, cannot mark read, or
@@ -97,6 +107,7 @@ lives in the reply and in the client; nothing is written to disk or logged.
 | `paired` | The key is pinned in `devices.json`. |
 | `connected` | A TLS connection exists and the phone's `hello` was received. |
 | `ready` | Both sides are pinned and the connection is in READY state. A connected but not ready device is waiting for pairing, or is a stale-pin "pair again" case. |
+| `caps` | The capability strings from the phone's `hello` (empty while not connected). |
 | `transport` | `usb` for the loopback listener, `lan` for a LAN listener, `none` when not connected. |
 | `battery`, `network` | Latest `status` frame; `null` until one arrives or after disconnect. |
 | `lastSeen` | Milliseconds since the epoch; the current time while connected, the last disconnect otherwise, `0` if never. |
@@ -130,10 +141,8 @@ the client, the introspection XML and this page together. -->
 
 ## Known gaps
 
-- `ConfirmPairing` accepts any caller on the session bus. Restricting it to
-  the QindaLink app and the notification path is a later change; until then
-  any same-user process can approve a pending pairing it has seen the code
-  for via `PairingRequested`.
+- The pairing notification's Accept/Reject buttons reach `Hub::confirmPairing` through the notification
+  server rather than through `ConfirmPairing`, so they are not subject to the caller policy.
 - The adb server started for tracking is shared with the user's adb
   sessions; the unit uses `KillMode=process` so a restart does not kill it.
 
@@ -162,4 +171,7 @@ and clears its device list when the service name disappears.
 | `qindaqt.link-adb` | Tunnel manager against a fake adb |
 | `qindaqt.link-client` | Parsing and availability gating |
 | `qindaqt.link-messages` | `MessagesFeature` with a scripted phone: limit clamping and cursors, rejected oversized/mistyped replies, error mapping, change events and unread totals, send status mapping, no content in logs |
+| `qindaqt.link-caller-policy` | Caller decisions with fake process facts (trusted, untrusted, deleted exe, unknown pid, PID reuse), Send rate limit and notice |
+| `qindaqt.link-caller-coverage` | Introspects the live service and requires `Denied` for every method outside the open allowlist, so new `Link1.*` members are covered automatically |
+| `qindaqt.link-caller-dbus` | The real service on a private bus: untrusted `gdbus` denied for every protected member, open members work, trusted test binary succeeds, `caps`, `PendingPairings`, rate limit and notices |
 | `qindaqt.link-service-smoke` | The real binary on a private `dbus-run-session` bus |

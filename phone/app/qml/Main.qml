@@ -42,6 +42,11 @@ Window {
         Tk.Density.mode = Tk.Density.Touch
     }
 
+    // Touchpad, Keyboard and Macros share one remote-input session: start it while any of them is shown, end it when
+    // the user leaves them. Deciding here (not in each screen) keeps a screen-to-screen switch from ending it last.
+    readonly property bool wantsInput: ["touchpad", "keyboard", "macros"].indexOf(page) >= 0
+    onWantsInputChanged: wantsInput ? link.inputBegin() : link.inputEnd()
+
     // Walk to the code screen when the engine asks for a comparison.
     Connections {
         target: link
