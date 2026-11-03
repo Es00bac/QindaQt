@@ -14,6 +14,7 @@ import android.telephony.TelephonyManager;
 import android.os.BatteryManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.qindaqt.link.engine.SignalLevel;
 import org.qindaqt.link.engine.StatusSource;
 import org.qindaqt.link.proto.Json;
 
@@ -31,11 +32,12 @@ final class AndroidStatusSource implements StatusSource {
     private volatile Runnable listener;
     private volatile String netType = "none";
     private volatile Object signal = Json.NULL;
+    private volatile NetworkCapabilities lastCaps;
     private TelephonyManager tm;
     private TelephonyCallback telCb;
     private ConnectivityManager cm;
     private ConnectivityManager.NetworkCallback netCb;
-    private BroadcastReceiver batteryRx;
+    private BroadcastReceiver batteryRx, rssiRx;
 
     AndroidStatusSource(Context ctx) { this.ctx = ctx; }
 
@@ -47,7 +49,7 @@ final class AndroidStatusSource implements StatusSource {
     void start() {
         cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
         netCb = new ConnectivityManager.NetworkCallback() {
-            @Override public void onCapabilitiesChanged(Network n, NetworkCapabilities c) { netType = typeOf(c); signal = signalOf(c); refresh(); }
+            @Override public void onCapabilitiesChanged(Network n, NetworkCapabilities c) { lastCaps = c; netType = typeOf(c); signal = signalOf(c); refresh(); }
             @Override public void onLost(Network n) { netType = "none"; signal = Json.NULL; refresh(); }
         };
         cm.registerDefaultNetworkCallback(netCb);
@@ -55,6 +57,14 @@ final class AndroidStatusSource implements StatusSource {
             @Override public void onReceive(Context c, Intent i) { refresh(); }
         };
         ctx.registerReceiver(batteryRx, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        rssiRx = new BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) {
+                if (!"wifi".equals(netType)) return;
+                Object v = signalOf(lastCaps);
+                if (!v.equals(signal)) { signal = v; refresh(); }
+            }
+        };
+        ctx.registerReceiver(rssiRx, new IntentFilter(WifiManager.RSSI_CHANGED_ACTION));
         try {
             tm = ctx.getSystemService(TelephonyManager.class);
             telCb = new SignalCb();
@@ -75,6 +85,7 @@ final class AndroidStatusSource implements StatusSource {
     void stop() {
         try { if (tm != null && telCb != null) tm.unregisterTelephonyCallback(telCb); } catch (RuntimeException ignored) { /* already gone */ }
         try { if (cm != null && netCb != null) cm.unregisterNetworkCallback(netCb); } catch (RuntimeException ignored) { /* already gone */ }
+        try { if (rssiRx != null) ctx.unregisterReceiver(rssiRx); } catch (RuntimeException ignored) { /* already gone */ }
         try { if (batteryRx != null) ctx.unregisterReceiver(batteryRx); } catch (RuntimeException ignored) { /* already gone */ }
     }
 
@@ -124,10 +135,17 @@ final class AndroidStatusSource implements StatusSource {
         try {
             if (c == null) return Json.NULL;
             if (c.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                // AGENT-NOTE: NetworkCapabilities.getSignalStrength() is redacted for ordinary apps on Android 12+
+                // (live test 2026-11-02: always unspecified). WifiInfo.getRssi() is not location-gated, only the
+                // SSID/BSSID are, so read it from WifiManager (needs only the normal ACCESS_WIFI_STATE).
                 int rssi = c.getSignalStrength();
-                if (rssi == NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED) return Json.NULL;
-                WifiManager wm = ctx.getSystemService(WifiManager.class);
-                return wm == null ? Json.NULL : level(wm.calculateSignalLevel(rssi));
+                if (rssi == NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED) {
+                    WifiManager wm = ctx.getSystemService(WifiManager.class);
+                    @SuppressWarnings("deprecation") android.net.wifi.WifiInfo wi = wm == null ? null : wm.getConnectionInfo();
+                    if (wi == null) return Json.NULL;
+                    rssi = wi.getRssi();
+                }
+                return level(SignalLevel.wifi(rssi));
             }
             if (c.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && tm != null) {
                 SignalStrength s = tm.getSignalStrength();
@@ -139,7 +157,7 @@ final class AndroidStatusSource implements StatusSource {
         return Json.NULL;
     }
 
-    private static Object level(int l) { return (l < 0 || l > 4) ? Json.NULL : (Object) Long.valueOf(l); }
+    private static Object level(int l) { return SignalLevel.platform(l) < 0 ? Json.NULL : (Object) Long.valueOf(l); }
 
     private static String typeOf(NetworkCapabilities c) {
         if (c == null) return "none";
