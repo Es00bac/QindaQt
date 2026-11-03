@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=QindaLink
+Comment=Pair your phone: messages, notifications, apps and input on the desktop
+Exec=qindaqt-link
+Icon=org.qindaqt.Link
+Categories=Qt;Utility;
+Keywords=phone;android;sms;messages;notifications;
+StartupNotify=true

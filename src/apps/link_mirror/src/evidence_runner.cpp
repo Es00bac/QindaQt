@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "evidence_runner.h"
 
+#include <QBuffer>
 #include <QCoreApplication>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPointingDevice>
@@ -22,6 +25,21 @@ void print(const QString &line)
 {
     std::fputs(qPrintable(line + QLatin1Char('\n')), stdout);
     std::fflush(stdout);
+}
+
+// {"package","label","icon":<base64 PNG, "" when the phone sent none>} for --list-json. The icon is
+// only the app's launcher icon; it is the one reason this is not a plain text listing.
+QJsonObject appToJson(const AppEntry &app)
+{
+    QByteArray png;
+    if (!app.icon.isNull()) {
+        QBuffer buffer(&png);
+        buffer.open(QIODevice::WriteOnly);
+        app.icon.save(&buffer, "PNG");
+    }
+    return QJsonObject{{QStringLiteral("package"), app.packageName},
+                       {QStringLiteral("label"), app.label},
+                       {QStringLiteral("icon"), QString::fromLatin1(png.toBase64())}};
 }
 
 } // namespace
@@ -45,6 +63,10 @@ EvidenceRunner::EvidenceRunner(const MirrorOptions &options, MirrorController &c
     connect(&m_pausedGrabCheck, &QTimer::timeout, this, &EvidenceRunner::checkPausedGrab);
     connect(&controller, &MirrorController::appListed, this, [this](const AppEntry &app) {
         ++m_listed;
+        if (m_options.listJson) {
+            m_listedJson.append(appToJson(app));
+            return;
+        }
         print(QStringLiteral("%1\t%2\ticon=%3x%4")
                   .arg(app.packageName, app.label)
                   .arg(app.icon.width())
@@ -52,6 +74,11 @@ EvidenceRunner::EvidenceRunner(const MirrorOptions &options, MirrorController &c
     });
     connect(&controller, &MirrorController::inventoryDone, this, [this](int count) {
         if (m_options.list) {
+            if (m_options.listJson) {
+                print(QString::fromUtf8(QJsonDocument(QJsonObject{{QStringLiteral("apps"), m_listedJson}}).toJson(QJsonDocument::Compact)));
+                done(0, {});
+                return;
+            }
             done(0, QStringLiteral("apps=%1").arg(count));
         }
     });

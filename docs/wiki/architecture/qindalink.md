@@ -13,7 +13,7 @@ The durable decisions are
 (transport, identity and pairing). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications and SMS integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input, macros and the vault are not integrated yet.**
+Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications, SMS and the QindaTK app (pairing, Messages, Phone apps, mute list, USB setup, reply window) integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input, macros and the vault are not integrated yet.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -74,7 +74,7 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
-| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, macro editor, phone setup |
+| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, Settings link for macros, phone setup (built; see [app page](../apps/qindalink.md)). There is no macro editor in the app (ADR-0436) |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
 | Phone app | `phone/app` | Qt for Android app: QML UI built only from QindaTK controls (Home, Pairing, Permissions, Tools and four placeholder screens, bottom tab bar; `DeviceFacts.java` supplies battery, network and permission states), Java engine under `phone/app/android/` |
 | Phone UI preview | `phone/preview` | `qindalink-preview`: the same QML on the desktop with a fake bridge and scripted states; `--grab` writes one PNG per screen, `--smoke` fails on any QML warning |
@@ -212,8 +212,8 @@ has no UI of its own.
 A sideloaded app on Android 17 cannot get notification access, SMS
 permissions or an exemption from battery optimisation without several manual
 Settings visits, some of them behind "restricted settings". With ADB
-connected, the QindaLink app's **Set up phone** action runs the equivalent
-grants and shows each result:
+connected, the QindaLink app's **Set up phone** action asks the service
+(`org.qindaqt.Link1.Setup`) to run the equivalent grants and shows each result:
 
 ```
 pm grant org.qindaqt.link android.permission.{READ_SMS,SEND_SMS,RECEIVE_SMS,READ_CONTACTS,POST_NOTIFICATIONS,READ_PHONE_STATE}

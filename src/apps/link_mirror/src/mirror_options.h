@@ -40,6 +40,7 @@ struct MirrorOptions {
     DecoderPreference decoder = DecoderPreference::Auto;
     bool verbose = false;
     bool list = false;
+    bool listJson = false; // --list-json: one JSON document instead of tab-separated lines (implies list)
     QString grabPath;
     int grabAfterFrames = 30;
     QList<InputStep> inputSteps;

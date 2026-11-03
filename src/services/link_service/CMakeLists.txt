@@ -9,6 +9,8 @@ target_sources(
     qindaqt_link_service
     PRIVATE
         src/link1_service.cpp
+        src/phone_setup.cpp
+        src/setup_adaptor.cpp
         src/qt_notification_presenter.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -16,6 +18,8 @@ target_sources(
         FILES
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
+            include/qindaqt/services/link_service/phone_setup.h
+            include/qindaqt/services/link_service/setup_adaptor.h
             include/qindaqt/services/link_service/qt_notification_presenter.h
 )
 target_link_libraries(

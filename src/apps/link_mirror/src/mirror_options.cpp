@@ -121,13 +121,14 @@ std::optional<MirrorOptions> parseMirrorOptions(const QStringList &arguments, QS
     const QCommandLineOption decoder(QStringLiteral("decoder"), QStringLiteral("auto, vaapi or software."), QStringLiteral("path"));
     const QCommandLineOption verbose(QStringLiteral("verbose"), QStringLiteral("Print server and decoder diagnostics."));
     const QCommandLineOption list(QStringLiteral("list"), QStringLiteral("Print launchable apps and exit."));
+    const QCommandLineOption listJson(QStringLiteral("list-json"), QStringLiteral("Print launchable apps as one JSON document and exit."));
     const QCommandLineOption grab(QStringLiteral("grab"), QStringLiteral("Render offscreen, write one frame and exit."), QStringLiteral("png"));
     const QCommandLineOption grabFrames(QStringLiteral("grab-after-frames"), QStringLiteral("Frames to wait before grabbing."), QStringLiteral("n"));
     const QCommandLineOption input(QStringLiteral("input"), QStringLiteral("After --grab: tap:X,Y scroll:X,Y,N text:S key:NAME resize:WxH."), QStringLiteral("step"));
     const QCommandLineOption grabAfter(QStringLiteral("grab-after-input"), QStringLiteral("Second grab after --input steps."), QStringLiteral("png"));
     const QCommandLineOption probe(QStringLiteral("probe"), QStringLiteral("Print decoder path, size, frames and fps, then exit."));
     const QCommandLineOption probeSeconds(QStringLiteral("probe-seconds"), QStringLiteral("Probe duration."), QStringLiteral("s"));
-    parser.addOptions({serial, package, adb, jar, size, dpi, codec, bitrate, maxFps, decoder, verbose, list, grab,
+    parser.addOptions({serial, package, adb, jar, size, dpi, codec, bitrate, maxFps, decoder, verbose, list, listJson, grab,
                        grabFrames, input, grabAfter, probe, probeSeconds});
     parser.process(arguments);
 
@@ -137,7 +138,8 @@ std::optional<MirrorOptions> parseMirrorOptions(const QStringList &arguments, QS
     options.adbPath = parser.value(adb);
     options.serverJar = parser.value(jar);
     options.verbose = parser.isSet(verbose);
-    options.list = parser.isSet(list);
+    options.listJson = parser.isSet(listJson);
+    options.list = parser.isSet(list) || options.listJson;
     options.probe = parser.isSet(probe);
     options.grabPath = parser.value(grab);
     options.grabAfterInputPath = parser.value(grabAfter);
