@@ -185,6 +185,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/firewallappletcomposition.h
         runtime/linkappletcomposition.cpp
         runtime/linkappletcomposition.h
+        runtime/linkfocusrelay.cpp
+        runtime/linkfocusrelay.h
         runtime/clipboardappletcomposition.cpp
         runtime/clipboardappletcomposition.h
         runtime/desktopcontrolscomposition.cpp

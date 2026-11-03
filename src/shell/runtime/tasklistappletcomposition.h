@@ -95,6 +95,10 @@ public:
     // as iconNameResolver.
     [[nodiscard]] std::function<QString(const QString &applicationId)>
     desktopEntryResolver() const;
+    // Application id and display title of a compositor window in the latest accepted task generation
+    // (windows inside a container included). False when unknown. Used by the QindaLink focus relay
+    // (ADR-0440); the title is display text and must not be logged. Same lifetime rule as above.
+    [[nodiscard]] bool windowFacts(const QString &windowId, QString *applicationId, QString *title) const;
 
 private:
     void compose(const Applets::ManifestCatalog &catalog,
@@ -108,6 +112,7 @@ private:
     // bridge/adapter -> transports/source. Borrowed injected collaborators and
     // the shell-owned window-actions client must outlive this composition;
     // ShellRuntimeApplication destroys panel windows first.
+    ShellTaskList::TaskListSource *m_source = nullptr; // the owned or injected source, for windowFacts()
     std::unique_ptr<ShellTaskList::TaskListSource> m_ownedSource;
     std::unique_ptr<ShellTaskList::Producer::QtTaskListProducerTransport>
         m_ownedProducerTransport;

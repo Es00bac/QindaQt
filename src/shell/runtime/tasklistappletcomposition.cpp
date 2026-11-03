@@ -497,6 +497,7 @@ void TaskListAppletComposition::compose(
     ShellTaskListApplet::TaskListAppletOperationPort &containerOperations,
     ShellWindowActionsClient::ShellWindowActionsClient &windowActions)
 {
+    m_source = &source;
     m_router = std::make_unique<TaskListWindowOperationRouter>(
         source, authority, containerOperations, windowActions);
     m_access = std::make_unique<ShellTaskListApplet::TaskListAppletController>(
@@ -520,6 +521,32 @@ TaskListAppletComposition::desktopEntryResolver() const
         return m_iconResolver ? m_iconResolver->desktopIdForAppId(applicationId)
                               : QString{};
     };
+}
+
+bool TaskListAppletComposition::windowFacts(const QString &windowId, QString *applicationId,
+                                            QString *title) const
+{
+    if (m_source == nullptr) {
+        return false;
+    }
+    for (const ShellTaskList::TaskEntry &entry : m_source->generation().entries) {
+        if (entry.members.isEmpty()) {
+            if (entry.taskId == windowId) {
+                *applicationId = entry.applicationId;
+                *title = entry.title;
+                return true;
+            }
+            continue;
+        }
+        for (const ShellTaskList::TaskContainerMember &member : entry.members) {
+            if (member.windowId == windowId) {
+                *applicationId = member.applicationId;
+                *title = member.title;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void TaskListAppletComposition::setIconThemes(const QStringList &roots, const QStringList &themes)

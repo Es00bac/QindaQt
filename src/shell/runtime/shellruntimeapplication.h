@@ -82,6 +82,7 @@ class NetworkAppletComposition;
 class AgentUsageAppletComposition;
 class FirewallAppletComposition;
 class LinkAppletComposition;
+class LinkFocusRelay;
 class GlobalMenuAppletComposition;
 class GatherOverviewComposition;
 class GatherOverviewShortcutProducer;
@@ -291,6 +292,9 @@ private:
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
     QString m_iconTheme;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
+    // AGENT-GUARD (ADR-0440): reads m_windowActionsClient and m_taskListApplet, so it stays declared
+    // after both and is destroyed first.
+    std::unique_ptr<LinkFocusRelay> m_linkFocusRelay;
     // AGENT-GUARD: the overview borrows m_taskListApplet->access() and the
     // registrar below it. Members are destroyed in reverse declaration order,
     // so these must stay after m_taskListApplet - moving them above it makes
