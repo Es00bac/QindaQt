@@ -1,15 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package org.qindaqt.link.android;
 
-import android.app.Activity;
-import android.content.ClipData;
-import android.content.ClipDescription;
-import android.content.ClipboardManager;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.PersistableBundle;
-import android.view.WindowManager;
 import java.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,10 +24,6 @@ import org.qindaqt.link.vault.VaultSession;
  * the detail view shows it.
  */
 public final class VaultBridge {
-    private static final String CLIP_LABEL = "qindalink-vault";
-    private static final long CLIP_CLEAR_MS = 30_000L;
-    private static final Handler MAIN = new Handler(Looper.getMainLooper());
-
     private VaultBridge() {}
 
     private static VaultController c(Context ctx) { return VaultController.get(ctx); }
@@ -137,15 +125,11 @@ public final class VaultBridge {
     public static void setCopyEnabled(Context ctx, boolean on) { c(ctx).setCopyEnabled(on); }
     public static void clearBackupStatus(Context ctx) { c(ctx).backup.clear(); }
 
-    /** Sets or clears FLAG_SECURE on the Qt activity window. Must follow every vault page change. */
-    public static void setSecure(Context ctx, boolean on) {
-        final Activity a = VaultController.activityOf(ctx);
-        if (a == null) return;
-        a.runOnUiThread(() -> {
-            if (on) a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            else a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-        });
-    }
+    /** The vault page is shown (true) or left (false); FLAG_SECURE also stays on while a session is unlocked. */
+    public static void setSecure(Context ctx, boolean on) { VaultWindowGuard.setPage(ctx, on); }
+
+    /** Re-applies the window flag when the app returns to the front (the activity may have been recreated). */
+    public static void reapplySecure(Context ctx) { VaultWindowGuard.reapply(ctx); }
 
     public static String generatePassword(int length, boolean lower, boolean upper, boolean digits, boolean symbols, boolean avoidAmbiguous) {
         try {
@@ -182,7 +166,7 @@ public final class VaultBridge {
         return c(ctx).backup.startImport(ctx, pass.toCharArray(), mode);
     }
 
-    /** Copies the password when the user enabled copying: sensitive flag set, cleared after 30 s. */
+    /** Copies the password when the user enabled copying: sensitive flag set, cleared after 30 s and on lock. */
     public static boolean copyPassword(Context ctx, String id) {
         VaultController v = c(ctx);
         if (!v.copyEnabled()) return false;
@@ -191,16 +175,7 @@ public final class VaultBridge {
             VaultSession s = v.session();
             if (s == null) return false;
             r = s.get(id);
-            ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText(CLIP_LABEL, r.passwordString());
-            PersistableBundle extras = new PersistableBundle();
-            extras.putBoolean("android.content.extra.IS_SENSITIVE", true);   // ClipDescription.EXTRA_IS_SENSITIVE
-            clip.getDescription().setExtras(extras);
-            cm.setPrimaryClip(clip);
-            MAIN.postDelayed(() -> {
-                ClipDescription d = cm.getPrimaryClipDescription();
-                if (d != null && CLIP_LABEL.contentEquals(String.valueOf(d.getLabel()))) cm.clearPrimaryClip();
-            }, CLIP_CLEAR_MS);
+            VaultClipboard.copy(ctx, r.passwordString());
             return true;
         } catch (VaultException e) { return false; }
         finally { if (r != null) r.wipe(); }

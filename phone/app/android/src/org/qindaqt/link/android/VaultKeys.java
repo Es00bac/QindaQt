@@ -19,22 +19,28 @@ import org.qindaqt.link.vault.DekWrapper;
  * device credential), so a Cipher from {@link #encryptCipher()} / {@link #decryptCipher} is useless
  * until it has been handed to BiometricPrompt as a CryptoObject; AAD and doFinal happen only after
  * success (see {@link Authorized}). Do not add a validity duration: that would let any code in the
- * process unwrap the DEK without a fresh prompt. The key is invalidated by a new biometric
- * enrollment and when the secure lock screen is removed; that is the documented recovery case.
+ * process unwrap the DEK without a fresh prompt. The key is invalidated when the secure lock screen is
+ * removed or reset. setInvalidatedByBiometricEnrollment(true) is requested, but because the device
+ * credential is an allowed authenticator Android may not invalidate on a new fingerprint; do not
+ * promise that to the user.
+ * AGENT-GUARD: replacing the vault key must create the new key in the OTHER slot and delete the old
+ * one only after the new vault file was written (VaultController.finishCreate); deleting first can
+ * destroy a working vault when anything later fails.
  */
 final class VaultKeys {
-    static final String ALIAS = "qindalink-vault-kek";
+    /** Two alias slots so a replacement key can be created before the old one is deleted. */
+    static final String[] ALIASES = {"qindalink-vault-kek", "qindalink-vault-kek-b"};
     private static final byte[] AAD = "qindalink-vault-dek-v1".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
     private static final int IV_LEN = 12;
 
     private VaultKeys() {}
 
-    static boolean exists() {
-        try { return keyStore().containsAlias(ALIAS); } catch (Exception e) { return false; }
+    static boolean exists(int slot) {
+        try { return keyStore().containsAlias(ALIASES[slot]); } catch (Exception e) { return false; }
     }
 
-    static void delete() {
-        try { keyStore().deleteEntry(ALIAS); } catch (Exception ignored) { /* nothing to delete */ }
+    static void delete(int slot) {
+        try { keyStore().deleteEntry(ALIASES[slot]); } catch (Exception ignored) { /* nothing to delete */ }
     }
 
     private static KeyStore keyStore() throws GeneralSecurityException, java.io.IOException {
@@ -43,8 +49,8 @@ final class VaultKeys {
         return ks;
     }
 
-    private static KeyGenParameterSpec.Builder spec(boolean strongBox) {
-        KeyGenParameterSpec.Builder b = new KeyGenParameterSpec.Builder(ALIAS,
+    private static KeyGenParameterSpec.Builder spec(int slot, boolean strongBox) {
+        KeyGenParameterSpec.Builder b = new KeyGenParameterSpec.Builder(ALIASES[slot],
                 KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
@@ -57,37 +63,37 @@ final class VaultKeys {
         return b;
     }
 
-    /** Replaces any existing key. Returns true when the key lives in StrongBox, false for the TEE fallback. */
-    static boolean generate() throws GeneralSecurityException {
-        delete();
+    /** Creates the key in {@code slot} (replacing only a leftover in that same slot). True when StrongBox backed. */
+    static boolean generate(int slot) throws GeneralSecurityException {
+        delete(slot);
         try {
-            generate(true);
+            generate(slot, true);
             return true;
         } catch (java.security.ProviderException e) {
             // No StrongBox (StrongBoxUnavailableException, or a plain ProviderException on some devices); the TEE fallback is
             // recorded in the vault header flags. A failure of the fallback propagates.
         }
-        delete();
-        generate(false);
+        delete(slot);
+        generate(slot, false);
         return false;
     }
 
-    private static void generate(boolean strongBox) throws GeneralSecurityException {
+    private static void generate(int slot, boolean strongBox) throws GeneralSecurityException {
         KeyGenerator g = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-        g.init(spec(strongBox).build());
+        g.init(spec(slot, strongBox).build());
         g.generateKey();
     }
 
-    private static SecretKey key() throws GeneralSecurityException, java.io.IOException {
-        KeyStore.Entry e = keyStore().getEntry(ALIAS, null);
+    private static SecretKey key(int slot) throws GeneralSecurityException, java.io.IOException {
+        KeyStore.Entry e = keyStore().getEntry(ALIASES[slot], null);
         if (!(e instanceof KeyStore.SecretKeyEntry)) throw new java.security.UnrecoverableKeyException("no key");
         return ((KeyStore.SecretKeyEntry) e).getSecretKey();
     }
 
     /** Cipher for wrapping a new DEK; throws if the key is gone. Needs authentication before use. */
-    static Cipher encryptCipher() throws GeneralSecurityException, java.io.IOException {
+    static Cipher encryptCipher(int slot) throws GeneralSecurityException, java.io.IOException {
         Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-        c.init(Cipher.ENCRYPT_MODE, key());
+        c.init(Cipher.ENCRYPT_MODE, key(slot));
         return c;
     }
 
@@ -95,10 +101,10 @@ final class VaultKeys {
      * Cipher for unwrapping. Throws {@link android.security.keystore.KeyPermanentlyInvalidatedException}
      * when a biometric was enrolled or the lock screen removed.
      */
-    static Cipher decryptCipher(byte[] wrapped) throws GeneralSecurityException, java.io.IOException {
+    static Cipher decryptCipher(int slot, byte[] wrapped) throws GeneralSecurityException, java.io.IOException {
         if (wrapped.length <= IV_LEN) throw new GeneralSecurityException("short wrapped key");
         Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
-        c.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Arrays.copyOf(wrapped, IV_LEN)));
+        c.init(Cipher.DECRYPT_MODE, key(slot), new GCMParameterSpec(128, Arrays.copyOf(wrapped, IV_LEN)));
         return c;
     }
 
@@ -107,7 +113,17 @@ final class VaultKeys {
         private final Cipher cipher;
         Authorized(Cipher cipher) { this.cipher = cipher; }
 
+        /** Keeps AEADBadTagException as is (the only "tampered" signal) and maps invalidation to its own type. */
+        private static GeneralSecurityException map(GeneralSecurityException e) {
+            return e instanceof android.security.keystore.KeyPermanentlyInvalidatedException
+                ? new DekWrapper.KeyInvalidatedException("key invalidated") : e;
+        }
+
         @Override public byte[] wrap(byte[] dek) throws GeneralSecurityException {
+            try { return wrap0(dek); } catch (GeneralSecurityException e) { throw map(e); }
+        }
+
+        private byte[] wrap0(byte[] dek) throws GeneralSecurityException {
             cipher.updateAAD(AAD);
             byte[] ct = cipher.doFinal(dek);
             byte[] iv = cipher.getIV();
@@ -117,8 +133,10 @@ final class VaultKeys {
         }
 
         @Override public byte[] unwrap(byte[] wrapped) throws GeneralSecurityException {
-            cipher.updateAAD(AAD);
-            return cipher.doFinal(wrapped, IV_LEN, wrapped.length - IV_LEN);
+            try {
+                cipher.updateAAD(AAD);
+                return cipher.doFinal(wrapped, IV_LEN, wrapped.length - IV_LEN);
+            } catch (GeneralSecurityException e) { throw map(e); }
         }
     }
 }

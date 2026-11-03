@@ -10,6 +10,7 @@ import org.qindaqt.link.vault.PassphraseStrength;
 import org.qindaqt.link.vault.VaultBackup;
 import org.qindaqt.link.vault.VaultException;
 import org.qindaqt.link.vault.VaultRecord;
+import org.qindaqt.link.vault.VaultLifecycle;
 import org.qindaqt.link.vault.VaultSession;
 
 /**
@@ -43,7 +44,7 @@ final class VaultBackupFlow {
     /** Returns "" when the export started, else a user-facing reason. */
     String startExport(Context ctx, char[] p1, char[] p2) {
         try {
-            if (c.state() != VaultController.State.UNLOCKED) return "Unlock the vault first.";
+            if (c.state() != VaultLifecycle.State.UNLOCKED) return "Unlock the vault first.";
             if (!Arrays.equals(p1, p2)) return "The passphrases do not match.";
             if (!PassphraseStrength.check(p1).ok) return "Use at least 12 characters or 4 words.";
             synchronized (this) { set("export", "working", 0); }
@@ -80,19 +81,25 @@ final class VaultBackupFlow {
         set("export", ok ? "done" : cancelled ? "cancelled" : "failed", ok ? count : 0);
     }
 
-    /** Mode: "merge" or "replace" (vault unlocked) or "restore" (no usable vault). Returns "" when the picker opens. */
+    /**
+     * Mode: "merge" or "replace" (vault unlocked), or "restore" / "restore-replace" (no usable vault).
+     * A restore is refused unless the vault is absent or known unusable (never from LOCKED), and
+     * replacing an existing unusable vault needs the explicit "restore-replace" the UI sends after the
+     * "this replaces the existing vault" confirmation. Returns "" when the picker opens.
+     */
     String startImport(Context ctx, char[] pass, String mode) {
-        boolean restore = mode.equals("restore");
-        VaultController.State st = c.state();
-        if (!mode.equals("merge") && !mode.equals("replace") && !restore) { Arrays.fill(pass, ' '); return "Unknown import mode."; }
-        if (restore ? (st == VaultController.State.UNLOCKED || st == VaultController.State.AUTHENTICATING)
-                    : st != VaultController.State.UNLOCKED) {
-            Arrays.fill(pass, ' ');
-            return restore ? "A working vault already exists." : "Unlock the vault first.";
-        }
+        VaultLifecycle.State st = c.state();
+        boolean restore = mode.equals("restore") || mode.equals("restore-replace");
+        String refusal = "";
+        if (!restore && !mode.equals("merge") && !mode.equals("replace")) refusal = "Unknown import mode.";
+        else if (restore && !VaultLifecycle.canRestore(st)) refusal = "A restore is only possible when there is no vault or it cannot be opened.";
+        else if (restore && VaultLifecycle.restoreNeedsReplaceConfirm(st) && !mode.equals("restore-replace"))
+            refusal = "Confirm that this replaces the existing vault first.";
+        else if (!restore && st != VaultLifecycle.State.UNLOCKED) refusal = "Unlock the vault first.";
+        if (!refusal.isEmpty()) { Arrays.fill(pass, ' '); return refusal; }
         synchronized (this) {
             if (importPass != null) Arrays.fill(importPass, ' ');
-            importPass = pass; importMode = mode;
+            importPass = pass; importMode = restore ? "restore" : mode;
             set("import", "picking", 0);
         }
         ctx.startActivity(new Intent(ctx, VaultBackupActivity.class).putExtra("op", "import").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -109,13 +116,10 @@ final class VaultBackupFlow {
             recs = VaultBackup.read(file, pass);
             int n = recs.size();
             if (mode.equals("restore")) {
-                c.stageRestore(recs);
+                if (!c.stageRestore(recs)) throw new VaultException(VaultException.Reason.INVALID, "restore not allowed now");
                 recs = null;   // ownership moved to the controller
             } else {
-                VaultSession s = c.session();
-                if (s == null) throw new VaultException(VaultException.Reason.LOCKED, "locked");
-                n = s.importRecords(recs, mode.equals("replace"));
-                c.save();
+                n = c.importInto(recs, mode.equals("replace"));   // transactional: applied only after the write
             }
             synchronized (this) { set("import", "done", n); }
         } catch (VaultException e) {
