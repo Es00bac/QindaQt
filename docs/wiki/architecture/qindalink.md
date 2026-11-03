@@ -157,6 +157,24 @@ Typing into the QindaQt lock screen is out of scope. The portal does not
 deliver input while the session is locked, and this design does not try to
 work around that.
 
+## Phone vault (part 1)
+
+Decision record: [ADR-0438](../adr/0438-qindalink-phone-password-vault.md).
+
+- Code: pure-Java format and crypto in `phone/app/android/src/org/qindaqt/link/vault/`
+  (JVM tests `phone/engine-tests/VaultTests.java`); Android glue in
+  `android/Vault*.java`; UI in `phone/app/qml/Vault*.qml`; Qt seam
+  `phone/app/VaultBridge.*` (`vault` context property, preview stand-in
+  `FakeVault`).
+- Data key (DEK) wrapped by a per-use-authenticated Keystore key; entries
+  AES-256-GCM; locks on 5 min idle, screen off, 30 s without UI, explicit.
+- Backups are passphrase-encrypted (PBKDF2-HMAC-SHA256, 600 000+ iterations) and
+  are the only way content leaves the phone. A backup is the recovery path when
+  the Keystore key is invalidated.
+- Part 2 consumes `VaultTypingSource` (steps text/key/delay, only while
+  unlocked) and defines the `vault.*`/`desktop.*` frames.
+- Word list: EFF large list, CC BY 3.0 US, (c) Electronic Frontier Foundation.
+
 ## Phone apps on the desktop
 
 `qindaqt-link-mirror --serial <serial> --package <package>` shows one phone app

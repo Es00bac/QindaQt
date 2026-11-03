@@ -617,3 +617,4 @@ nav:
       - "0434: QindaLink pinned TLS transport and pairing": adr/0434-qindalink-pinned-tls-transport-and-sas-pairing.md
       - "0435: Decode QindaLink phone streams with FFmpeg": adr/0435-decode-qindalink-streams-with-ffmpeg.md
       - "0437: QindaLink panel applet and phone capability tokens": adr/0437-qindalink-panel-applet-and-phone-capability-tokens.md
+      - "0438: QindaLink phone password vault": adr/0438-qindalink-phone-password-vault.md
