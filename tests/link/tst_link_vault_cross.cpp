@@ -109,6 +109,7 @@ void TstLinkVaultCross::jvmPhoneTypesThroughTheRealService()
     say(s("CONFIRM"));
     QVERIFY(readLine(&line));
     QVERIFY2(line.startsWith(s("RESULT done")), qPrintable(line));
+    QTest::qWait(200); // portal calls trail the phone's reply
     QStringList expected;
     for (const char *ch : {"u", "s", "e", "r", "-", "X"}) expected << QString::number(QString::fromLatin1(ch).at(0).unicode());
     expected << s("65289");

@@ -14,6 +14,7 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QTemporaryDir>
+#include <QtTest/QTest>
 
 namespace QindaQt::Link::Test {
 
@@ -86,9 +87,26 @@ struct VaultFixture {
         }
         return out;
     }
+    // Portal calls are asynchronous D-Bus calls and trail the phone's reply: wait until none arrived for 80 ms.
+    void settle() const
+    {
+        qsizetype last = -1;
+        for (int quiet = 0; quiet < 80 && last != -2;) {
+            QTest::qWait(10);
+            const qsizetype now = fakePortal.calls.size();
+            quiet = now == last ? quiet + 10 : 0;
+            last = now;
+        }
+    }
+    [[nodiscard]] QList<qint64> settledPressed() const
+    {
+        settle();
+        return pressed();
+    }
     // Presses minus releases per keysym: all zero when nothing is left held.
     [[nodiscard]] bool nothingHeld() const
     {
+        settle();
         QHash<qint64, int> held;
         for (const QString &c : fakePortal.calls) {
             const QStringList p = c.split(QLatin1Char(':'));

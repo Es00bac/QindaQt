@@ -161,6 +161,7 @@ void TstLinkVaultService::shellPublishesAndPhoneTypesEndToEnd()
                                    {s("steps"), QJsonArray{QJsonObject{{s("text"), s("ab")}}, QJsonObject{{s("key"), s("Tab")}}}}}));
     QVERIFY(phone.waitFor(s("ok"), &e));
     QCOMPARE(e.re, 3);
+    QTest::qWait(150); // portal calls trail the phone's reply
     QStringList pressed;
     for (const QString &c : std::as_const(portal.calls)) {
         if (c.endsWith(s(":1")) && c.startsWith(s("NotifyKeyboardKeysym"))) pressed << c.section(QLatin1Char(':'), 1, 1);

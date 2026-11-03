@@ -141,7 +141,7 @@ void TstLinkVault::focusThenTypeDeliversKeysyms()
     Envelope ok;
     QVERIFY(phone.waitFor(s("ok"), &ok));
     QCOMPARE(ok.re, 4);
-    QCOMPARE(f.pressed(), (QList<qint64>{'a', 'b', 0x010020ac, 0xff09, 'Z', 0xff0d}));
+    QCOMPARE(f.settledPressed(), (QList<qint64>{'a', 'b', 0x010020ac, 0xff09, 'Z', 0xff0d}));
     QVERIFY(f.nothingHeld());
     QVERIFY(!f.vault.typing());
     // The session this feature opened is closed again (no lingering remote-control indicator).
@@ -185,7 +185,7 @@ void TstLinkVault::focusRefusalsAreTruthful()
     phone.send(VaultFixture::frame(s("vault.type"), typeBody(t2, {VaultFixture::text(s("x"))}), 7));
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.b.value(s("code")).toString(), s("locked"));
-    QVERIFY(f.pressed().isEmpty());
+    QVERIFY(f.settledPressed().isEmpty());
     QVERIFY(!f.fakePortal.sessionOpen()); // a refusal never raises the portal
 }
 
@@ -218,12 +218,13 @@ void TstLinkVault::tokenExpiryMismatchAndSingleUse()
     // Single use.
     token = VaultFixture::askFocus(phone, 5);
     QCOMPARE(attempt(token, 6), QString());
+    f.settle();
     f.fakePortal.calls.clear();
     phone.send(VaultFixture::frame(s("vault.type"), typeBody(token, {VaultFixture::text(s("q"))}), 7));
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.re, 7);
     QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
-    QVERIFY(f.pressed().isEmpty());
+    QVERIFY(f.settledPressed().isEmpty());
     // A newer desktop.focus replaces the older token.
     const QString first = VaultFixture::askFocus(phone, 8);
     const QString second = VaultFixture::askFocus(phone, 9);
@@ -290,13 +291,13 @@ void TstLinkVault::focusChangeMidTypingAbortsAndReleases()
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.re, 2);
     QCOMPARE(e.b.value(s("code")).toString(), s("target-changed"));
-    const qsizetype typedAtAbort = f.pressed().size();
+    const qsizetype typedAtAbort = f.settledPressed().size();
     QVERIFY(typedAtAbort < 4096);
     QTest::qWait(150);
-    QCOMPARE(f.pressed().size(), typedAtAbort); // nothing more after the abort
+    QCOMPARE(f.settledPressed().size(), typedAtAbort); // nothing more after the abort
     QVERIFY(f.nothingHeld());
     QVERIFY(!f.vault.typing());
-    QVERIFY(!f.pressed().contains('n') && !f.pressed().contains('p')); // later steps never started
+    QVERIFY(!f.settledPressed().contains('n') && !f.settledPressed().contains('p')); // later steps never started
 }
 
 void TstLinkVault::lockMidTypingAbortsWithLocked()
@@ -361,7 +362,7 @@ void TstLinkVault::capabilityIsRequired()
     phone.send(VaultFixture::frame(s("vault.type"), typeBody(s("t"), {VaultFixture::text(s("a"))}), 2));
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.b.value(s("code")).toString(), s("denied"));
-    QVERIFY(f.pressed().isEmpty());
+    QVERIFY(f.settledPressed().isEmpty());
 }
 
 void TstLinkVault::portalApprovalIsRequestedAndClosedAfterwards()
@@ -378,7 +379,7 @@ void TstLinkVault::portalApprovalIsRequestedAndClosedAfterwards()
     Envelope e;
     QVERIFY(phone.waitFor(s("ok"), &e));
     QCOMPARE(f.fakePortal.prompts, 1);
-    QCOMPARE(f.pressed(), (QList<qint64>{'a', 'b'}));
+    QCOMPARE(f.settledPressed(), (QList<qint64>{'a', 'b'}));
     QVERIFY(waitUntil([&] { return !f.fakePortal.sessionOpen(); }));
 }
 
@@ -396,7 +397,7 @@ void TstLinkVault::deniedPortalIsReported()
     QVERIFY(phone.waitFor(s("error"), &e));
     QCOMPARE(e.re, 2);
     QCOMPARE(e.b.value(s("code")).toString(), s("denied"));
-    QVERIFY(f.pressed().isEmpty());
+    QVERIFY(f.settledPressed().isEmpty());
     QVERIFY(!f.vault.typing());
 }
 
@@ -418,7 +419,7 @@ void TstLinkVault::sharedPortalStaysOpenForTheInputController()
     QCOMPARE(f.fakePortal.prompts, 1); // the controller's approval served both
     QTest::qWait(100);
     QVERIFY(f.fakePortal.sessionOpen()); // the controller still owns the session
-    QCOMPARE(f.pressed(), (QList<qint64>{'h', 'i'}));
+    QCOMPARE(f.settledPressed(), (QList<qint64>{'h', 'i'}));
 }
 
 void TstLinkVault::sessionCloseMidTypingAbortsWithoutReply()
@@ -435,9 +436,9 @@ void TstLinkVault::sessionCloseMidTypingAbortsWithoutReply()
         QVERIFY(waitUntil([&] { return f.pressed().size() >= 10; }));
     } // the phone disconnects here
     QVERIFY(waitUntil([&] { return !f.vault.typing(); }));
-    const qsizetype typed = f.pressed().size();
+    const qsizetype typed = f.settledPressed().size();
     QTest::qWait(100);
-    QCOMPARE(f.pressed().size(), typed);
+    QCOMPARE(f.settledPressed().size(), typed);
     QVERIFY(f.nothingHeld());
 }
 
