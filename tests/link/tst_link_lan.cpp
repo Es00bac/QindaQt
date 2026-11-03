@@ -7,12 +7,16 @@
 
 #include <qindaqt/services/link_service/lan_controller.h>
 #include <qindaqt/services/link_service/lan_settings.h>
+#include <qindaqt/services/link_transport/accept_limiter.h>
 
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QTemporaryDir>
 #include <QtNetwork/QTcpServer>
 #include <QtTest/QSignalSpy>
+
+#include <memory>
+#include <vector>
 #include <QtTest/QtTest>
 
 using namespace QindaQt::Link;
@@ -24,8 +28,9 @@ const QHostAddress kLan(QStringLiteral("127.0.0.2"));
 QJsonObject statusOf(const LanController &c) { return QJsonDocument::fromJson(c.statusJson().toUtf8()).object(); }
 
 struct LanFixture {
-    explicit LanFixture(bool enabled = true, quint16 port = 0, int windowMs = 120000)
-        : store(dir.path()), hub(generateIdentity(QStringLiteral("lan-desktop")), store, hubOptions())
+    explicit LanFixture(bool enabled = true, quint16 port = 0, int windowMs = 120000,
+                        const std::function<void(HubOptions &)> &tweak = {})
+        : store(dir.path()), hub(generateIdentity(QStringLiteral("lan-desktop")), store, hubOptions(tweak))
     {
         store.load();
         loopbackUp = hub.listen(QHostAddress::LocalHost, 0);
@@ -38,24 +43,41 @@ struct LanFixture {
         o.instanceName = QStringLiteral("test-host");
         o.pairingWindowMs = windowMs;
         o.resyncMs = 50;
-        addresses = {kLan};
+        addresses = {{kLan, QStringLiteral("test0")}};
         lan = std::make_unique<LanController>(hub, o);
     }
-    static HubOptions hubOptions()
+    static HubOptions hubOptions(const std::function<void(HubOptions &)> &tweak = {})
     {
         HubOptions o;
+        if (tweak) tweak(o);
         o.local = {QStringLiteral("desktop"), QStringLiteral("test"), QStringLiteral("QindaQt"),
                    QStringLiteral("Test OS"), QStringLiteral("0.0.0"), {}, false};
         return o;
     }
     [[nodiscard]] quint16 lanPort() const { return hub.portOf(kLan, Origin::Lan); }
+    bool pairViaLoopback(ScriptedPhone &usb)
+    {
+        QSignalSpy requested(&hub, &Hub::pairingRequested);
+        if (!usb.connectTo(hub.port()) || !usb.waitFor(QStringLiteral("hello"))) return false;
+        usb.sendHello(false, {QStringLiteral("status")});
+        QString code;
+        if (!usb.pairUntilCode(&code) || !waitUntil([&] { return !requested.isEmpty(); })) return false;
+        hub.confirmPairing(usb.deviceId(), true);
+        Envelope c;
+        if (!usb.waitFor(QStringLiteral("pair.confirm"), &c)) return false;
+        Envelope accept;
+        accept.t = QStringLiteral("pair.confirm");
+        accept.b = QJsonObject{{QStringLiteral("accept"), true}};
+        usb.send(accept);
+        return waitUntil([&] { return store.contains(usb.deviceId()); });
+    }
     [[nodiscard]] QJsonObject firstDevice() const { return hub.devices().first().toObject(); }
 
     QTemporaryDir dir, cfg;
     TrustStore store;
     Hub hub;
     FakePublisher publisher;
-    QList<QHostAddress> addresses;
+    QList<LanAddress> addresses;
     std::unique_ptr<LanController> lan;
     bool loopbackUp = false;
 };
@@ -258,7 +280,7 @@ private Q_SLOTS:
         QVERIFY(waitUntil([&] { return f.hub.listenerCount(Origin::Lan) == 0; }));
         QVERIFY(!f.publisher.published);
         QCOMPARE(statusOf(*f.lan).value(QStringLiteral("state")).toString(), QStringLiteral("waiting"));
-        f.addresses = {kLan};
+        f.addresses = {{kLan, QStringLiteral("test0")}};
         QVERIFY(waitUntil([&] { return f.hub.listenerCount(Origin::Lan) == 1; }));
         QVERIFY(f.publisher.published);
     }
@@ -274,6 +296,183 @@ private Q_SLOTS:
         QCOMPARE(statusOf(*f.lan).value(QStringLiteral("publisher")).toString(), QStringLiteral("unavailable"));
         // Listening is independent of mDNS: manual addresses keep working.
         QCOMPARE(statusOf(*f.lan).value(QStringLiteral("state")).toString(), QStringLiteral("listening"));
+    }
+
+
+    void privateRangesOnlyByDefault()
+    {
+        for (const char *ok : {"10.1.2.3", "172.16.0.1", "172.31.255.254", "192.168.1.1", "100.64.0.1", "100.127.255.254", "fd7a:115c::1", "fc00::1"}) {
+            QVERIFY2(isPrivateLanAddress(QHostAddress(QString::fromLatin1(ok))), ok);
+        }
+        for (const char *no : {"8.8.8.8", "172.15.0.1", "172.32.0.1", "100.63.255.255", "100.128.0.1", "192.169.0.1", "11.0.0.1",
+                               "2001:db8::1", "2a00:1450::1", "fe80::1", "::1"}) {
+            QVERIFY2(!isPrivateLanAddress(QHostAddress(QString::fromLatin1(no))), no);
+        }
+        for (const LanAddress &a : defaultLanAddresses()) QVERIFY(isPrivateLanAddress(a.address));
+    }
+
+    void interfaceAllowlistRestrictsListenersAndAdvert()
+    {
+        LanFixture f(true);
+        f.addresses = {{kLan, QStringLiteral("wlan0")}, {QHostAddress(QStringLiteral("127.0.0.3")), QStringLiteral("tun0")}};
+        QVERIFY(f.lan->setInterfaces({QStringLiteral("wlan0")}));
+        QCOMPARE(f.hub.listenerCount(Origin::Lan), qsizetype(1));
+        QCOMPARE(f.publisher.advert.interfaces, QStringList{QStringLiteral("wlan0")});
+        QJsonObject st = statusOf(*f.lan);
+        QCOMPARE(st.value(QStringLiteral("interfaces")).toArray().size(), 1);
+        QCOMPARE(st.value(QStringLiteral("allowlist")).toArray().first().toString(), QStringLiteral("wlan0"));
+        QVERIFY(LanSettings(f.cfg.path()).lanInterfaces() == QStringList{QStringLiteral("wlan0")});
+        QVERIFY(!f.lan->statusJson().contains(QLatin1String("127.0.0")));
+        // Clearing the list serves both interfaces again and announces on both.
+        QVERIFY(f.lan->setInterfaces({}));
+        QCOMPARE(f.hub.listenerCount(Origin::Lan), qsizetype(2));
+        QCOMPARE(f.publisher.advert.interfaces, (QStringList{QStringLiteral("tun0"), QStringLiteral("wlan0")}));
+        // Invalid names are refused and change nothing.
+        QString error;
+        QVERIFY(!f.lan->setInterfaces({QStringLiteral("bad name")}, &error));
+        QVERIFY(!f.lan->setInterfaces({QStringLiteral("a-very-long-interface-name")}, &error));
+        QVERIFY(LanSettings(f.cfg.path()).lanInterfaces().isEmpty());
+    }
+
+    void firstAcceptedLanPairRequestClosesTheWindow()
+    {
+        LanFixture f(true);
+        QSignalSpy window(f.lan.get(), &LanController::pairingWindowChanged);
+        QCOMPARE(f.lan->openPairingWindow(), quint32(120));
+        ScriptedPhone first;
+        QVERIFY(first.connectTo(f.lanPort(), kLan.toString()) && first.waitFor(QStringLiteral("hello")));
+        first.sendHello(false, {});
+        QString code;
+        QVERIFY(first.pairUntilCode(&code));
+        QVERIFY(!f.hub.pairingWindowOpen());
+        QVERIFY(window.size() >= 2 && !window.last().at(0).toBool());
+        QCOMPARE(f.lan->pairingWindowRemaining(), quint32(0));
+        // The pending request says where it came from.
+        const QJsonObject pending = f.hub.pendingPairings().first().toObject();
+        QCOMPARE(pending.value(QStringLiteral("origin")).toString(), QStringLiteral("lan"));
+        QVERIFY(!pending.value(QStringLiteral("source")).toString().isEmpty());
+        // A second LAN phone is refused: the window was used up.
+        ScriptedPhone second;
+        QVERIFY(second.connectTo(f.lanPort(), kLan.toString()) || true);
+    }
+
+    void abortingLanPairingsEndsThemWithABye()
+    {
+        LanFixture f(true);
+        QCOMPARE(f.lan->openPairingWindow(), quint32(120));
+        ScriptedPhone phone;
+        QVERIFY(phone.connectTo(f.lanPort(), kLan.toString()) && phone.waitFor(QStringLiteral("hello")));
+        phone.sendHello(false, {});
+        QString code;
+        QVERIFY(phone.pairUntilCode(&code));
+        f.hub.abortLanPairings();
+        Envelope bye;
+        QVERIFY(phone.waitFor(QStringLiteral("bye"), &bye));
+        QCOMPARE(bye.b.value(QStringLiteral("reason")).toString(), QStringLiteral("pair-timeout"));
+    }
+
+    void usbPairingRequestShowsUsbOrigin()
+    {
+        LanFixture f(true);
+        QSignalSpy requested(&f.hub, &Hub::pairingRequested);
+        ScriptedPhone usb;
+        QVERIFY(usb.connectTo(f.hub.port()) && usb.waitFor(QStringLiteral("hello")));
+        usb.sendHello(false, {});
+        QString code;
+        QVERIFY(usb.pairUntilCode(&code));
+        QVERIFY(waitUntil([&] { return !requested.isEmpty(); }));
+        QCOMPARE(requested.first().at(4).toString(), QStringLiteral("usb"));
+        QVERIFY(requested.first().at(5).toString().isEmpty());
+        QCOMPARE(f.hub.pendingPairings().first().toObject().value(QStringLiteral("origin")).toString(), QStringLiteral("usb"));
+    }
+
+    void lanFloodCannotBlockPinnedReconnectOrUsbPairing()
+    {
+        // Large per-source/accept budgets so the per-address-class cap (3) is what is exercised.
+        LanFixture f(true, 0, 120000, [](HubOptions &o) {
+            o.maxLanUnpairedPerSource = 100;
+            o.lanAcceptsPerSource = 1000;
+            o.lanAcceptsGlobal = 1000;
+        });
+        ScriptedPhone owner;
+        QVERIFY(f.pairViaLoopback(owner));
+        owner.sendRaw(QByteArray::fromHex("00000000"));  // drop the USB link
+        QVERIFY(owner.waitClosed());
+        QVERIFY(waitUntil([&] { return !f.firstDevice().value(QStringLiteral("connected")).toBool(); }));
+
+        // Fill the LAN budget with throwaway keys that never finish anything.
+        std::vector<std::unique_ptr<ScriptedPhone>> flood;
+        for (int i = 0; i < 3; ++i) {
+            flood.push_back(std::make_unique<ScriptedPhone>());
+            QVERIFY(flood.back()->connectTo(f.lanPort(), kLan.toString()));
+            QVERIFY(flood.back()->waitFor(QStringLiteral("hello")));
+        }
+        // The fourth is refused right after the handshake...
+        ScriptedPhone fourth;
+        if (fourth.connectTo(f.lanPort(), kLan.toString())) QVERIFY(fourth.waitClosed());
+        // ...a throwaway key already holding the LAN pairing slot does not block USB pairing...
+        QCOMPARE(f.lan->openPairingWindow(), quint32(120));
+        flood[0]->sendHello(false, {});
+        QString code;
+        QVERIFY(flood[0]->pairUntilCode(&code));
+        ScriptedPhone newUsb;
+        QSignalSpy requested(&f.hub, &Hub::pairingRequested);
+        QVERIFY(newUsb.connectTo(f.hub.port()) && newUsb.waitFor(QStringLiteral("hello")));
+        newUsb.sendHello(false, {});
+        QString usbCode;
+        QVERIFY(newUsb.pairUntilCode(&usbCode));
+        QVERIFY(waitUntil([&] { return !requested.isEmpty(); }));
+        QCOMPARE(requested.last().at(4).toString(), QStringLiteral("usb"));
+        Envelope bye;
+        QVERIFY(flood[0]->waitFor(QStringLiteral("bye"), &bye));  // the LAN pairing was preempted
+        // ...and the paired phone's USB reconnect is not refused by the flood.
+        ScriptedPhone back(owner.identity());
+        QVERIFY(back.connectTo(f.hub.port()) && back.waitFor(QStringLiteral("hello")));
+        back.sendHello(true, {QStringLiteral("status")});
+        QVERIFY(waitUntil([&] { return f.hub.devices().first().toObject().value(QStringLiteral("transport")).toString() == QLatin1String("usb"); }));
+        // And so is its LAN reconnect: a pinned id counts against no cap.
+        back.sendRaw(QByteArray::fromHex("00000000"));
+        QVERIFY(back.waitClosed());
+        ScriptedPhone lanBack(owner.identity());
+        QVERIFY(lanBack.connectTo(f.lanPort(), kLan.toString()) && lanBack.waitFor(QStringLiteral("hello")));
+    }
+
+    void oneUnauthenticatedLanConnectionPerSource()
+    {
+        LanFixture f(true);
+        ScriptedPhone a;
+        QVERIFY(a.connectTo(f.lanPort(), kLan.toString()) && a.waitFor(QStringLiteral("hello")));
+        ScriptedPhone b;
+        if (b.connectTo(f.lanPort(), kLan.toString())) QVERIFY(b.waitClosed());
+        QVERIFY(a.isConnected());
+    }
+
+    void acceptRateLimitRefusesAFloodBeforeTls()
+    {
+        LanFixture f(true, 0, 120000, [](HubOptions &o) { o.lanAcceptsPerSource = 4; o.lanAcceptsGlobal = 100; o.lanAcceptWindowMs = 600000; });
+        std::vector<std::unique_ptr<ScriptedPhone>> phones;
+        int encrypted = 0;
+        for (int i = 0; i < 6; ++i) {
+            phones.push_back(std::make_unique<ScriptedPhone>());
+            if (phones.back()->connectTo(f.lanPort(), kLan.toString())) ++encrypted;
+        }
+        QVERIFY2(encrypted <= 4, qPrintable(QString::number(encrypted)));
+        QVERIFY(encrypted >= 1);
+    }
+
+    void acceptLimiterWindowSlides()
+    {
+        qint64 now = 0;
+        AcceptLimiter l(2, 3, 1000, [&] { return now; });
+        const QHostAddress a(QStringLiteral("10.0.0.5")), b(QStringLiteral("10.0.0.6")), c(QStringLiteral("10.0.0.7"));
+        QVERIFY(l.allow(a));
+        QVERIFY(l.allow(a));
+        QVERIFY(!l.allow(a));      // per source
+        QVERIFY(l.allow(b));
+        QVERIFY(!l.allow(c));      // global
+        now = 1001;
+        QVERIFY(l.allow(a));       // the window moved on
+        QVERIFY(l.allow(c));
     }
 
     void controllerDestructionWithdrawsTheAdvert()

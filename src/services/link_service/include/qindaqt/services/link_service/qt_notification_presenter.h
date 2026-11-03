@@ -15,7 +15,8 @@ class QtNotificationPresenter final : public PairingPresenter {
     Q_OBJECT
 public:
     explicit QtNotificationPresenter(QDBusConnection bus, QObject *parent = nullptr);
-    void present(const QString &deviceId, const QString &name, const QString &model, const QString &code) override;
+    void present(const QString &deviceId, const QString &name, const QString &model, const QString &code, const QString &origin,
+                 const QString &source) override;
     void dismiss(const QString &deviceId) override;
 
 private Q_SLOTS:

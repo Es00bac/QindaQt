@@ -48,6 +48,13 @@ public final class EndpointConnector implements LinkEngine.Connector {
         for (Endpoint e : currentPlan()) {
             try {
                 Link l = opener.open(e);
+                if (!matchesPin(l)) {
+                    // AGENT-GUARD: a host that answers with the wrong key must not shadow the real endpoint;
+                    // the Session would stop on it ("different desktop") and the engine would retry it first.
+                    l.close();
+                    last = new IOException("endpoint presented a different key");
+                    continue;
+                }
                 connected(e);
                 return l;
             } catch (IOException ex) {
@@ -73,6 +80,7 @@ public final class EndpointConnector implements LinkEngine.Connector {
         synchronized (this) { if (pendingUsb != null) return true; }
         try {
             Link l = opener.open(Endpoint.usb());
+            if (!matchesPin(l)) { l.close(); return false; }
             synchronized (this) { pendingUsb = l; }
             return true;
         } catch (IOException e) {
@@ -117,6 +125,12 @@ public final class EndpointConnector implements LinkEngine.Connector {
         }
         m.put("desktops", list);
         return Json.write(m);
+    }
+
+    /** True when unpaired (nothing to check yet) or the link's proven key is the pinned desktop's. */
+    private boolean matchesPin(Link l) {
+        String pinned = pins.deviceId();
+        return pinned == null || pinned.equals(org.qindaqt.link.proto.Pairing.hex(l.peerSpki()));
     }
 
     private List<Endpoint> currentPlan() {

@@ -135,14 +135,19 @@ Off by default. `SetLanEnabled(true)` (a trusted caller, see the
 `LanController` ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)):
 
 - **Listeners.** One TLS listener per up, non-loopback interface address on
-  port 47160 (IPv4 and IPv6 global/ULA; no link-local or container bridges),
-  re-synced every 15 s. Tailscale's `tailscale0` address is covered the same way.
+  port 47160, private ranges only (RFC1918, `100.64.0.0/10`, `fc00::/7`; never public
+  IPv4, global IPv6, link-local or container bridges), re-synced every 15 s.
+  Tailscale's `tailscale0` address is covered the same way. A private-range hotspot
+  or guest Wi-Fi is still included unless the interface allowlist (`SetLanInterfaces`)
+  names the interfaces to use. LAN has its own small unauthenticated-session budget
+  and accept rate limits, so it cannot starve USB or a paired phone
+  ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)).
   A failed bind is reported in `LanStatus` and retried.
 - **Advert.** `_qindalink._tcp` through Avahi with TXT `proto=1`,
   `id=<first 16 hex of the desktop SPKI digest>`, `name=<hostname>`, only while a
   listener is bound. Without Avahi the listeners still work and the phone can use
   its manual address.
-- **Pairing.** Only inside the window opened by `OpenPairingWindow` (120 s).
+- **Pairing.** Only inside the window opened by `OpenPairingWindow` (120 s); the first accepted LAN request closes it. The prompt says it comes over Wi-Fi and from which address.
   A paired phone reconnects over LAN without a window.
 - **Phone.** Setup has a Connection section: phone network, the desktops
   found, a manual address (for example the desktop's Tailscale IP or MagicDNS

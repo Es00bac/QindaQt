@@ -13,11 +13,22 @@
 
 namespace QindaQt::Link {
 
-// Addresses the LAN listener should bind. The default lists up, non-loopback
-// interface addresses (IPv4, plus IPv6 global/ULA; never link-local, which
-// needs a scope the phone cannot supply) and skips container bridges.
-using LanAddressProvider = std::function<QList<QHostAddress>()>;
-[[nodiscard]] QList<QHostAddress> defaultLanAddresses();
+// One bindable local address and the interface it belongs to.
+struct LanAddress {
+    QHostAddress address;
+    QString iface;
+};
+
+// True for the ranges a LAN listener may serve by default: RFC1918 (10/8, 172.16/12, 192.168/16),
+// 100.64.0.0/10 (Tailscale and other CGNAT) and fc00::/7. Public IPv4, global IPv6 and link-local are never
+// bound by default (ADR-0441). A private-range hotspot or guest Wi-Fi still qualifies: use the interface
+// allowlist (SetLanInterfaces) to restrict the listener to named interfaces.
+[[nodiscard]] bool isPrivateLanAddress(const QHostAddress &address);
+
+// Addresses the LAN listener should bind. The default lists up, non-loopback interface addresses that pass
+// isPrivateLanAddress and skips container bridges. Tests inject their own.
+using LanAddressProvider = std::function<QList<LanAddress>()>;
+[[nodiscard]] QList<LanAddress> defaultLanAddresses();
 
 struct LanOptions {
     QString configDir;               // service.json lives here
@@ -48,10 +59,15 @@ public:
     [[nodiscard]] bool enabled() const { return m_enabled; }
     // Persists and applies. False when the setting could not be persisted (it is still applied until restart).
     bool setEnabled(bool enabled);
+    // Interface-name allowlist; empty = every private-range interface. Names are validated (at most 16, each
+    // 1-15 characters of [A-Za-z0-9_.:@-]); an invalid list is refused and changes nothing.
+    bool setInterfaces(const QStringList &names, QString *error = nullptr);
+    [[nodiscard]] QStringList interfaces() const { return m_allowlist; }
     // Opens (or restarts) the window. Returns its length in seconds, or 0 when LAN is off.
     quint32 openPairingWindow();
     [[nodiscard]] quint32 pairingWindowRemaining() const;
-    // {enabled,state,listeners,failed:[reason],advertised,publisher,pairingWindow}; carries no addresses.
+    // {enabled,state,listeners,interfaces:[bound names],allowlist:[names],failed:[reason],advertised,publisher,
+    // pairingWindow,persisted}; carries no addresses.
     [[nodiscard]] QString statusJson() const;
 
 Q_SIGNALS:
@@ -60,14 +76,19 @@ Q_SIGNALS:
 
 private:
     void sync();
-    void closeWindow();
+    // `abort` ends LAN pairings still in flight (timeout); a consumed window leaves the one being served alone.
+    void closeWindow(bool abort);
     void applyAdvert();
+    [[nodiscard]] QStringList boundInterfaces() const;
 
     Hub &m_hub;
     LanOptions m_options;
     bool m_enabled = false;
     bool m_persistFailed = false;
-    QHash<QString, quint16> m_bound;      // address text -> bound port
+    struct Bound { quint16 port = 0; QString iface; };
+    QHash<QString, Bound> m_bound;        // address text -> bound port and interface
+    QStringList m_allowlist;
+    QStringList m_advertIfaces;
     QHash<QString, QString> m_failures;   // address text -> reason
     bool m_advertised = false;
     quint16 m_lastAdvertPort = 0;

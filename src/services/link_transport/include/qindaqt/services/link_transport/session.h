@@ -75,6 +75,9 @@ public:
 
     [[nodiscard]] const QString &deviceId() const { return m_deviceId; }
     [[nodiscard]] Origin origin() const { return m_origin; }
+    // Peer address with IPv4-mapped IPv6 folded to IPv4; null when unknown. Personal data: shown only to the
+    // desktop user in the pairing prompt, never put in a log line or an open D-Bus snapshot.
+    [[nodiscard]] QHostAddress sourceAddress() const;
     [[nodiscard]] SessionState state() const { return m_state; }
     [[nodiscard]] const PeerHello &peer() const { return m_peer; }
     [[nodiscard]] bool peerHasCap(const QString &cap) const { return m_peer.caps.contains(cap); }

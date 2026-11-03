@@ -13,6 +13,7 @@
     <method name="PendingPairings"><arg name="json" type="s" direction="out"/></method>
     <method name="ListenPort"><arg name="port" type="q" direction="out"/></method>
     <method name="SetLanEnabled"><arg name="enabled" type="b" direction="in"/></method>
+    <method name="SetLanInterfaces"><arg name="names" type="as" direction="in"/></method>
     <method name="OpenPairingWindow"><arg name="seconds" type="u" direction="out"/></method>
     <property name="LanEnabled" type="b" access="read"/>
     <property name="LanStatus" type="s" access="read"/>

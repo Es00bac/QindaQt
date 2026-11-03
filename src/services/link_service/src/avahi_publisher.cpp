@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/link_service/avahi_publisher.h>
 
+#include <net/if.h>
+
 #include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusPendingCallWatcher>
@@ -104,17 +106,34 @@ void AvahiPublisher::addAndCommit()
         txt << (it.key() + QLatin1Char('=') + it.value()).toUtf8();
     }
     txt.endArray();
-    QDBusMessage add = QDBusMessage::createMethodCall(QString::fromLatin1(kAvahi), m_groupPath,
-                                                      QString::fromLatin1(kGroup), QStringLiteral("AddService"));
-    // (interface i, protocol i, flags u, name s, type s, domain s, host s, port q, txt aay)
-    // AGENT-GUARD: wrap the port in QVariant::fromValue; a bare quint16 converts to int32 ('i') and
-    // Avahi rejects the call with a signature mismatch.
-    add << kAvahiUnspec << kAvahiUnspec << quint32(0) << m_activeName << m_advert.type << QString() << QString()
-        << QVariant::fromValue(quint16(m_advert.port)) << QVariant::fromValue(txt);
-    const QDBusMessage added = m_bus.call(add, QDBus::Block, 5000);
-    if (added.type() == QDBusMessage::ErrorMessage) {
+    // AGENT-GUARD (ADR-0441): announce only on the interfaces LanController actually bound. -1 (every
+    // interface) is used only when the advert names none, which LanController never does; an advert whose
+    // names all fail to resolve publishes nothing.
+    QList<int> interfaces;
+    if (m_advert.interfaces.isEmpty()) {
+        interfaces.append(kAvahiUnspec);
+    } else {
+        for (const QString &name : std::as_const(m_advert.interfaces)) {
+            const unsigned index = ::if_nametoindex(name.toLocal8Bit().constData());
+            if (index != 0) interfaces.append(int(index));
+        }
+    }
+    if (interfaces.isEmpty()) {
         setState(QStringLiteral("failed"));
         return;
+    }
+    for (const int ifIndex : std::as_const(interfaces)) {
+        QDBusMessage add = QDBusMessage::createMethodCall(QString::fromLatin1(kAvahi), m_groupPath,
+                                                          QString::fromLatin1(kGroup), QStringLiteral("AddService"));
+        // (interface i, protocol i, flags u, name s, type s, domain s, host s, port q, txt aay)
+        // AGENT-GUARD: wrap the port in QVariant::fromValue; a bare quint16 converts to int32 ('i') and
+        // Avahi rejects the call with a signature mismatch.
+        add << ifIndex << kAvahiUnspec << quint32(0) << m_activeName << m_advert.type << QString() << QString()
+            << QVariant::fromValue(quint16(m_advert.port)) << QVariant::fromValue(txt);
+        if (m_bus.call(add, QDBus::Block, 5000).type() == QDBusMessage::ErrorMessage) {
+            setState(QStringLiteral("failed"));
+            return;
+        }
     }
     QDBusMessage commit = QDBusMessage::createMethodCall(QString::fromLatin1(kAvahi), m_groupPath,
                                                          QString::fromLatin1(kGroup), QStringLiteral("Commit"));

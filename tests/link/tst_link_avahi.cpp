@@ -7,6 +7,8 @@
 
 #include <qindaqt/services/link_service/avahi_publisher.h>
 
+#include <net/if.h>
+
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
 #include <QtDBus/QDBusArgument>
@@ -35,9 +37,10 @@ class FakeGroup : public QObject {
 public:
     FakeGroup(Calls *c, QDBusConnection bus) : m_calls(c), m_bus(std::move(bus)) {}
 public Q_SLOTS:
-    void AddService(int, int, uint, const QString &name, const QString &type, const QString &, const QString &,
+    void AddService(int iface, int, uint, const QString &name, const QString &type, const QString &, const QString &,
                     ushort port, const QByteArrayList &txt)
     {
+        m_calls->add(QStringLiteral("If:%1").arg(iface));
         QStringList t;
         for (const QByteArray &b : txt) t << QString::fromUtf8(b);
         m_calls->add(QStringLiteral("Add:%1:%2:%3:%4").arg(name, type).arg(port).arg(t.join(QLatin1Char(';'))));
@@ -136,6 +139,33 @@ private Q_SLOTS:
         pub.withdraw();
         QCOMPARE(pub.state(), QStringLiteral("off"));
         QVERIFY(calls.snapshot().contains(QStringLiteral("Free")));  // synchronous: gone before withdraw returns
+        daemon.quit();
+        QVERIFY(daemon.wait(5000));
+    }
+
+    void announcesOnlyOnTheBoundInterfaces()
+    {
+        Calls calls;
+        FakeAvahiThread daemon(&calls);
+        daemon.start();
+        QDBusConnection bus = QDBusConnection::sessionBus();
+        QVERIFY(waitUntil([&] { return bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.Avahi")); }));
+        AvahiPublisher pub(bus);
+        ServiceAdvert a = advert();
+        a.interfaces = {QStringLiteral("lo")};
+        pub.publish(a);
+        QVERIFY(waitUntil([&] { return pub.state() == QLatin1String("published"); }));
+        const unsigned lo = if_nametoindex("lo");
+        QVERIFY(lo != 0);
+        QVERIFY(calls.snapshot().contains(QStringLiteral("If:%1").arg(lo)));
+        QVERIFY(!calls.snapshot().contains(QStringLiteral("If:-1")));
+        pub.withdraw();
+        // Names that do not resolve publish nothing at all (never fall back to every interface).
+        a.interfaces = {QStringLiteral("nonexistent0")};
+        const QStringList before = calls.snapshot().filter(QStringLiteral("If:"));
+        pub.publish(a);
+        QVERIFY(waitUntil([&] { return pub.state() == QLatin1String("failed"); }));
+        QCOMPARE(calls.snapshot().filter(QStringLiteral("If:")), before);   // nothing was announced
         daemon.quit();
         QVERIFY(daemon.wait(5000));
     }

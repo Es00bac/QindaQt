@@ -94,6 +94,14 @@ Session::Session(QSslSocket *socket, Origin origin, SessionTimings timings, Sess
 
 Session::~Session() = default;
 
+QHostAddress Session::sourceAddress() const
+{
+    QHostAddress a = m_socket->peerAddress();
+    bool mapped = false;
+    const quint32 v4 = a.toIPv4Address(&mapped);
+    return mapped ? QHostAddress(v4) : a;
+}
+
 bool Session::pairingPending() const { return m_pairing != nullptr && m_pairing->active(); }
 bool Session::awaitingLocalDecision() const
 {

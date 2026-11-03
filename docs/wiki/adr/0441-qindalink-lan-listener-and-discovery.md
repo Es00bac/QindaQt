@@ -24,28 +24,49 @@ Tailscale, without weakening any of those rules.
    (returns the window length, 120 s, or 0 when LAN is off) is protected for the
    same reason. `LanEnabled` and `LanStatus` are open properties; `LanStatus`
    never carries addresses.
-2. **Listeners per address.** `LanController` binds one TLS listener per up,
-   non-loopback interface address (IPv4, and IPv6 global/ULA; no link-local, no
-   container bridges) on the LAN port, and re-syncs every 15 s while enabled so
+2. **Listeners per address, private ranges only.** `LanController` binds one TLS
+   listener per up, non-loopback interface address that is RFC1918, `100.64.0.0/10`
+   (Tailscale and other CGNAT) or `fc00::/7` (no public IPv4, no global IPv6, no
+   link-local, no container bridges) on the LAN port, and re-syncs every 15 s while enabled so
    Wi-Fi and Tailscale coming and going are followed. It never binds `0.0.0.0` or
    `::`: a wildcard bind also catches `127.0.0.1` and either fails against the
    always-on loopback listener or lets a LAN-classified connection arrive on
    loopback. Bind failures show in `LanStatus` and are retried; they never stop
    the service or the loopback listener.
-3. **Origin rules unchanged.** Each listener is tagged `Origin::Lan`. The Hub's
+   A private-range hotspot or guest Wi-Fi still qualifies. A persisted
+   interface allowlist (`lanInterfaces` in `service.json`, set only through the
+   protected `SetLanInterfaces`) restricts both the listeners and the mDNS advert to
+   the named interfaces; `LanStatus` reports the bound interface names, never
+   addresses. The advert is published per bound interface, never on all of them.
+3. **Starvation bounds.** Unauthenticated sessions are capped per origin, so LAN
+   cannot spend the loopback budget: loopback keeps its cap of 8, LAN gets 3 in
+   total and 1 per source address. A session whose TLS-proven id is already
+   pinned counts against no cap. LAN listeners also refuse accepts past a
+   sliding-window budget (6 per source and 30 in total per 10 s) before any TLS
+   work and give the handshake 3 s. A USB pairing request preempts a LAN pairing
+   that holds the single pairing slot.
+4. **One pairing per window.** The first accepted LAN `pair.request` closes the
+   window. If the window ends by timeout, LAN pairings still in flight end with
+   `bye{pair-timeout}`. The pairing prompt, `PendingPairings` and the Hub's
+   `pairingRequested` carry `origin` (`usb` or `lan`) and, for LAN, the source
+   address, so the desktop can say "over Wi-Fi from <address>".
+5. **Origin rules unchanged.** Each listener is tagged `Origin::Lan`. The Hub's
    existing rules apply: LAN pairing only while the window is open, a LAN
    connection never displaces a live loopback one, a loopback connection
    replaces a LAN one, one connection per device. Disabling LAN closes the LAN
    listeners and ends LAN sessions with `bye{shutdown}`.
-4. **mDNS.** While at least one LAN listener is bound, the controller publishes
+6. **mDNS.** While at least one LAN listener is bound, the controller publishes
    `_qindalink._tcp` through a `ServicePublisher`. The production implementation
    (`AvahiPublisher`) uses `org.freedesktop.Avahi` `EntryGroup` on the system
    bus, republishes after an Avahi restart, renames on a collision with
    `GetAlternativeServiceName`, and withdraws synchronously (`Free`) when LAN is
    disabled or the service stops. TXT: `proto=1`, `id` = the first 16 hex
    characters of the desktop SPKI digest, `name` = the hostname. The TXT is a
-   hint only; the pin is verified in TLS regardless.
-5. **Phone connection order.** `127.0.0.1:47160` (USB) first, then the last LAN
+   hint only; the pin is verified in TLS regardless. Honestly stated, the record is a
+   beacon: anyone on the announced interfaces learns that a QindaLink desktop is
+   here, its hostname and a 64-bit prefix of its public-key digest, which also lets
+   them recognise that desktop across networks.
+7. **Phone connection order.** `127.0.0.1:47160` (USB) first, then the last LAN
    address that worked, then discovered desktops, then the manual address, with
    jittered backoff (each delay in [ladder/2, ladder]). A paired phone tries a
    discovered desktop only if its TXT `id` is a prefix of the pinned SPKI id. An
@@ -54,12 +75,12 @@ Tailscale, without weakening any of those rules.
    (`NsdManager`) runs only while no session is up. While on LAN the engine
    checks every 15 s whether USB answers a full handshake and, if so, ends the
    LAN session; the desktop's replacement rule completes the switch.
-6. **Truthful transport.** `EngineState` reports `transport`
+8. **Truthful transport.** `EngineState` reports `transport`
    (`usb`, `lan` or `none`) from the endpoint that actually connected. The
    manual address is stored in app-private storage and loopback addresses are
    refused there, because a manual loopback endpoint would be reported as LAN
    while really being USB.
-7. **Firewall.** The service never changes firewall rules. If a firewall
+9. **Firewall.** The service never changes firewall rules. If a firewall
    blocks TCP 47160 the user opens it (see the
    [architecture page](../architecture/qindalink.md#lan-and-tailscale)).
 

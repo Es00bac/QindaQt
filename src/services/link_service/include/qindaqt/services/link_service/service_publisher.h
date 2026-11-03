@@ -4,6 +4,7 @@
 #include <QtCore/QMap>
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 
 namespace QindaQt::Link {
 
@@ -12,6 +13,8 @@ struct ServiceAdvert {
     QString type;                  // e.g. "_qindalink._tcp"
     quint16 port = 0;
     QMap<QString, QString> txt;
+    QStringList interfaces;        // interface names to announce on; empty = every interface
+                                   // AGENT-GUARD: LanController always fills this with the bound interfaces
 };
 
 // Seam over mDNS publication so LanController is testable without Avahi.

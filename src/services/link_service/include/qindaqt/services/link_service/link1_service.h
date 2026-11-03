@@ -61,6 +61,7 @@ class Link1Service final : public QObject, protected QDBusContext {
                 "<method name=\"PendingPairings\"><arg name=\"json\" type=\"s\" direction=\"out\"/></method>"
                 "<method name=\"ListenPort\"><arg name=\"port\" type=\"q\" direction=\"out\"/></method>"
                 "<method name=\"SetLanEnabled\"><arg name=\"enabled\" type=\"b\" direction=\"in\"/></method>"
+                "<method name=\"SetLanInterfaces\"><arg name=\"names\" type=\"as\" direction=\"in\"/></method>"
                 "<method name=\"OpenPairingWindow\"><arg name=\"seconds\" type=\"u\" direction=\"out\"/></method>"
                 "<property name=\"LanEnabled\" type=\"b\" access=\"read\"/>"
                 "<property name=\"LanStatus\" type=\"s\" access=\"read\"/>"
@@ -89,6 +90,8 @@ public Q_SLOTS:
     Q_SCRIPTABLE quint16 ListenPort() const;
     // Protected (ADR-0438): changes what the machine exposes to the network.
     Q_SCRIPTABLE void SetLanEnabled(bool enabled);
+    // Protected: restricts the LAN listener and mDNS advert to the named interfaces (empty = all private-range ones).
+    Q_SCRIPTABLE void SetLanInterfaces(const QStringList &names);
     Q_SCRIPTABLE quint32 OpenPairingWindow();
 
 Q_SIGNALS:

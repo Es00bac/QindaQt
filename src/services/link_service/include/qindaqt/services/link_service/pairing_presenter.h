@@ -18,8 +18,10 @@ class PairingPresenter : public QObject {
 public:
     using QObject::QObject;
     // `code` is six digits; implementations format it as "123 456".
+    // `origin` is "usb" or "lan"; `source` is the LAN peer address (empty for USB). Implementations say where
+    // the request comes from, so a Wi-Fi request is never mistaken for a USB one.
     virtual void present(const QString &deviceId, const QString &name, const QString &model,
-                         const QString &code) = 0;
+                         const QString &code, const QString &origin, const QString &source) = 0;
     virtual void dismiss(const QString &deviceId) = 0;
 
 Q_SIGNALS:

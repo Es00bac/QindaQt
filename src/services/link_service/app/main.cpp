@@ -72,13 +72,13 @@ int main(int argc, char **argv)
                                      QStringLiteral("TEST/DEVELOPMENT ONLY: extra executable allowed to use protected Link1 members (repeatable). Never use in an installed session."),
                                      QStringLiteral("exe"));
     QCommandLineOption noAvahi(QStringLiteral("no-avahi"), QStringLiteral("Do not publish _qindalink._tcp through Avahi."));
-    QCommandLineOption lanPort(QStringLiteral("lan-port"), QStringLiteral("LAN listener port (default: --port)."),
+    QCommandLineOption lanPort(QStringLiteral("lan-port"), QStringLiteral("TEST/DEVELOPMENT ONLY: LAN listener port (default: --port). Never use in an installed session."),
                                QStringLiteral("port"));
     QCommandLineOption lanAddress(QStringLiteral("lan-test-address"),
-                                  QStringLiteral("TEST ONLY: bind the LAN listener to this address instead of the machine's interfaces (repeatable)."),
+                                  QStringLiteral("TEST/DEVELOPMENT ONLY: bind the LAN listener to this address instead of the machine's interfaces, bypassing the private-range and interface rules (repeatable). Never use in an installed session."),
                                   QStringLiteral("addr"));
     QCommandLineOption pairingWindow(QStringLiteral("pairing-window-ms"),
-                                     QStringLiteral("TEST ONLY: pairing window length."), QStringLiteral("ms"));
+                                     QStringLiteral("TEST/DEVELOPMENT ONLY: pairing window length. Never use in an installed session."), QStringLiteral("ms"));
     parser.addOptions({noAvahi, lanPort, lanAddress, pairingWindow, dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
     parser.process(app);
 
@@ -145,10 +145,16 @@ int main(int argc, char **argv)
     // AGENT-GUARD (ADR-0441): LAN stays off until the persisted setting says otherwise; these only
     // wire the machinery. The Avahi record exists only while a LAN listener is bound.
     config.lanPort = parser.isSet(lanPort) ? quint16(parser.value(lanPort).toUInt()) : config.port;
+    for (const QCommandLineOption *o : {&lanPort, &lanAddress, &pairingWindow}) {
+        if (parser.isSet(*o)) {
+            // Stderr is the journal under the systemd user unit.
+            qWarning("qindaqt-link-service: WARNING --%s is a test/development override of the LAN safety limits", qPrintable(o->names().first()));
+        }
+    }
     if (parser.isSet(pairingWindow)) config.pairingWindowMs = parser.value(pairingWindow).toInt();
     if (parser.isSet(lanAddress)) {
-        QList<QHostAddress> fixed;
-        for (const QString &a : parser.values(lanAddress)) fixed.append(QHostAddress(a));
+        QList<LanAddress> fixed;
+        for (const QString &a : parser.values(lanAddress)) fixed.append({QHostAddress(a), QStringLiteral("test0")});
         config.lanAddresses = [fixed] { return fixed; };
     }
     std::unique_ptr<AvahiPublisher> avahi;
