@@ -4,6 +4,7 @@
 #include "mirror_controller.h"
 
 #include <QElapsedTimer>
+#include <QJsonArray>
 #include <QObject>
 #include <QTimer>
 
@@ -14,7 +15,7 @@
 // AGENT-NOTE: scripted input is delivered as synthetic Qt events to the MirrorWindow, so it
 // exercises the same InputTranslator and ViewportMapper path as a real pointer.
 //
-// Privacy: --list prints package names and labels of the phone's launchable apps; evidence
+// Privacy: --list and --list-json print package names and labels of the phone's launchable apps; evidence
 // reports should quote counts only.
 namespace qindaqt::link_mirror {
 
@@ -52,6 +53,7 @@ private:
     quint64 m_probeStartFrames = 0;
     int m_probeTicks = 0;
     int m_listed = 0;
+    QJsonArray m_listedJson; // --list-json accumulates here and prints once at inventoryDone
 };
 
 } // namespace qindaqt::link_mirror

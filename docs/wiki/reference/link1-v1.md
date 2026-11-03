@@ -58,6 +58,28 @@ adaptor, only when the service has a phone-notification presenter (so not under
 presenter with a file recorder for private-bus tests; `--config-dir` and
 `--cache-dir` move the mute file and icon cache.
 
+## Setup interface
+
+`org.qindaqt.Link1.Setup` is exported on the same object by a separate adaptor. The service owns
+ADB, so the QindaLink app asks here instead of running `adb`. All three methods reply after the
+adb steps finish (a `SetupPhone` call can take tens of seconds; clients use a long timeout).
+Without ADB (`--no-adb`) they fail with `NotConnected`. A serial that is not
+`[A-Za-z0-9._:-]{1,64}` fails with `BadRequest` before anything runs.
+
+| Method | Signature | Behavior |
+| --- | --- | --- |
+| `AdbDevices` | `() → s` | JSON array `{serial,appInstalled,tunneled}` of phones in ADB state `device`. |
+| `SetupPhone` | `(s serial) → s` | Runs, through the `link_adb` runner, `pm grant org.qindaqt.link android.permission.{READ_SMS,SEND_SMS,RECEIVE_SMS,READ_CONTACTS,POST_NOTIFICATIONS,READ_PHONE_STATE}`, `appops set … ACCESS_RESTRICTED_SETTINGS allow`, `cmd notification allow_listener org.qindaqt.link/org.qindaqt.link.android.NotificationListener` and `cmd deviceidle whitelist +org.qindaqt.link`. A failed step does not stop the rest. |
+| `SetupStatus` | `(s serial) → s` | Reads the same state without changing it (`dumpsys package`, `appops get`, `settings get secure enabled_notification_listeners`, `cmd deviceidle whitelist`). |
+
+Both report `{"serial","ok":bool,"steps":[{"id","ok","code"}]}`. Step ids are
+`grant:<PERMISSION>`, `restricted-settings`, `notification-listener` and `battery-whitelist`. For
+`SetupPhone`, `ok` means the adb command exited 0 and `code` is its exit code; for `SetupStatus`,
+`ok` means "already granted". Command output is inspected and dropped, never returned or logged.
+Only the QindaLink package is touched.
+
+All three members need a trusted caller (ADR-0438) and fail with `org.qindaqt.Link1.Error.Denied` otherwise.
+
 ## Messages
 
 `org.qindaqt.Link1.Messages` at `/org/qindaqt/Link1/Messages` on the same bus
@@ -175,3 +197,4 @@ and clears its device list when the service name disappears.
 | `qindaqt.link-caller-coverage` | Introspects the live service and requires `Denied` for every method outside the open allowlist, so new `Link1.*` members are covered automatically |
 | `qindaqt.link-caller-dbus` | The real service on a private bus: untrusted `gdbus` denied for every protected member, open members work, trusted test binary succeeds, `caps`, `PendingPairings`, rate limit and notices |
 | `qindaqt.link-service-smoke` | The real binary on a private `dbus-run-session` bus |
+| `qindaqt.link-setup` | `PhoneSetup` against a fake adb: every grant, failures reported, unsafe serials refused, status reads only |

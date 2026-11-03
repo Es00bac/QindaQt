@@ -185,6 +185,7 @@ nav:
       - Calendar: apps/calendar.md
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
+      - QindaLink app: apps/qindalink.md
       - Removable media: apps/removable-media.md
       - Image and PDF Viewer: apps/viewer.md
       - Android Applications: apps/android-applications.md

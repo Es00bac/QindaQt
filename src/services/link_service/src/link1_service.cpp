@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/link_service/link1_service.h>
 
+#include <qindaqt/services/link_service/setup_adaptor.h>
+
 #include <QtCore/QJsonDocument>
 #include <QtCore/QSysInfo>
 
@@ -85,6 +87,7 @@ bool Link1Service::start(QString *error)
         m_tunnels = std::make_unique<TunnelManager>(*m_adb, tunnel);
         m_tunnels->start();
     }
+    new SetupAdaptor(m_adb, m_tunnels.get(), m_bus, this, m_config.callerAuthority); // org.qindaqt.Link1.Setup; owned by this
     if (!m_bus.registerObject(QString::fromLatin1(kPath), this,
                               QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals
                                   | QDBusConnection::ExportAdaptors)) {

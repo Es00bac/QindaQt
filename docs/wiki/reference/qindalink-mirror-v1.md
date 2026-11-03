@@ -354,6 +354,7 @@ qindaqt-link-mirror --serial <serial> --package <package> [options]
 | `--decoder auto\|vaapi\|software` | Decoder path (default `auto`) |
 | `--verbose` | Repeat server lines and decoder events |
 | `--list` | Print `package<TAB>label<TAB>icon=WxH` for each launchable app and exit |
+| `--list-json` | Print one JSON line `{"apps":[{"package","label","icon":"<base64 PNG or empty>"}]}` and exit; the QindaLink app reads this (needs `--serial`, no `--package`) |
 | `--grab FILE [--grab-after-frames N]` | Render offscreen, write one presented frame as PNG and exit |
 | `--input STEP … --grab-after-input FILE` | After the first grab, run the steps and grab again |
 | `--probe [--probe-seconds N]` | Print the decoder path, resolution, frame count and fps each second, then exit |
@@ -364,7 +365,7 @@ qindaqt-link-mirror --serial <serial> --package <package> [options]
 synthetic Qt events to the mirror window, so they take the same mapping path
 as real input.
 
-`--grab`, `--probe` and `--list` select the `offscreen` Qt platform unless
+`--grab`, `--probe`, `--list` and `--list-json` select the `offscreen` Qt platform unless
 `QT_QPA_PLATFORM` is set, and never show a window. The window's app id is
 `org.qindaqt.link.mirror.<package>`, and its title and icon come from the
 inventory.

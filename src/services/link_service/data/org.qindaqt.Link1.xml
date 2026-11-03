@@ -37,4 +37,13 @@
       <arg name="action" type="s"/><arg name="error" type="s"/>
     </signal>
   </interface>
+  <interface name="org.qindaqt.Link1.Setup">
+    <method name="AdbDevices"><arg name="json" type="s" direction="out"/></method>
+    <method name="SetupPhone">
+      <arg name="serial" type="s" direction="in"/><arg name="report" type="s" direction="out"/>
+    </method>
+    <method name="SetupStatus">
+      <arg name="serial" type="s" direction="in"/><arg name="report" type="s" direction="out"/>
+    </method>
+  </interface>
 </node>

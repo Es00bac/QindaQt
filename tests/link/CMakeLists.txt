@@ -110,6 +110,12 @@ if(QINDAQT_DBUS_RUN_SESSION)
     set_tests_properties(qindaqt.link-fdo-presenter PROPERTIES LABELS "service;link" TIMEOUT 30)
 endif()
 
+qt_add_executable(qindaqt_link_setup_test tst_link_setup.cpp)
+target_link_libraries(qindaqt_link_setup_test PRIVATE QindaQt::LinkService Qt6::Test)
+qindaqt_enable_warnings(qindaqt_link_setup_test)
+add_test(NAME qindaqt.link-setup COMMAND qindaqt_link_setup_test)
+set_tests_properties(qindaqt.link-setup PROPERTIES LABELS "service;link" TIMEOUT 30)
+
 # input.* and macro.* against a fake RemoteDesktop portal and fake InputActions1
 # registered under unique names on the test bus; rows run under dbus-run-session
 # so they never touch the user's bus. No row can reach the real portal.

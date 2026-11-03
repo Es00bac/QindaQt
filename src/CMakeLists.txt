@@ -248,6 +248,11 @@ endif()
 # executable needs FFmpeg (media-video/ffmpeg[vaapi]).
 option(QINDAQT_BUILD_LINK_MIRROR "Build qindaqt-link-mirror (QindaLink phone apps as windows)" ON)
 add_subdirectory(apps/link_mirror)
+# The QindaLink QindaTK companion app (docs/wiki/apps/qindalink.md). QML on QindaTK, like the System Monitor.
+option(QINDAQT_BUILD_LINK_APP "Build qindaqt-link (the QindaLink companion app)" ON)
+if(QINDAQT_BUILD_LINK_APP)
+    add_subdirectory(apps/link)
+endif()
 
 if(QINDAQT_BUILD_PRODUCTION_SHELL)
     add_subdirectory(session_supervisor)

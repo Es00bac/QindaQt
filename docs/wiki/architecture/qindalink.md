@@ -15,7 +15,7 @@ The durable decisions are
 (ADR-0427's library, one portal session). The wire contract is the
 [QindaLink protocol 1](../reference/qindalink-protocol-v1.md).
 
-Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications and SMS integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input and macros are integrated with fake-portal evidence only (the first live portal run needs the user's approval). The vault is not integrated yet.**
+Current maturity: **M1 link core, panel applet, phone apps on the desktop, notifications, SMS and the QindaTK app (pairing, Messages, Phone apps, mute list, USB setup, reply window) integrated; on-device pairing, notification mirroring and SMS paging verified on the user's phone (2026-11-02). Input and macros are integrated with fake-portal evidence only (the first live portal run needs the user's approval). The vault is not integrated yet.**
 
 - **Desktop.** The codec, TLS 1.3 transport, code-comparison pairing,
   unpaired-connection bounds, ADB tunnels, `qindaqt-link-service` with
@@ -81,7 +81,7 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
 | Service | `src/services/link_service` | `qindaqt-link-service`: owns the above, routes features, exports `org.qindaqt.Link1` |
 | Client | `src/services/link_client` | Typed `Link1` client for the applet and the app |
 | Applet | `src/shell/link_applet` | `qindaqt.applets.link`: phone chip, battery, unread badge slot, pairing UI, quick actions (built; see [applet page](../shell/link-applet.md)) |
-| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, phone setup, and a link to Settings → Input → Macros (it has no macro editor) |
+| App | `src/apps/link` | QindaTK `qindaqt-link`: pairing, Messages, Phone Apps, notification filters, Settings link for macros, phone setup (built; see [app page](../apps/qindalink.md)). There is no macro editor in the app (ADR-0436) |
 | Mirror | `src/apps/link_mirror` | `qindaqt-link-mirror`: one window per streamed phone app. Its pure core `qindaqt_link_mirror_core` holds the mirror framing, input mapping and decoder policy |
 | Input | `src/services/link_input` | `input` capability: the single RemoteDesktop portal session (`PortalInputSession`, an `InputSink`), frame parsing and bounds, text batching, held-key ledger, the `input.*` handler |
 | Macros | `src/services/link_macros` | `macro` capability: `MacroCatalog` (InputActions1 client), `PortalMacroOutput` (the shared `MacroRunner`'s output over the sink), the `macro.*` handler |
@@ -233,8 +233,8 @@ counts against a per-device rate limit.
 A sideloaded app on Android 17 cannot get notification access, SMS
 permissions or an exemption from battery optimisation without several manual
 Settings visits, some of them behind "restricted settings". With ADB
-connected, the QindaLink app's **Set up phone** action runs the equivalent
-grants and shows each result:
+connected, the QindaLink app's **Set up phone** action asks the service
+(`org.qindaqt.Link1.Setup`) to run the equivalent grants and shows each result:
 
 ```
 pm grant org.qindaqt.link android.permission.{READ_SMS,SEND_SMS,RECEIVE_SMS,READ_CONTACTS,POST_NOTIFICATIONS,READ_PHONE_STATE}

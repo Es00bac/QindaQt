@@ -10,6 +10,8 @@ target_sources(
     PRIVATE
         src/caller_policy.cpp
         src/link1_service.cpp
+        src/phone_setup.cpp
+        src/setup_adaptor.cpp
         src/qt_notification_presenter.cpp
         src/send_guard.cpp
     PUBLIC
@@ -19,6 +21,8 @@ target_sources(
             include/qindaqt/services/link_service/caller_policy.h
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
+            include/qindaqt/services/link_service/phone_setup.h
+            include/qindaqt/services/link_service/setup_adaptor.h
             include/qindaqt/services/link_service/qt_notification_presenter.h
             include/qindaqt/services/link_service/send_guard.h
 )
