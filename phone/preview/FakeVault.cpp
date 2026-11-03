@@ -26,8 +26,8 @@ void FakeVault::setScenario(const QString &name)
         m_secrets["a2"] = QVariantMap{{"password", "Synthetic-Pass-2!"}, {"notes", ""}};
         m_secrets["a3"] = QVariantMap{{"password", "Synthetic-Pass-3!"}, {"notes", ""}};
     } else if (name == QLatin1String("invalidated")) {
-        m_message = QStringLiteral("The vault key was invalidated (a fingerprint was added or the screen lock was removed). "
-                                   "This vault can no longer be opened on this phone. Restore it from a backup.");
+        m_message = QStringLiteral("The vault key is gone (the screen lock was removed or reset). This vault can no longer be opened "
+                                   "on this phone. Restore it from a backup, or erase it and start over.");
     } else if (name == QLatin1String("error")) {
         m_message = QStringLiteral("The vault file failed its integrity check and was not opened. Restore it from a backup.");
     } else if (name == QLatin1String("restore_ready")) {
@@ -98,7 +98,7 @@ QString FakeVault::exportBackup(const QString &pass, const QString &confirm)
 QString FakeVault::importBackup(const QString &, const QString &mode)
 {
     m_backupOp = QStringLiteral("import"); m_backupStatus = QStringLiteral("done"); m_backupCount = 3;
-    if (mode == QLatin1String("restore")) { setScenario(QStringLiteral("restore_ready")); return {}; }
+    if (mode == QLatin1String("restore") || mode == QLatin1String("restore-replace")) { setScenario(QStringLiteral("restore_ready")); return {}; }
     emit changed();
     return {};
 }

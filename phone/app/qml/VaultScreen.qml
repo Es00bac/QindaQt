@@ -18,6 +18,11 @@ ScreenFrame {
     property string entryId: ""
     property bool startWithGenerator: false
     readonly property string shown: vault.state === "unlocked" ? view : "gate"
+    // AGENT-GUARD: whenever the app is not in front (system prompt, recents, screen off) every view is
+    // unloaded, which drops revealed secrets and typed passwords, and the next frame starts at the
+    // list or gate, never at a detail or editor. Do not keep views alive while inactive.
+    readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
+    onAppActiveChanged: if (!appActive) { view = "list"; entryId = ""; startWithGenerator = false }
 
     title: qsTr("Vault")
     subtitle: vault.state === "unlocked" ? qsTr("%1 saved").arg(vault.entries.length) : ""
@@ -51,6 +56,7 @@ ScreenFrame {
 
     Loader {
         objectName: "vaultLoader"
+        active: screen.appActive
         sourceComponent: screen.views[screen.shown] || gateC
         Tk.Flex.alignSelf: Tk.Flex.Stretch
         onLoaded: item.width = Qt.binding(() => width)

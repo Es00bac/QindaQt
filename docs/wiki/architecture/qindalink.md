@@ -338,8 +338,12 @@ Decision record: [ADR-0439](../adr/0439-qindalink-phone-password-vault.md).
   `android/Vault*.java`; UI in `phone/app/qml/Vault*.qml`; Qt seam
   `phone/app/VaultBridge.*` (`vault` context property, preview stand-in
   `FakeVault`).
-- Data key (DEK) wrapped by a per-use-authenticated Keystore key; entries
-  AES-256-GCM; locks on 5 min idle, screen off, 30 s without UI, explicit.
+- Data key (DEK) wrapped by a per-use-authenticated Keystore key (two alias
+  slots so a restore never deletes the old key first); entries AES-256-GCM;
+  header generation counter against rollback; `FLAG_SECURE` for the whole
+  unlocked session; locks on 5 min idle, screen off, 30 s without UI, explicit.
+  Only an AEAD tag failure counts as tampered; a failed authentication is a
+  retry, never a recovery prompt (`VaultLifecycle`).
 - Backups are passphrase-encrypted (PBKDF2-HMAC-SHA256, 600 000+ iterations) and
   are the only way content leaves the phone. A backup is the recovery path when
   the Keystore key is invalidated.

@@ -4,7 +4,7 @@ import QindaTK as Tk
 
 // Password and passphrase generator. The result is offered through `use(value)`; the panel keeps
 // `value` only for display and clears it when destroyed. Length 8-128, character classes, or 3-12
-// words from the bundled EFF large list (CC BY 3.0 US, see ADR-0439).
+// words from the bundled EFF large list (CC BY 3.0 US, attributed in the panel and ADR-0439).
 Tk.Card {
     id: root
 
@@ -73,6 +73,14 @@ Tk.Card {
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
                 onValueModified: v => { root.wordCount = Math.round(v); root.regenerate() }
             }
+        }
+        Tk.Caption {
+            objectName: "genAttribution"
+            visible: root.words
+            text: qsTr("Word list: EFF large wordlist, (c) Electronic Frontier Foundation, licensed CC BY 3.0 US (creativecommons.org/licenses/by/3.0/us).")
+            muted: true
+            wrapMode: Text.Wrap
+            Tk.Flex.alignSelf: Tk.Flex.Stretch
         }
         Tk.Flex {
             direction: Tk.Flex.Row

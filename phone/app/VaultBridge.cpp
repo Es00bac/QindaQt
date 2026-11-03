@@ -28,6 +28,9 @@ VaultBridge::VaultBridge(QObject *parent) : QObject(parent)
     connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, [](Qt::ApplicationState s) {
         QJniObject::callStaticMethod<void>(kBridge, "setForeground", "(Landroid/content/Context;Z)V", ctx().object(),
                                            jboolean(s == Qt::ApplicationActive));
+        // The activity may have been recreated while away: re-apply FLAG_SECURE before any frame is shown.
+        if (s == Qt::ApplicationActive)
+            QJniObject::callStaticMethod<void>(kBridge, "reapplySecure", "(Landroid/content/Context;)V", ctx().object());
     });
 }
 

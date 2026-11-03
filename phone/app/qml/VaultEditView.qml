@@ -36,13 +36,13 @@ Tk.Flex {
 
     Tk.Label { text: qsTr("Title") }
     Tk.TextField { id: titleField; objectName: "editTitle"; placeholderText: qsTr("Example Mail"); Tk.Flex.alignSelf: Tk.Flex.Stretch
-        inputMethodHints: Qt.ImhNoPredictiveText }
+        inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase }
     Tk.Label { text: qsTr("Username") }
     Tk.TextField { id: userField; objectName: "editUser"; Tk.Flex.alignSelf: Tk.Flex.Stretch
         inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase | Qt.ImhEmailCharactersOnly }
     Tk.Label { text: qsTr("Website") }
     Tk.TextField { id: urlField; objectName: "editUrl"; placeholderText: qsTr("https://"); Tk.Flex.alignSelf: Tk.Flex.Stretch
-        inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase }
+        inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase }
     Tk.Label { text: qsTr("Password") }
     VaultSecretField { id: passField; objectName: "editPassword"; Tk.Flex.alignSelf: Tk.Flex.Stretch }
     Tk.Button {

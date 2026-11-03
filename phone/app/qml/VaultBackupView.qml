@@ -13,7 +13,8 @@ Tk.Flex {
     property string exportError: ""
     property int importMode: 0            // 0 merge, 1 replace
     property bool importConfirm: false
-    readonly property var hint: vault.passphraseHint(expPass.text)
+    // Strength is evaluated on submit only: the passphrase is not sent to the engine per keystroke.
+    property var hint: ({})
     function wipe() { expPass.clear(); expConfirm.clear(); impPass.clear() }
     Component.onDestruction: wipe()
 
@@ -50,7 +51,7 @@ Tk.Flex {
     VaultSecretField { id: expPass; objectName: "exportPass"; placeholder: qsTr("Backup passphrase"); Tk.Flex.alignSelf: Tk.Flex.Stretch }
     VaultSecretField { id: expConfirm; objectName: "exportConfirm"; placeholder: qsTr("Repeat the passphrase"); Tk.Flex.alignSelf: Tk.Flex.Stretch }
     Tk.Flex {
-        visible: expPass.text.length > 0
+        visible: root.hint.label !== undefined
         direction: Tk.Flex.Row
         align: Tk.Flex.Center
         gap: Tk.Theme.space.sm
@@ -74,11 +75,13 @@ Tk.Flex {
         text: qsTr("Choose where to save")
         iconName: "download"
         variant: "accent"
-        enabled: root.hint.ok === true && expPass.text === expConfirm.text
+        enabled: expPass.text.length > 0 && expPass.text === expConfirm.text
         Tk.Flex.alignSelf: Tk.Flex.Stretch
         onClicked: {
+            root.hint = vault.passphraseHint(expPass.text)
+            if (root.hint.ok !== true) { root.exportError = root.hint.reason || qsTr("That passphrase is too weak."); return }
             root.exportError = vault.exportBackup(expPass.text, expConfirm.text)
-            if (root.exportError === "") { expPass.clear(); expConfirm.clear() }
+            if (root.exportError === "") { expPass.clear(); expConfirm.clear(); root.hint = ({}) }
         }
     }
 

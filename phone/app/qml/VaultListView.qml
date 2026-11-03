@@ -28,7 +28,7 @@ Tk.Flex {
         Tk.Flex.alignSelf: Tk.Flex.Stretch
         onSearched: text => root.query = text
         // The keyboard must not learn what is searched either.
-        inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+        inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
     }
 
     Tk.Flex {

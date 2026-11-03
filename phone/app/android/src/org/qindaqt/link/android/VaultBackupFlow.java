@@ -46,7 +46,8 @@ final class VaultBackupFlow {
         try {
             if (c.state() != VaultLifecycle.State.UNLOCKED) return "Unlock the vault first.";
             if (!Arrays.equals(p1, p2)) return "The passphrases do not match.";
-            if (!PassphraseStrength.check(p1).ok) return "Use at least 12 characters or 4 words.";
+            PassphraseStrength.Result strength = PassphraseStrength.check(p1);
+            if (!strength.ok) return strength.reason;
             synchronized (this) { set("export", "working", 0); }
             final char[] pass = p1.clone();
             new Thread(() -> encryptThenPick(ctx, pass), "vault-export").start();

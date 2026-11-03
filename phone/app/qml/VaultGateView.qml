@@ -10,6 +10,8 @@ Tk.Flex {
 
     property bool restoreOpen: false
     property bool eraseConfirm: false
+    property bool replaceConfirm: false
+    readonly property bool replacing: st === "invalidated" || st === "error"
     readonly property string st: vault.state
 
     direction: Tk.Flex.Column
@@ -79,14 +81,26 @@ Tk.Flex {
                 placeholder: qsTr("Passphrase used when the backup was made")
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
             }
+            Tk.Notice {
+                objectName: "restoreReplaceNotice"
+                visible: root.replaceConfirm
+                variant: "danger"
+                text: qsTr("This replaces the existing vault. Its key and file are removed only after the new vault was created from the backup.")
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
             Tk.Button {
                 objectName: "restoreChoose"
-                text: qsTr("Choose backup file")
+                text: root.replaceConfirm ? qsTr("Replace the existing vault") : qsTr("Choose backup file")
                 iconName: "folder"
-                variant: "accent"
+                variant: root.replaceConfirm ? "danger" : "accent"
                 enabled: restorePass.text.length > 0
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
-                onClicked: { vault.importBackup(restorePass.text, "restore"); restorePass.clear() }
+                onClicked: {
+                    if (root.replacing && !root.replaceConfirm) { root.replaceConfirm = true; return }
+                    vault.importBackup(restorePass.text, root.replacing ? "restore-replace" : "restore")
+                    root.replaceConfirm = false
+                    restorePass.clear()
+                }
             }
             Tk.Caption {
                 objectName: "restoreStatus"
