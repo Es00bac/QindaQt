@@ -24,12 +24,13 @@ The **Access** column below uses these words.
 | Method | Access | Signature | Behavior |
 | --- | --- | --- | --- |
 | `Devices` | open | `() → s` | Compact JSON array of device snapshots (below). |
-| `PendingPairings` | open | `() → s` | JSON array `[{id,name,model,code}]` of pairing requests waiting for the desktop user's decision, so a shell started after the request still shows it. |
+| `PendingPairings` | open | `() → s` | JSON array `[{id,name,model,code,origin,source}]` of pairing requests waiting for the desktop user's decision, so a shell started after the request still shows it. `origin` is `usb` or `lan`; `source` is the peer address for `lan` (empty for `usb`). Consumers may ignore the new fields; the desktop app and applet should say "over Wi-Fi from <source>" for `lan`. The `PairingRequested` D-Bus signal is unchanged: read `PendingPairings` for the origin. |
 | `ConfirmPairing` | trusted | `(s id, b accept)` | The desktop user's decision for the pending pairing with device `id`. Unknown ids and ids with no pending code are ignored. |
 | `Unpair` | trusted | `(s id)` | Deletes the stored pin, sends `bye{unpaired}` on a live connection and closes it. |
 | `Ring` | trusted | `(s id)` | Asks a READY phone that lists the `ring` capability to ring. Fire-and-forget; failures are logged without the device id beyond a prefix. |
 | `ListenPort` | open | `() → q` | The TCP port of the loopback listener (47160 in production). Diagnostics and tests only. |
 | `SetLanEnabled` | trusted | `(b enabled)` | Persists `lanEnabled` in `$XDG_CONFIG_HOME/qindalink/service.json` and applies it: starts or stops the per-address LAN listeners and the `_qindalink._tcp` advert. Turning it off ends LAN sessions with `bye{shutdown}` and closes the pairing window. Off by default ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)). |
+| `SetLanInterfaces` | trusted | `(as names)` | Persists the interface-name allowlist (`lanInterfaces` in `service.json`; at most 16 names of 1-15 characters `[A-Za-z0-9_.:@-]`, otherwise `InvalidArgs`). Empty means every private-range interface. Restricts both the LAN listeners and the mDNS advert. |
 | `OpenPairingWindow` | trusted | `() → u` | Opens (or restarts) the 120 s window in which a LAN connection may start pairing; returns its length in seconds, or `0` when LAN is off. Loopback (USB) pairing never needs it. |
 
 ## Properties
@@ -37,7 +38,7 @@ The **Access** column below uses these words.
 | Property | Access | Type | Meaning |
 | --- | --- | --- | --- |
 | `LanEnabled` | open, read-only | `b` | The persisted LAN setting. |
-| `LanStatus` | open, read-only | `s` | Compact JSON `{enabled, state, listeners, failed[], advertised, publisher, pairingWindow, persisted}`. `state` is `off`, `waiting` (enabled, no usable address), `listening` or `error` (every bind failed); `failed` holds socket error texts; `publisher` is `off`, `published`, `renamed` (after a name collision), `unavailable` (no Avahi), `failed` or `none`; `pairingWindow` is the seconds left. It carries no addresses. |
+| `LanStatus` | open, read-only | `s` | Compact JSON `{enabled, state, listeners, failed[], advertised, publisher, pairingWindow, persisted}`. `interfaces` lists the bound interface names and `allowlist` the configured ones (never addresses). `state` is `off`, `waiting` (enabled, no usable address), `listening` or `error` (every bind failed); `failed` holds socket error texts; `publisher` is `off`, `published`, `renamed` (after a name collision), `unavailable` (no Avahi), `failed` or `none`; `pairingWindow` is the seconds left. It carries no addresses. |
 
 ## Signals
 
@@ -172,9 +173,9 @@ the client, the introspection XML and this page together. -->
   `--no-adb` and `--no-notifications` exist so tests never touch the real
   state, port 47160, the adb server or the notification server. LAN mode adds
   `--no-avahi` (never touch the system bus), `--lan-port N` (default: `--port`),
-  `--lan-test-address ADDR` (repeatable; bind the LAN listener there instead of the
+  `--lan-test-address ADDR` (repeatable; bypasses the private-range and interface rules; bind the LAN listener there instead of the
   machine's interfaces, for example `127.0.0.2`) and `--pairing-window-ms N`
-  (shorten the window). They only wire machinery: LAN still starts disabled
+  (shorten the window). All three are marked TEST/DEVELOPMENT ONLY in `--help` and log a warning like `--trusted-caller`. They only wire machinery: LAN still starts disabled
   and needs `SetLanEnabled` from a trusted caller.
 
 ## Known gaps

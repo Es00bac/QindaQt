@@ -74,8 +74,10 @@ public final class ManualAddress {
 
     private static boolean isLoopback(String h) {
         String l = h.toLowerCase(Locale.ROOT);
+        // IPv4-mapped forms ("::ffff:127.0.0.1", "::ffff:7f00:1") reach the loopback listener too.
         return l.equals("localhost") || l.startsWith("127.") || l.equals("::1") || l.equals("0:0:0:0:0:0:0:1")
-                || l.equals("0.0.0.0") || l.equals("::");
+                || l.equals("0.0.0.0") || l.equals("::") || l.startsWith("::ffff:127.") || l.startsWith("::ffff:7f")
+                || l.startsWith("0:0:0:0:0:ffff:127.") || l.startsWith("0:0:0:0:0:ffff:7f") || l.equals("::ffff:0.0.0.0");
     }
 
     private static int count(String s, char c) {

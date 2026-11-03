@@ -166,7 +166,7 @@ bool Hub::beginPairing(Session *session)
 {
     if (m_pairingOwner != nullptr && m_pairingOwner != session) {
         // A USB pairing outranks a LAN one: otherwise a LAN host could hold the single slot.
-        if (m_pairingOwner->origin() != Origin::Lan || session->origin() != Origin::Loopback) {
+        if (session == nullptr || m_pairingOwner->origin() != Origin::Lan || session->origin() != Origin::Loopback) {
             return false;
         }
         Session *old = m_pairingOwner;
@@ -174,7 +174,7 @@ bool Hub::beginPairing(Session *session)
         old->close(QStringLiteral("replaced"));
     }
     m_pairingOwner = session;
-    if (session->origin() == Origin::Lan && m_pairingWindow) {
+    if (session != nullptr && session->origin() == Origin::Lan && m_pairingWindow) {
         // One accepted LAN pair.request per window.
         m_pairingWindow = false;
         Q_EMIT lanPairingWindowConsumed();

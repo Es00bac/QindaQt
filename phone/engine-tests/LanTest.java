@@ -52,14 +52,16 @@ public final class LanTest {
     }
 
     /** Fake link whose reader blocks until closed; the Session sits in its hello wait. */
+    static byte[] zeros32 = new byte[32];
     static final class IdleLink implements Link {
+        byte[] spki = zeros32;
         final PipedOutputStream feed = new PipedOutputStream();
         final PipedInputStream in;
         volatile boolean closed;
         IdleLink() throws IOException { in = new PipedInputStream(feed); }
         public InputStream in() { return in; }
         public OutputStream out() { return new OutputStream() { public void write(int b) { } }; }
-        public byte[] peerSpki() { return new byte[32]; }
+        public byte[] peerSpki() { return spki; }
         public byte[] ownSpki() { return new byte[32]; }
         public void close() { closed = true; try { feed.close(); } catch (IOException ignored) { } }
     }
@@ -67,10 +69,15 @@ public final class LanTest {
     static final class FakeOpener implements EndpointConnector.Opener {
         final List<String> attempts = new ArrayList<>();
         final java.util.Set<String> reachable = new java.util.HashSet<>(); // host:port that answer
+        final Map<String, byte[]> keys = new HashMap<>();                   // host:port -> key it presents (default zeros)
+        final List<IdleLink> opened = new ArrayList<>();
         public Link open(Endpoint e) throws IOException {
             attempts.add(e.kind + ":" + e.hostPort());
             if (!reachable.contains(e.hostPort())) throw new IOException("unreachable");
-            return new IdleLink();
+            IdleLink l = new IdleLink();
+            if (keys.containsKey(e.hostPort())) l.spki = keys.get(e.hostPort());
+            opened.add(l);
+            return l;
         }
     }
 
@@ -86,7 +93,7 @@ public final class LanTest {
         expect(ManualAddress.parse(v6.hostPort()).equals(v6), "hostPort round trip");
         for (String bad : new String[] {"", "   ", null, "host:", "host:0", "host:70000", "host:abc", "300.1.1.1", "1.2.3",
                 "-bad.example", "bad_name", "http://example.com", "a b", "[::1", "[fd7a::1]x", "example..com",
-                "127.0.0.1", "localhost:47160", "::1", "[::1]:47160", "0.0.0.0"}) {
+                "127.0.0.1", "localhost:47160", "::1", "[::1]:47160", "0.0.0.0", "::ffff:127.0.0.1", "[::ffff:127.0.0.1]:47160", "[::ffff:7f00:1]:47160", "::FFFF:127.0.0.9"}) {
             try { ManualAddress.parse(bad); expect(false, "accepted bad address: " + bad); }
             catch (IllegalArgumentException expected) { expect(expected.getMessage().length() > 5, "message for " + bad); }
         }
@@ -223,6 +230,29 @@ public final class LanTest {
         c.disconnected();
     }
 
+    static void rogueEndpointDoesNotShadowThePinnedDesktop() throws Exception {
+        File dir = Files.createTempDirectory("qlink-rogue").toFile();
+        FakeOpener op = new FakeOpener();
+        FakeNsd nsd = new FakeNsd();
+        EndpointConnector c = connector(op, nsd, dir, PIN);
+        c.setManualAddress("100.64.0.10");
+        try { c.connect(); } catch (IOException expected) { }
+        // A rogue host squats on the discovered address (right TXT id, wrong key); the real desktop is the manual one.
+        nsd.sink.found("rogue", desk("0000000000000000", "qinda", "10.0.0.50"));
+        byte[] wrong = new byte[32]; wrong[0] = 1;
+        op.reachable.add("10.0.0.50:47160"); op.keys.put("10.0.0.50:47160", wrong);
+        op.reachable.add("100.64.0.10:47160");
+        op.attempts.clear(); op.opened.clear();
+        Link l = c.connect();
+        expect(op.attempts.toString().equals("[USB:127.0.0.1:47160, LAN_DISCOVERED:10.0.0.50:47160, LAN_MANUAL:100.64.0.10:47160]"), "rogue tried then skipped " + op.attempts);
+        expect(c.transport().equals("lan"), "connected to the real endpoint");
+        expect(op.opened.get(0).closed && !op.opened.get(1).closed, "rogue link closed, real link kept");
+        expect(java.util.Arrays.equals(l.peerSpki(), zeros32), "the kept link has the pinned key");
+        // A rogue USB answer does not count as an upgrade.
+        op.reachable.add("127.0.0.1:47160"); op.keys.put("127.0.0.1:47160", wrong);
+        expect(!c.upgradeAvailable(), "wrong-key usb is not an upgrade");
+    }
+
     static void unpairedNeedsAChoice() throws Exception {
         File dir = Files.createTempDirectory("qlink-unp").toFile();
         FakeOpener op = new FakeOpener();
@@ -271,6 +301,7 @@ public final class LanTest {
         backoff();
         memory();
         connectorOrderDiscoveryAndTransport();
+        rogueEndpointDoesNotShadowThePinnedDesktop();
         unpairedNeedsAChoice();
         engineReportsLanThenUpgradesToUsb();
         System.out.println("LanTest ok");
