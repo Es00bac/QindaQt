@@ -29,7 +29,7 @@ struct LanOptions {
     int resyncMs = 15000;            // interface-change poll while enabled
 };
 
-// Owns the optional LAN side of the service (ADR-0434 item 6, ADR-0440):
+// Owns the optional LAN side of the service (ADR-0434 item 6, ADR-0441):
 // the persisted setting, one TLS listener per local address, the
 // `_qindalink._tcp` advert and the pairing window.
 //

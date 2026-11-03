@@ -1,4 +1,4 @@
-# ADR-0440: QindaLink LAN listener, mDNS advert and phone discovery
+# ADR-0441: QindaLink LAN listener, mDNS advert and phone discovery
 
 - **Status:** Accepted
 - **Date:** 2026-11-02

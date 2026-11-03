@@ -29,7 +29,7 @@ The **Access** column below uses these words.
 | `Unpair` | trusted | `(s id)` | Deletes the stored pin, sends `bye{unpaired}` on a live connection and closes it. |
 | `Ring` | trusted | `(s id)` | Asks a READY phone that lists the `ring` capability to ring. Fire-and-forget; failures are logged without the device id beyond a prefix. |
 | `ListenPort` | open | `() → q` | The TCP port of the loopback listener (47160 in production). Diagnostics and tests only. |
-| `SetLanEnabled` | trusted | `(b enabled)` | Persists `lanEnabled` in `$XDG_CONFIG_HOME/qindalink/service.json` and applies it: starts or stops the per-address LAN listeners and the `_qindalink._tcp` advert. Turning it off ends LAN sessions with `bye{shutdown}` and closes the pairing window. Off by default ([ADR-0440](../adr/0440-qindalink-lan-listener-and-discovery.md)). |
+| `SetLanEnabled` | trusted | `(b enabled)` | Persists `lanEnabled` in `$XDG_CONFIG_HOME/qindalink/service.json` and applies it: starts or stops the per-address LAN listeners and the `_qindalink._tcp` advert. Turning it off ends LAN sessions with `bye{shutdown}` and closes the pairing window. Off by default ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)). |
 | `OpenPairingWindow` | trusted | `() → u` | Opens (or restarts) the 120 s window in which a LAN connection may start pairing; returns its length in seconds, or `0` when LAN is off. Loopback (USB) pairing never needs it. |
 
 ## Properties

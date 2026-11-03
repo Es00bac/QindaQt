@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// LAN mode (ADR-0440) against a real Hub and real TLS: a LAN listener is
+// LAN mode (ADR-0441) against a real Hub and real TLS: a LAN listener is
 // simulated by binding 127.0.0.2 and handing that address to the controller
 // through its injected provider. The Avahi side is a FakePublisher.
 #include "support/fake_publisher.h"

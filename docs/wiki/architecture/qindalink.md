@@ -52,7 +52,7 @@ Current maturity: **M1 link core, panel applet, phone apps on the desktop, notif
   a fake `InputActions1`. See [Input and macros](#input-and-macros). The first
   live run against the real portal needs the user's approval and is **not yet
   recorded**.
-- **LAN and Tailscale** ([ADR-0440](../adr/0440-qindalink-lan-listener-and-discovery.md)).
+- **LAN and Tailscale** ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)).
   Implemented behind the protected `SetLanEnabled` setting and tested against a
   `127.0.0.2` stand-in LAN, a fake Avahi daemon and a fake NSD. No live Wi-Fi run is
   recorded yet; it needs the user's approval and an open firewall port.
@@ -128,7 +128,7 @@ test; on-device pairing over USB is not yet recorded.
 
 Off by default. `SetLanEnabled(true)` (a trusted caller, see the
 [Link1 reference](../reference/link1-v1.md)) persists `lanEnabled` and starts
-`LanController` ([ADR-0440](../adr/0440-qindalink-lan-listener-and-discovery.md)):
+`LanController` ([ADR-0441](../adr/0441-qindalink-lan-listener-and-discovery.md)):
 
 - **Listeners.** One TLS listener per up, non-loopback interface address on
   port 47160 (IPv4 and IPv6 global/ULA; no link-local or container bridges),
