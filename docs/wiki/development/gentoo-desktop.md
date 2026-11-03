@@ -358,3 +358,39 @@ for that released recipe. Before integrating the overlay, preserve the released
 recipe and apply these dependency changes to a new revision pinned to final
 container-wm main, including native polkit and subsequent lanes. No delivery
 list or installed package changes are part of M1 source qualification.
+
+### QindaLink in the desktop package (revision r49 recipe)
+
+The [QindaLink](../architecture/qindalink.md) phone companion ships inside
+`gui-wm/qindaqt-desktop`, not in a package of its own. The recipe is
+`packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r49.ebuild`.
+It carries a `@@QINDAQT_COMMIT@@` placeholder that `cut-package.sh` replaces,
+and it has no `PATCHES`: the r40, r42, r45, r46 and r48 patches are already in
+`main` from `42edc40cb`, so pin only a commit that descends from it.
+
+| Part | Installed as |
+| --- | --- |
+| Service | `/usr/bin/qindaqt-link-service` |
+| D-Bus activation | `/usr/share/dbus-1/services/org.qindaqt.Link1.service` (`Exec=` the binary above, `SystemdService=qindaqt-link-service.service`) |
+| User unit | `/usr/lib/systemd/user/qindaqt-link-service.service`, `WantedBy=default.target` (never `graphical-session.target`, which QindaQt does not activate) |
+| Login start | `/etc/xdg/autostart/qindaqt-link-service.desktop`, a `QindaQt`-only entry that pings `org.qindaqt.Link1` so the bus activates the unit |
+| Companion app | `/usr/bin/qindaqt-link`, `org.qindaqt.Link.desktop`, `hicolor/scalable/apps/org.qindaqt.Link.svg` |
+| Mirror | `/usr/bin/qindaqt-link-mirror` (needs `media-video/ffmpeg[vaapi]`, ADR-0435) |
+| Applet | inside the production shell; no separate file |
+
+Dependencies added to RDEPEND (and so DEPEND): `media-video/ffmpeg:=[vaapi]`
+for the mirror decoder and `dev-util/android-tools` for `/usr/bin/adb`.
+`dev-libs/openssl` (libcrypto 3.2) was already required. `net-dns/avahi` is
+added only when LAN discovery lands; it is reached over D-Bus, so there is no
+link-time need. Nothing in the build touches the network.
+
+`qindaqt-link` stays in this package rather than a separate one. It talks to
+`Link1` and is one of the two executables the service's caller policy trusts
+(ADR-0438), so the two must move together; the System Monitor is separate
+because it has no such coupling. The recipe still passes
+`-DQINDAQT_BUILD_SYSTEM_MONITOR=OFF`.
+
+AGENT-GUARD: the caller policy's trusted paths are `QINDAQT_BINDIR/qindaqt-link`
+and `QINDAQT_BINDIR/qindaqt-shell`, with `QINDAQT_BINDIR` equal to
+`KDE_INSTALL_FULL_BINDIR`. The ebuild must keep installing both under
+`/usr/bin`; a different `-DCMAKE_INSTALL_BINDIR` silently denies every client.
