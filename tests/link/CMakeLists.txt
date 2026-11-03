@@ -182,3 +182,17 @@ if(QINDAQT_DBUS_RUN_SESSION)
     )
     set_tests_properties(qindaqt.link-caller-coverage PROPERTIES LABELS "service;link" TIMEOUT 60)
 endif()
+
+# Login start of qindaqt-link-service (packaging lane): autostart entry eligibility and unit shape.
+qt_add_executable(qindaqt_link_login_start_test tst_link_login_start.cpp)
+target_link_libraries(qindaqt_link_login_start_test PRIVATE QindaQt::SessionAutostart Qt6::Test)
+target_compile_definitions(
+    qindaqt_link_login_start_test
+    PRIVATE
+        QINDAQT_LINK_AUTOSTART_ENTRY="${CMAKE_SOURCE_DIR}/src/services/link_service/data/qindaqt-link-service.desktop"
+        QINDAQT_LINK_UNIT_TEMPLATE="${CMAKE_SOURCE_DIR}/src/services/link_service/data/qindaqt-link-service.service.in"
+        QINDAQT_LINK_DBUS_TEMPLATE="${CMAKE_SOURCE_DIR}/src/services/link_service/data/org.qindaqt.Link1.service.in"
+)
+qindaqt_enable_warnings(qindaqt_link_login_start_test)
+add_test(NAME qindaqt.link-login-start COMMAND qindaqt_link_login_start_test)
+set_tests_properties(qindaqt.link-login-start PROPERTIES LABELS "service;link" TIMEOUT 30)

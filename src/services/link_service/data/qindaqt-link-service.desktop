@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=QindaLink service
+Comment=Start the QindaLink phone service at login so USB tunnels and phone notifications work with no window open
+Exec=dbus-send --session --dest=org.qindaqt.Link1 --type=method_call / org.freedesktop.DBus.Peer.Ping
+TryExec=dbus-send
+OnlyShowIn=QindaQt;
+NoDisplay=true
+Terminal=false

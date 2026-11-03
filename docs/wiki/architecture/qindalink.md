@@ -447,3 +447,12 @@ qindaqt-link-mirror                                phone (shell uid, app_process
 | M1d | Phone apps as desktop windows over ADB | One phone app runs in a desktop window with working touch, keys and resize |
 | M2 | Notifications, SMS, input and macros, vault typing, panel applet, QindaTK app | Per-feature focused tests and one USB end-to-end smoke each |
 | M3 | LAN discovery, wireless ADB streaming, audio forwarding, desktop package revision | A signed Portage build and a LAN smoke |
+
+## Packaging
+
+QindaLink ships inside `gui-wm/qindaqt-desktop` (service, D-Bus activation file,
+systemd user unit, companion app, mirror, applet). The service starts at login
+through a QindaQt-only XDG autostart entry that triggers D-Bus activation, so USB
+tunnels and phone notifications work with no window open. Dependencies and
+install paths: [QindaLink in the desktop package](../development/gentoo-desktop.md#qindalink-in-the-desktop-package-revision-r49-recipe).
+

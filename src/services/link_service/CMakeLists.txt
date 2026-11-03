@@ -99,3 +99,21 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces"
     COMPONENT QindaQtLink
 )
+
+# AGENT-CONTRACT: login start. The session supervisor runs one XDG autostart batch
+# (docs/wiki/architecture/session-autostart.md); this QindaQt-only entry sends a
+# no-reply org.freedesktop.DBus.Peer.Ping to org.qindaqt.Link1, which makes the bus
+# D-Bus-activate qindaqt-link-service.service exactly as the first applet call would.
+# The service therefore runs under its systemd unit (sandbox, KillMode=process), never
+# as a bare supervisor child. Do not point Exec at the binary: a direct child would
+# own the bus name and bypass the unit. Same install-time prefix rule as
+# qindaqt-obs-login.desktop (src/services/streaming_preferences/CMakeLists.txt).
+install(CODE "
+    if(CMAKE_INSTALL_PREFIX MATCHES \"^/(usr(/local)?)?/?$\")
+        set(_qindaqt_autostart_dir \"/etc/xdg/autostart\")
+    else()
+        set(_qindaqt_autostart_dir \"\${CMAKE_INSTALL_PREFIX}/etc/xdg/autostart\")
+    endif()
+    file(INSTALL DESTINATION \"\${_qindaqt_autostart_dir}\" TYPE FILE
+         FILES \"${CMAKE_CURRENT_SOURCE_DIR}/data/qindaqt-link-service.desktop\")
+" COMPONENT QindaQtLink)

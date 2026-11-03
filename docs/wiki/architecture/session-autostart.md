@@ -54,6 +54,15 @@ or persist run history.
 Focused gates use disposable XDG roots and a private D-Bus session. See the
 [Startup Settings verification](../apps/startup-settings.md#verification).
 
+## QindaLink service entry
+
+`/etc/xdg/autostart/qindaqt-link-service.desktop` is a QindaQt-only, hidden entry
+that runs `dbus-send --session --dest=org.qindaqt.Link1 ... org.freedesktop.DBus.Peer.Ping`
+without waiting for a reply. The ping makes the session bus activate
+`qindaqt-link-service.service`, so the service runs under its systemd unit and not as a
+supervisor child. It is short-lived and not restarted; the unit's own `Restart=on-failure`
+keeps the service up. Pinned by `qindaqt.link-login-start`.
+
 ## Removable media child
 
 The [removable-media application](../apps/removable-media.md) is an optional supervisor-owned `--watch` child, started after shell/polkit and stopped before notification teardown. Production main configures it; `--no-removable-media` and the empty support-library default isolate private sessions. A component-only package may provide a QindaQt-only XDG startup entry for desktops predating the supervisor integration. Its session-bus singleton keeps a second watcher inert; that compatibility entry is not required by the integrated supervisor.
