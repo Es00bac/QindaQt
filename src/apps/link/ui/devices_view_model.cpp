@@ -235,6 +235,11 @@ void DevicesViewModel::checkSetup()
 void DevicesViewModel::showReport(const QString &json, bool isStatus)
 {
     const QJsonObject report = QJsonDocument::fromJson(json.toUtf8()).object();
+    if (report.value(QStringLiteral("error")).toString() == QLatin1String("busy")) {
+        m_setupMessage = tr("Setup is already running for this phone. Wait for it to finish.");
+        Q_EMIT setupChanged();
+        return;
+    }
     QList<QVariantMap> rows;
     int bad = 0;
     for (const QJsonValue &v : report.value(QStringLiteral("steps")).toArray()) {

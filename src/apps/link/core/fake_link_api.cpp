@@ -156,6 +156,9 @@ void FakeLinkApi::populate()
     }
     threads[4] = makeThread(5, {QStringLiteral("22395")}, {QString()}, QStringLiteral("Your code is 123456"),
                         now - 150 * minute, 0, 1);
+    // Thread 6 is a two-person group (renders of a partly failed send).
+    threads[5] = makeThread(6, {QStringLiteral("+15550166"), QStringLiteral("+15550167")},
+                            {QStringLiteral("Ola Berg"), QStringLiteral("Priya Nair")}, snippets.at(5), now - 150 * minute, 0, 4);
     // Thread 1 has 130 messages (paging), including one MMS with an image.
     QList<QJsonObject> list;
     for (int i = 0; i < 130; ++i) {

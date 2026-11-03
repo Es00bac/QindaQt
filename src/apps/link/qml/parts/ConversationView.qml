@@ -118,7 +118,7 @@ Tk.Flex {
         property string recipientsText: ""
         property int characters: 0
         title: qsTr("Send this message?")
-        subtitle: qsTr("It is sent as an SMS from your phone, which may cost money.")
+        subtitle: qsTr("You have not sent to these recipients in this session. It is sent as an SMS from your phone, which may cost money.")
         primaryText: qsTr("Send")
         secondaryText: qsTr("Cancel")
         onAccepted: Conversation.confirmSend()
@@ -128,7 +128,7 @@ Tk.Flex {
             gap: Tk.Theme.space.xs
             Tk.Overline { title: qsTr("To") }
             Tk.Label { text: confirm.recipientsText; wrapMode: Text.WordWrap; Tk.Flex.minWidth: 0 }
-            Tk.Caption { text: qsTr("%1 characters. You will not be asked again this session.").arg(confirm.characters) }
+            Tk.Caption { text: qsTr("%1 characters. You will not be asked again for these recipients this session.").arg(confirm.characters) }
         }
     }
     Connections {

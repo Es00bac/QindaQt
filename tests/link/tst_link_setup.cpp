@@ -16,6 +16,10 @@ public:
     void run(const QStringList &args, std::function<void(int, const QByteArray &)> done) override
     {
         commands.append(args.join(QLatin1Char(' ')));
+        if (hold) {
+            held.append(done);
+            return;
+        }
         const QString joined = commands.last();
         for (auto it = failing.cbegin(); it != failing.cend(); ++it) {
             if (joined.contains(*it)) {
@@ -32,6 +36,12 @@ public:
         done(0, {});
     }
     QStringList commands;
+    bool hold = false;  // park every command until release()
+    QList<std::function<void(int, const QByteArray &)>> held;
+    void release()
+    {
+        while (!held.isEmpty()) held.takeFirst()(0, {});
+    }
     QStringList failing;
     QMap<QString, QByteArray> outputs;
 };
@@ -89,12 +99,34 @@ private Q_SLOTS:
         QCOMPARE(steps.at(3).toObject().value(QStringLiteral("code")).toInt(), 1);
     }
 
+    void aSecondSetupForTheSameSerialIsRefusedWhileOneRuns()
+    {
+        FakeAdb adb;
+        adb.hold = true;
+        PhoneSetup setup(adb);
+        QJsonObject first;
+        setup.run(QStringLiteral("abc"), [&first](const QJsonObject &r) { first = r; });
+        QJsonObject second;
+        setup.run(QStringLiteral("abc"), [&second](const QJsonObject &r) { second = r; });
+        QCOMPARE(second.value(QStringLiteral("error")).toString(), QStringLiteral("busy"));
+        QCOMPARE(adb.commands.size(), 1);  // the refused call ran nothing
+        QJsonObject other;  // another phone is independent
+        setup.run(QStringLiteral("xyz"), [&other](const QJsonObject &r) { other = r; });
+        QCOMPARE(adb.commands.size(), 2);
+        adb.hold = false;
+        while (!adb.held.isEmpty()) adb.release();
+        QVERIFY(first.value(QStringLiteral("ok")).toBool());
+        QJsonObject again;
+        setup.run(QStringLiteral("abc"), [&again](const QJsonObject &r) { again = r; });  // free again
+        QVERIFY(again.value(QStringLiteral("ok")).toBool());
+    }
+
     void refusesAnUnsafeSerialWithoutRunningAdb()
     {
         FakeAdb adb;
         PhoneSetup setup(adb);
         for (const QString &bad : {QString(), QStringLiteral("a b"), QStringLiteral("x;rm -rf"), QStringLiteral("$(id)"),
-                                   QString(70, QLatin1Char('a'))}) {
+                                   QString(70, QLatin1Char('a')), QStringLiteral("abc\n")}) {
             const QJsonObject report = runSetup(setup, bad);
             QVERIFY(!report.value(QStringLiteral("ok")).toBool());
             QCOMPARE(report.value(QStringLiteral("error")).toString(), QStringLiteral("bad-serial"));

@@ -23,7 +23,7 @@ QList<QVariantMap> PhoneAppsViewModel::parseInventory(const QByteArray &json)
         const QJsonDocument doc = QJsonDocument::fromJson(line.trimmed());
         if (doc.isObject() && doc.object().contains(QStringLiteral("apps"))) root = doc.object();
     }
-    static const QRegularExpression packageShape(QStringLiteral("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$"));
+    static const QRegularExpression packageShape(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+")));
     QList<QVariantMap> rows;
     for (const QJsonValue &v : root.value(QStringLiteral("apps")).toArray()) {
         const QJsonObject o = v.toObject();
@@ -122,7 +122,7 @@ void PhoneAppsViewModel::toggleFavourite(const QString &pkg)
 
 bool PhoneAppsViewModel::open(const QString &pkg)
 {
-    static const QRegularExpression packageShape(QStringLiteral("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$"));
+    static const QRegularExpression packageShape(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+")));
     if (m_serial.isEmpty() || !packageShape.match(pkg).hasMatch()) return false;
     if (!m_runner.startDetached(m_program, {QStringLiteral("--serial"), m_serial, QStringLiteral("--package"), pkg})) {
         setState(m_state, tr("Could not start qindaqt-link-mirror."));

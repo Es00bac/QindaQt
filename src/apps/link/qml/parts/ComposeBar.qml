@@ -24,10 +24,27 @@ Tk.Box {
         direction: Tk.Flex.Column
         gap: Tk.Theme.space.xs
 
+        // The send error stays until the reader acts on it.
         Tk.Notice {
-            visible: Conversation.error.length > 0
+            objectName: "sendError"
+            visible: Conversation.sendError.length > 0 || Conversation.retryAvailable
             variant: "danger"
-            text: Conversation.error
+            dismissible: true
+            text: Conversation.sendError.length > 0 ? Conversation.sendError
+                  : qsTr("Not sent to: %1").arg(Conversation.retryRecipients)
+            onDismissed: Conversation.dismissRetry()
+            actions: Tk.Button {
+                objectName: "retryButton"
+                visible: Conversation.retryAvailable
+                small: true
+                text: qsTr("Retry to these")
+                tooltip: qsTr("Send the same text again, only to: %1").arg(Conversation.retryRecipients)
+                onClicked: Conversation.retryToUnsent()
+            }
+        }
+        Tk.Caption {
+            visible: Conversation.retryAvailable && Conversation.sendError.length > 0
+            text: qsTr("Recipients: %1").arg(Conversation.retryRecipients)
         }
         Tk.Flex {
             gap: Tk.Theme.space.sm

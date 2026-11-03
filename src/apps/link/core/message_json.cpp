@@ -31,10 +31,18 @@ QString formatWhen(qint64 ms, qint64 nowMs)
     return locale.toString(when.date(), QStringLiteral("d MMM"));
 }
 
-QString messagesErrorText(const QString &code)
+QString messagesErrorText(const QString &code, bool sending)
 {
+    if (code == QLatin1String("caller-denied")) {
+        return QObject::tr("This copy of QindaLink isn't allowed to use the QindaLink service. Use the installed app.");
+    }
+    if (code == QLatin1String("rate-limited")) {
+        return QObject::tr("Too many texts sent in a short time \u2014 try again in a minute.");
+    }
     if (code == QLatin1String("denied")) {
-        return QObject::tr("The phone has not allowed QindaLink to use messages. Run Set up phone on the Devices page.");
+        return sending ? QObject::tr("The phone refused to send: it may not have the SMS permission (run Set up phone on "
+                                     "the Devices page), or a recipient number cannot be texted.")
+                       : QObject::tr("The phone has not allowed QindaLink to use messages. Run Set up phone on the Devices page.");
     }
     if (code == QLatin1String("unsupported")) return QObject::tr("The phone does not support this.");
     if (code == QLatin1String("not-connected") || code == QLatin1String("unavailable")) {

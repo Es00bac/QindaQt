@@ -7,6 +7,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
+#include <QtCore/QSet>
+
 #include <functional>
 
 namespace QindaQt::Link {
@@ -27,6 +29,8 @@ public:
                         QObject *parent = nullptr);
     // True for a serial shaped like an adb serial; everything else is refused before adb runs.
     [[nodiscard]] static bool validSerial(const QString &serial);
+    // Runs every grant. A second run for a serial that is already being set up is refused with
+    // {"ok":false,"error":"busy"} instead of interleaving adb commands on the phone.
     // Runs every grant. Report: {"serial","ok":bool,"steps":[{"id","ok","code"}]}.
     void run(const QString &serial, Done done);
     // Reads the state without changing it. Report: {"serial","ok":bool,"steps":[{"id","ok","code"}]}
@@ -45,6 +49,7 @@ private:
 
     AdbRunner &m_runner;
     QString m_package;
+    QSet<QString> m_running;  // serials with a SetupPhone in flight
 };
 
 } // namespace QindaQt::Link

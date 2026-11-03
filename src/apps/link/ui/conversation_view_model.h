@@ -5,6 +5,7 @@
 #include "link_api.h"
 
 #include <QtCore/QHash>
+#include <QtCore/QSet>
 #include <QtCore/QObject>
 
 #include <functional>
@@ -31,6 +32,9 @@ class ConversationViewModel final : public QObject {
     Q_PROPERTY(bool sending READ sending NOTIFY stateChanged FINAL)
     Q_PROPERTY(QString error READ error NOTIFY stateChanged FINAL)
     Q_PROPERTY(bool sendConfirmedThisSession READ confirmedThisSession NOTIFY stateChanged FINAL)
+    Q_PROPERTY(QString sendError READ sendError NOTIFY stateChanged FINAL)
+    Q_PROPERTY(bool retryAvailable READ retryAvailable NOTIFY stateChanged FINAL)
+    Q_PROPERTY(QString retryRecipients READ retryRecipients NOTIFY stateChanged FINAL)
 public:
     using Clock = std::function<qint64()>;
     explicit ConversationViewModel(LinkApi &api, QObject *parent = nullptr);
@@ -45,7 +49,12 @@ public:
     [[nodiscard]] bool hasOlder() const { return m_older; }
     [[nodiscard]] bool sending() const { return m_sending; }
     [[nodiscard]] QString error() const { return m_error; }
-    [[nodiscard]] bool confirmedThisSession() const { return m_confirmed; }
+    // True when the CURRENT conversation's recipients were already confirmed this session.
+    [[nodiscard]] bool confirmedThisSession() const { return m_confirmedSets.contains(recipientKey(m_addrs)); }
+    // The last send failure; stays until the reader acts (sends again, retries, dismisses, closes).
+    [[nodiscard]] QString sendError() const { return m_sendError; }
+    [[nodiscard]] bool retryAvailable() const { return !m_retryAddrs.isEmpty(); }
+    [[nodiscard]] QString retryRecipients() const { return displayRecipients(m_retryAddrs); }
 
     Q_INVOKABLE void setDeviceId(const QString &id);
     // `thread` is a ThreadsViewModel row (threadId, title, addrs, names, unread).
@@ -58,6 +67,10 @@ public:
     Q_INVOKABLE void requestSend(const QString &text);
     Q_INVOKABLE void confirmSend();
     Q_INVOKABLE void cancelSend();
+    // Sends the failed text again to only the recipients that did not get it (asks first if that
+    // recipient set was never confirmed). Still needs this explicit call.
+    Q_INVOKABLE void retryToUnsent();
+    Q_INVOKABLE void dismissRetry();
 
 Q_SIGNALS:
     void threadChanged();
@@ -68,7 +81,11 @@ Q_SIGNALS:
     void threadRead(qlonglong threadId);
 
 private:
-    void sendNow(const QString &text);
+    void sendTo(QString text, QStringList addrs);  // by value: callers pass members this clears
+    void sendNow(QString text, QStringList addrs);
+    [[nodiscard]] static QString recipientKey(const QStringList &addrs);
+    [[nodiscard]] QString displayRecipients(const QStringList &addrs) const;
+    void setSendError(const QString &text);
     void applyIncoming(const QString &json, bool older);
     void setMerged(QList<QVariantMap> merged);
     void onSendStatus(const QString &device, qlonglong ref, const QString &state, const QString &code, const QString &detail);
@@ -90,9 +107,17 @@ private:
     bool m_loading = false;
     bool m_older = false;
     bool m_sending = false;
-    bool m_confirmed = false;
+    // Recipient sets (normalised) the reader confirmed this session. AGENT-GUARD: confirmation is
+    // per recipient set, never session-wide: a confirmation for one set must not authorise another.
+    QSet<QString> m_confirmedSets;
     QString m_pendingText;
+    QStringList m_pendingAddrs;
     QString m_error;
+    QString m_sendError;
+    struct SentInfo { QString text; QStringList addrs; };
+    QHash<qlonglong, SentInfo> m_sent;  // send ref -> what was sent, until delivered or failed
+    QString m_retryText;
+    QStringList m_retryAddrs;
     QHash<qlonglong, QString> m_refKeys;  // send ref -> local row key
     quint64 m_generation = 0;
 };
