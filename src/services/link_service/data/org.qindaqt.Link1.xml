@@ -12,6 +12,12 @@
     <method name="Ring"><arg name="id" type="s" direction="in"/></method>
     <method name="PendingPairings"><arg name="json" type="s" direction="out"/></method>
     <method name="ListenPort"><arg name="port" type="q" direction="out"/></method>
+    <method name="SetLanEnabled"><arg name="enabled" type="b" direction="in"/></method>
+    <method name="OpenPairingWindow"><arg name="seconds" type="u" direction="out"/></method>
+    <property name="LanEnabled" type="b" access="read"/>
+    <property name="LanStatus" type="s" access="read"/>
+    <signal name="PairingWindowChanged"><arg name="open" type="b"/><arg name="seconds" type="u"/></signal>
+    <signal name="LanStatusChanged"><arg name="json" type="s"/></signal>
     <signal name="DevicesChanged"><arg name="json" type="s"/></signal>
     <signal name="PairingRequested">
       <arg name="id" type="s"/><arg name="name" type="s"/>

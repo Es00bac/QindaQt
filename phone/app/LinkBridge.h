@@ -17,10 +17,13 @@ class LinkBridge : public QObject
     Q_PROPERTY(bool paired READ paired NOTIFY changed)
     Q_PROPERTY(QString pairedName READ pairedName NOTIFY changed)
     // Device facts for the UI (additive; DeviceFacts.java is the other side). transport is "usb",
-    // "wifi" or "" and is "usb" while a session is up until the engine reports its own.
+    // "lan" (any network address) or "none" and is "usb" while a session is up until the engine reports its own.
     // perm maps notificationAccess|sms|contacts|postNotifications|batteryOptimisation to
     // "granted" | "denied" | "later".
     Q_PROPERTY(QString transport READ transport NOTIFY changed)
+    // LAN connection facts (EndpointConnector.uiJson): {manual, manualError, discovering, selected,
+    // desktops:[{id,name}]}. Discovered addresses are never exposed here.
+    Q_PROPERTY(QVariantMap lan READ lan NOTIFY lanChanged)
     Q_PROPERTY(int batteryLevel READ batteryLevel NOTIFY changed)
     Q_PROPERTY(bool charging READ charging NOTIFY changed)
     Q_PROPERTY(QString network READ network NOTIFY changed)
@@ -46,6 +49,7 @@ public:
     QString pairedName() const { return m_s.value(QStringLiteral("pairedName")).toString(); }
 
     QString transport() const;
+    QVariantMap lan() const { return m_lan; }
     int batteryLevel() const { return m_dev.value(QStringLiteral("batteryLevel"), -1).toInt(); }
     bool charging() const { return m_dev.value(QStringLiteral("charging")).toBool(); }
     QString network() const { return m_dev.value(QStringLiteral("network")).toString(); }
@@ -79,9 +83,14 @@ public:
     Q_INVOKABLE void accept();
     Q_INVOKABLE void reject();
     Q_INVOKABLE void forget();
+    // Saves the manual desktop address (empty clears it); returns "" or the message to show.
+    Q_INVOKABLE QString setManualAddress(const QString &address);
+    // An unpaired phone connects over the network only to the desktop chosen here ("" clears).
+    Q_INVOKABLE void selectDesktop(const QString &id);
 
 signals:
     void changed();
+    void lanChanged();
     void inputChanged();
     void sensitivityChanged();
 
@@ -89,10 +98,11 @@ private:
     void poll();
     void pollDevice();
     void pollInput();
+    void pollLan();
     void call(const char *method);
     QVariantMap m_s;
     QVariantMap m_dev;
-    QVariantMap m_input, m_macro;
+    QVariantMap m_input, m_macro, m_lan;
     double m_sensitivity = 1.6;
     QTimer m_fast; // 150 ms input-state poll while remote input is wanted
     int m_tick = 0;

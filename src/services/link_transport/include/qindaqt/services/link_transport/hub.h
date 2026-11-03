@@ -38,10 +38,19 @@ public:
     Hub(DeviceIdentity identity, TrustStore &store, HubOptions options, QObject *parent = nullptr);
     ~Hub() override;
 
-    // Adds a listener; port 0 picks an ephemeral port. LAN origin listeners
-    // exist for the replacement/denied rules; this lane never opens one.
-    [[nodiscard]] bool listen(const QHostAddress &address, quint16 port, Origin origin = Origin::Loopback);
+    // Adds a listener; port 0 picks an ephemeral port. On failure `error`
+    // (when given) receives the socket's reason. LAN-origin listeners are
+    // opened and closed only by the service's LanController (ADR-0441).
+    [[nodiscard]] bool listen(const QHostAddress &address, quint16 port, Origin origin = Origin::Loopback,
+                              QString *error = nullptr);
+    // Closes the listener bound to exactly `address` with `origin`; live sessions stay. False if none.
+    bool unlisten(const QHostAddress &address, Origin origin);
+    // Closes every live session that arrived through `origin` with bye{reason:"shutdown"}.
+    void dropSessions(Origin origin);
     [[nodiscard]] quint16 port(qsizetype listenerIndex = 0) const;
+    [[nodiscard]] qsizetype listenerCount(Origin origin) const;
+    // Bound port of the listener on exactly `address` with `origin`, 0 if none.
+    [[nodiscard]] quint16 portOf(const QHostAddress &address, Origin origin) const;
     void setPairingWindowOpen(bool open) { m_pairingWindow = open; }
     // Registers a feature (non-owning). Must happen before connections arrive.
     void addFeature(FeatureHandler *handler) { m_router.add(handler); }

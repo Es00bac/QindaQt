@@ -462,3 +462,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0437: QindaLink panel applet and phone capability tokens](0437-qindalink-panel-applet-and-phone-capability-tokens.md) — Accepted `qindaqt.applets.link` over the public Link1 client with `phone.read` and `phone.control` tokens.
 - [ADR-0438: Authorize Link1 callers by executable](0438-qindalink-link1-caller-authority.md) — Accepted one `CallerPolicy` for every Link1 adaptor; content reads and actions need a trusted executable.
 - [ADR-0439: QindaLink phone password vault](0439-qindalink-phone-password-vault.md) — Accepted Keystore-wrapped AES-GCM vault, encrypted PBKDF2 backup and the typing seam for part 2.
+- [ADR-0441: QindaLink LAN listener, mDNS advert and phone discovery](0441-qindalink-lan-listener-and-discovery.md) — Accepted per-address LAN listeners behind a protected setting, an Avahi `_qindalink._tcp` advert, USB-first phone connection order with TXT-id filtering and a manual address.

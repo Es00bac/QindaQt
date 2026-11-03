@@ -19,6 +19,12 @@ void FakeBridge::setScenario(const QString &name)
               {QStringLiteral("contacts"), QStringLiteral("later")},
               {QStringLiteral("postNotifications"), QStringLiteral("denied")},
               {QStringLiteral("batteryOptimisation"), QStringLiteral("denied")}};
+    // Synthetic desktops; the real section never shows addresses either.
+    m_lan = {{QStringLiteral("manual"), QString()}, {QStringLiteral("manualError"), QString()},
+             {QStringLiteral("discovering"), true}, {QStringLiteral("selected"), QString()},
+             {QStringLiteral("desktops"), QVariantList{
+                  QVariantMap{{QStringLiteral("id"), QStringLiteral("0123456789abcdef")}, {QStringLiteral("name"), QStringLiteral("qinda")}},
+                  QVariantMap{{QStringLiteral("id"), QStringLiteral("fedcba9876543210")}, {QStringLiteral("name"), QStringLiteral("studio-pc")}}}}};
     if (name == QLatin1String("found")) {
         m_phase = QStringLiteral("connected"); m_desktopName = QStringLiteral("qinda");
         m_transport = QStringLiteral("usb"); m_message = QStringLiteral("Desktop reachable");
@@ -49,6 +55,21 @@ void FakeBridge::pair() { setScenario(QStringLiteral("confirm")); }
 void FakeBridge::pairAgain() { setScenario(QStringLiteral("confirm")); }
 void FakeBridge::accept() { setScenario(QStringLiteral("ready")); }
 void FakeBridge::reject() { setScenario(QStringLiteral("found")); }
+QString FakeBridge::setManualAddress(const QString &address)
+{
+    const QString err = address.contains(QLatin1Char(' ')) ? QStringLiteral("That is not a valid host name or IP address") : QString();
+    m_lan[QStringLiteral("manualError")] = err;
+    if (err.isEmpty()) m_lan[QStringLiteral("manual")] = address;
+    emit changed();
+    return err;
+}
+
+void FakeBridge::selectDesktop(const QString &id)
+{
+    m_lan[QStringLiteral("selected")] = id;
+    emit changed();
+}
+
 void FakeBridge::forget() { setScenario(QStringLiteral("found")); }
 
 QStringList FakeBridge::inputScenarios()

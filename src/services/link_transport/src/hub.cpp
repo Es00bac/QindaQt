@@ -15,15 +15,55 @@ Hub::Hub(DeviceIdentity identity, TrustStore &store, HubOptions options, QObject
 
 Hub::~Hub() = default;
 
-bool Hub::listen(const QHostAddress &address, quint16 port, Origin origin)
+bool Hub::listen(const QHostAddress &address, quint16 port, Origin origin, QString *error)
 {
     auto listener = std::make_unique<TlsListener>(m_identity, origin, this);
     if (!listener->listen(address, port)) {
+        if (error != nullptr) *error = listener->errorString();
         return false;
     }
     connect(listener.get(), &TlsListener::connectionReady, this, &Hub::adopt);
     m_listeners.push_back(std::move(listener));
     return true;
+}
+
+bool Hub::unlisten(const QHostAddress &address, Origin origin)
+{
+    for (auto it = m_listeners.begin(); it != m_listeners.end(); ++it) {
+        if ((*it)->origin() == origin && (*it)->address() == address) {
+            (*it)->close();
+            (*it)->deleteLater();
+            it->release();
+            m_listeners.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void Hub::dropSessions(Origin origin)
+{
+    const auto sessions = m_sessions.values();
+    for (Session *s : sessions) {
+        if (s->origin() == origin && s->state() != SessionState::Closed) {
+            s->close(QStringLiteral("shutdown"));
+        }
+    }
+}
+
+qsizetype Hub::listenerCount(Origin origin) const
+{
+    qsizetype n = 0;
+    for (const auto &l : m_listeners) n += l->origin() == origin ? 1 : 0;
+    return n;
+}
+
+quint16 Hub::portOf(const QHostAddress &address, Origin origin) const
+{
+    for (const auto &l : m_listeners) {
+        if (l->origin() == origin && l->address() == address) return l->port();
+    }
+    return 0;
 }
 
 quint16 Hub::port(qsizetype index) const

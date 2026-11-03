@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- CHANGE_NETWORK_STATE is one of the prerequisites Android 14+ demands of a connectedDevice service. -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <!-- LAN mode (ADR-0441): Android 17 gates local-network access, including mDNS, behind this permission
+         for apps that target API 37. We target 36, so it is declared for the day that changes. NsdManager
+         itself needs no multicast permission. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>

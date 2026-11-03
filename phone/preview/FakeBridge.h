@@ -17,6 +17,7 @@ class FakeBridge : public QObject
     Q_PROPERTY(bool paired MEMBER m_paired NOTIFY changed)
     Q_PROPERTY(QString pairedName MEMBER m_pairedName NOTIFY changed)
     Q_PROPERTY(QString transport MEMBER m_transport NOTIFY changed)
+    Q_PROPERTY(QVariantMap lan MEMBER m_lan NOTIFY changed)
     Q_PROPERTY(int batteryLevel MEMBER m_battery NOTIFY changed)
     Q_PROPERTY(bool charging MEMBER m_charging NOTIFY changed)
     Q_PROPERTY(QString network MEMBER m_network NOTIFY changed)
@@ -55,6 +56,8 @@ public:
     Q_INVOKABLE void accept();
     Q_INVOKABLE void reject();
     Q_INVOKABLE void forget();
+    Q_INVOKABLE QString setManualAddress(const QString &address);
+    Q_INVOKABLE void selectDesktop(const QString &id);
 
 signals:
     void changed();
@@ -68,6 +71,7 @@ private:
     bool m_charging = false;
     int m_battery = -1;
     QVariantMap m_perm;
+    QVariantMap m_lan;
     QString m_inputState = QStringLiteral("active");
     QVariantList m_macros;
     QString m_macroRunning, m_macroRunState, m_macroReason, m_macroLast;

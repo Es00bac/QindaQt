@@ -3,7 +3,7 @@
 # to qt_add_qml_module. The files are given by absolute path, so each gets a flat resource alias.
 set(QINDALINK_QML_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(_names
-    Main.qml ScreenFrame.qml HomeScreen.qml PairingScreen.qml PermissionsScreen.qml PermissionRow.qml
+    Main.qml ConnectionSection.qml ScreenFrame.qml HomeScreen.qml PairingScreen.qml PermissionsScreen.qml PermissionRow.qml
     InputStateNotice.qml ToolsScreen.qml TouchpadScreen.qml KeyboardScreen.qml MacrosScreen.qml VaultScreen.qml
     VaultSecretField.qml VaultGateView.qml VaultListView.qml VaultDetailView.qml VaultGeneratorPanel.qml
     VaultEditView.qml VaultBackupView.qml LinkText.js)

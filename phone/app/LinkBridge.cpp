@@ -19,6 +19,7 @@ LinkBridge::LinkBridge(QObject *parent) : QObject(parent)
     m_fast.setInterval(150);
     connect(&m_fast, &QTimer::timeout, this, &LinkBridge::pollInput);
     pollDevice();
+    pollLan();
     poll();
     // Returning from a settings page is when permission states change.
     connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState s) {
@@ -51,6 +52,34 @@ void LinkBridge::poll()
     if (differs || devChanged)
         emit changed();
     pollInput();
+    if (m_tick % 2 == 0)
+        pollLan();
+}
+
+void LinkBridge::pollLan()
+{
+    const QJniObject json = QJniObject::callStaticObjectMethod(kBridge, "lanJson", "()Ljava/lang/String;");
+    const QVariantMap next = QJsonDocument::fromJson(json.toString().toUtf8()).object().toVariantMap();
+    if (next != m_lan) {
+        m_lan = next;
+        emit lanChanged();
+    }
+}
+
+QString LinkBridge::setManualAddress(const QString &address)
+{
+    QJniObject jaddr = QJniObject::fromString(address);
+    const QJniObject err = QJniObject::callStaticObjectMethod(kBridge, "setManualAddress", "(Ljava/lang/String;)Ljava/lang/String;",
+                                                              jaddr.object<jstring>());
+    pollLan();
+    return err.toString();
+}
+
+void LinkBridge::selectDesktop(const QString &id)
+{
+    QJniObject jid = QJniObject::fromString(id);
+    QJniObject::callStaticMethod<void>(kBridge, "selectDesktop", "(Ljava/lang/String;)V", jid.object<jstring>());
+    pollLan();
 }
 
 void LinkBridge::pollInput()

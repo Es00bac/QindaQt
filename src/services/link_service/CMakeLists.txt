@@ -8,7 +8,10 @@ add_library(QindaQt::LinkService ALIAS qindaqt_link_service)
 target_sources(
     qindaqt_link_service
     PRIVATE
+        src/avahi_publisher.cpp
         src/caller_policy.cpp
+        src/lan_controller.cpp
+        src/lan_settings.cpp
         src/link1_service.cpp
         src/phone_setup.cpp
         src/setup_adaptor.cpp
@@ -18,13 +21,17 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/link_service/avahi_publisher.h
             include/qindaqt/services/link_service/caller_policy.h
+            include/qindaqt/services/link_service/lan_controller.h
+            include/qindaqt/services/link_service/lan_settings.h
             include/qindaqt/services/link_service/link1_service.h
             include/qindaqt/services/link_service/pairing_presenter.h
             include/qindaqt/services/link_service/phone_setup.h
             include/qindaqt/services/link_service/setup_adaptor.h
             include/qindaqt/services/link_service/qt_notification_presenter.h
             include/qindaqt/services/link_service/send_guard.h
+            include/qindaqt/services/link_service/service_publisher.h
 )
 target_link_libraries(
     qindaqt_link_service
