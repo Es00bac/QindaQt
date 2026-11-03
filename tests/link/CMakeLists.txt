@@ -109,3 +109,28 @@ if(QINDAQT_DBUS_RUN_SESSION)
     )
     set_tests_properties(qindaqt.link-fdo-presenter PROPERTIES LABELS "service;link" TIMEOUT 30)
 endif()
+
+# input.* and macro.* against a fake RemoteDesktop portal and fake InputActions1
+# registered under unique names on the test bus; rows run under dbus-run-session
+# so they never touch the user's bus. No row can reach the real portal.
+if(QINDAQT_DBUS_RUN_SESSION)
+    foreach(_t IN ITEMS input macros)
+        qt_add_executable(
+            qindaqt_link_${_t}_test
+            tst_link_${_t}.cpp
+            support/fake_portal.h
+            support/fake_input_actions.h
+            support/input_fixture.h
+        )
+        target_link_libraries(
+            qindaqt_link_${_t}_test
+            PRIVATE QindaQt::LinkInput QindaQt::LinkMacros Qt6::Test Qt6::DBus
+        )
+        qindaqt_enable_warnings(qindaqt_link_${_t}_test)
+        add_test(
+            NAME qindaqt.link-${_t}
+            COMMAND "${QINDAQT_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_link_${_t}_test>
+        )
+        set_tests_properties(qindaqt.link-${_t} PROPERTIES LABELS "service;link" TIMEOUT 60)
+    endforeach()
+endif()

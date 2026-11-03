@@ -8,16 +8,30 @@
 #include <qindaqt/services/link_service/link1_service.h>
 #include <qindaqt/services/link_service/qt_notification_presenter.h>
 
+#include "input_composition.h"
+#include "native_input_gate.h"
+
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QStandardPaths>
 #include <QtDBus/QDBusConnection>
 
+#include <QtCore/QSocketNotifier>
+
 #include <sys/prctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <csignal>
 
 #include <memory>
 
 using namespace QindaQt::Link;
+
+namespace {
+int g_signalPipe[2] = {-1, -1};
+// Async-signal-safe: only writes one byte; the real shutdown runs on the event loop.
+void onTerminate(int) { const char c = 1; const ssize_t r = ::write(g_signalPipe[1], &c, 1); (void)r; }
+}
 
 int main(int argc, char **argv)
 {
@@ -46,7 +60,12 @@ int main(int argc, char **argv)
                                          QStringLiteral("file"));
     QCommandLineOption configDir(QStringLiteral("config-dir"), QStringLiteral("Settings directory."), QStringLiteral("dir"));
     QCommandLineOption cacheDir(QStringLiteral("cache-dir"), QStringLiteral("Icon cache directory."), QStringLiteral("dir"));
-    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir});
+    
+    QCommandLineOption noInput(QStringLiteral("no-input"),
+                               QStringLiteral("Do not offer the input and macro capabilities."));
+    QCommandLineOption stateDir(QStringLiteral("state-dir"), QStringLiteral("State directory for the portal restore token."),
+                                QStringLiteral("dir"));
+    parser.addOptions({dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir});
     parser.process(app);
 
     ServiceConfig config;
@@ -62,6 +81,18 @@ int main(int argc, char **argv)
     config.cacheDir = parser.isSet(cacheDir)
         ? parser.value(cacheDir)
         : QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation) + QStringLiteral("/qindalink");
+    // SIGTERM/SIGINT end the event loop so input state is released in an orderly way
+    // (held keys up, portal session closed) instead of dying with a key held.
+    std::unique_ptr<QSocketNotifier> signalNotifier;
+    if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, g_signalPipe) == 0) {
+        signalNotifier = std::make_unique<QSocketNotifier>(g_signalPipe[0], QSocketNotifier::Read);
+        QObject::connect(signalNotifier.get(), &QSocketNotifier::activated, &app, [&app] { app.quit(); });
+        struct sigaction sa{};
+        sa.sa_handler = onTerminate;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGTERM, &sa, nullptr);
+        sigaction(SIGINT, &sa, nullptr);
+    }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     // Exit when the constructing bus goes away; reconnecting would resume with stale state.
@@ -93,5 +124,25 @@ int main(int argc, char **argv)
         qCritical("qindaqt-link-service: %s", qPrintable(error));
         return 1;
     }
-    return app.exec();
+
+    // Input and macros (ADR-0436). Composed after start() and before the event
+    // loop, so no connection can arrive before the features are registered.
+    // Nothing contacts the RemoteDesktop portal until a phone sends input.begin.
+    std::unique_ptr<NativeInputGate> gate;
+    std::unique_ptr<InputComposition> input;
+    if (!parser.isSet(noInput)) {
+        gate = std::make_unique<NativeInputGate>(bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+                                                 qEnvironmentVariable("WAYLAND_DISPLAY"));
+        InputCompositionOptions options;
+        const QString state = parser.isSet(stateDir)
+            ? parser.value(stateDir)
+            : QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation) + QStringLiteral("/qindalink");
+        options.portal.tokenFile = state + QStringLiteral("/restore-token");
+        options.gate = gate.get();
+        input = std::make_unique<InputComposition>(*service.hub(), bus, std::move(options));
+    }
+    const int rc = app.exec();
+    // AGENT-GUARD: release before the composition is destroyed so the portal session is still open for the key-ups.
+    if (input) input->shutdown();
+    return rc;
 }
