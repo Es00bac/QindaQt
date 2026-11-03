@@ -173,3 +173,22 @@ QString VaultBridge::importBackup(const QString &pass, const QString &mode)
     poll();
     return r;
 }
+
+void VaultBridge::typeBegin(const QString &id, const QString &field)
+{
+    QJniObject::callStaticMethod<void>(kBridge, "typeBegin", "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V",
+                                       ctx().object(), js(id).object<jstring>(), js(field).object<jstring>());
+}
+void VaultBridge::typeConfirm()
+{
+    QJniObject::callStaticMethod<void>(kBridge, "typeConfirm", "(Landroid/content/Context;)V", ctx().object());
+}
+void VaultBridge::typeCancel()
+{
+    QJniObject::callStaticMethod<void>(kBridge, "typeCancel", "(Landroid/content/Context;)V", ctx().object());
+}
+QVariantMap VaultBridge::typeState()
+{
+    const QString j = str("typeStateJson", "(Landroid/content/Context;)Ljava/lang/String;", ctx().object());
+    return QJsonDocument::fromJson(j.toUtf8()).object().toVariantMap();
+}

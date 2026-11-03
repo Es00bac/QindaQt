@@ -41,6 +41,7 @@ public final class LinkService extends Service {
     private static RingSinkAndroid ringSink;
     static final InputFeature inputFeature = new InputFeature();
     static final MacroFeature macroFeature = new MacroFeature();
+    static final org.qindaqt.link.vault.VaultTypeFeature vaultTypeFeature = new org.qindaqt.link.vault.VaultTypeFeature();
 
     /** Starts the service; safe to call repeatedly. */
     public static void start(Context ctx) {
@@ -67,7 +68,7 @@ public final class LinkService extends Service {
                     FeatureRegistry registry = new FeatureRegistry().add(new StatusFeature(statusSource, state))
                             .add(new NotificationFeature(NotificationAndroidSource.init(this), state))
                             .add(new SmsFeature(new SmsProviderAndroid(this), new ContactsResolver(this), smsSender = new SmsSenderAndroid(this), state))
-                            .add(inputFeature).add(macroFeature)
+                            .add(inputFeature).add(macroFeature).add(vaultTypeFeature)
                             .add(new RingFeature(ringSink = new RingSinkAndroid(this), state));
                     engine = new LinkEngine(new TlsConnector(id, "127.0.0.1", 47160),
                             new PinStore(new File(dir, "desktop-pin")), registry, info, state);

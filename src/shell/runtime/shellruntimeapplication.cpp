@@ -13,6 +13,7 @@
 #include "firewallappletcomposition.h"
 #include "link_applet_controller.h"
 #include "linkappletcomposition.h"
+#include "linkfocusrelay.h"
 #include "agentusageappletcomposition.h"
 #include "agent_usage_applet_controller.h"
 #include "smartlightsappletcomposition.h"

@@ -6,7 +6,7 @@ set(_names
     Main.qml ScreenFrame.qml HomeScreen.qml PairingScreen.qml PermissionsScreen.qml PermissionRow.qml
     InputStateNotice.qml ToolsScreen.qml TouchpadScreen.qml KeyboardScreen.qml MacrosScreen.qml VaultScreen.qml
     VaultSecretField.qml VaultGateView.qml VaultListView.qml VaultDetailView.qml VaultGeneratorPanel.qml
-    VaultEditView.qml VaultBackupView.qml LinkText.js)
+    VaultEditView.qml VaultBackupView.qml VaultTypeSheet.qml LinkText.js)
 set(QINDALINK_QML_FILES "")
 foreach(_n IN LISTS _names)
     set_source_files_properties("${QINDALINK_QML_DIR}/${_n}" PROPERTIES QT_RESOURCE_ALIAS "${_n}")

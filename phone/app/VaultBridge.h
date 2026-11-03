@@ -60,6 +60,12 @@ public:
     Q_INVOKABLE QString exportBackup(const QString &pass, const QString &confirm);   // "" or a reason
     Q_INVOKABLE QString importBackup(const QString &pass, const QString &mode);      // merge | replace | restore
     Q_INVOKABLE void clearBackupStatus();
+    // "Type on desktop" (ADR-0440). field: username | password | autotype. typeState() is
+    // {phase, app, title, message}: idle | requesting | confirm | need-unlock | sending | done | failed.
+    Q_INVOKABLE void typeBegin(const QString &id, const QString &field);
+    Q_INVOKABLE void typeConfirm();
+    Q_INVOKABLE void typeCancel();
+    Q_INVOKABLE QVariantMap typeState();
 
 signals:
     void changed();
