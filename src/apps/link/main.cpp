@@ -149,6 +149,17 @@ int main(int argc, char **argv)
             if (!*opened && !row.isEmpty()) {
                 *opened = true;
                 conversation.openThread(row);
+                if (options.demoPartialFailure) {
+                    // Render aid on scripted data only: a group send in which the second recipient failed.
+                    QTimer::singleShot(300, &conversation, [&conversation, &api] {
+                        conversation.requestSend(QStringLiteral("Demo group text"));
+                        conversation.confirmSend();
+                        QTimer::singleShot(200, &conversation, [&api] {
+                            Q_EMIT api->sendStatus(QString(64, QLatin1Char('a')), 100, QStringLiteral("failed"), QStringLiteral("no-service"),
+                                                   QStringLiteral("{\"unsent\":[1]}"));
+                        });
+                    });
+                }
             }
         });
     }

@@ -28,7 +28,8 @@ std::optional<AppOptions> parseAppOptions(const QStringList &arguments, QString 
     const QCommandLineOption grabAfter(QStringLiteral("grab-after"), QStringLiteral("Milliseconds before --grab writes."), QStringLiteral("ms"));
     const QCommandLineOption reply(QStringLiteral("reply"), QStringLiteral("Open the notification reply form for: -- <device> <key> <action>."));
     const QCommandLineOption openThread(QStringLiteral("open-thread"), QStringLiteral("With --fake: open this conversation id."), QStringLiteral("id"));
-    parser.addOptions({page, size, fake, grab, grabAfter, reply, openThread});
+    const QCommandLineOption demoFailure(QStringLiteral("demo-partial-failure"), QStringLiteral("With --fake and --open-thread: show a partly failed group send."));
+    parser.addOptions({page, size, fake, grab, grabAfter, reply, openThread, demoFailure});
     parser.addPositionalArgument(QStringLiteral("target"), QStringLiteral("With --reply: device, key and action."));
     if (!parser.parse(arguments)) {
         *error = parser.errorText();
@@ -87,6 +88,11 @@ std::optional<AppOptions> parseAppOptions(const QStringList &arguments, QString 
             *error = QStringLiteral("--open-thread needs a number and --fake");
             return std::nullopt;
         }
+    }
+    options.demoPartialFailure = parser.isSet(demoFailure);
+    if (options.demoPartialFailure && (options.openThread < 0 || !parser.isSet(fake))) {
+        *error = QStringLiteral("--demo-partial-failure needs --fake and --open-thread");
+        return std::nullopt;
     }
     const QStringList positional = parser.positionalArguments();
     if (parser.isSet(reply)) {

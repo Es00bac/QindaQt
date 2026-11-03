@@ -8,6 +8,8 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonDocument>
 
+#include <QtCore/QSet>
+
 #include <algorithm>
 
 namespace QindaQt::LinkApp {
@@ -103,10 +105,34 @@ void ThreadsViewModel::applyPage(const QString &json, bool firstPage)
     const QJsonObject o = QJsonDocument::fromJson(json.toUtf8()).object();
     const qint64 now = m_clock();
     QHash<qint64, QVariantMap> byId;
+    QSet<qint64> inPage;
+    for (const QJsonValue &t : o.value(QStringLiteral("threads")).toArray()) {
+        inPage.insert(qint64(t.toObject().value(QStringLiteral("id")).toDouble()));
+    }
     for (const QVariantMap &row : std::as_const(m_all)) byId.insert(row.value(QStringLiteral("threadId")).toLongLong(), row);
     for (const QJsonValue &t : o.value(QStringLiteral("threads")).toArray()) {
         const QVariantMap row = threadRow(t.toObject(), now);
         byId.insert(row.value(QStringLiteral("threadId")).toLongLong(), row);
+    }
+    if (firstPage) {
+        // A refreshed newest page is authoritative for everything at least as new as its oldest row
+        // (or for everything, when the phone has no more): a thread in that range which is not in
+        // the page is gone (deleted on the phone).
+        const QJsonArray page = o.value(QStringLiteral("threads")).toArray();
+        const bool phoneHasMore = o.value(QStringLiteral("more")).toBool();
+        qint64 oldestDate = 0;
+        qint64 oldestId = 0;
+        if (!page.isEmpty()) {
+            const QJsonObject last = page.last().toObject();
+            oldestDate = qint64(last.value(QStringLiteral("date")).toDouble());
+            oldestId = qint64(last.value(QStringLiteral("id")).toDouble());
+        }
+        for (auto it = byId.begin(); it != byId.end();) {
+            const qint64 id = it.key();
+            const qint64 date = it->value(QStringLiteral("date")).toLongLong();
+            const bool inRange = !phoneHasMore || page.isEmpty() || date > oldestDate || (date == oldestDate && id >= oldestId);
+            if (!inPage.contains(id) && inRange) it = byId.erase(it); else ++it;
+        }
     }
     m_all = byId.values();
     std::sort(m_all.begin(), m_all.end(), newer);

@@ -14,12 +14,14 @@ namespace {
 constexpr int kPage = 50;
 constexpr int kMaxText = 1600;
 
-QString sendFailureText(const QString &code, const QString &detail)
+QString sendFailureReason(const QString &code)
 {
-    QString text = QObject::tr("Not sent: %1").arg(code.isEmpty() ? QObject::tr("failed") : code);
-    const int unsent = int(QJsonDocument::fromJson(detail.toUtf8()).object().value(QStringLiteral("unsent")).toArray().size());
-    if (unsent > 0) text += QObject::tr(" (%n recipient(s) did not get it)", nullptr, unsent);
-    return text;
+    // Provider codes from sms.sent (docs/wiki/reference/qindalink-protocol-v1.md).
+    if (code == QLatin1String("no-service")) return QObject::tr("no mobile service");
+    if (code == QLatin1String("radio-off")) return QObject::tr("the phone's radio is off");
+    if (code == QLatin1String("limit")) return QObject::tr("the phone's sending limit was reached");
+    if (code == QLatin1String("denied")) return QObject::tr("the phone refused");
+    return code.isEmpty() ? QObject::tr("failed") : code;
 }
 
 } // namespace
@@ -66,7 +68,12 @@ void ConversationViewModel::close()
     m_model.setRows({});
     m_older = m_loading = m_sending = false;
     m_error.clear();
+    m_sendError.clear();
     m_pendingText.clear();
+    m_pendingAddrs.clear();
+    m_retryText.clear();
+    m_retryAddrs.clear();
+    m_sent.clear();
     m_refKeys.clear();
     Q_EMIT threadChanged();
     Q_EMIT stateChanged();
@@ -211,50 +218,107 @@ void ConversationViewModel::loadImage(const QString &key)
                   });
 }
 
-void ConversationViewModel::requestSend(const QString &text)
+QString ConversationViewModel::recipientKey(const QStringList &addrs)
+{
+    // Spaces, dashes, dots and parentheses do not change who a number is; the phone strips them too.
+    QStringList normal;
+    for (const QString &a : addrs) {
+        QString n;
+        for (const QChar c : a) {
+            if (c.isDigit() || (c == QLatin1Char('+') && n.isEmpty())) n += c;
+        }
+        normal << (n.isEmpty() ? a : n);
+    }
+    normal.sort();
+    normal.removeDuplicates();
+    return normal.join(QLatin1Char(','));
+}
+
+QString ConversationViewModel::displayRecipients(const QStringList &addrs) const
+{
+    QStringList parts;
+    for (const QString &addr : addrs) {
+        const qsizetype at = m_addrs.indexOf(addr);
+        const QString name = at >= 0 ? m_names.value(at) : QString();
+        parts << (name.isEmpty() ? addr : QStringLiteral("%1 (%2)").arg(name, addr));
+    }
+    return parts.join(QStringLiteral(", "));
+}
+
+void ConversationViewModel::setSendError(const QString &text)
+{
+    m_sendError = text;
+    Q_EMIT stateChanged();
+}
+
+void ConversationViewModel::requestSend(const QString &text) { sendTo(text, m_addrs); }
+
+void ConversationViewModel::sendTo(QString text, QStringList addrs)
 {
     if (m_thread < 0 || m_sending) return;
     if (text.trimmed().isEmpty()) return;
+    m_sendError.clear();
     if (text.size() > kMaxText) {
-        m_error = tr("A message can be at most %1 characters.").arg(kMaxText);
-        Q_EMIT stateChanged();
+        setSendError(tr("A message can be at most %1 characters.").arg(kMaxText));
         return;
     }
-    if (m_addrs.isEmpty()) {
-        m_error = tr("This conversation has no recipient.");
-        Q_EMIT stateChanged();
+    if (addrs.isEmpty()) {
+        setSendError(tr("This conversation has no recipient."));
         return;
     }
-    if (!m_confirmed) {
+    if (!m_confirmedSets.contains(recipientKey(addrs))) {
         m_pendingText = text;
-        Q_EMIT confirmSendRequested(recipients(), int(text.size()));
+        m_pendingAddrs = addrs;
+        Q_EMIT confirmSendRequested(displayRecipients(addrs), int(text.size()));
         return;
     }
-    sendNow(text);
+    sendNow(text, addrs);
 }
 
 void ConversationViewModel::confirmSend()
 {
     if (m_pendingText.isEmpty()) return;
-    m_confirmed = true;
+    m_confirmedSets.insert(recipientKey(m_pendingAddrs));
     const QString text = std::exchange(m_pendingText, QString());
-    sendNow(text);
+    const QStringList addrs = std::exchange(m_pendingAddrs, QStringList());
+    sendNow(text, addrs);
 }
 
-void ConversationViewModel::cancelSend() { m_pendingText.clear(); }
+void ConversationViewModel::cancelSend()
+{
+    m_pendingText.clear();
+    m_pendingAddrs.clear();
+}
 
-void ConversationViewModel::sendNow(const QString &text)
+void ConversationViewModel::retryToUnsent()
+{
+    if (m_retryAddrs.isEmpty()) return;
+    sendTo(QString(m_retryText), QStringList(m_retryAddrs));
+}
+
+void ConversationViewModel::dismissRetry()
+{
+    m_retryText.clear();
+    m_retryAddrs.clear();
+    m_sendError.clear();
+    Q_EMIT stateChanged();
+}
+
+void ConversationViewModel::sendNow(QString text, QStringList addrs)
 {
     m_sending = true;
-    m_error.clear();
+    m_sendError.clear();
+    m_retryText.clear();
+    m_retryAddrs.clear();
     Q_EMIT stateChanged();
     const quint64 generation = m_generation;
-    m_api.send(m_device, m_addrs, text, [this, generation, text](const QString &json, const QString &error) {
+    m_api.send(m_device, addrs, text, [this, generation, text, addrs](const QString &json, const QString &error) {
         if (generation != m_generation) return;
         m_sending = false;
         if (!error.isEmpty()) {
-            m_error = error == QLatin1String("denied") ? tr("The phone refused to send. Check the recipient and the SMS permission.")
-                                                       : messagesErrorText(error);
+            m_sendError = messagesErrorText(error, true);
+            m_retryText = text;     // nothing left the desktop: keep the draft for an explicit retry
+            m_retryAddrs = addrs;
             Q_EMIT stateChanged();
             return;
         }
@@ -270,6 +334,7 @@ void ConversationViewModel::sendNow(const QString &text)
         row.insert(QStringLiteral("status"), QStringLiteral("sending"));
         row.insert(QStringLiteral("statusText"), tr("Sending..."));
         m_refKeys.insert(ref, key);
+        m_sent.insert(ref, {text, addrs});
         m_model.append({row});
         Q_EMIT sendAccepted();
         Q_EMIT stateChanged();
@@ -289,8 +354,31 @@ void ConversationViewModel::onSendStatus(const QString &device, qlonglong ref, c
     const QString key = m_refKeys.value(ref);
     if (key.isEmpty()) return;
     if (state == QLatin1String("sent")) setLocalStatus(key, state, tr("Sent"));
-    else if (state == QLatin1String("delivered")) { setLocalStatus(key, state, tr("Delivered")); m_refKeys.remove(ref); }
-    else if (state == QLatin1String("failed")) { setLocalStatus(key, state, sendFailureText(code, detail)); m_refKeys.remove(ref); }
+    else if (state == QLatin1String("delivered")) { setLocalStatus(key, state, tr("Delivered")); m_refKeys.remove(ref); m_sent.remove(ref); }
+    else if (state == QLatin1String("failed")) {
+        const SentInfo info = m_sent.take(ref);
+        m_refKeys.remove(ref);
+        // `unsent` lists indexes into the recipients of that request; without it nothing is known
+        // to have left, so every recipient is offered again.
+        QStringList unsent;
+        const QJsonValue listed = QJsonDocument::fromJson(detail.toUtf8()).object().value(QStringLiteral("unsent"));
+        if (listed.isArray()) {
+            for (const QJsonValue &i : listed.toArray()) {
+                const int at = i.toInt(-1);
+                if (at >= 0 && at < info.addrs.size()) unsent << info.addrs.at(at);
+            }
+        } else {
+            unsent = info.addrs;
+        }
+        QString text = tr("Not sent: %1").arg(sendFailureReason(code));
+        if (!unsent.isEmpty()) text += tr(". Not sent to: %1").arg(displayRecipients(unsent));
+        setLocalStatus(key, state, text);
+        if (!unsent.isEmpty() && !info.text.isEmpty()) {
+            m_retryText = info.text;
+            m_retryAddrs = unsent;
+            Q_EMIT stateChanged();
+        }
+    }
 }
 
 } // namespace QindaQt::LinkApp

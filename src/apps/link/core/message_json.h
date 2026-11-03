@@ -20,7 +20,9 @@ namespace QindaQt::LinkApp {
 [[nodiscard]] QVariantMap messageRow(const QJsonObject &message, qint64 nowMs);
 
 // A user-facing reason for a Messages error code (denied, unsupported, not-connected, timeout, ...).
-[[nodiscard]] QString messagesErrorText(const QString &code);
+// `sending` words a phone-side `denied` for a send (permission or a non-dialable number).
+// "caller-denied" is the service refusing THIS program (ADR-0438); "rate-limited" is its send limit.
+[[nodiscard]] QString messagesErrorText(const QString &code, bool sending = false);
 
 // Total order of the provider: oldest first by (date, kind with sms before mms, id). Newest-first
 // is the reverse; the wire pages in newest-first order (mms before sms among equals).

@@ -106,6 +106,99 @@ private Q_SLOTS:
         QCOMPARE(api.sentTexts.size(), 2);
     }
 
+    void confirmationIsPerRecipientSetNotPerSession()
+    {
+        FakeLinkApi api;
+        ConversationViewModel conv(api);
+        conv.setDeviceId(kDevice);
+        QSignalSpy asked(&conv, &ConversationViewModel::confirmSendRequested);
+        conv.openThread(threadOne());
+        QTRY_COMPARE(conv.messages()->count(), 50);
+        conv.requestSend(QStringLiteral("one"));
+        conv.confirmSend();
+        QTRY_COMPARE(api.sentTexts.size(), 1);
+        conv.close();
+
+        QVariantMap other = threadOne();
+        other.insert(QStringLiteral("threadId"), qint64(2));
+        other.insert(QStringLiteral("addrs"), QStringList{QStringLiteral("+15550177")});
+        other.insert(QStringLiteral("names"), QStringList{QString()});
+        conv.openThread(other);
+        QTRY_VERIFY(!conv.loading());
+        QVERIFY(!conv.confirmedThisSession());
+        conv.requestSend(QStringLiteral("two"));
+        QCOMPARE(asked.size(), 2);  // a different recipient set asks again
+        QCOMPARE(api.sentTexts.size(), 1);
+        conv.cancelSend();
+        conv.close();
+
+        conv.openThread(threadOne());  // the first set stays confirmed, however it is written
+        QTRY_VERIFY(!conv.loading());
+        QVERIFY(conv.confirmedThisSession());
+        conv.requestSend(QStringLiteral("again"));
+        QCOMPARE(asked.size(), 2);
+        QTRY_COMPARE(api.sentTexts.size(), 2);
+    }
+
+    void partialFailureNamesUnsentRecipientsAndOffersARetryToThem()
+    {
+        FakeLinkApi api;
+        ConversationViewModel conv(api);
+        conv.setDeviceId(kDevice);
+        QVariantMap group = threadOne();
+        group.insert(QStringLiteral("addrs"), QStringList{QStringLiteral("+15550100"), QStringLiteral("+15550111"), QStringLiteral("+15550122")});
+        group.insert(QStringLiteral("names"), QStringList{QStringLiteral("Sam Carter"), QStringLiteral("Mina Okafor"), QString()});
+        conv.openThread(group);
+        QTRY_COMPARE(conv.messages()->count(), 50);
+        QSignalSpy asked(&conv, &ConversationViewModel::confirmSendRequested);
+        conv.requestSend(QStringLiteral("group text"));
+        conv.confirmSend();
+        QTRY_COMPARE(conv.messages()->count(), 51);
+        Q_EMIT api.sendStatus(kDevice, 100, QStringLiteral("failed"), QStringLiteral("no-service"), QStringLiteral("{\"unsent\":[1,2]}"));
+        const QString text = conv.messages()->rows().constLast().value(QStringLiteral("statusText")).toString();
+        QVERIFY(text.contains(QStringLiteral("Mina Okafor")));
+        QVERIFY(text.contains(QStringLiteral("+15550122")));
+        QVERIFY(!text.contains(QStringLiteral("Sam Carter")));
+        QVERIFY(conv.retryAvailable());
+        QVERIFY(conv.retryRecipients().contains(QStringLiteral("+15550111")));
+
+        conv.retryToUnsent();
+        QCOMPARE(asked.size(), 2);  // the narrower recipient set was never confirmed
+        conv.confirmSend();
+        QTRY_COMPARE(api.sentTo.size(), 2);
+        QCOMPARE(api.sentTo.last(), (QStringList{QStringLiteral("+15550111"), QStringLiteral("+15550122")}));
+        QCOMPARE(api.sentTexts.last(), QStringLiteral("group text"));
+        QVERIFY(!conv.retryAvailable());
+    }
+
+    void sendErrorsHaveDistinctWordsAndStayUntilTheReaderActs()
+    {
+        FakeLinkApi api;
+        ConversationViewModel conv(api);
+        conv.setDeviceId(kDevice);
+        conv.openThread(threadOne());
+        QTRY_COMPARE(conv.messages()->count(), 50);
+        api.sendError = QStringLiteral("rate-limited");
+        conv.requestSend(QStringLiteral("x"));
+        conv.confirmSend();
+        QTRY_VERIFY(conv.sendError().contains(QStringLiteral("Too many texts")));
+        QVERIFY(conv.retryAvailable());
+        conv.refresh();  // a successful reload must not hide it
+        QTRY_VERIFY(!conv.loading());
+        QVERIFY(!conv.sendError().isEmpty());
+
+        api.sendError = QStringLiteral("caller-denied");
+        conv.retryToUnsent();
+        QTRY_VERIFY(conv.sendError().contains(QStringLiteral("installed app")));
+        QVERIFY(conv.retryAvailable());
+        api.sendError = QStringLiteral("denied");
+        conv.retryToUnsent();
+        QTRY_VERIFY(conv.sendError().contains(QStringLiteral("SMS permission")));
+        QVERIFY(!conv.sendError().contains(QStringLiteral("installed app")));
+        conv.dismissRetry();
+        QVERIFY(conv.sendError().isEmpty());
+    }
+
     void cancellingTheConfirmationSendsNothing()
     {
         FakeLinkApi api;
@@ -132,7 +225,7 @@ private Q_SLOTS:
         conv.requestSend(QStringLiteral("   "));
         conv.requestSend(QString(1601, QLatin1Char('x')));
         QCOMPARE(asked.size(), 0);
-        QVERIFY(!conv.error().isEmpty());
+        QVERIFY(!conv.sendError().isEmpty());
     }
 
     void sendStatusUpdatesTheLocalRowAndFailuresNameUnsentRecipients()
@@ -159,8 +252,7 @@ private Q_SLOTS:
         Q_EMIT api.sendStatus(kDevice, 101, QStringLiteral("failed"), QStringLiteral("no-service"),
                               QStringLiteral("{\"unsent\":[1,2]}"));
         QCOMPARE(last().value(QStringLiteral("status")).toString(), QStringLiteral("failed"));
-        QVERIFY(last().value(QStringLiteral("statusText")).toString().contains(QStringLiteral("no-service")));
-        QVERIFY(last().value(QStringLiteral("statusText")).toString().contains(QStringLiteral("2")));
+        QVERIFY(last().value(QStringLiteral("statusText")).toString().contains(QStringLiteral("no mobile service")));
         // A status for another phone changes nothing.
         Q_EMIT api.sendStatus(QStringLiteral("other"), 101, QStringLiteral("delivered"), QString(), QString());
         QCOMPARE(last().value(QStringLiteral("status")).toString(), QStringLiteral("failed"));
@@ -241,6 +333,18 @@ private Q_SLOTS:
         threads.loadMore();
         QTRY_COMPARE(threads.loadedCount(), 84);
         QVERIFY(!threads.hasMore());
+    }
+
+    void aRefreshedFirstPageDropsDeletedThreads()
+    {
+        FakeLinkApi api;
+        ThreadsViewModel threads(api);
+        threads.setDeviceId(kDevice);
+        QTRY_COMPARE(threads.threads()->count(), 24);
+        api.threads.removeAt(2);  // deleted on the phone
+        threads.reload();
+        QTRY_COMPARE(threads.threads()->count(), 23);
+        QCOMPARE(threads.threads()->indexOf(QStringLiteral("threadId"), qint64(3)), -1);
     }
 
     void aDeniedPhoneShowsAReasonNotAnEmptyList()

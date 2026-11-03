@@ -143,8 +143,8 @@ std::optional<MirrorOptions> parseMirrorOptions(const QStringList &arguments, QS
     options.probe = parser.isSet(probe);
     options.grabPath = parser.value(grab);
     options.grabAfterInputPath = parser.value(grabAfter);
-    static const QRegularExpression serialShape(QStringLiteral("^[A-Za-z0-9._:-]+$"));
-    static const QRegularExpression packageShape(QStringLiteral("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$"));
+    static const QRegularExpression serialShape(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z0-9._:-]+")));
+    static const QRegularExpression packageShape(QRegularExpression::anchoredPattern(QStringLiteral("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+")));
     if (!serialShape.match(options.serial).hasMatch()) {
         *error = QStringLiteral("--serial is required");
         return std::nullopt;
