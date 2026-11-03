@@ -92,6 +92,37 @@ private Q_SLOTS:
         QVERIFY(!policy.isTrusted(QString()));                  // no sender
     }
 
+    void clientIsNotShell()
+    {
+        // ADR-0440: the shell role is a smaller set. An executable trusted as a client (the QindaLink app)
+        // must be denied for Role::Shell; only the shell executable passes both.
+        auto inspector = std::make_unique<FakeInspector>();
+        FakeInspector *f = inspector.get();
+        CallerPolicy policy(QDBusConnection(QStringLiteral("policy-test-shell")), std::move(inspector),
+                            {QStringLiteral("/opt/qindaqt/bin/qindaqt-link"), QStringLiteral("/opt/qindaqt/bin/qindaqt-shell")},
+                            {QStringLiteral("/opt/qindaqt/bin/qindaqt-shell")});
+        f->pathIds = {{QStringLiteral("/opt/qindaqt/bin/qindaqt-link"), 10}, {QStringLiteral("/opt/qindaqt/bin/qindaqt-shell"), 11}};
+        f->pids = {{QStringLiteral(":1.1"), 100}, {QStringLiteral(":1.2"), 200}, {QStringLiteral(":1.3"), 300}};
+        f->exeIds = {{100, 10}, {200, 11}, {300, 99}};
+        f->exes = {{100, QStringLiteral("/opt/qindaqt/bin/qindaqt-link")}, {200, QStringLiteral("/opt/qindaqt/bin/qindaqt-shell")},
+                   {300, QStringLiteral("/usr/bin/other")}};
+        f->starts = {{100, 1}, {200, 1}, {300, 1}};
+        QVERIFY(policy.isTrusted(QStringLiteral(":1.1")));   // the app is a client...
+        QVERIFY(!policy.isShell(QStringLiteral(":1.1")));    // ...but not the shell
+        QVERIFY(policy.isTrusted(QStringLiteral(":1.2")));
+        QVERIFY(policy.isShell(QStringLiteral(":1.2")));
+        QVERIFY(!policy.isShell(QStringLiteral(":1.3")));
+        QVERIFY(!policy.isTrusted(QStringLiteral(":1.3")));
+        // A policy built without a shell set trusts no shell at all.
+        auto inspector2 = std::make_unique<FakeInspector>();
+        FakeInspector *g = inspector2.get();
+        CallerPolicy none(QDBusConnection(QStringLiteral("policy-test-noshell")), std::move(inspector2),
+                          {QStringLiteral("/opt/qindaqt/bin/qindaqt-shell")});
+        g->pathIds = f->pathIds; g->pids = f->pids; g->exeIds = f->exeIds; g->exes = f->exes; g->starts = f->starts;
+        QVERIFY(none.isTrusted(QStringLiteral(":1.2")));
+        QVERIFY(!none.isShell(QStringLiteral(":1.2")));
+    }
+
     void bindMountedPathStringDoesNotMatter()
     {
         // unshare -Urm plus a bind mount makes readlink(/proc/pid/exe) read the trusted path while the inode

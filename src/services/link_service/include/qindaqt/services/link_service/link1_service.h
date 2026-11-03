@@ -2,6 +2,7 @@
 #pragma once
 
 #include <qindaqt/services/link_adb/tunnel_manager.h>
+#include <qindaqt/services/link_focus/focus_store.h>
 #include <qindaqt/services/link_service/send_guard.h>
 #include <qindaqt/services/link_transport/caller_authority.h>
 #include <qindaqt/services/link_notifications/notifications_module.h>
@@ -30,6 +31,8 @@ struct ServiceConfig {
     QString cacheDir;           // production passes $XDG_CACHE_HOME/qindalink
     // Required (ADR-0438): decides who may use protected members. Not owned. start() fails without it.
     CallerAuthority *callerAuthority = nullptr;
+    // Optional (ADR-0440): when set, org.qindaqt.Link1.Focus.Publish feeds it. Not owned.
+    FocusStore *focusStore = nullptr;
     // LAN mode (ADR-0441). Off unless service.json enables it. The injected publisher is not owned.
     quint16 lanPort = 47160;
     LanAddressProvider lanAddresses;     // empty = every up, non-loopback interface address

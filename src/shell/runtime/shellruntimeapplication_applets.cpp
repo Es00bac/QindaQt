@@ -10,6 +10,7 @@
 #include "agentusageappletcomposition.h"
 #include "firewallappletcomposition.h"
 #include "linkappletcomposition.h"
+#include "linkfocusrelay.h"
 #include "agent_usage_applet_controller.h"
 #include "smartlightsappletcomposition.h"
 #include "voiceappletcomposition.h"
@@ -248,6 +249,18 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
         qWarning().noquote()
             << "QindaQt shell could not start Task List facts:" << taskListError;
     }
+    // ADR-0440: tell the link service which window has focus (shell-only Focus.Publish).
+    m_linkFocusRelay = std::make_unique<LinkFocusRelay>(sessionBus, [this] {
+        return LinkFocusRelay::factJson(
+            m_windowActionsClient->identitySnapshot(),
+            [this](const QString &windowId, QString *appId, QString *title) {
+                return m_taskListApplet->windowFacts(windowId, appId, title);
+            });
+    });
+    connect(m_windowActionsClient.get(),
+            &ShellWindowActionsClient::ShellWindowActionsClient::identityChanged,
+            m_linkFocusRelay.get(), [this] { m_linkFocusRelay->refresh(); });
+    m_linkFocusRelay->start();
     // Borrowed settings/controller wiring for the persisted user task order;
     // both collaborators are owned above and outlive this helper.
     if (m_taskListApplet->access() != nullptr) {

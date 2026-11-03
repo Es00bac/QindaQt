@@ -498,8 +498,39 @@ Rules:
 
 ## Desktop facts and secret typing (`desktop.*`, `vault.*`)
 
-Not specified yet. The vault lane replaces this paragraph with the
-frame table for capability `vault`.
+Capability `vault`. The vault exists only
+on the phone; the desktop types, and never stores, logs or shows, what it is sent
+([ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md)).
+
+| Type | Direction | Body | Reply |
+| --- | --- | --- | --- |
+| `desktop.focus` | phone→desktop, with `id` | `{}` | A `desktop.focus` frame with `re` and `{token, app, title}`: the focused window's application id and display title and an opaque token bound to that window's `(uuid, revision)`. Errors: `unverified` (no authenticated focus fact, or the lock state is unknown), `locked`, `denied` (capability not advertised). |
+| `vault.type` | phone→desktop, with `id` | `token` (string), `steps` (array of 1-16 objects, each exactly one of `{text}`, `{key}`, `{delayMs}`) | `ok` after the last step. Errors below. |
+
+Bounds: `text` is 1-1024 UTF-8 bytes per step; `key` is one of `Tab`, `Enter`, `Escape`, `Left`, `Right`, `Up`,
+`Down`; `delayMs` is an integer 0-2000; a plan of only delays is refused. Control characters (below U+0020,
+DEL, U+0080-U+009F) inside `text` are skipped and are never typed as keys.
+
+`vault.type` errors: `target-changed` (the token is unknown, expired, already used or another phone's, or the
+focused window (id, revision, application id or title) differs, at the start or between steps), `locked`, `unverified`, `busy`
+(a typing job is running), `denied` (capability not advertised, or the desktop user did not approve the
+remote-input prompt), `bad-request` (violates a bound; the token is kept), `internal` (portal unavailable or
+revoked, the session closed, or delivery failed).
+
+Rules:
+
+- **Token.** Valid for at most 60 s, single use (consumed by any `vault.type` that passed validation), at most
+  one per phone (a newer `desktop.focus` replaces it). A phone shows `app` and `title` as plain text and sends
+  `vault.type` only after the user confirms, within 30 s.
+- **Checks.** The desktop requires the input gate to be open (unlocked, verified). It compares the current
+  focus with the token before the job, before every step, before every tick (at most 2 symbols per 8 ms) and on any
+  focus or lock change. The target is the whole focus fact: window, revision, application id and title. A change aborts with `target-changed` (or `locked`) after releasing every key it
+  pressed. Steps already typed stay typed.
+- **Portal.** Typing uses the RemoteDesktop portal session as keysyms and never the clipboard. If no session is
+  active the desktop starts one exactly as for `input.begin` (the user approves once) and closes it when the
+  job ends unless an input controller is using it.
+- **One job.** At most one `vault.type` runs at a time.
+- **Logging.** Neither side logs a `vault.*` body or the text of any step; logs carry type and key count only.
 
 ## Phone apps (`apps.*`)
 

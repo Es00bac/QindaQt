@@ -2,6 +2,8 @@
 
 #include "tasklistappletcomposition.h"
 
+#include "taskwindowfacts.h"
+
 #include "qindaqt/applet_host/capability_policy_loader.h"
 #include "qindaqt/applet_host/host_selection.h"
 #include "qindaqt/applet_runtime/builtin_applet_registry.h"
@@ -497,6 +499,7 @@ void TaskListAppletComposition::compose(
     ShellTaskListApplet::TaskListAppletOperationPort &containerOperations,
     ShellWindowActionsClient::ShellWindowActionsClient &windowActions)
 {
+    m_source = &source;
     m_router = std::make_unique<TaskListWindowOperationRouter>(
         source, authority, containerOperations, windowActions);
     m_access = std::make_unique<ShellTaskListApplet::TaskListAppletController>(
@@ -520,6 +523,12 @@ TaskListAppletComposition::desktopEntryResolver() const
         return m_iconResolver ? m_iconResolver->desktopIdForAppId(applicationId)
                               : QString{};
     };
+}
+
+bool TaskListAppletComposition::windowFacts(const QString &windowId, QString *applicationId,
+                                            QString *title) const
+{
+    return m_source != nullptr && taskWindowFacts(*m_source, windowId, applicationId, title);
 }
 
 void TaskListAppletComposition::setIconThemes(const QStringList &roots, const QStringList &themes)

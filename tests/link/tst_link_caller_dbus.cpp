@@ -88,6 +88,7 @@ private Q_SLOTS:
             {iface(".Setup"), root, QStringLiteral("AdbDevices"), {}},
             {iface(".Setup"), root, QStringLiteral("SetupPhone"), {QStringLiteral("DEMO0001")}},
             {iface(".Setup"), root, QStringLiteral("SetupStatus"), {QStringLiteral("DEMO0001")}},
+            {iface(".Focus"), root, QStringLiteral("Publish"), {QStringLiteral("'{}'")}},
         };
         for (const Case &c : protectedCalls) {
             const GdbusResult r = gdbus(c.iface, c.path, c.method, c.args);

@@ -81,6 +81,20 @@ Tk.Flex {
         onTriggered: root.hide()
     }
 
+    VaultTypeSheet { id: typeSheet; objectName: "typeSheet"; entryId: root.entryId; onClosed: root.hide() }
+    Tk.Flex {
+        visible: !typeSheet.busy
+        direction: Tk.Flex.Column
+        gap: Tk.Theme.space.sm
+        Tk.Flex.alignSelf: Tk.Flex.Stretch
+        Tk.Caption { text: qsTr("Type on desktop"); muted: true }
+        Tk.Button { objectName: "typeUser"; text: qsTr("Type username"); iconName: "monitor"; variant: "outline"; Tk.Flex.alignSelf: Tk.Flex.Stretch
+            onClicked: { root.hide(); typeSheet.begin("username") } }
+        Tk.Button { objectName: "typePassword"; text: qsTr("Type password"); iconName: "monitor"; variant: "outline"; Tk.Flex.alignSelf: Tk.Flex.Stretch
+            onClicked: { root.hide(); typeSheet.begin("password") } }
+        Tk.Button { objectName: "typeAutotype"; text: qsTr("Type username + password (autotype)"); iconName: "monitor"; variant: "outline"; Tk.Flex.alignSelf: Tk.Flex.Stretch
+            onClicked: { root.hide(); typeSheet.begin("autotype") } }
+    }
     Tk.Flex {
         direction: Tk.Flex.Row
         gap: Tk.Theme.space.sm

@@ -43,6 +43,10 @@ public:
     // A key or button held longer than this without being pressed again is released (default 30 s).
     void setHoldLimit(int ms) { m_holdLimitMs = ms; }
     [[nodiscard]] bool holding() const { return m_held.holding(); }
+    // True while another feature (secret typing, ADR-0440) uses the portal session it started: this
+    // feature then neither closes it for lack of a waiting begin nor when its controller ends. That
+    // feature closes the session itself when it is done and no controller remains.
+    void setPortalBorrowed(bool borrowed) { m_portalBorrowed = borrowed; }
     // Orderly shutdown: release everything through the still-active portal, then close it.
     void shutdown();
 
@@ -80,6 +84,7 @@ private:
     double m_keyTokens = 30;
     qint64 m_lastMotion = 0, m_lastKey = 0;
     int m_holdLimitMs = 30'000;
+    bool m_portalBorrowed = false;
     QTimer m_watchdog;
     QElapsedTimer m_clock;
 };

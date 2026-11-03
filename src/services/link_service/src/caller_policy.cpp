@@ -81,17 +81,34 @@ static QString readNs(const QString &link)
 QString DBusProcessInspector::mountNamespaceOf(uint pid) { return readNs(QStringLiteral("/proc/%1/ns/mnt").arg(pid)); }
 QString DBusProcessInspector::ownMountNamespace() { return readNs(QStringLiteral("/proc/self/ns/mnt")); }
 
-CallerPolicy::CallerPolicy(QDBusConnection bus, std::unique_ptr<ProcessInspector> inspector,
-                           QStringList trustedExecutables)
-    : m_bus(std::move(bus)), m_inspector(std::move(inspector))
+QStringList CallerPolicy::canonical(const QStringList &paths)
 {
-    for (const QString &path : trustedExecutables) {
-        const QString canonical = QFileInfo(path).canonicalFilePath();
-        m_trusted.append(canonical.isEmpty() ? QFileInfo(path).absoluteFilePath() : canonical);
+    QStringList out;
+    for (const QString &path : paths) {
+        const QString c = QFileInfo(path).canonicalFilePath();
+        out.append(c.isEmpty() ? QFileInfo(path).absoluteFilePath() : c);
     }
+    return out;
+}
+
+CallerPolicy::CallerPolicy(QDBusConnection bus, std::unique_ptr<ProcessInspector> inspector,
+                           QStringList trustedExecutables, QStringList shellExecutables)
+    : m_bus(std::move(bus)), m_inspector(std::move(inspector)), m_trusted(canonical(trustedExecutables)),
+      m_shell(canonical(shellExecutables))
+{
 }
 
 bool CallerPolicy::isTrusted(const QString &busName, QString *exeBasename)
+{
+    return matches(busName, m_trusted, exeBasename);
+}
+
+bool CallerPolicy::isShell(const QString &busName, QString *exeBasename)
+{
+    return matches(busName, m_shell, exeBasename);
+}
+
+bool CallerPolicy::matches(const QString &busName, const QStringList &set, QString *exeBasename)
 {
     uint pid = 0;
     if (busName.isEmpty() || !m_inspector->pidOf(busName, &pid)) {
@@ -117,7 +134,7 @@ bool CallerPolicy::isTrusted(const QString &busName, QString *exeBasename)
         return false;
     }
     QString matched;
-    for (const QString &trusted : std::as_const(m_trusted)) {  // looked up each time: survives package upgrades
+    for (const QString &trusted : set) {  // looked up each time: survives package upgrades
         quint64 tdev = 0, tino = 0;
         if (m_inspector->fileIdOfPath(trusted, &tdev, &tino) && tdev == dev && tino == ino) {
             matched = trusted;
@@ -139,7 +156,13 @@ bool CallerPolicy::isTrusted(const QString &busName, QString *exeBasename)
 
 bool CallerPolicy::authorize(const QDBusMessage &message, QString *callerName)
 {
-    if (isTrusted(message.service(), callerName)) {
+    return authorizeRole(message, CallerRole::Client, callerName);
+}
+
+bool CallerPolicy::authorizeRole(const QDBusMessage &message, CallerRole role, QString *callerName)
+{
+    // AGENT-GUARD (ADR-0440): the Shell role is checked against its own, smaller set, never the client set.
+    if (role == CallerRole::Shell ? isShell(message.service(), callerName) : isTrusted(message.service(), callerName)) {
         return true;
     }
     // AGENT-NOTE: logs the member only; arguments can be message content.

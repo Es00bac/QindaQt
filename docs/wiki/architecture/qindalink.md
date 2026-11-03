@@ -264,7 +264,7 @@ authorizes callers itself ([ADR-0438](../adr/0438-qindalink-link1-caller-authori
 Device metadata (`Devices`, `PendingPairings`, change signals) is open.
 Reading messages or notifications, sending, replying, muting and
 pairing decisions need a caller whose executable is `qindaqt-link`,
-`qindaqt-shell` or given with `--trusted-caller`; others get
+`qindaqt-shell` or given with `--trusted-caller`; `Focus.Publish` needs the shell itself (ADR-0440); others get
 `org.qindaqt.Link1.Error.Denied`. Broadcast signals never carry message or
 notification text, and every accepted text send raises a desktop notice and
 counts against a per-device rate limit.
@@ -381,9 +381,30 @@ enforced by this contract:
    parsing may leave transient copies inside Qt containers. Zeroing is best
    effort, and the guarantee is no persistence and no logging.
 
+Implementation and decisions: [ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md). The shell relays
+the focused window (ADR-0063 identity joined with task-list title and application id) to
+`Link1.Focus.Publish`; only `qindaqt-shell` may call it. `VaultTypingFeature` (`src/services/link_vault`)
+serves `desktop.focus` and `vault.type`, re-checking focus before each step and batch.
+
 Typing into the QindaQt lock screen is out of scope. The portal does not
 deliver input while the session is locked, and this design does not try to
 work around that.
+
+## Phone vault part 2: type on desktop
+
+Decision record: [ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md).
+
+- **Phone.** The entry detail view offers Type username, Type password and Type username + password. The
+  `VaultTypeFlow` state machine (`phone/app/android/src/org/qindaqt/link/vault/`) asks `desktop.focus`, shows
+  app and title, and only after the user's confirmation (lapse 30 s) builds the steps from `VaultTypingSource`,
+  unlocking first when needed, and sends `vault.type`. `VaultWireSteps` maps the autotype vocabulary onto the
+  wire: BACKSPACE, DELETE, HOME and END have no wire form and are refused before anything is sent. The engine
+  gained `FeatureContext.request`, which routes the reply (`ok`, `error` or a typed frame) to the requester.
+- **Tests.** Desktop `qindaqt.link-vault`, `link-vault-service`, the shell `shell-link-focus-relay`; phone
+  `phone/engine-tests/run.sh` (`VaultTypeTests`) and the JVM-phone-versus-real-service run
+  `phone/engine-tests/run-cross-vault.sh <build dir>`.
+- **Not yet recorded.** A live run on the phone against the desktop with the real portal needs the user: the
+  desktop shows the one-time remote-control approval, and the phone's screen is driven by the user.
 
 ## Phone vault (part 1)
 
