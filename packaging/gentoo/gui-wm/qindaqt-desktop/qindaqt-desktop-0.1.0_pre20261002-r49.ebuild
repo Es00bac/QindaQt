@@ -7,13 +7,13 @@ inherit cmake xdg
 
 DESCRIPTION="QindaQt Wayland desktop, services and bundled applications"
 HOMEPAGE="https://github.com/Es00bac/QindaQt"
-# Snapshot versioning (docs/wiki/development/gentoo-desktop.md): a new source snapshot gets a
-# new _preYYYYMMDD version; -rN is only for ebuild-only changes. Source cut from container-wm main;
-# the r40/r42/r46/r48 fixes are in main. The r45 keyring-activation fix lives only on
-# fix/keyring-activation-ownership-20261030 (a40cb9f60), so it stays a patch; the cut script
-# refuses a commit it does not apply to.
-# QindaLink is its own package (gui-apps/qindalink). This package still builds the shell's link
-# panel applet, but passes -DQINDAQT_BUILD_LINK_{SERVICE,APP,MIRROR}=OFF so it installs no Link file.
+# r49 (prepared, not yet cut): QindaLink moves out to its own package, gui-apps/qindalink. This
+# package still builds the shell's link panel applet and focus relay but passes
+# -DQINDAQT_BUILD_LINK_{SERVICE,APP,MIRROR}=OFF so it installs no Link file. The r40/r42/r46/r48
+# fixes are in main; the r45 keyring-activation fix lives only on
+# fix/keyring-activation-ownership-20261030 (a40cb9f60), so it stays a patch, and the cut script
+# refuses a commit it does not apply to. Cut from a main that has been reconciled with the installed
+# r47 source (2e00b187e, package/firewall-applet-r47-20261031).
 # Full coherent image: core, SDK headers, QML and native plugin share one source.
 # @@QINDAQT_COMMIT@@ is replaced by cut-package.sh (it pins the full sha).
 # AGENT-GUARD: archive prefix and S are the fixed name QindaQt, never contain the commit. The

@@ -523,9 +523,9 @@ qindaqt-link-mirror                                phone (shell uid, app_process
 
 ## Packaging
 
-QindaLink ships as its own package, `gui-apps/qindalink` (service, D-Bus activation file, systemd
-user unit, login autostart entry, companion app, mirror). `gui-wm/qindaqt-desktop` builds only the
-panel applet and focus relay and installs no Link file (`QINDAQT_BUILD_LINK_*=OFF`). The service
-starts at login through a QindaQt-only XDG autostart entry that triggers D-Bus activation, so USB
-tunnels and phone notifications work with no window open. Details:
+QindaLink installs as an add-on package, `gui-apps/qindalink` (service, D-Bus activation file, systemd
+user unit, login autostart entry, companion app, mirror), on top of the installed desktop. Desktop
+features needing a newer desktop: panel chip, phone input, vault typing. The desktop package builds only
+the applet and focus relay and installs no Link file (`QINDAQT_BUILD_LINK_*=OFF`). The service starts at
+login through a QindaQt-only XDG autostart entry that triggers D-Bus activation. Details:
 [QindaLink is its own package](../development/gentoo-desktop.md#qindalink-is-its-own-package).

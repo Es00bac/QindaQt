@@ -7,10 +7,9 @@ inherit cmake xdg
 
 DESCRIPTION="QindaLink: phone companion for the QindaQt desktop (messages, notifications, apps, input)"
 HOMEPAGE="https://github.com/Es00bac/QindaQt"
-# Snapshot versioning (docs/wiki/development/gentoo-desktop.md): a new source snapshot gets a new
-# _preYYYYMMDD version; -rN is only for ebuild-only changes. Same source tree as gui-wm/qindaqt-desktop,
-# but this package builds and installs only the Link programs, so a Link fix does not recompile the
-# desktop. @@QINDAQT_COMMIT@@ is replaced by the cut script (it pins the full sha).
+# QindaLink is a separate package with its own version line (0.1.0_preYYYYMMDD, -rN for ebuild-only
+# changes); it does not follow the desktop's revision numbers. It installs as an add-on over the installed
+# desktop (>= r47) and builds only the Link programs. @@QINDAQT_COMMIT@@ is replaced by the cut script.
 # AGENT-GUARD: archive prefix and S are the fixed name QindaQt, never contain the commit; a stable
 # path keeps ccache hits across snapshots (ccache section of gentoo-desktop.md).
 QINDAQT_COMMIT="@@QINDAQT_COMMIT@@"
@@ -23,13 +22,14 @@ KEYWORDS="~amd64"
 # The public remote carries no snapshot tarballs; the cut script writes the archive to DISTDIR.
 RESTRICT="fetch"
 
-# gui-wm/qindaqt-desktop provides what qindaqt-link borrows at run time: libqindaqt_app_shell.so in the
-# QML tree (qindaqt-link's RUNPATH points at it), the session bus and portal, the notification host and
-# the shell's link applet and focus relay. media-video/ffmpeg[vaapi] is the mirror decoder (ADR-0435);
+# gui-wm/qindaqt-desktop (>= r47) provides what qindaqt-link borrows at run time: libqindaqt_app_shell.so in
+# the QML tree (qindaqt-link's RUNPATH points at it; proven against the installed r47 library), the
+# session bus, the notification host and XDG autostart. A newer desktop adds the panel chip, phone input
+# and vault typing (Session1 and the focus relay); on r47 those report unverified. media-video/ffmpeg[vaapi] is the mirror decoder (ADR-0435);
 # dev-util/android-tools is /usr/bin/adb for the USB tunnel; OpenSSL libcrypto backs the pinned-TLS
 # transport (ADR-0434). net-dns/avahi joins only when LAN discovery lands (D-Bus only).
 RDEPEND="
-	>=gui-wm/qindaqt-desktop-0.1.0_pre20261102
+	>=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r47
 	>=dev-libs/qindatk-0.1.0-r18
 	>=media-video/ffmpeg-6:=[vaapi]
 	dev-util/android-tools

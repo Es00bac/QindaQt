@@ -361,11 +361,17 @@ list or installed package changes are part of M1 source qualification.
 
 ### QindaLink is its own package
 
-QindaLink ships as `gui-apps/qindalink`, not inside `gui-wm/qindaqt-desktop`, so a Link
-fix never recompiles the desktop and the two packages never own the same file. Templates:
-`packaging/gentoo/gui-apps/qindalink/qindalink-0.1.0_pre20261102.ebuild` and
-`packaging/gentoo/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261102.ebuild`; both keep
-a `@@QINDAQT_COMMIT@@` placeholder that the cut script replaces.
+QindaLink installs as an add-on package, `gui-apps/qindalink`, on top of the installed desktop
+(`>=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r47`). A Link fix never recompiles the desktop and the two
+packages never own the same file. Templates (each keeps a `@@QINDAQT_COMMIT@@` placeholder that the cut
+script replaces): `packaging/gentoo/gui-apps/qindalink/qindalink-0.1.0_pre20261102.ebuild` and the
+prepared desktop revision `qindaqt-desktop-0.1.0_pre20261002-r49.ebuild`.
+
+Desktop features that need a newer desktop than r47: the panel chip (Link applet), phone input and vault
+typing (they need Session1 and the focus relay). On r47 the service and app run and input/vault report
+unverified. Run-time proof against r47: the installed `libqindaqt_app_shell.so` and QindaTK r19 satisfy
+`qindaqt-link` (no undefined symbols with `LD_BIND_NOW=1`, no QML import warnings, offscreen `--fake
+populated --grab` renders); r47's session supervisor scans XDG autostart, and a notification server runs.
 
 | Part | Package | Installed as |
 | --- | --- | --- |
@@ -397,17 +403,13 @@ lands.
 AGENT-GUARD: the caller policy's trusted paths are `QINDAQT_BINDIR/qindaqt-link` and
 `QINDAQT_BINDIR/qindaqt-shell`. Both packages must keep installing their binary under `/usr/bin`.
 
-### Version rule
+### QindaLink version line and install script
 
-A new source snapshot gets a new `_preYYYYMMDD` version (`0.1.0_pre20261102`). Use `-rN` only for an
-ebuild-only change over the same source. Never reuse a version for a different commit; the cut scripts
-refuse it. The repository keeps one placeholder template per package and version; the pinned ebuild
-and Manifest live only in the overlay. The desktop recipe carries the r45 keyring-activation patch
-(its fix exists only on `fix/keyring-activation-ownership-20261030`); the cut refuses a commit that
-patch does not apply to.
-
-`.cache/small-team/install-qindalink-desktop.sh [--dry-run] <commit>` cuts and installs both
-packages in one emerge; `--dry-run` prints every step with no sudo.
+QindaLink versions independently of the desktop: `gui-apps/qindalink-0.1.0_preYYYYMMDD`, with `-rN`
+for ebuild-only changes. The desktop keeps its own `-rN` revisions; the prepared next one is
+`qindaqt-desktop-0.1.0_pre20261002-r49.ebuild`, a placeholder template that carries the r45 patch and
+the three Link options OFF. `.cache/small-team/install-qindalink.sh [--dry-run] <commit>` cuts and
+installs only qindalink; it never touches the desktop package or ccache.conf.
 
 ### ccache across snapshots
 
