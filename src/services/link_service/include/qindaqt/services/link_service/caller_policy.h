@@ -61,16 +61,26 @@ private:
 // clients this policy exists to stop promote themselves.
 class CallerPolicy final : public CallerAuthority {
 public:
-    CallerPolicy(QDBusConnection bus, std::unique_ptr<ProcessInspector> inspector, QStringList trustedExecutables);
+    // `shellExecutables` is the narrower set allowed for CallerRole::Shell members (ADR-0440):
+    // the installed shell plus any test-only --trusted-shell-caller.
+    CallerPolicy(QDBusConnection bus, std::unique_ptr<ProcessInspector> inspector, QStringList trustedExecutables,
+                 QStringList shellExecutables = {});
 
     // Pure decision used by authorize(); `exeBasename` receives the caller's file name when trusted.
     [[nodiscard]] bool isTrusted(const QString &busName, QString *exeBasename = nullptr);
+    [[nodiscard]] bool isShell(const QString &busName, QString *exeBasename = nullptr);
     [[nodiscard]] bool authorize(const QDBusMessage &message, QString *callerName = nullptr) override;
+    [[nodiscard]] bool authorizeRole(const QDBusMessage &message, CallerRole role,
+                                     QString *callerName = nullptr) override;
 
 private:
+    [[nodiscard]] bool matches(const QString &busName, const QStringList &set, QString *exeBasename);
+    static QStringList canonical(const QStringList &paths);
+
     QDBusConnection m_bus;
     std::unique_ptr<ProcessInspector> m_inspector;
     QStringList m_trusted;  // canonical absolute paths; their inode identity is looked up on every check
+    QStringList m_shell;    // CallerRole::Shell set
 };
 
 } // namespace QindaQt::Link

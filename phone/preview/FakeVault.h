@@ -43,6 +43,11 @@ public:
     Q_INVOKABLE QVariantMap passphraseHint(const QString &passphrase);
     Q_INVOKABLE QString exportBackup(const QString &pass, const QString &confirm);
     Q_INVOKABLE QString importBackup(const QString &pass, const QString &mode);
+    // "Type on desktop": a synthetic desktop that always reports the same window and accepts.
+    Q_INVOKABLE void typeBegin(const QString &, const QString &) { m_type = {{"phase", "confirm"}, {"app", "org.example.editor"}, {"title", "Synthetic window"}, {"message", ""}}; }
+    Q_INVOKABLE void typeConfirm() { m_type = {{"phase", "done"}, {"app", ""}, {"title", ""}, {"message", "Typed on the desktop."}}; }
+    Q_INVOKABLE void typeCancel() { m_type = {{"phase", "idle"}}; }
+    Q_INVOKABLE QVariantMap typeState() { return m_type; }
     Q_INVOKABLE void clearBackupStatus() { m_backupOp.clear(); m_backupStatus = QStringLiteral("none"); emit changed(); }
 
 signals:
@@ -55,5 +60,6 @@ private:
     bool m_strongBox = true, m_copy = false, m_active = false, m_secure = false;
     int m_restoreCount = 0, m_backupCount = 0;
     QVariantList m_entries;
+    QVariantMap m_type{{"phase", "idle"}};
     QVariantMap m_secrets;   // id -> {password, notes}
 };

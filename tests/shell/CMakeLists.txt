@@ -22,6 +22,8 @@ add_test(NAME qindaqt.shell-native-notification-lock
 set_tests_properties(qindaqt.shell-native-notification-lock PROPERTIES
     ENVIRONMENT "QT_FATAL_WARNINGS=1")
 
+add_subdirectory(link_focus_relay)
+
 add_test(
     NAME qindaqt.shell-icon-coverage
     COMMAND ${CMAKE_COMMAND}

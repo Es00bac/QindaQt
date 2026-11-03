@@ -10,6 +10,7 @@ target_sources(
     PRIVATE
         src/avahi_publisher.cpp
         src/caller_policy.cpp
+        src/focus_adaptor.cpp
         src/lan_controller.cpp
         src/lan_settings.cpp
         src/link1_service.cpp
@@ -23,6 +24,7 @@ target_sources(
         FILES
             include/qindaqt/services/link_service/avahi_publisher.h
             include/qindaqt/services/link_service/caller_policy.h
+            include/qindaqt/services/link_service/focus_adaptor.h
             include/qindaqt/services/link_service/lan_controller.h
             include/qindaqt/services/link_service/lan_settings.h
             include/qindaqt/services/link_service/link1_service.h
@@ -35,7 +37,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_link_service
-    PUBLIC QindaQt::LinkTransport QindaQt::LinkAdb QindaQt::LinkNotifications QindaQt::LinkMessages Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::LinkTransport QindaQt::LinkFocus QindaQt::LinkAdb QindaQt::LinkNotifications QindaQt::LinkMessages Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_link_service PUBLIC cxx_std_20)
 set_target_properties(qindaqt_link_service PROPERTIES CXX_EXTENSIONS OFF)
@@ -57,12 +59,21 @@ target_link_libraries(
         QindaQt::LinkService
         QindaQt::LinkInput
         QindaQt::LinkMacros
+        QindaQt::LinkVault
         QindaQt::SessionLockState
         QindaQt::CompositorAttachment
         qindaqt_compositor_names
         Qt6::Core
         Qt6::DBus
 )
+# AGENT-GUARD (ADR-0440): the test-only command-line options (--trusted-caller, --trusted-shell-caller,
+# --test-portal, --test-open-gate, --lan-port, --lan-test-address, --pairing-window-ms) are compiled in only
+# when this is ON. It defaults to BUILD_TESTING, which the Portage build turns OFF; the link tests and
+# phone/engine-tests/run-cross-*.sh need the ON build.
+option(QINDAQT_LINK_TEST_HOOKS "Compile the qindaqt-link-service test-only options" ${BUILD_TESTING})
+if(QINDAQT_LINK_TEST_HOOKS)
+    target_compile_definitions(qindaqt-link-service PRIVATE QINDAQT_LINK_TEST_HOOKS)
+endif()
 target_include_directories(qindaqt-link-service PRIVATE app)
 target_compile_definitions(
     qindaqt-link-service

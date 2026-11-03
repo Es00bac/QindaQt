@@ -38,8 +38,8 @@ void onTerminate(int) { const char c = 1; const ssize_t r = ::write(g_signalPipe
 
 int main(int argc, char **argv)
 {
-    // AGENT-GUARD: the service may hold secret-typing traffic in memory later
-    // (architecture page, "Secret typing"); no core dumps or ptrace attach.
+    // AGENT-GUARD: the service holds secret-typing traffic in memory (ADR-0440,
+    // architecture page "Secret typing"); no core dumps or ptrace attach.
     prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
 
     QCoreApplication app(argc, argv);
@@ -65,13 +65,25 @@ int main(int argc, char **argv)
     QCommandLineOption cacheDir(QStringLiteral("cache-dir"), QStringLiteral("Icon cache directory."), QStringLiteral("dir"));
     
     QCommandLineOption noInput(QStringLiteral("no-input"),
-                               QStringLiteral("Do not offer the input and macro capabilities."));
+                               QStringLiteral("Do not offer the input, macro and vault capabilities."));
     QCommandLineOption stateDir(QStringLiteral("state-dir"), QStringLiteral("State directory for the portal restore token."),
                                 QStringLiteral("dir"));
+    QCommandLineOption noAvahi(QStringLiteral("no-avahi"), QStringLiteral("Do not publish _qindalink._tcp through Avahi."));
+    // AGENT-GUARD (ADR-0440): every option that widens trust or replaces a safety input exists only in
+    // a build with QINDAQT_LINK_TEST_HOOKS (CMake: ON only with BUILD_TESTING). The installed package
+    // has neither the options nor their strings.
+#ifdef QINDAQT_LINK_TEST_HOOKS
     QCommandLineOption trustedCaller(QStringLiteral("trusted-caller"),
                                      QStringLiteral("TEST/DEVELOPMENT ONLY: extra executable allowed to use protected Link1 members (repeatable). Never use in an installed session."),
                                      QStringLiteral("exe"));
-    QCommandLineOption noAvahi(QStringLiteral("no-avahi"), QStringLiteral("Do not publish _qindalink._tcp through Avahi."));
+    QCommandLineOption trustedShellCaller(QStringLiteral("trusted-shell-caller"),
+                                          QStringLiteral("TEST/DEVELOPMENT ONLY: extra executable allowed to call shell-only members such as Focus.Publish (repeatable; also trusted as a client). Never use in an installed session."),
+                                          QStringLiteral("exe"));
+    QCommandLineOption testPortal(QStringLiteral("test-portal"),
+                                  QStringLiteral("TEST ONLY: bus name of a fake RemoteDesktop portal used instead of org.freedesktop.portal.Desktop."),
+                                  QStringLiteral("name"));
+    QCommandLineOption testOpenGate(QStringLiteral("test-open-gate"),
+                                    QStringLiteral("TEST ONLY: treat the screen as unlocked instead of asking the session lock state. Never use in an installed session."));
     QCommandLineOption lanPort(QStringLiteral("lan-port"), QStringLiteral("TEST/DEVELOPMENT ONLY: LAN listener port (default: --port). Never use in an installed session."),
                                QStringLiteral("port"));
     QCommandLineOption lanAddress(QStringLiteral("lan-test-address"),
@@ -79,7 +91,9 @@ int main(int argc, char **argv)
                                   QStringLiteral("addr"));
     QCommandLineOption pairingWindow(QStringLiteral("pairing-window-ms"),
                                      QStringLiteral("TEST/DEVELOPMENT ONLY: pairing window length. Never use in an installed session."), QStringLiteral("ms"));
-    parser.addOptions({noAvahi, lanPort, lanAddress, pairingWindow, dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir, trustedCaller});
+    parser.addOptions({trustedCaller, trustedShellCaller, testPortal, testOpenGate, lanPort, lanAddress, pairingWindow});
+#endif
+    parser.addOptions({noAvahi, dataDir, port, noAdb, noNotify, recordingNotifier, configDir, cacheDir, noInput, stateDir});
     parser.process(app);
 
     ServiceConfig config;
@@ -135,16 +149,32 @@ int main(int argc, char **argv)
     // AGENT-GUARD (ADR-0438): the trusted set is fixed here, from the installed QindaLink clients plus
     // --trusted-caller (tests). Never read it from the environment or a D-Bus call.
     QStringList trusted{QStringLiteral(QINDAQT_BINDIR "/qindaqt-link"), QStringLiteral(QINDAQT_BINDIR "/qindaqt-shell")};
+#ifdef QINDAQT_LINK_TEST_HOOKS
     for (const QString &extra : parser.values(trustedCaller)) {
         // Stderr is the journal under the systemd user unit.
         qWarning("qindaqt-link-service: WARNING --trusted-caller %s is a test/development override; it widens who may read messages and act as the user", qPrintable(extra));
         trusted += extra;
     }
-    CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted);
+#endif
+    // AGENT-GUARD (ADR-0440): only the installed shell (plus a test-only override) may publish focus facts;
+    // the QindaLink app is a client but not a shell. A shell-role override is also a client.
+    QStringList shells{QStringLiteral(QINDAQT_BINDIR "/qindaqt-shell")};
+#ifdef QINDAQT_LINK_TEST_HOOKS
+    for (const QString &extra : parser.values(trustedShellCaller)) {
+        qWarning("qindaqt-link-service: WARNING --trusted-shell-caller %s is a test/development override; it may publish the focus that gates secret typing", qPrintable(extra));
+        shells += extra;
+        trusted += extra;
+    }
+#endif
+    CallerPolicy callerPolicy(bus, std::make_unique<DBusProcessInspector>(bus), trusted, shells);
     config.callerAuthority = &callerPolicy;
+    FocusStore focusStore;  // fed by Link1.Focus.Publish from the shell; empty means focus unknown
+    if (!parser.isSet(noInput)) config.focusStore = &focusStore;
     // AGENT-GUARD (ADR-0441): LAN stays off until the persisted setting says otherwise; these only
     // wire the machinery. The Avahi record exists only while a LAN listener is bound.
-    config.lanPort = parser.isSet(lanPort) ? quint16(parser.value(lanPort).toUInt()) : config.port;
+    config.lanPort = config.port;
+#ifdef QINDAQT_LINK_TEST_HOOKS
+    if (parser.isSet(lanPort)) config.lanPort = quint16(parser.value(lanPort).toUInt());
     for (const QCommandLineOption *o : {&lanPort, &lanAddress, &pairingWindow}) {
         if (parser.isSet(*o)) {
             // Stderr is the journal under the systemd user unit.
@@ -157,6 +187,7 @@ int main(int argc, char **argv)
         for (const QString &a : parser.values(lanAddress)) fixed.append({QHostAddress(a), QStringLiteral("test0")});
         config.lanAddresses = [fixed] { return fixed; };
     }
+#endif
     std::unique_ptr<AvahiPublisher> avahi;
     if (!parser.isSet(noAvahi)) {
         avahi = std::make_unique<AvahiPublisher>(QDBusConnection::systemBus());
@@ -173,16 +204,32 @@ int main(int argc, char **argv)
     // loop, so no connection can arrive before the features are registered.
     // Nothing contacts the RemoteDesktop portal until a phone sends input.begin.
     std::unique_ptr<NativeInputGate> gate;
+    std::unique_ptr<StaticInputGate> testGate;
     std::unique_ptr<InputComposition> input;
     if (!parser.isSet(noInput)) {
-        gate = std::make_unique<NativeInputGate>(bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
-                                                 qEnvironmentVariable("WAYLAND_DISPLAY"));
         InputCompositionOptions options;
+#ifdef QINDAQT_LINK_TEST_HOOKS
+        if (parser.isSet(testOpenGate)) {
+            qWarning("qindaqt-link-service: WARNING --test-open-gate disables the lock-state check; test use only");
+            testGate = std::make_unique<StaticInputGate>(true);
+        } else
+#endif
+        {
+            gate = std::make_unique<NativeInputGate>(bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+                                                     qEnvironmentVariable("WAYLAND_DISPLAY"));
+        }
+#ifdef QINDAQT_LINK_TEST_HOOKS
+        if (parser.isSet(testPortal)) {
+            qWarning("qindaqt-link-service: WARNING --test-portal %s replaces the desktop portal; test use only", qPrintable(parser.value(testPortal)));
+            options.portal.service = parser.value(testPortal);
+        }
+#endif
         const QString state = parser.isSet(stateDir)
             ? parser.value(stateDir)
             : QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation) + QStringLiteral("/qindalink");
         options.portal.tokenFile = state + QStringLiteral("/restore-token");
-        options.gate = gate.get();
+        options.gate = testGate ? static_cast<InputGate *>(testGate.get()) : static_cast<InputGate *>(gate.get());
+        options.focus = &focusStore;
         input = std::make_unique<InputComposition>(*service.hub(), bus, std::move(options));
     }
     const int rc = app.exec();

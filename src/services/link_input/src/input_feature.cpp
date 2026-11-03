@@ -120,7 +120,7 @@ void InputFeature::begin(Session &session, qint64 id)
 void InputFeature::onActivated()
 {
     if (m_phase != Phase::Pending) {
-        m_portal.close(); // nobody is waiting for it
+        if (!m_portalBorrowed) m_portal.close(); // nobody is waiting for it
         return;
     }
     m_phase = Phase::Active;
@@ -176,7 +176,7 @@ void InputFeature::endController(const QString &reason, bool notifyPhone)
     m_held.releaseAll();
     // The portal session closes with its controller so the compositor's
     // "remote control" indicator never outlives the phone's use.
-    if (m_portal.state() != PortalInputSession::State::Idle) m_portal.close();
+    if (!m_portalBorrowed && m_portal.state() != PortalInputSession::State::Idle) m_portal.close();
 }
 
 void InputFeature::sessionClosed(const QString &deviceId)

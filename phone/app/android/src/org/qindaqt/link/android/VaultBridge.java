@@ -13,6 +13,8 @@ import org.qindaqt.link.vault.VaultEntry;
 import org.qindaqt.link.vault.VaultException;
 import org.qindaqt.link.vault.VaultRecord;
 import org.qindaqt.link.vault.VaultSession;
+import org.qindaqt.link.vault.VaultTypeFlow;
+import org.qindaqt.link.vault.VaultTypingSource;
 
 /**
  * The single class the Qt/JNI layer calls for the vault (phone/app/VaultBridge.cpp). Static,
@@ -27,6 +29,40 @@ public final class VaultBridge {
     private VaultBridge() {}
 
     private static VaultController c(Context ctx) { return VaultController.get(ctx); }
+
+    // "Type on desktop" (ADR-0440). One attempt at a time; the flow never holds a secret.
+    private static VaultTypeFlow typeFlow;
+
+    private static synchronized VaultTypeFlow flow(Context ctx) {
+        if (typeFlow == null) {
+            final VaultController v = c(ctx);
+            typeFlow = new VaultTypeFlow(LinkService.vaultTypeFeature, v::session, System::currentTimeMillis);
+        }
+        return typeFlow;
+    }
+
+    /** Starts "type on desktop" for an entry; field is username, password or autotype. Asks the desktop for its focused window. */
+    public static void typeBegin(Context ctx, String id, String field) {
+        VaultTypingSource.Field f = "username".equals(field) ? VaultTypingSource.Field.USERNAME
+            : "password".equals(field) ? VaultTypingSource.Field.PASSWORD : VaultTypingSource.Field.AUTOTYPE;
+        c(ctx).touch();
+        flow(ctx).begin(id, f);
+    }
+
+    /** The user confirmed the shown window. Phase becomes need-unlock when the vault is locked. */
+    public static void typeConfirm(Context ctx) { c(ctx).touch(); flow(ctx).confirm(); }
+
+    public static void typeCancel(Context ctx) { flow(ctx).cancel(); }
+
+    /** {phase, app, title, message, rev}; phase is idle|requesting|confirm|need-unlock|sending|done|failed. No secret is ever in it. */
+    public static String typeStateJson(Context ctx) {
+        VaultTypeFlow f = flow(ctx);
+        f.poll();
+        try {
+            return new JSONObject().put("phase", f.phase().name().toLowerCase(java.util.Locale.ROOT).replace('_', '-'))
+                .put("app", f.app()).put("title", f.title()).put("message", f.message()).put("rev", f.rev()).toString();
+        } catch (JSONException e) { return "{}"; }
+    }
 
     /** {state, message, rev, strongBox, copyEnabled, count, backup:{op,status,count}, restoreCount}. */
     public static String stateJson(Context ctx) {

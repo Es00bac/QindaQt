@@ -70,6 +70,16 @@ adaptor, only when the service has a phone-notification presenter (so not under
 presenter with a file recorder for private-bus tests; `--config-dir` and
 `--cache-dir` move the mute file and icon cache.
 
+## Focus interface
+
+`org.qindaqt.Link1.Focus` is exported on the same object. It exists so the shell, which alone may read the
+authenticated active-window identity ([ADR-0063](../adr/0063-project-authenticated-active-window-identity.md)),
+can tell the service which window has focus for secret typing ([ADR-0440](../adr/0440-qindalink-secret-typing-focus-relay.md)).
+
+| Member | Signature | Behavior |
+| --- | --- | --- |
+| `Publish` | `(s json)` | Shell only (`CallerRole::Shell`): any other caller gets `org.qindaqt.Link1.Error.Denied`. `json` is at most 2048 bytes: `{"uuid","appId","title","revision"}`, or `{}` for "none". Malformed input gets `org.qindaqt.Link1.Error.BadRequest` and changes nothing. The fact is cleared when the publishing connection leaves the bus, and counts as unknown when it is older than 3 s (the shell republishes every second). |
+
 ## Setup interface
 
 `org.qindaqt.Link1.Setup` is exported on the same object by a separate adaptor. The service owns
