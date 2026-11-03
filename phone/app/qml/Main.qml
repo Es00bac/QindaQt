@@ -15,6 +15,12 @@ Window {
 
     property string page: "home"
 
+    // AGENT-GUARD: the vault shows secrets, so FLAG_SECURE (blank screenshots, recording and recents
+    // thumbnail) follows the page; `active` starts the vault poll only while its page is up.
+    // `vault` is VaultBridge in the app and FakeVault in the preview.
+    onPageChanged: vault.setSecure(page === "vault")
+    Binding { target: vault; property: "active"; value: win.page === "vault" }
+
     // Tab -> pages it owns; the four tools pages keep the Tools tab lit.
     readonly property var tabs: [
         { text: qsTr("Home"), iconName: "house", value: "home", objectName: "tabHome" },
