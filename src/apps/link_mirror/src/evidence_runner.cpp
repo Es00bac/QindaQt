@@ -37,6 +37,12 @@ EvidenceRunner::EvidenceRunner(const MirrorOptions &options, MirrorController &c
     connect(&m_probeTimer, &QTimer::timeout, this, &EvidenceRunner::probeTick);
     connect(&controller, &MirrorController::frameShown, this, &EvidenceRunner::onFrame);
     connect(&controller, &MirrorController::displayReady, this, &EvidenceRunner::onDisplay);
+    connect(&controller, &MirrorController::pausedChanged, this, [](bool paused) {
+        print(paused ? QStringLiteral("paused: phone screen off") : QStringLiteral("resumed"));
+    });
+    // A paused phone sends no frames, so the second grab may also be taken on time alone.
+    m_pausedGrabCheck.setInterval(200);
+    connect(&m_pausedGrabCheck, &QTimer::timeout, this, &EvidenceRunner::checkPausedGrab);
     connect(&controller, &MirrorController::appListed, this, [this](const AppEntry &app) {
         ++m_listed;
         print(QStringLiteral("%1\t%2\ticon=%3x%4")
@@ -72,14 +78,15 @@ void EvidenceRunner::probeTick()
     const quint64 frames = m_controller.decodedFrames() - m_probeStartFrames;
     const double seconds = static_cast<double>(m_probeClock.elapsed()) / 1000.0;
     const QSize size = m_controller.streamSize();
-    const QString line = QStringLiteral("decoder=%1 resolution=%2x%3 frames=%4 seconds=%5 fps=%6 dropped=%7")
+    const QString line = QStringLiteral("decoder=%1 resolution=%2x%3 frames=%4 seconds=%5 fps=%6 dropped=%7 syncs=%8")
                              .arg(decoderPathName(m_controller.decoderPath()))
                              .arg(size.width())
                              .arg(size.height())
                              .arg(frames)
                              .arg(seconds, 0, 'f', 1)
                              .arg(seconds > 0 ? static_cast<double>(frames) / seconds : 0.0, 0, 'f', 1)
-                             .arg(m_controller.droppedPackets());
+                             .arg(m_controller.droppedPackets())
+                             .arg(m_controller.keyframeRequests());
     print(line);
     if (m_probeTicks >= m_options.probeSeconds) {
         done(frames > 0 ? 0 : 1, frames > 0 ? QString() : QStringLiteral("no frames decoded"));
@@ -107,12 +114,22 @@ void EvidenceRunner::onFrame()
     }
 }
 
+void EvidenceRunner::checkPausedGrab()
+{
+    if (m_stage == Stage::WaitSecondGrab && m_controller.paused() && m_sinceMark.elapsed() >= kSettleMs) {
+        m_pausedGrabCheck.stop();
+        writeGrab(m_options.grabAfterInputPath);
+        done(0);
+    }
+}
+
 void EvidenceRunner::runNextInput()
 {
     if (m_nextInput >= m_options.inputSteps.size()) {
         m_stage = Stage::WaitSecondGrab;
         m_framesSinceMark = 0;
         m_sinceMark.start();
+        m_pausedGrabCheck.start();
         return;
     }
     deliver(m_options.inputSteps.at(m_nextInput++));
@@ -190,6 +207,7 @@ void EvidenceRunner::done(int exitCode, const QString &message)
     }
     m_stage = Stage::Done;
     m_probeTimer.stop();
+    m_pausedGrabCheck.stop();
     m_deadline.stop();
     if (!message.isEmpty()) {
         print(message);

@@ -28,6 +28,19 @@ void MirrorWindow::setStatusText(const QString &text)
     update();
 }
 
+void MirrorWindow::setPaused(bool paused)
+{
+    if (paused == m_paused) {
+        return;
+    }
+    if (paused) {
+        // End any held finger or key now; nothing sent while paused reaches the app.
+        forward(m_translator.releaseAll());
+    }
+    m_paused = paused;
+    update();
+}
+
 QImage MirrorWindow::renderSnapshot(QSize viewSize) const
 {
     ViewportMapper mapper = m_mapper;
@@ -45,6 +58,13 @@ void MirrorWindow::render(QPainter &painter, const ViewportMapper &mapper, QSize
     if (!m_frame.isNull() && !content.isEmpty()) {
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter.drawImage(content, m_frame);
+        if (m_paused) {
+            painter.fillRect(QRectF(QPointF(0, 0), viewSize), QColor(0, 0, 0, 170));
+            painter.setPen(QColor(235, 235, 235));
+            painter.drawText(QRectF(QPointF(0, 0), viewSize).adjusted(24, 24, -24, -24),
+                             Qt::AlignCenter | Qt::TextWordWrap,
+                             QStringLiteral("Phone screen is off — wake your phone to continue"));
+        }
         return;
     }
     if (!m_status.isEmpty()) {
@@ -77,38 +97,56 @@ void MirrorWindow::forward(const QList<QByteArray> &frames)
 
 void MirrorWindow::mousePressEvent(QMouseEvent *event)
 {
-    forward(m_translator.mousePress(event->position(), event->button()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.mousePress(event->position(), event->button()));
 }
 
 void MirrorWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    forward(m_translator.mouseMove(event->position()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.mouseMove(event->position()));
 }
 
 void MirrorWindow::mouseReleaseEvent(QMouseEvent *event)
 {
-    forward(m_translator.mouseRelease(event->position(), event->button()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.mouseRelease(event->position(), event->button()));
 }
 
 void MirrorWindow::wheelEvent(QWheelEvent *event)
 {
-    forward(m_translator.wheel(event->position(), event->angleDelta()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.wheel(event->position(), event->angleDelta()));
 }
 
 void MirrorWindow::keyPressEvent(QKeyEvent *event)
 {
-    forward(m_translator.keyPress(event->key(), event->modifiers(), event->text(), event->isAutoRepeat()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.keyPress(event->key(), event->modifiers(), event->text(), event->isAutoRepeat()));
 }
 
 void MirrorWindow::keyReleaseEvent(QKeyEvent *event)
 {
-    forward(m_translator.keyRelease(event->key(), event->modifiers(), event->isAutoRepeat()));
     event->accept();
+    if (m_paused) {
+        return;
+    }
+    forward(m_translator.keyRelease(event->key(), event->modifiers(), event->isAutoRepeat()));
 }
 
 void MirrorWindow::focusOutEvent(QFocusEvent *event)

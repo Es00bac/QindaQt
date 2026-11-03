@@ -142,6 +142,10 @@ void MirrorConnection::dispatch(const Frame &frame)
             if (const auto error = parseError(frame.payload)) {
                 Q_EMIT serverError(*error);
             }
+        } else if (frame.type == control::ScreenState) {
+            if (const auto on = parseScreenState(frame.payload)) {
+                Q_EMIT screenStateChanged(*on);
+            }
         } else if (frame.type == control::AppExited) {
             if (const auto reason = parseAppExited(frame.payload)) {
                 Q_EMIT appExited(*reason);

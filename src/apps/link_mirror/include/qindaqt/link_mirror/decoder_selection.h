@@ -9,6 +9,7 @@
 #include <QString>
 
 #include <functional>
+#include <optional>
 #include <memory>
 
 // Video decoder abstraction and the VA-API-first selection policy.
@@ -80,6 +81,24 @@ private:
     bool m_hardwareDisabled = false;
     bool m_keyframeRequested = false;
     QString m_lastError;
+};
+
+// Spaces out keyframe (sync) requests to the phone.
+//
+// AGENT-GUARD: every desktop sync request goes through one throttle. A persistently slow
+// decoder trips the BacklogGate again after each keyframe; without a minimum gap that becomes
+// a keyframe request loop that floods the encoder with IDR frames and makes things worse.
+class KeyframeThrottle {
+public:
+    static constexpr qint64 kMinGapMs = 1000;
+
+    explicit KeyframeThrottle(qint64 minGapMs = kMinGapMs) : m_gap(minGapMs) {}
+    // True when a request may be sent at nowMs (a monotonic clock); records it.
+    [[nodiscard]] bool allow(qint64 nowMs);
+
+private:
+    qint64 m_gap;
+    std::optional<qint64> m_last;
 };
 
 // Bounds the packets waiting for the decode thread so a slow decoder cannot grow memory or

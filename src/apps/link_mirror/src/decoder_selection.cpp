@@ -111,6 +111,15 @@ bool DecoderSelector::takeKeyframeRequest()
     return std::exchange(m_keyframeRequested, false);
 }
 
+bool KeyframeThrottle::allow(qint64 nowMs)
+{
+    if (m_last && nowMs - *m_last < m_gap) {
+        return false;
+    }
+    m_last = nowMs;
+    return true;
+}
+
 BacklogGate::Verdict BacklogGate::admit(const VideoPacket &packet, int inFlight)
 {
     if (packet.config) {

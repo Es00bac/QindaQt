@@ -7,6 +7,7 @@
 #include "mirror_options.h"
 #include "mirror_window.h"
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
 
@@ -40,6 +41,8 @@ public:
     [[nodiscard]] QSize streamSize() const { return m_streamSize; }
     [[nodiscard]] quint64 decodedFrames() const { return m_worker->decodedFrames(); }
     [[nodiscard]] quint64 droppedPackets() const { return m_worker->droppedPackets(); }
+    [[nodiscard]] bool paused() const { return m_window.paused(); }
+    [[nodiscard]] int keyframeRequests() const { return m_keyframeRequests; }
 
 Q_SIGNALS:
     void displayReady(const qindaqt::link_mirror::DisplayInfo &display);
@@ -47,6 +50,7 @@ Q_SIGNALS:
     void appListed(const qindaqt::link_mirror::AppEntry &app);
     void inventoryDone(int count);
     void finished(int exitCode);
+    void pausedChanged(bool paused);
 
 private:
     void onReady(const ReadyInfo &info);
@@ -54,6 +58,8 @@ private:
     void onApp(const AppEntry &app);
     void onServerError(const ServerError &error);
     void onAppExited(const QString &reason);
+    void setPaused(bool paused);
+    void requestKeyframe();
     void applyResize();
     [[nodiscard]] int densityFor(qreal devicePixelRatio) const;
     void report(const QString &message) const;
@@ -66,6 +72,9 @@ private:
     std::unique_ptr<DecodeWorker> m_worker;
     QTimer m_resizeDebounce;
     QTimer m_keepalive;
+    QElapsedTimer m_clock;
+    KeyframeThrottle m_syncThrottle;
+    int m_keyframeRequests = 0;
     QSize m_pendingView;
     qreal m_pendingRatio = 1.0;
     QSize m_requestedDisplay;

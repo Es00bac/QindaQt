@@ -38,7 +38,7 @@ final class ScreenEncoder {
     private final int bitrate;
     private final int maxFps;
     private final Sink sink;
-    private MediaCodec codec;
+    private volatile MediaCodec codec; // read by requestSyncFrame from watcher threads
     private Surface surface;
     private Thread drain;
     private volatile boolean stopping;

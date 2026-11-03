@@ -194,6 +194,15 @@ private Q_SLOTS:
         QVERIFY(!parseAppExited("[1]"));
     }
 
+    void parsesScreenState()
+    {
+        QCOMPARE(parseScreenState(R"({"state":"off"})"), std::optional<bool>(false));
+        QCOMPARE(parseScreenState(R"({"state":"on"})"), std::optional<bool>(true));
+        QVERIFY(!parseScreenState(R"({"state":"dim"})"));
+        QVERIFY(!parseScreenState("{}"));
+        QCOMPARE(control::ScreenState, std::uint8_t(0x85));
+    }
+
     void decodesAppIcons()
     {
         QImage icon(4, 4, QImage::Format_ARGB32);

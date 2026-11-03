@@ -166,6 +166,7 @@ Every frame, in both directions, is an 8-byte header followed by the payload.
 | `0x82` | phone → desktop | `display` | `displayId`, `width`, `height`, `dpi`, `flags` |
 | `0x83` | phone → desktop | `error` | `code`, `message`, `fatal` |
 | `0x84` | phone → desktop | `app-exited` | `reason` (`no-tasks`): the app left the mirror display; the server then closes the session |
+| `0x85` | phone → desktop | `screen-state` | `state`: `off` or `on`. The phone's own screen changed while the mirror shares its power group |
 
 Field rules:
 
@@ -202,6 +203,12 @@ Field rules:
 - **Text.** The server types `text` through the virtual keyboard's key
   character map. Characters without a mapping are dropped, and the server
   logs only their count.
+- **Screen state.** `screen-state` is sent only when the mirror display shares
+  the phone's power group (display group 0).
+  - The server polls `IPowerManager.isInteractive()` every 500 ms and sends
+    each change.
+  - On `on` it also requests a keyframe, so the picture resumes at once.
+  - The session stays open while the phone screen is off.
 - **Errors.** After a fatal `error` the server closes the session. Codes:
 
 | Code | Meaning |
@@ -276,8 +283,11 @@ title and icon.
     the display stays in display group 0, and a lock bound to it is recorded
     as `powerGroupId=0`. So in group 0 the server takes **no** wake lock, and
     the mirror follows the phone's own power state. It starts only while the
-    phone is awake, and otherwise fails with `error{display-asleep}`. It
-    pauses when the phone sleeps.
+    phone is awake, and otherwise fails with `error{display-asleep}`.
+  - **Pause on screen-off.** This is the user's decision of 2026-11-02. In
+    group 0 the mirror pauses while the phone's screen is off and reports it
+    with `screen-state`. The server never holds the phone's main screen
+    awake, and never turns its panel off.
   - There is **no** wake-key or global-wakeUp fallback, because those can
     wake the phone's own screen.
   - Without the per-display lock, the session continues only if the display is
@@ -321,6 +331,7 @@ SM-S948U (Android 17, SDK 37, One UI).
 | App exit | `IActivityTaskManager.getAllRootTaskInfosOnDisplay(int)` | no |
 | Power | `IPowerManager.acquireWakeLock(IBinder, int, String, String, WorkSource, String, int, IWakeLockCallback)`, `releaseWakeLock`, `isDisplayInteractive(int)` | no |
 | Power | `IDisplayManager.getDisplayInfo(int)` → `DisplayInfo.displayGroupId` | no (unknown counts as group 0) |
+| Screen state | `IPowerManager.isInteractive()`, else `isDisplayInteractive(0)` | no (no `screen-state` messages) |
 | Inventory | `ActivityThread()` with a `ConfigurationController`, then `getSystemContext()` | inventory only |
 
 The callback the display manager needs is a `java.lang.reflect.Proxy` for
@@ -380,6 +391,10 @@ Exit status:
   reports the path that actually decoded.
 - Decoding runs on a worker thread. Only the newest picture is handed to the
   window, so a slow paint drops frames instead of adding latency.
+- **Keyframe requests.** Every `sync` the desktop sends goes through one
+  throttle with a 1 s minimum gap. That covers backlog drops, decoder
+  fallback and screen-on. A persistently slow decoder therefore cannot turn
+  the backlog gate into a keyframe request loop.
 - **Backlog.** At most 8 packets wait for the decoder. Past that, non-key
   packets are dropped until the next keyframe, and the desktop sends `sync`.
   Config and key packets always pass. A session start can trigger one such
@@ -400,6 +415,13 @@ Exit status:
 - Volume, power, camera and call keys are never mapped.
 - Losing focus or closing the window cancels a held finger and releases held
   keys.
+- **Paused (phone screen off).** After `screen-state off` the window keeps the
+  last frame, dimmed, under the notice "Phone screen is off — wake your phone
+  to continue".
+  - Held fingers and keys are released, and further input is dropped, not
+    queued.
+  - The pause ends on `screen-state on`, or on the first keyframe that
+    arrives after `off`.
 - Resizing is debounced by 250 ms. The new window size times the device pixel
   ratio becomes a `resize` request.
 
@@ -419,7 +441,8 @@ Exit status:
 - Windows with `FLAG_SECURE` appear black in the stream.
 - **Phone must stay awake.** On builds that keep the mirror display in display
   group 0 (the SM-S948U on SDK 37), mirroring needs the phone awake. When the
-  phone's screen times out, the mirror pauses until the phone is woken.
+  phone's screen times out, the window shows the paused notice until the
+  phone is woken. This is by design (user decision).
 - Audio is not forwarded (M3).
 - Streaming stops when ADB drops. A visible window then shows the reason
   until it is closed; headless runs exit with status 1 and the reason.

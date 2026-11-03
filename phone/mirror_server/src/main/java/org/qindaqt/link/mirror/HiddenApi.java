@@ -58,7 +58,8 @@ final class HiddenApi {
     Object powerManager;
     Method acquireWakeLock; // optional: per-display screen wake lock (keeps only our display awake)
     Method releaseWakeLock;
-    Method isDisplayInteractive; // optional: diagnostics only
+    Method isDisplayInteractive; // optional: diagnostics and group-0 screen state
+    Method isInteractive; // optional: phone screen state (ScreenStateWatcher)
 
     private HiddenApi() {}
 
@@ -216,6 +217,7 @@ final class HiddenApi {
         }
         releaseWakeLock = method(pm, "releaseWakeLock", false, IBinder.class, int.class);
         isDisplayInteractive = optional(pm, "isDisplayInteractive", int.class);
+        isInteractive = optional(pm, "isInteractive");
     }
 
     private void probeTasks() {

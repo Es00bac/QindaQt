@@ -28,6 +28,7 @@ final class DisplayPower {
 
     private final HiddenApi api;
     private IBinder lock;
+    private boolean sharesPhoneGroup;
 
     DisplayPower(HiddenApi api) {
         this.api = api;
@@ -36,6 +37,7 @@ final class DisplayPower {
     /** Returns null when the display is (or is held) awake, or the reason it cannot be. */
     String keepAwake(int displayId) {
         int group = displayGroup(displayId);
+        sharesPhoneGroup = group == 0;
         if (group == 0) {
             // A new display can report non-interactive for a moment after creation; in group 0
             // its state is the group's, so the phone's own display 0 decides.
@@ -65,6 +67,11 @@ final class DisplayPower {
         }
         return "this phone cannot keep the mirror display awake without waking its own screen "
                 + "(no per-display wake lock); wake the phone and try again";
+    }
+
+    /** True when the mirror display sleeps and wakes with the phone's own screen. */
+    boolean sharesPhoneGroup() {
+        return sharesPhoneGroup;
     }
 
     void release() {
