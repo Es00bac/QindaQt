@@ -1124,7 +1124,7 @@ does, because a saved location is userinfo-free by construction.
 ```ini
 [Mount]
 What=qinda:/mnt/storage
-Where=~/Network/Storage
+Where=/home/alice/Network/Storage
 Type=fuse.sshfs
 Options=_netdev,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3,idmap=user
 ```

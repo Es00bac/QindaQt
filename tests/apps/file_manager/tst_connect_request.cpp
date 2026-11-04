@@ -39,9 +39,9 @@ void TestConnectRequest::buildsTheLaptopLocations() {
   QVERIFY(storage.record.showInPlaces);
 
   const auto home = buildNetworkLocation(
-      sftpTo(QStringLiteral("qinda"), QStringLiteral("~")));
+      sftpTo(QStringLiteral("qinda"), QStringLiteral("/home/alice")));
   QVERIFY2(home.ok(), qPrintable(home.message));
-  QCOMPARE(home.record.url.toString(), QStringLiteral("sftp://qinda~"));
+  QCOMPARE(home.record.url.toString(), QStringLiteral("sftp://qinda/home/alice"));
   QCOMPARE(home.record.id, home.record.url.toString());
 }
 
@@ -128,13 +128,13 @@ void TestConnectRequest::refusesUserinfoInTheHostField() {
   // the only way userinfo could be smuggled in. It must be refused before
   // QUrl parses it into an authority the user did not intend.
   const auto built = buildNetworkLocation(
-      sftpTo(QStringLiteral("cabewse:secret@qinda"), QStringLiteral("/mnt")));
+      sftpTo(QStringLiteral("alice:secret@qinda"), QStringLiteral("/mnt")));
   QVERIFY(!built.ok());
   QCOMPARE(built.error, ConnectRequestError::InvalidHost);
   QVERIFY(built.record.url.isEmpty());
 
   const auto userOnly = buildNetworkLocation(
-      sftpTo(QStringLiteral("cabewse@qinda"), QStringLiteral("/mnt")));
+      sftpTo(QStringLiteral("alice@qinda"), QStringLiteral("/mnt")));
   QVERIFY(!userOnly.ok());
   QCOMPARE(userOnly.error, ConnectRequestError::InvalidHost);
 }

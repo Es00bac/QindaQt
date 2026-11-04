@@ -398,7 +398,7 @@ class OuterCliTests(unittest.TestCase):
         "--kwin-wayland", "/usr/bin/kwin_wayland",
         "--plugin-relative", "lib/kwin/plugins/libqindaqt_compositor.so",
         "--decoration-relative", "lib/plugins/libqindaqt_decoration.so",
-        "--gabbee-root", "~/gabbee",
+        "--gabbee-root", "/home/alice/gabbee",
     ]
 
     def test_documented_invocation_parses_with_source_root_default(self) -> None:

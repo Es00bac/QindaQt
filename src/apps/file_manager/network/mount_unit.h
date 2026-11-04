@@ -19,7 +19,7 @@ enum class MountUnitError {
 
 struct MountUnitResult final {
   // The escaped systemd unit file name, e.g.
-  // "home-cabewse-Network-Storage\x20\x28desktop\x29.mount".
+  // "home-alice-Network-Storage\x20\x28desktop\x29.mount".
   QString unitName;
   // The full unit file text.
   QString contents;

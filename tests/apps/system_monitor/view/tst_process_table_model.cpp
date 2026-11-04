@@ -80,9 +80,9 @@ private:
 
 QVector<FakeProcessModel::Row> sampleRows() {
   return {{1, 0, QStringLiteral("systemd"), QStringLiteral("root"), 0.1, 10},
-          {100, 1, QStringLiteral("shell"), QStringLiteral("cabewse"), 5.0, 400},
-          {200, 100, QStringLiteral("editor"), QStringLiteral("cabewse"), 2.0, 300},
-          {300, 100, QStringLiteral("browser"), QStringLiteral("cabewse"), 9.0, 900},
+          {100, 1, QStringLiteral("shell"), QStringLiteral("alice"), 5.0, 400},
+          {200, 100, QStringLiteral("editor"), QStringLiteral("alice"), 2.0, 300},
+          {300, 100, QStringLiteral("browser"), QStringLiteral("alice"), 9.0, 900},
           {400, 999, QStringLiteral("orphan"), QStringLiteral("root"), 1.0, 50}};
 }
 
@@ -148,7 +148,7 @@ void TestProcessTableModel::filterMatchesNameCommandUserAndPid() {
   // The unfiltered total stays visible so the header can say "1 / 5".
   QCOMPARE(m_model->totalCount(), 5);
 
-  m_model->setFilterText(QStringLiteral("cabewse"));
+  m_model->setFilterText(QStringLiteral("alice"));
   QCOMPARE(m_model->count(), 3);
 
   m_model->setFilterText(QStringLiteral("--flag"));

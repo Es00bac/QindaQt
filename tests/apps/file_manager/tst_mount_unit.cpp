@@ -37,12 +37,12 @@ void TestMountUnit::escapesPathsTheWaySystemdDoes_data() {
   QTest::addColumn<QString>("escaped");
   // Checked against `systemd-escape --path` for each case.
   QTest::newRow("root") << QStringLiteral("/") << QStringLiteral("-");
-  QTest::newRow("plain") << QStringLiteral("~/Network/Storage")
-                         << QStringLiteral("home-cabewse-Network-Storage");
-  QTest::newRow("trailing slash") << QStringLiteral("~/")
-                                  << QStringLiteral("home-cabewse");
-  QTest::newRow("double slash") << QStringLiteral("/home//cabewse")
-                                << QStringLiteral("home-cabewse");
+  QTest::newRow("plain") << QStringLiteral("/home/alice/Network/Storage")
+                         << QStringLiteral("home-alice-Network-Storage");
+  QTest::newRow("trailing slash") << QStringLiteral("/home/alice/")
+                                  << QStringLiteral("home-alice");
+  QTest::newRow("double slash") << QStringLiteral("/home//alice")
+                                << QStringLiteral("home-alice");
   QTest::newRow("space") << QStringLiteral("/mnt/My Files")
                          << QStringLiteral("mnt-My\\x20Files");
   QTest::newRow("dash") << QStringLiteral("/mnt/a-b")
@@ -63,16 +63,16 @@ void TestMountUnit::buildsAUnitThatNamesItsOwnMountPoint() {
   const MountUnitResult unit =
       MountUnit::build(sftpLocation(QStringLiteral("sftp://qinda/mnt/storage"),
                                     QStringLiteral("Storage")),
-                       QStringLiteral("~"));
+                       QStringLiteral("/home/alice"));
   QVERIFY2(unit.ok(), qPrintable(unit.message));
-  QCOMPARE(unit.mountPoint, QStringLiteral("~/Network/Storage"));
+  QCOMPARE(unit.mountPoint, QStringLiteral("/home/alice/Network/Storage"));
   // AGENT-GUARD: systemd resolves a .mount unit's Where= from its own name,
   // so the two must agree exactly or the unit refuses to load.
   QCOMPARE(unit.unitName,
            MountUnit::escapePath(unit.mountPoint) + QStringLiteral(".mount"));
-  QCOMPARE(unit.unitName, QStringLiteral("home-cabewse-Network-Storage.mount"));
+  QCOMPARE(unit.unitName, QStringLiteral("home-alice-Network-Storage.mount"));
 
-  QVERIFY(unit.contents.contains(QStringLiteral("Where=~/Network/Storage")));
+  QVERIFY(unit.contents.contains(QStringLiteral("Where=/home/alice/Network/Storage")));
   QVERIFY(unit.contents.contains(QStringLiteral("What=qinda:/mnt/storage")));
   QVERIFY(unit.contents.contains(QStringLiteral("Type=fuse.sshfs")));
   QVERIFY(unit.contents.contains(QStringLiteral("WantedBy=default.target")));
@@ -85,7 +85,7 @@ void TestMountUnit::carriesThePortAndTheRemotePath() {
   const MountUnitResult ported =
       MountUnit::build(sftpLocation(QStringLiteral("sftp://qinda:2222/srv"),
                                     QStringLiteral("Srv")),
-                       QStringLiteral("~"));
+                       QStringLiteral("/home/alice"));
   QVERIFY2(ported.ok(), qPrintable(ported.message));
   QVERIFY(ported.contents.contains(QStringLiteral("port=2222")));
   QVERIFY(ported.contents.contains(QStringLiteral("What=qinda:/srv")));
@@ -93,7 +93,7 @@ void TestMountUnit::carriesThePortAndTheRemotePath() {
   // A bare authority mounts the server's root, not an empty path.
   const MountUnitResult bare = MountUnit::build(
       sftpLocation(QStringLiteral("sftp://qinda"), QStringLiteral("Qinda")),
-      QStringLiteral("~"));
+      QStringLiteral("/home/alice"));
   QVERIFY2(bare.ok(), qPrintable(bare.message));
   QVERIFY(bare.contents.contains(QStringLiteral("What=qinda:/")));
   QVERIFY(!bare.contents.contains(QStringLiteral("port=")));
@@ -102,7 +102,7 @@ void TestMountUnit::carriesThePortAndTheRemotePath() {
 void TestMountUnit::refusesWhatCannotBeMounted() {
   const MountUnitResult smb = MountUnit::build(
       sftpLocation(QStringLiteral("smb://nas/share"), QStringLiteral("NAS")),
-      QStringLiteral("~"));
+      QStringLiteral("/home/alice"));
   QVERIFY(!smb.ok());
   QCOMPARE(smb.error, MountUnitError::UnsupportedScheme);
   QVERIFY(smb.unitName.isEmpty());
@@ -110,13 +110,13 @@ void TestMountUnit::refusesWhatCannotBeMounted() {
   const MountUnitResult relativeHome =
       MountUnit::build(sftpLocation(QStringLiteral("sftp://qinda/mnt"),
                                     QStringLiteral("Mnt")),
-                       QStringLiteral("cabewse"));
+                       QStringLiteral("alice"));
   QVERIFY(!relativeHome.ok());
   QCOMPARE(relativeHome.error, MountUnitError::UnusableHome);
 
   const MountUnitResult unnamed = MountUnit::build(
       sftpLocation(QStringLiteral("sftp://qinda/mnt"), QStringLiteral("  /  ")),
-      QStringLiteral("~"));
+      QStringLiteral("/home/alice"));
   QVERIFY(!unnamed.ok());
   QCOMPARE(unnamed.error, MountUnitError::UnusableName);
 }

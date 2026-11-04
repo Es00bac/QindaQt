@@ -293,7 +293,7 @@ void TestNetworkHubUi::aRefusedAddressExplainsItselfAndSavesNothing() {
   // dialog must stay open with the reason on screen.
   QObject *host = fixture.window->findChild<QObject *>(QStringLiteral("connectHostField"));
   QVERIFY(host);
-  QVERIFY(host->setProperty("text", QStringLiteral("cabewse:secret@qinda")));
+  QVERIFY(host->setProperty("text", QStringLiteral("alice:secret@qinda")));
   QVERIFY(QMetaObject::invokeMethod(dialog, "accept", Qt::DirectConnection));
   QCoreApplication::processEvents();
 

@@ -19,9 +19,9 @@ private slots:
 };
 
 void TestTransferRouter::normalizesBothRealms() {
-  const auto local = TransferRouter::normalizeEndpoint(QStringLiteral("~"));
+  const auto local = TransferRouter::normalizeEndpoint(QStringLiteral("/home/alice"));
   QVERIFY(local.has_value());
-  QCOMPARE(local->toString(), QStringLiteral("file://~"));
+  QCOMPARE(local->toString(), QStringLiteral("file:///home/alice"));
   QCOMPARE(TransferRouter::realmOf(*local), TransferRealm::Local);
 
   const auto remote =
@@ -36,8 +36,8 @@ void TestTransferRouter::refusesUnusableEndpoints() {
   // repaired -- "/home/x/../etc" is not the folder the user typed.
   for (const QString &text : {QStringLiteral(""), QStringLiteral("   "),
                               QStringLiteral("relative/path"),
-                              QStringLiteral("~/../etc"),
-                              QStringLiteral("~/"),
+                              QStringLiteral("/home/alice/../etc"),
+                              QStringLiteral("/home/alice/"),
                               QStringLiteral("sftp://user@qinda/mnt"),
                               QStringLiteral("sftp://user:secret@qinda/mnt"),
                               QStringLiteral("sftp:///mnt"),
@@ -56,21 +56,21 @@ void TestTransferRouter::routesByRealm_data() {
 
   const auto route = [](TransferRoute value) { return static_cast<int>(value); };
   QTest::newRow("local to local")
-      << QStringList{QStringLiteral("~/a.txt")}
-      << QStringLiteral("~/Downloads") << route(TransferRoute::LocalMutation);
+      << QStringList{QStringLiteral("/home/alice/a.txt")}
+      << QStringLiteral("/home/alice/Downloads") << route(TransferRoute::LocalMutation);
   QTest::newRow("local multi to local")
-      << QStringList{QStringLiteral("~/a.txt"),
-                     QStringLiteral("~/b.txt")}
-      << QStringLiteral("~/Downloads") << route(TransferRoute::LocalMutation);
+      << QStringList{QStringLiteral("/home/alice/a.txt"),
+                     QStringLiteral("/home/alice/b.txt")}
+      << QStringLiteral("/home/alice/Downloads") << route(TransferRoute::LocalMutation);
   QTest::newRow("local to remote")
-      << QStringList{QStringLiteral("~/a.txt")}
+      << QStringList{QStringLiteral("/home/alice/a.txt")}
       << QStringLiteral("sftp://qinda/mnt/storage") << route(TransferRoute::Queue);
   QTest::newRow("remote to local")
       << QStringList{QStringLiteral("sftp://qinda/mnt/storage/a.txt")}
-      << QStringLiteral("~/Downloads") << route(TransferRoute::Queue);
+      << QStringLiteral("/home/alice/Downloads") << route(TransferRoute::Queue);
   QTest::newRow("remote to another host")
       << QStringList{QStringLiteral("sftp://qinda/mnt/a.txt")}
-      << QStringLiteral("sftp://qinda-top~") << route(TransferRoute::Queue);
+      << QStringLiteral("sftp://qinda-top/home/alice") << route(TransferRoute::Queue);
   QTest::newRow("remote to another scheme")
       << QStringList{QStringLiteral("sftp://qinda/mnt/a.txt")}
       << QStringLiteral("smb://qinda/share") << route(TransferRoute::Queue);
@@ -86,13 +86,13 @@ void TestTransferRouter::routesByRealm_data() {
       << QStringLiteral("sftp://qinda/mnt/backup")
       << route(TransferRoute::RemoteSameAuthorityChild);
   QTest::newRow("unusable destination")
-      << QStringList{QStringLiteral("~/a.txt")}
+      << QStringList{QStringLiteral("/home/alice/a.txt")}
       << QStringLiteral("not a path") << route(TransferRoute::Refuse);
   QTest::newRow("unusable source")
       << QStringList{QStringLiteral("ftp://qinda/a.txt")}
-      << QStringLiteral("~") << route(TransferRoute::Refuse);
+      << QStringLiteral("/home/alice") << route(TransferRoute::Refuse);
   QTest::newRow("one unusable source in a batch")
-      << QStringList{QStringLiteral("~/a.txt"), QStringLiteral("relative")}
+      << QStringList{QStringLiteral("/home/alice/a.txt"), QStringLiteral("relative")}
       << QStringLiteral("sftp://qinda/mnt") << route(TransferRoute::Refuse);
 }
 
@@ -156,14 +156,14 @@ void TestTransferRouter::refusesAFolderIntoItself() {
 }
 
 void TestTransferRouter::refusesEmptyAndOversizedBatches() {
-  QCOMPARE(TransferRouter::route({}, QStringLiteral("~")).route,
+  QCOMPARE(TransferRouter::route({}, QStringLiteral("/home/alice")).route,
            TransferRoute::Refuse);
 
   QStringList many;
   for (int index = 0; index <= TransferRouter::maximumSources; ++index) {
     many.append(QStringLiteral("sftp://qinda/mnt/%1.txt").arg(index));
   }
-  const TransferRouting routing = TransferRouter::route(many, QStringLiteral("~"));
+  const TransferRouting routing = TransferRouter::route(many, QStringLiteral("/home/alice"));
   QCOMPARE(routing.route, TransferRoute::Refuse);
   QVERIFY(routing.message.contains(QString::number(TransferRouter::maximumSources)));
 }

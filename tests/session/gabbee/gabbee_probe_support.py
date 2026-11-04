@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 # Exact defaults for this host lane; overridable for other machines.
-DEFAULT_GABBEE_SOURCE_ROOT = Path("~/gabbee")
+DEFAULT_GABBEE_SOURCE_ROOT = Path.home() / "gabbee"
 DEFAULT_GABBEE_VENV_PYTHON = DEFAULT_GABBEE_SOURCE_ROOT / ".venv/bin/python"
 
 SYNTHETIC_RECORDING_NAME = "gabbee-synthetic.wav"

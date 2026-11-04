@@ -107,7 +107,7 @@ void TestNetworkLocationsStore::refusesUnusableAddresses() {
       QStringLiteral("sftp://user:secret@qinda/mnt"),
       QStringLiteral("sftp://user@qinda/mnt"),
       QStringLiteral("ftp://qinda/mnt"),
-      QStringLiteral("file://~"),
+      QStringLiteral("file:///home/alice"),
       QStringLiteral("sftp:///mnt/storage"),
       QStringLiteral("sftp://qinda/mnt/../etc"),
       QStringLiteral("sftp://qinda/mnt/storage/"),

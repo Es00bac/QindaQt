@@ -68,7 +68,7 @@ browsed address and is deferred to a schema bump with its own ADR.
 
 ## Consequences
 
-- The laptop's `sftp://qinda/mnt/storage` and `sftp://qinda~`
+- The laptop's `sftp://qinda/mnt/storage` and `sftp://qinda/home/<user>`
   survive a restart and appear in the sidebar. They work today because KIO's
   sftp worker uses libssh, which honours `~/.ssh/config` and the ssh agent.
 - Saving a location is the only way the file manager writes a network

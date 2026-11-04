@@ -79,8 +79,8 @@ private slots:
 
 void TestTransferQueue::runsOneItemAtATimeInOrder() {
   Fixture fixture;
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt"),
-                                  QStringLiteral("~/b.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt"),
+                                  QStringLiteral("/home/alice/b.txt")},
                                  QStringLiteral("sftp://qinda/mnt/storage"),
                                  QStringLiteral("copy")));
   QCOMPARE(fixture.queue->itemValues().size(), 2);
@@ -88,7 +88,7 @@ void TestTransferQueue::runsOneItemAtATimeInOrder() {
   // slower, and one job keeps the platform's prompts sequential.
   QCOMPARE(fixture.worker->started().size(), 1);
   QCOMPARE(fixture.worker->started().constFirst().source.toString(),
-           QStringLiteral("file://~/a.txt"));
+           QStringLiteral("file:///home/alice/a.txt"));
   QCOMPARE(fixture.worker->started().constFirst().destinationFolder.toString(),
            QStringLiteral("sftp://qinda/mnt/storage"));
   QCOMPARE(fixture.worker->started().constFirst().operation, TransferOperation::Copy);
@@ -110,16 +110,16 @@ void TestTransferQueue::runsOneItemAtATimeInOrder() {
 
 void TestTransferQueue::namesTheRouteWithoutQueueingAnything() {
   Fixture fixture;
-  QCOMPARE(fixture.queue->routeName({QStringLiteral("~/a.txt")},
-                                    QStringLiteral("~/Downloads")),
+  QCOMPARE(fixture.queue->routeName({QStringLiteral("/home/alice/a.txt")},
+                                    QStringLiteral("/home/alice/Downloads")),
            QStringLiteral("local"));
   QCOMPARE(fixture.queue->routeName({QStringLiteral("sftp://qinda/mnt/a.txt")},
                                     QStringLiteral("sftp://qinda/mnt/backup")),
            QStringLiteral("remote-child"));
-  QCOMPARE(fixture.queue->routeName({QStringLiteral("~/a.txt")},
+  QCOMPARE(fixture.queue->routeName({QStringLiteral("/home/alice/a.txt")},
                                     QStringLiteral("sftp://qinda/mnt")),
            QStringLiteral("queue"));
-  QCOMPARE(fixture.queue->routeName({QStringLiteral("~/a.txt")},
+  QCOMPARE(fixture.queue->routeName({QStringLiteral("/home/alice/a.txt")},
                                     QStringLiteral("nonsense")),
            QStringLiteral("refuse"));
   QVERIFY(fixture.queue->itemValues().isEmpty());
@@ -131,14 +131,14 @@ void TestTransferQueue::refusesWhatTheRouterGaveToAnotherOwner() {
   Fixture fixture;
   // AGENT-GUARD: exactly one owner per request. A local or one-child remote
   // request must not be quietly re-homed into the queue.
-  QVERIFY(!fixture.queue->enqueue({QStringLiteral("~/a.txt")},
-                                  QStringLiteral("~/Downloads"),
+  QVERIFY(!fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt")},
+                                  QStringLiteral("/home/alice/Downloads"),
                                   QStringLiteral("copy")));
   QVERIFY(!fixture.queue->refusal().isEmpty());
   QVERIFY(!fixture.queue->enqueue({QStringLiteral("sftp://qinda/mnt/a.txt")},
                                   QStringLiteral("sftp://qinda/mnt/backup"),
                                   QStringLiteral("move")));
-  QVERIFY(!fixture.queue->enqueue({QStringLiteral("~/a.txt")},
+  QVERIFY(!fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt")},
                                   QStringLiteral("sftp://qinda/mnt"),
                                   QStringLiteral("trash")));
   QVERIFY(fixture.worker->started().isEmpty());
@@ -158,12 +158,12 @@ void TestTransferQueue::publishesProgressAndCommitsOnlyOnSuccess() {
   QSignalSpy committed(fixture.queue.get(),
                        &TransferQueueController::transferCommitted);
   QVERIFY(fixture.queue->enqueue({QStringLiteral("sftp://qinda/mnt/a.txt")},
-                                 QStringLiteral("~/Downloads"),
+                                 QStringLiteral("/home/alice/Downloads"),
                                  QStringLiteral("move")));
   const quint64 id = fixture.worker->started().constFirst().id;
   QCOMPARE(fixture.worker->started().constFirst().operation, TransferOperation::Move);
   QCOMPARE(fixture.queue->activeDescription(),
-           QStringLiteral("Moving a.txt to ~/Downloads"));
+           QStringLiteral("Moving a.txt to /home/alice/Downloads"));
 
   fixture.worker->report(id, 42);
   QCOMPARE(fixture.queue->activePercent(), 42);
@@ -176,7 +176,7 @@ void TestTransferQueue::publishesProgressAndCommitsOnlyOnSuccess() {
   fixture.worker->finish(id);
   QCOMPARE(committed.count(), 1);
   QCOMPARE(committed.constFirst().constFirst().toUrl().toString(),
-           QStringLiteral("file://~/Downloads"));
+           QStringLiteral("file:///home/alice/Downloads"));
   QCOMPARE(fixture.queue->itemValues().constFirst().percent, 100);
 }
 
@@ -184,8 +184,8 @@ void TestTransferQueue::aFailedItemRetiresAndTheQueueContinues() {
   Fixture fixture;
   QSignalSpy committed(fixture.queue.get(),
                        &TransferQueueController::transferCommitted);
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt"),
-                                  QStringLiteral("~/b.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt"),
+                                  QStringLiteral("/home/alice/b.txt")},
                                  QStringLiteral("sftp://qinda/mnt"),
                                  QStringLiteral("copy")));
   fixture.worker->finish(fixture.worker->started().constFirst().id,
@@ -202,7 +202,7 @@ void TestTransferQueue::aFailedItemRetiresAndTheQueueContinues() {
 
 void TestTransferQueue::pauseAndResumeTrackTheActiveItem() {
   Fixture fixture;
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt")},
                                  QStringLiteral("sftp://qinda/mnt"),
                                  QStringLiteral("copy")));
   const quint64 id = fixture.worker->started().constFirst().id;
@@ -227,8 +227,8 @@ void TestTransferQueue::cancelRetiresAndFencesALateResult() {
   Fixture fixture;
   QSignalSpy committed(fixture.queue.get(),
                        &TransferQueueController::transferCommitted);
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt"),
-                                  QStringLiteral("~/b.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt"),
+                                  QStringLiteral("/home/alice/b.txt")},
                                  QStringLiteral("sftp://qinda/mnt"),
                                  QStringLiteral("copy")));
   const quint64 first = fixture.worker->started().constFirst().id;
@@ -254,9 +254,9 @@ void TestTransferQueue::cancelRetiresAndFencesALateResult() {
 
 void TestTransferQueue::cancelAllRetiresEveryLiveItem() {
   Fixture fixture;
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt"),
-                                  QStringLiteral("~/b.txt"),
-                                  QStringLiteral("~/c.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt"),
+                                  QStringLiteral("/home/alice/b.txt"),
+                                  QStringLiteral("/home/alice/c.txt")},
                                  QStringLiteral("sftp://qinda/mnt"),
                                  QStringLiteral("copy")));
   fixture.queue->cancelAll();
@@ -271,8 +271,8 @@ void TestTransferQueue::cancelAllRetiresEveryLiveItem() {
 
 void TestTransferQueue::clearFinishedKeepsLiveItems() {
   Fixture fixture;
-  QVERIFY(fixture.queue->enqueue({QStringLiteral("~/a.txt"),
-                                  QStringLiteral("~/b.txt")},
+  QVERIFY(fixture.queue->enqueue({QStringLiteral("/home/alice/a.txt"),
+                                  QStringLiteral("/home/alice/b.txt")},
                                  QStringLiteral("sftp://qinda/mnt"),
                                  QStringLiteral("copy")));
   fixture.worker->finish(fixture.worker->started().constFirst().id);

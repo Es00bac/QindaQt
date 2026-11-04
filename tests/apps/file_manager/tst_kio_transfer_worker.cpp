@@ -69,15 +69,15 @@ void TestKioTransferWorker::acceptsOnlyPairsWithANetworkEndpoint() {
   const QUrl remote(QStringLiteral("sftp://qinda/mnt/storage"));
   const QUrl otherRemote(QStringLiteral("smb://nas/share"));
 
-  QVERIFY(KioTransferWorker::isTransferableAcrossRealms(local(QStringLiteral("~/a.txt")), remote));
-  QVERIFY(KioTransferWorker::isTransferableAcrossRealms(remote, local(QStringLiteral("~"))));
+  QVERIFY(KioTransferWorker::isTransferableAcrossRealms(local(QStringLiteral("/home/alice/a.txt")), remote));
+  QVERIFY(KioTransferWorker::isTransferableAcrossRealms(remote, local(QStringLiteral("/home/alice"))));
   QVERIFY(KioTransferWorker::isTransferableAcrossRealms(remote, otherRemote));
 
   // AGENT-GUARD: a purely local transfer must never reach KIO from here --
   // MutationController owns local copies and moves, with identity checks,
   // Trash, and undo this worker has not.
   QVERIFY(!KioTransferWorker::isTransferableAcrossRealms(
-      local(QStringLiteral("~/a.txt")), local(QStringLiteral("/tmp"))));
+      local(QStringLiteral("/home/alice/a.txt")), local(QStringLiteral("/tmp"))));
 }
 
 void TestKioTransferWorker::refusesUnusableEndpointsBeforeCreatingAJob() {
@@ -92,12 +92,12 @@ void TestKioTransferWorker::refusesUnusableEndpointsBeforeCreatingAJob() {
       {QUrl(QStringLiteral("http://example.com/a")), remote},
       {remote, QUrl(QStringLiteral("http://example.com/b"))},
       // Userinfo on either side is refused independently of the router.
-      {QUrl(QStringLiteral("sftp://cabewse@qinda/mnt/a.txt")), local(QStringLiteral("/tmp"))},
-      {local(QStringLiteral("~/a.txt")),
-       QUrl(QStringLiteral("sftp://cabewse:secret@qinda/mnt"))},
+      {QUrl(QStringLiteral("sftp://alice@qinda/mnt/a.txt")), local(QStringLiteral("/tmp"))},
+      {local(QStringLiteral("/home/alice/a.txt")),
+       QUrl(QStringLiteral("sftp://alice:secret@qinda/mnt"))},
       // A relative local path is not an addressable endpoint.
       {QUrl(QStringLiteral("file:relative")), remote},
-      {local(QStringLiteral("~/a.txt")), local(QStringLiteral("/tmp"))},
+      {local(QStringLiteral("/home/alice/a.txt")), local(QStringLiteral("/tmp"))},
   };
   quint64 id = 1;
   for (const auto &pair : refused) {
@@ -114,7 +114,7 @@ void TestKioTransferWorker::refusesUnusableEndpointsBeforeCreatingAJob() {
 void TestKioTransferWorker::carriesTheRequestedOperationAndUrlsToTheJobSeam() {
   RecordingWorker worker;
   QSignalSpy finished(&worker, &TransferWorker::finished);
-  const QUrl source = local(QStringLiteral("~/a.txt"));
+  const QUrl source = local(QStringLiteral("/home/alice/a.txt"));
   const QUrl destination(QStringLiteral("sftp://qinda/mnt/storage"));
 
   worker.start(7, source, destination, TransferOperation::Move);
@@ -132,7 +132,7 @@ void TestKioTransferWorker::carriesTheRequestedOperationAndUrlsToTheJobSeam() {
 
 void TestKioTransferWorker::aSupportedJobKeepsTheStandardKioUiDelegate() {
   DelegateProbingWorker worker;
-  worker.start(3, local(QStringLiteral("~/a.txt")),
+  worker.start(3, local(QStringLiteral("/home/alice/a.txt")),
                QUrl(QStringLiteral("sftp://qinda/mnt/storage")), TransferOperation::Copy);
 
   QVERIFY(worker.m_job != nullptr);
@@ -151,7 +151,7 @@ void TestKioTransferWorker::aSupportedJobKeepsTheStandardKioUiDelegate() {
 void TestKioTransferWorker::destructionWithAPendingTransferDoesNotCrash() {
   {
     DelegateProbingWorker worker;
-    worker.start(4, local(QStringLiteral("~/a.txt")),
+    worker.start(4, local(QStringLiteral("/home/alice/a.txt")),
                  QUrl(QStringLiteral("sftp://qinda/mnt/storage")),
                  TransferOperation::Copy);
   }

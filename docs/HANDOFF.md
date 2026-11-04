@@ -4865,7 +4865,7 @@ Portage adopted the previously unmanaged files and reported no owning-package
 collision. [Gentoo installation](wiki/development/gentoo-apps.md) documents updates.
 
 A fresh installed Terminal launched with no options and published the normal
-`cabewse@qinda container-wm` shell title through the compositor inventory. It was
+`user@qinda container-wm` shell title through the compositor inventory. It was
 left open for the user at verification time; the later shell crash ended that session. Installed File Manager UI actions pass. Installed Editor
 reports a 46 ms first frame and 17,160 KiB median PSS. Evidence and the fixed
 window capture are under ignored `.cache/terminal-visible-install/`.

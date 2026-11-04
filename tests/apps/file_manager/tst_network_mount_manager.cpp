@@ -78,7 +78,7 @@ void TestNetworkMountManager::writesEnablesAndCountsAUnit() {
 
   manager.synchronize({location(QStringLiteral("sftp://qinda/mnt/storage"),
                                 QStringLiteral("Storage"), true),
-                       location(QStringLiteral("sftp://qinda~"),
+                       location(QStringLiteral("sftp://qinda/home/alice"),
                                 QStringLiteral("Home"), false)});
 
   const QString expected =

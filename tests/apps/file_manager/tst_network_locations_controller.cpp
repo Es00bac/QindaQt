@@ -98,7 +98,7 @@ void TestNetworkLocationsController::publishesOnlyPlacesLocationsInThePlacesList
                .isEmpty());
   QVERIFY(!controller
                ->saveLocation(sftpRequest(QStringLiteral("qinda"),
-                                          QStringLiteral("~"),
+                                          QStringLiteral("/home/alice"),
                                           QStringLiteral("Home"), false))
                .isEmpty());
   QCOMPARE(controller->locations().size(), 2);
@@ -117,7 +117,7 @@ void TestNetworkLocationsController::refusalKeepsTheListUnchangedAndExplains() {
   QSignalSpy requestErrors(controller.get(),
                            &NetworkLocationsController::requestErrorChanged);
 
-  QVERIFY(controller->saveLocation(sftpRequest(QStringLiteral("cabewse@qinda"),
+  QVERIFY(controller->saveLocation(sftpRequest(QStringLiteral("alice@qinda"),
                                                QStringLiteral("/mnt")))
               .isEmpty());
   QCOMPARE(requestErrors.count(), 1);

@@ -45,7 +45,7 @@ def outer_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--weston",
         type=Path,
-        default=Path("~/work_SPaC3/builds/qindaqt-deps/qindaqt-arch-665/root/usr/bin/weston"),
+        default=Path.home() / "work_SPaC3/builds/qindaqt-deps/qindaqt-arch-665/root/usr/bin/weston",
     )
     parser.add_argument("--gabbee-root", type=Path, required=True)
     parser.add_argument("--bin-directory", "--bin-dir", dest="bin_directory", default="bin")
