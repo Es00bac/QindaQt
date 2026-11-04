@@ -303,6 +303,30 @@ Public GitHub publication and the existing package-delivery hub have separate
 roles. Publishing these sources does not change the `qinda-sync` contract,
 override package pins, update either working tree or restart a live session.
 
+### The QindaQt mirror is a redacted rewrite
+
+<!-- AGENT-GUARD: github.com/Es00bac/QindaQt history is NOT hub history. A
+plain `git push` of hub main to GitHub is rejected as non-fast-forward; never
+force it. Publish only through the owner's publish script on qinda. -->
+
+Since 2026-11-04 the public QindaQt history is a deterministic
+`git filter-repo` rewrite of hub `main`. The rewrite redacts private
+machine identifiers (home paths, tailnet addresses) in file contents and commit
+messages, and it drops committed Python bytecode. It keeps every commit,
+merge and quoted hub commit ID, so the public tree at each commit matches the
+hub's apart from those redactions. Because the same hub commit always rewrites
+to the same public commit, each publication is a plain fast-forward.
+
+Publication remains an explicit owner decision. With that authorization, run
+`~/work_SPaC3/qindaqt-publish/publish-github.sh --dry-run` on qinda, then without
+`--dry-run`. It aborts if any object still matches the redaction list or if the
+result would not fast-forward the public `main`. The script and its redaction
+list live outside the repository because the list holds the literal private
+values; changing either one changes every public commit ID.
+
+Keep new machine-specific paths out of tracked files anyway. Use `~/` or a
+placeholder in records and fixtures, so the hub and public trees stay identical.
+
 ### October 12 non-game source refresh
 
 The owner-requested refresh compared existing GitHub branches against the qinda
