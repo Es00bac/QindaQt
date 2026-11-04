@@ -23,6 +23,28 @@ Start with the [handbook](docs/wiki/handbook/index.md) for everyday use. The
 [project wiki](docs/wiki/index.md) also covers architecture, configuration,
 building, and testing.
 
+## Screenshots
+
+Real QindaQt windows, layouts and Settings, captured in an isolated desktop session. Click an image to see it at full size.
+
+[![Window containers — a text editor, File Manager tab and terminal share one movable workspace](docs/screenshots/window-containers.webp)](docs/screenshots/window-containers.webp)
+
+Window containers — a text editor, File Manager tab and terminal share one movable workspace.
+
+| Bliss layout — taskbar, Start button and light application chrome | Neon Confluence — panel, dock and File Manager |
+| --- | --- |
+| [![Bliss layout — taskbar, Start button and light application chrome](docs/screenshots/desktop-bliss.webp)](docs/screenshots/desktop-bliss.webp) | [![Neon Confluence — panel, dock and File Manager](docs/screenshots/desktop-neon-confluence.webp)](docs/screenshots/desktop-neon-confluence.webp) |
+
+| Program Groups desktop layout | Appearance Settings — desktop theme selection |
+| --- | --- |
+| [![Program Groups desktop layout](docs/screenshots/desktop-program-groups.webp)](docs/screenshots/desktop-program-groups.webp) | [![Appearance Settings — desktop theme selection](docs/screenshots/settings-appearance.webp)](docs/screenshots/settings-appearance.webp) |
+
+| Audio Settings — application and device mixer | QindaWrite running on QindaQt with a sample document |
+| --- | --- |
+| [![Audio Settings — application and device mixer](docs/screenshots/audio-mixer.webp)](docs/screenshots/audio-mixer.webp) | [![QindaWrite running on QindaQt with a sample document](docs/screenshots/office-write.webp)](docs/screenshots/office-write.webp) |
+
+[Capture notes](docs/screenshots/README.md).
+
 ## Development status
 
 QindaQt is under active development. The compositor, window containers, shell,
